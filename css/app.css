@@ -311,7 +311,8 @@ body.over-photo:not(.scrolled) .top.over { background-color: transparent; border
 .dish-photo-btn.art { cursor: default; margin: 0; }
 .art-tag { position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font: 700 .76rem/1.2 var(--sans); }
 /* the product photo or letter on order lines */
-.pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
+.pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+img.pthumb { background: var(--surface-2); }
 .pthumb.ph { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font: 700 1.3rem/1 var(--display); text-transform: uppercase; }
 /* the photo must not be dragged or long-pressed on its own: the whole card moves */
 .pcard { -webkit-touch-callout: none; }
@@ -915,7 +916,10 @@ button.todo-main { cursor: pointer; }
 .stamp.low { top: auto; bottom: 22px; left: 50%; color: var(--todo-ink); background: var(--todo); border-color: var(--todo); transform: translateX(-50%) rotate(-4deg); }
 .pc-mono { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; color: rgba(255, 255, 255, .94); font: 700 2.9rem/1 var(--display); text-transform: uppercase; }
 .pc-name { font: 700 clamp(1.8rem, 7.6vw, 2.5rem)/1.04 var(--display); overflow-wrap: anywhere; text-wrap: balance; }
-.pc-used { display: grid; gap: 4px; color: var(--muted); font-size: .92rem; max-width: 30ch; }
+.pc-used { display: grid; gap: 2px; color: var(--muted); font-size: .92rem; max-width: 32ch; }
+.pc-used span:not(.label) { color: var(--ink); font-weight: 600; }
+.deck-for { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.sum-for { text-align: center; margin: -6px 0 14px; }
 .pc-flag { padding: 6px 10px; border-radius: 8px; background: var(--todo-soft); color: var(--todo-ink); font-weight: 700; font-size: .9rem; }
 .pc-flag.red { background: var(--urgent-soft); color: var(--urgent); }
 .pc-prev { color: var(--apron); font-weight: 700; font-size: .86rem; }

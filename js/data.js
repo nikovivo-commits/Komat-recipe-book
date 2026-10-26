@@ -161,16 +161,38 @@
     if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || (basics && basics.has(k)) || isHouseMade(k)) return null;
     return { key: k, name: k.charAt(0).toUpperCase() + k.slice(1) };
   }
-  function addIng(map, g, used) {
-    const o = orderable(g.o || g.n);
-    if (!o) return;
+  /* house-made ingredients (a sauce, a dough) open up into what they are made from, two levels deep */
+  let houseIngs = null, houseIngsFor = null;
+  function houseRecipe(k) {
+    if (houseIngsFor !== D.recipesSrc) {
+      houseIngsFor = D.recipesSrc; houseIngs = {};
+      D.recipes.forEach((r) => {
+        if (r.type !== 'dish' && r.ingredients.length) houseIngs[ordKey(r.name)] = r.ingredients;
+        r.components.forEach((c) => { if (c.ingredients.length && !houseIngs[ordKey(c.name)]) houseIngs[ordKey(c.name)] = c.ingredients; });
+      });
+    }
+    return houseIngs[k] || null;
+  }
+  function addIng(map, g, used, depth) {
+    const raw = g.o || g.n, o = orderable(raw);
+    if (!o) {
+      const sub = (depth || 0) < 2 ? houseRecipe(ordKey(raw)) : null;
+      if (sub) sub.forEach((x) => addIng(map, x, used, (depth || 0) + 1));
+      return;
+    }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
-    if (!map[o.key].usedIn.some((u) => u.toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(used);
+    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
+    if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
+  }
+  /* a whole dish: its parts' ingredients plus the assembly lines that are not one of its parts */
+  function dishIngs(r) {
+    const main = r.ingredients.filter((g) => !r.components.some((c) => K.nameMatch(c.name, g.n, true)));
+    return main.concat.apply(main, r.components.map((c) => c.ingredients));
   }
   /* what a mise en place row is made from: its linked recipe, else a recipe with the same name */
   K.recipeFor = function (item) {
     const lk = K.linkTarget(item.link);
-    if (lk) return { name: lk.name, ingredients: lk.ingredients };
+    if (lk) return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients };
     let hit = null;
     D.recipes.forEach((r) => {
       if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients }; });
@@ -178,29 +200,31 @@
     if (hit) return hit;
     D.recipes.forEach((r) => {
       if (hit) return;
-      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.ingredients };
+      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients };
       else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients }; });
     });
     return hit;
   };
-  /* the products behind a station: today's menu preps, plus (when closing) every mise en place row */
-  K.stockList = function (st, closing) {
+  /* what to ask about when ordering: only the ingredients for the rows marked DO on tomorrow's prep list,
+     plus products the kitchen rules pin (bread on its days, products checked daily) */
+  K.stockList = function (st, day) {
+    day = day || K.day(1);
     const map = {}, unlinked = [];
     basics = new Set((K.kitchen().basics || []).map(ordKey));
-    K.prepItems(st).forEach((it) => it.ingredients.forEach((g) => addIng(map, g, it.name)));
-    if (closing) K.checkItems(st).forEach((it) => {
+    const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
+    toMake.forEach((it) => {
       const r = K.recipeFor(it);
       if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, it.name)); else unlinked.push(it.name);
     });
-    const kc = K.kitchen(), pinned = [], skip = {};
+    const kc = K.kitchen(), pinned = [], skip = {}, wd = K.kitchenNow().getDay();
     (kc.repeats || []).forEach((rp) => {
       if (!rp.item) return;
       skip[rp.item.toLowerCase()] = 1;
-      if (rp.station === st && (rp.days || []).includes(K.kitchenNow().getDay())) pinned.push({ name: rp.item, usedIn: ['Order today (' + daysLabel(rp.days) + ')'], flag: 'red' });
+      if (rp.station === st && (rp.days || []).includes(wd)) pinned.push({ name: rp.item, usedIn: ['Order today (' + daysLabel(rp.days) + ')'], flag: 'red' });
     });
     (kc.daily || []).forEach((x) => { skip[x.name.toLowerCase()] = 1; if (x.station === st) pinned.push({ name: x.name, usedIn: ['Check every day'], flag: 'ask' }); });
     const list = Object.keys(map).sort().map((k) => map[k]).filter((x) => !skip[x.name.toLowerCase()]);
-    return { ings: pinned.concat(list), unlinked: unlinked };
+    return { ings: pinned.concat(list), unlinked: unlinked, toMake: toMake, day: day };
   };
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function daysLabel(days) { return (days || []).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => WD[d]).join(', '); }

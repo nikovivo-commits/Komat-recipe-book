@@ -318,7 +318,8 @@ body.over-photo:not(.scrolled) .top.over { background-color: transparent; border
 .dish-photo-btn.art { cursor: default; margin: 0; }
 .art-tag { position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font: 700 .76rem/1.2 var(--sans); }
 /* the product photo or letter on order lines */
-.pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
+.pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+img.pthumb { background: var(--surface-2); }
 .pthumb.ph { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font: 700 1.3rem/1 var(--display); text-transform: uppercase; }
 /* the photo must not be dragged or long-pressed on its own: the whole card moves */
 .pcard { -webkit-touch-callout: none; }
@@ -922,7 +923,10 @@ button.todo-main { cursor: pointer; }
 .stamp.low { top: auto; bottom: 22px; left: 50%; color: var(--todo-ink); background: var(--todo); border-color: var(--todo); transform: translateX(-50%) rotate(-4deg); }
 .pc-mono { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; color: rgba(255, 255, 255, .94); font: 700 2.9rem/1 var(--display); text-transform: uppercase; }
 .pc-name { font: 700 clamp(1.8rem, 7.6vw, 2.5rem)/1.04 var(--display); overflow-wrap: anywhere; text-wrap: balance; }
-.pc-used { display: grid; gap: 4px; color: var(--muted); font-size: .92rem; max-width: 30ch; }
+.pc-used { display: grid; gap: 2px; color: var(--muted); font-size: .92rem; max-width: 32ch; }
+.pc-used span:not(.label) { color: var(--ink); font-weight: 600; }
+.deck-for { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.sum-for { text-align: center; margin: -6px 0 14px; }
 .pc-flag { padding: 6px 10px; border-radius: 8px; background: var(--todo-soft); color: var(--todo-ink); font-weight: 700; font-size: .9rem; }
 .pc-flag.red { background: var(--urgent-soft); color: var(--urgent); }
 .pc-prev { color: var(--apron); font-weight: 700; font-size: .86rem; }
@@ -2566,16 +2570,38 @@ window.KOMAT_ART = [
     if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || (basics && basics.has(k)) || isHouseMade(k)) return null;
     return { key: k, name: k.charAt(0).toUpperCase() + k.slice(1) };
   }
-  function addIng(map, g, used) {
-    const o = orderable(g.o || g.n);
-    if (!o) return;
+  /* house-made ingredients (a sauce, a dough) open up into what they are made from, two levels deep */
+  let houseIngs = null, houseIngsFor = null;
+  function houseRecipe(k) {
+    if (houseIngsFor !== D.recipesSrc) {
+      houseIngsFor = D.recipesSrc; houseIngs = {};
+      D.recipes.forEach((r) => {
+        if (r.type !== 'dish' && r.ingredients.length) houseIngs[ordKey(r.name)] = r.ingredients;
+        r.components.forEach((c) => { if (c.ingredients.length && !houseIngs[ordKey(c.name)]) houseIngs[ordKey(c.name)] = c.ingredients; });
+      });
+    }
+    return houseIngs[k] || null;
+  }
+  function addIng(map, g, used, depth) {
+    const raw = g.o || g.n, o = orderable(raw);
+    if (!o) {
+      const sub = (depth || 0) < 2 ? houseRecipe(ordKey(raw)) : null;
+      if (sub) sub.forEach((x) => addIng(map, x, used, (depth || 0) + 1));
+      return;
+    }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
-    if (!map[o.key].usedIn.some((u) => u.toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(used);
+    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
+    if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
+  }
+  /* a whole dish: its parts' ingredients plus the assembly lines that are not one of its parts */
+  function dishIngs(r) {
+    const main = r.ingredients.filter((g) => !r.components.some((c) => K.nameMatch(c.name, g.n, true)));
+    return main.concat.apply(main, r.components.map((c) => c.ingredients));
   }
   /* what a mise en place row is made from: its linked recipe, else a recipe with the same name */
   K.recipeFor = function (item) {
     const lk = K.linkTarget(item.link);
-    if (lk) return { name: lk.name, ingredients: lk.ingredients };
+    if (lk) return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients };
     let hit = null;
     D.recipes.forEach((r) => {
       if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients }; });
@@ -2583,29 +2609,31 @@ window.KOMAT_ART = [
     if (hit) return hit;
     D.recipes.forEach((r) => {
       if (hit) return;
-      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.ingredients };
+      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients };
       else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients }; });
     });
     return hit;
   };
-  /* the products behind a station: today's menu preps, plus (when closing) every mise en place row */
-  K.stockList = function (st, closing) {
+  /* what to ask about when ordering: only the ingredients for the rows marked DO on tomorrow's prep list,
+     plus products the kitchen rules pin (bread on its days, products checked daily) */
+  K.stockList = function (st, day) {
+    day = day || K.day(1);
     const map = {}, unlinked = [];
     basics = new Set((K.kitchen().basics || []).map(ordKey));
-    K.prepItems(st).forEach((it) => it.ingredients.forEach((g) => addIng(map, g, it.name)));
-    if (closing) K.checkItems(st).forEach((it) => {
+    const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
+    toMake.forEach((it) => {
       const r = K.recipeFor(it);
       if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, it.name)); else unlinked.push(it.name);
     });
-    const kc = K.kitchen(), pinned = [], skip = {};
+    const kc = K.kitchen(), pinned = [], skip = {}, wd = K.kitchenNow().getDay();
     (kc.repeats || []).forEach((rp) => {
       if (!rp.item) return;
       skip[rp.item.toLowerCase()] = 1;
-      if (rp.station === st && (rp.days || []).includes(K.kitchenNow().getDay())) pinned.push({ name: rp.item, usedIn: ['Order today (' + daysLabel(rp.days) + ')'], flag: 'red' });
+      if (rp.station === st && (rp.days || []).includes(wd)) pinned.push({ name: rp.item, usedIn: ['Order today (' + daysLabel(rp.days) + ')'], flag: 'red' });
     });
     (kc.daily || []).forEach((x) => { skip[x.name.toLowerCase()] = 1; if (x.station === st) pinned.push({ name: x.name, usedIn: ['Check every day'], flag: 'ask' }); });
     const list = Object.keys(map).sort().map((k) => map[k]).filter((x) => !skip[x.name.toLowerCase()]);
-    return { ings: pinned.concat(list), unlinked: unlinked };
+    return { ings: pinned.concat(list), unlinked: unlinked, toMake: toMake, day: day };
   };
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function daysLabel(days) { return (days || []).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => WD[d]).join(', '); }
@@ -4736,12 +4764,12 @@ window.KOMAT_ART = [
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     left.append(todo);
 
-    /* order */
-    const order = K.orderFor(st);
+    /* order: only what tomorrow's prep list needs */
+    const order = K.orderFor(st), nTmr = K.checkItems(st, K.day(1)).filter((it) => K.markState(st, it.id, K.day(1)) === 'do').length;
     left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
-        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Swipe through the products and mark what is low or out')),
+        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : nTmr ? 'Ingredients for the ' + nTmr + (nTmr === 1 ? ' thing' : ' things') + ' on tomorrow’s prep list' : 'Mark tomorrow’s prep list first, then check its ingredients')),
       K.icon('next')));
 
     /* mise en place: today's list, or (after closing time) tomorrow's prep list */
@@ -4759,7 +4787,8 @@ window.KOMAT_ART = [
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : 'Finish mise en place')));
+      tmr ? h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')
+        : h('button', { class: 'btn wide', type: 'button', onclick: () => { pickDay('tomorrow'); setTimeout(() => { const el = document.getElementById('t-mep'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); K.toast('Now mark what has to be made tomorrow'); } }, K.icon('next'), 'Closing? Write tomorrow’s prep list')));
 
     right.append(tomorrowBlock(st));
     if (doneTasks.length) right.append(h('details', { class: 'block card donebox' }, h('summary', null, 'Done today', h('span', { class: 'n' }, String(doneTasks.length))),
@@ -4942,7 +4971,7 @@ window.KOMAT_ART = [
   K.startStock = function (st, closing) {
     const prev = K.orderFor(st), m = {}, extras = [];
     if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
-    ui.stock = { st: st, m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
+    ui.stock = { st: st, day: K.day(1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
     K.go('stock');
   };
 
@@ -4957,20 +4986,37 @@ window.KOMAT_ART = [
   const clock = (ms) => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
   K.V.stock = function () {
-    const S = ui.stock, sl = K.stockList(S.st, S.close), ings = sl.ings;
+    const S = ui.stock, sl = K.stockList(S.st, S.day), ings = sl.ings;
     const modeSeg = K.seg([['swipe', 'Swipe'], ['list', 'List']], S.mode, (v) => { S.mode = v; K.store.set('stockMode', v); if (v === 'swipe' && S.idx >= ings.length) S.summary = true; K.render(true); }, { 'aria-label': 'Check by', class: 'seg on-dark small-seg' });
     const top = K.subbar(K.ST[S.st], () => K.go('today'), [modeSeg], S.close ? 'Finish mise en place' : 'Order check');
+    if (!sl.toMake.length && !S.summary && !S.anyway) return nothingPlanned(S, sl, top);
     if (S.mode === 'list') return listMode(S, sl, top);
     if (S.summary || S.idx >= ings.length) return summary(S, sl, top);
-    return deck(S, ings, top);
+    return deck(S, ings, top, sl);
   };
+  /* what the check is for: the things marked DO on tomorrow's prep list */
+  const dayWord = (S) => K.prettyDate(S.day, { weekday: 'long' });
+  function planLine(sl) {
+    const names = sl.toMake.map((it) => it.name);
+    return names.slice(0, 3).join(', ') + (names.length > 3 ? ' +' + (names.length - 3) + ' more' : '');
+  }
+  function nothingPlanned(S, sl, top) {
+    const w = h('div', { class: 'wrap page narrow' });
+    w.append(K.catRest('Tomorrow’s prep list is empty',
+      'Mark DO on what ' + K.ST[S.st] + ' has to make on ' + dayWord(S) + '. The check then asks only about the ingredients for those, like yolks and butter for a hollandaise.',
+      h('div', { class: 'btns center' },
+        h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.listFor = { v: 'tomorrow', day: K.day(0) }; ui.stock = null; K.go('today'); setTimeout(() => { const el = document.getElementById('t-mep'); if (el) el.scrollIntoView({ block: 'start' }); }, 60); } }, K.icon('list'), 'Open tomorrow’s list'),
+        h('button', { class: 'btn', type: 'button', onclick: () => { S.anyway = true; S.summary = !sl.ings.length; K.render(true); } }, sl.ings.length ? 'Check bread and daily products' : 'Order something else'))));
+    return { top: top, body: w, tabs: false };
+  }
 
   /* ---------- the card deck ---------- */
-  function deck(S, ings, top) {
+  function deck(S, ings, top, sl) {
     const left = ings.length - S.idx, pct = Math.round((S.idx / Math.max(1, ings.length)) * 100);
     const wrap = h('div', { class: 'deck-page' });
     wrap.append(h('div', { class: 'deck-head wrap' },
-      h('p', { class: 'deck-q' }, S.close ? 'Do you have what you need for tomorrow?' : 'Anything to order?'),
+      h('p', { class: 'deck-q' }, 'Do you have it for ' + dayWord(S) + '?'),
+      sl.toMake.length ? h('p', { class: 'deck-for' }, 'For tomorrow’s prep list: ' + planLine(sl)) : null,
       h('div', { class: 'deck-prog', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(ings.length), 'aria-valuenow': String(S.idx) }, h('span', { style: { width: pct + '%' } })),
       h('div', { class: 'deck-meta' }, h('span', { class: 'mono' }, (S.idx + 1) + ' / ' + ings.length), h('span', null, count(S) ? count(S) + ' to order so far' : left + ' to go'))));
     const stack = h('div', { class: 'deck', id: 'deck' });
@@ -4993,7 +5039,7 @@ window.KOMAT_ART = [
       K.produceThumb(g.name, 'pc-mono'),
       h('h2', { class: 'pc-name' }, g.name),
       g.flag === 'red' ? h('p', { class: 'pc-flag red' }, g.usedIn[0]) : g.flag === 'ask' ? h('p', { class: 'pc-flag' }, g.usedIn[0]) : null,
-      !g.flag && g.usedIn.length ? h('p', { class: 'pc-used' }, h('span', { class: 'label' }, 'Used in'), g.usedIn.slice(0, 3).join(' · ') + (g.usedIn.length > 3 ? ' +' + (g.usedIn.length - 3) : '')) : null,
+      !g.flag && g.usedIn.length ? h('p', { class: 'pc-used' }, h('span', { class: 'label' }, 'Needed for'), g.usedIn.slice(0, 3).map((u) => h('span', null, u)), g.usedIn.length > 3 ? h('span', null, '+' + (g.usedIn.length - 3) + ' more') : null) : null,
       cur ? h('p', { class: 'pc-prev' }, 'Marked ' + (cur.s === 'out' ? 'out' : 'low') + ' earlier' + (cur.note ? ': ' + cur.note : '')) : null,
       K.me.admin && !g.flag && depth === 0 ? h('button', { type: 'button', class: 'pc-never', onclick: () => neverAsk(g) }, 'Always in stock? Stop asking') : null);
   }
@@ -5049,7 +5095,7 @@ window.KOMAT_ART = [
     decide(choice, el, choice === 'have' ? 1 : choice === 'out' ? -1 : 0, choice === 'low' ? -1 : 0);
   }
   function decide(choice, el, dx, dy) {
-    const S = ui.stock, ings = K.stockList(S.st, S.close).ings, g = ings[S.idx];
+    const S = ui.stock, ings = K.stockList(S.st, S.day).ings, g = ings[S.idx];
     if (!g || busy) return;
     busy = true;
     const k = g.name.toLowerCase();
@@ -5102,12 +5148,9 @@ window.KOMAT_ART = [
         h('span', { class: 'sstat low' }, h('b', { class: 'mono' }, String(lows)), 'low'),
         h('span', { class: 'sstat have' }, h('b', { class: 'mono' }, String(Math.max(0, Math.min(S.idx, ings.length) - marked.length))), 'have'),
         S.took && S.idx >= ings.length ? h('span', { class: 'sstat' }, h('b', { class: 'mono' }, clock(S.took)), 'to check') : null)));
-    if (S.close) {
-      const notReady = K.checkItems(S.st).filter((it) => K.markState(S.st, it.id) === 'do' || K.isUrgent(S.st, it.id));
-      if (notReady.length) w.append(h('div', { class: 'banner warn' }, h('b', null, 'Still in progress: '), notReady.map((x) => x.name).join(', '), h('span', null, 'Leave a note for tomorrow so the next shift can pick them up.')));
-      if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + ' rows have no recipe yet, so their products are not on the cards'),
-        h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their products join the check.')));
-    }
+    if (sl.toMake.length) w.append(h('p', { class: 'hint sum-for' }, 'Checked for tomorrow’s prep list: ' + planLine(sl) + '.'));
+    if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + (sl.unlinked.length === 1 ? ' item on tomorrow’s list has' : ' items on tomorrow’s list have') + ' no recipe, so check those yourself'),
+      h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their ingredients join the check.')));
     if (marked.length) {
       w.append(h('div', { class: 'olist card sum-list' }, marked.map((x) => h('div', { class: 'sum-row ' + x.m.s },
         K.produceThumb(x.g.name),
@@ -5116,7 +5159,7 @@ window.KOMAT_ART = [
         h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'We have ' + x.g.name + ' after all', title: 'We have it', onclick: () => { delete S.m[x.k]; K.render(); } }, K.icon('close')),
         h('input', { class: 'input small', id: 'sq-' + K.safeId(x.k), placeholder: 'How much? e.g. 2 kg', 'aria-label': 'Amount of ' + x.g.name, enterkeyhint: 'done', value: x.m.note, oninput: (e) => { x.m.note = e.target.value; } })))));
     } else {
-      w.append(K.catRest('All stocked up', S.close ? 'Nothing needed for tomorrow. Enjoy the rest of your shift.' : 'Nothing to order from ' + K.ST[S.st] + ' right now.'));
+      w.append(K.catRest('All stocked up', 'You have everything for ' + dayWord(S) + '’s prep list.' + (S.close ? ' Enjoy the rest of your shift.' : '')));
     }
     w.append(extrasBlock(S));
     w.append(h('div', { class: 'btns center' }, h('button', { type: 'button', class: 'link-btn', onclick: () => { S.idx = 0; S.hist = []; S.summary = false; S.start = Date.now(); S.took = 0; K.render(true); } }, K.icon('back'), 'Check again from the start')));
@@ -5141,8 +5184,8 @@ window.KOMAT_ART = [
   function listMode(S, sl, top) {
     const ings = sl.ings;
     const w = h('div', { class: 'wrap page narrow' });
-    w.append(h('h1', { class: 'rtitle' }, S.close ? 'Finish mise en place' : 'Anything to order?'),
-      h('p', { class: 'muted' }, S.close ? 'The products behind ' + K.ST[S.st] + '’s mise en place. Mark anything low or out and it goes on tonight’s order.' : 'Everything ' + K.ST[S.st] + ' uses on today’s menus. Tap Low or Out for what you need.'));
+    w.append(h('h1', { class: 'rtitle' }, 'Do you have it for ' + dayWord(S) + '?'),
+      h('p', { class: 'muted' }, sl.toMake.length ? 'The ingredients for tomorrow’s prep list: ' + planLine(sl) + '. Tap Low or Out for what you need.' : 'Bread and the products checked every day.'));
     w.append(h('div', { class: 'search small' }, K.icon('search'), h('input', { class: 'search-in', id: 'stockq', type: 'search', enterkeyhint: 'search', placeholder: 'Find a product', value: S.q, 'aria-label': 'Find a product',
       oninput: (e) => { S.q = e.target.value; const l = document.getElementById('stocklist'); if (l) l.replaceWith(rows(ings)); } })));
     w.append(rows(ings));
@@ -5170,7 +5213,7 @@ window.KOMAT_ART = [
   /* ---------- send ---------- */
   function send() {
     const S = ui.stock, st = S.st, byKey = {};
-    K.stockList(st, S.close).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
+    K.stockList(st, S.day).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
     const items = Object.keys(S.m).map((k) => ({ n: byKey[k] || k, s: S.m[k].s, note: (S.m[k].note || '').trim() }))
       .concat(S.extras.filter((x) => (x.n || '').trim()).map((x) => ({ n: x.n.trim(), s: 'out', note: (x.note || '').trim(), extra: true })));
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }

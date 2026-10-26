@@ -218,12 +218,12 @@
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     left.append(todo);
 
-    /* order */
-    const order = K.orderFor(st);
+    /* order: only what tomorrow's prep list needs */
+    const order = K.orderFor(st), nTmr = K.checkItems(st, K.day(1)).filter((it) => K.markState(st, it.id, K.day(1)) === 'do').length;
     left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
-        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Swipe through the products and mark what is low or out')),
+        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : nTmr ? 'Ingredients for the ' + nTmr + (nTmr === 1 ? ' thing' : ' things') + ' on tomorrow’s prep list' : 'Mark tomorrow’s prep list first, then check its ingredients')),
       K.icon('next')));
 
     /* mise en place: today's list, or (after closing time) tomorrow's prep list */
@@ -241,7 +241,8 @@
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : 'Finish mise en place')));
+      tmr ? h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')
+        : h('button', { class: 'btn wide', type: 'button', onclick: () => { pickDay('tomorrow'); setTimeout(() => { const el = document.getElementById('t-mep'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); K.toast('Now mark what has to be made tomorrow'); } }, K.icon('next'), 'Closing? Write tomorrow’s prep list')));
 
     right.append(tomorrowBlock(st));
     if (doneTasks.length) right.append(h('details', { class: 'block card donebox' }, h('summary', null, 'Done today', h('span', { class: 'n' }, String(doneTasks.length))),
