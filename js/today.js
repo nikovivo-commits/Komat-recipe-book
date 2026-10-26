@@ -135,19 +135,23 @@
   function openLink(tg) { K.go('recipe', { id: tg.id, comp: tg.ci }); }
 
   /* ---------- to-do rows ---------- */
+  /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
+     tap the words to add a comment, ! flags it urgent for everyone */
   function todoRow(o) {
     const nkey = o.noteKey;
+    const done = (btn) => { if (btn) btn.classList.add('ticked'); K.vibrate(12); setTimeout(o.onDone, btn ? 160 : 0); };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
-      h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
-        h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
-        o.note ? h('span', { class: 'tnote' }, o.note) : null,
-        h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
-          o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
-          nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
-      h('div', { class: 'todo-acts' },
-        o.onUrgent ? h('button', { type: 'button', class: 'pbtn flag' + (o.urgent ? ' on' : ''), 'aria-pressed': o.urgent ? 'true' : 'false', 'aria-label': (o.urgent ? 'Unmark ' : 'Mark ') + o.name + ' as urgent', title: 'Urgent', onclick: o.onUrgent }, '!') : null,
-        o.onRemove ? h('button', { type: 'button', class: 'pbtn ghost', 'aria-label': 'Remove ' + o.name, onclick: o.onRemove }, K.icon('close')) : null,
-        h('button', { type: 'button', class: 'pbtn done', onclick: o.onDone }, K.icon('check'), 'Done')));
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
+      h('div', { class: 'sw-in' },
+        h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
+        h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
+          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
+          o.note ? h('span', { class: 'tnote' }, o.note) : null,
+          h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
+            o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
+            nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
+        o.onUrgent ? h('button', { type: 'button', class: 'mflag' + (o.urgent ? ' on' : ''), 'aria-pressed': o.urgent ? 'true' : 'false', 'aria-label': (o.urgent ? 'Unmark ' : 'Mark ') + o.name + ' as urgent', onclick: o.onUrgent }, '!') : null));
+    K.swipeable(row, { right: { run: () => done(null) }, left: o.onRemove ? { run: o.onRemove } : null });
     const f = nkey ? noteForm(nkey, o.note, o.onNote) : null;
     return f ? h('div', { class: 'todo-wrap' }, row, f) : row;
   }
@@ -224,6 +228,7 @@
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
+    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Swipe left to remove a task.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     left.append(todo);
@@ -336,10 +341,13 @@
     return h('section', { class: 'block card tmr', id: 't-tmr' },
       h('h2', { class: 'block-title' }, 'For tomorrow', h('span', { class: 'n' }, K.prettyDate(K.day(1), { weekday: 'long' }))),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
-      list.length ? h('div', { class: 'todos' }, list.map((x) => h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
-        h('div', { class: 'todo-main' }, h('span', { class: 'todo-name' }, x.d.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
-          h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
-        h('div', { class: 'todo-acts' }, h('button', { class: 'pbtn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))))) : null,
+      list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
+        h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
+        h('div', { class: 'sw-in no-check' },
+          h('div', { class: 'todo-main' }, h('span', { class: 'todo-name' }, x.d.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
+            h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
+          h('button', { class: 'mflag', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
+        { left: { run: () => K.removePrep(x.id) } }))) : null,
       addTaskForm('tmr', 'e.g. Defrost 4 lamb saddles', 'Leave it', (t, urg, note) => K.leaveForTomorrow(st, t, urg, note)),
       h('p', { class: 'hint' }, 'For another station? Switch “I’m on” at the top first.'));
   }

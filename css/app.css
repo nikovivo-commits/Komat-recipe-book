@@ -461,13 +461,13 @@ body.toasting .timers { transform: translateY(-76px); }
 .timers-more { border: 0; background: none; color: inherit; opacity: .75; font-size: .8rem; font-weight: 700; padding: 2px; }
 
 /* ---------- toast ---------- */
-.toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--ink); color: var(--ground); font-weight: 700; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .45); }
+.toast { position: fixed; z-index: 60; left: 0; right: 0; margin-inline: auto; width: fit-content; bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--ink); color: var(--ground); font-weight: 700; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .45); }
 /* a message never blocks the buttons under it; only its Undo takes taps */
 .toast { pointer-events: none; }
 .toast-act { pointer-events: auto; }
 body:not(.has-tabs) .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 .toast:not([hidden]) { animation: toastin .24s cubic-bezier(.2, 1.2, .4, 1); }
-@keyframes toastin { from { opacity: 0; transform: translate(-50%, 18px) scale(.96); } }
+@keyframes toastin { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 .toast.bad { background: var(--urgent); color: var(--urgent-ink); }
 .toast.good { background: var(--ready); color: var(--ready-ink); }
 body.has-bar .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
@@ -593,10 +593,24 @@ select.input { appearance: auto; }
 .block-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .block-title { display: flex; align-items: baseline; gap: 10px; font: 700 1.6rem/1.05 var(--display); }
 .todos { display: grid; gap: 8px; }
-.todo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--todo); }
-.todo.urgent { box-shadow: inset 5px 0 0 var(--urgent); border-color: var(--urgent); }
-.todo.event { box-shadow: inset 4px 0 0 var(--apron); }
-.todo.repeat { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); touch-action: pan-y; }
+.todo > .sw-in { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 64px; padding: 8px 6px 8px 12px; background: var(--surface); box-shadow: inset 4px 0 0 var(--todo); }
+.todo > .sw-in.no-check { grid-template-columns: minmax(0, 1fr) auto; padding-left: 16px; }
+.todo.urgent { border-color: var(--urgent); }
+.todo.urgent > .sw-in { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo.event > .sw-in { box-shadow: inset 4px 0 0 var(--apron); }
+.todo.repeat > .sw-in { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo.sw-r .sw-bg { background: var(--ready); color: var(--ready-ink); }
+.todo.sw-l .sw-bg { background: var(--urgent); color: var(--urgent-ink); }
+.todo.sw-r .sw-ready, .todo.sw-l .sw-del { opacity: .65; }
+.todo.sw-armed .sw-ready, .todo.sw-armed .sw-del { opacity: 1; transform: scale(1.15); }
+.todo.dragging > .sw-in { box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .4); }
+/* the tick: a big round target, fills green with a pop */
+.tcheck { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ready); background: transparent; color: transparent; transition: background-color .12s ease, color .12s ease; }
+.tcheck .ico { width: 22px; height: 22px; }
+@media (hover: hover) { .tcheck:hover { color: color-mix(in srgb, var(--ready) 45%, transparent); } }
+.tcheck.ticked { background: var(--ready); color: var(--ready-ink); animation: pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+.todo-hint { margin: -4px 0 2px; font-size: .84rem; }
 .todo-main { display: grid; gap: 3px; min-width: 0; padding: 4px 0; border: 0; background: none; color: var(--ink); text-align: left; }
 button.todo-main { cursor: pointer; }
 .todo-name { font-weight: 700; font-size: 1.02rem; overflow-wrap: anywhere; }

@@ -468,13 +468,13 @@ body.toasting .timers { transform: translateY(-76px); }
 .timers-more { border: 0; background: none; color: inherit; opacity: .75; font-size: .8rem; font-weight: 700; padding: 2px; }
 
 /* ---------- toast ---------- */
-.toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--ink); color: var(--ground); font-weight: 700; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .45); }
+.toast { position: fixed; z-index: 60; left: 0; right: 0; margin-inline: auto; width: fit-content; bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--ink); color: var(--ground); font-weight: 700; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .45); }
 /* a message never blocks the buttons under it; only its Undo takes taps */
 .toast { pointer-events: none; }
 .toast-act { pointer-events: auto; }
 body:not(.has-tabs) .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 .toast:not([hidden]) { animation: toastin .24s cubic-bezier(.2, 1.2, .4, 1); }
-@keyframes toastin { from { opacity: 0; transform: translate(-50%, 18px) scale(.96); } }
+@keyframes toastin { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 .toast.bad { background: var(--urgent); color: var(--urgent-ink); }
 .toast.good { background: var(--ready); color: var(--ready-ink); }
 body.has-bar .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
@@ -600,10 +600,24 @@ select.input { appearance: auto; }
 .block-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .block-title { display: flex; align-items: baseline; gap: 10px; font: 700 1.6rem/1.05 var(--display); }
 .todos { display: grid; gap: 8px; }
-.todo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--todo); }
-.todo.urgent { box-shadow: inset 5px 0 0 var(--urgent); border-color: var(--urgent); }
-.todo.event { box-shadow: inset 4px 0 0 var(--apron); }
-.todo.repeat { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); touch-action: pan-y; }
+.todo > .sw-in { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 64px; padding: 8px 6px 8px 12px; background: var(--surface); box-shadow: inset 4px 0 0 var(--todo); }
+.todo > .sw-in.no-check { grid-template-columns: minmax(0, 1fr) auto; padding-left: 16px; }
+.todo.urgent { border-color: var(--urgent); }
+.todo.urgent > .sw-in { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo.event > .sw-in { box-shadow: inset 4px 0 0 var(--apron); }
+.todo.repeat > .sw-in { box-shadow: inset 5px 0 0 var(--urgent); }
+.todo.sw-r .sw-bg { background: var(--ready); color: var(--ready-ink); }
+.todo.sw-l .sw-bg { background: var(--urgent); color: var(--urgent-ink); }
+.todo.sw-r .sw-ready, .todo.sw-l .sw-del { opacity: .65; }
+.todo.sw-armed .sw-ready, .todo.sw-armed .sw-del { opacity: 1; transform: scale(1.15); }
+.todo.dragging > .sw-in { box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .4); }
+/* the tick: a big round target, fills green with a pop */
+.tcheck { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ready); background: transparent; color: transparent; transition: background-color .12s ease, color .12s ease; }
+.tcheck .ico { width: 22px; height: 22px; }
+@media (hover: hover) { .tcheck:hover { color: color-mix(in srgb, var(--ready) 45%, transparent); } }
+.tcheck.ticked { background: var(--ready); color: var(--ready-ink); animation: pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+.todo-hint { margin: -4px 0 2px; font-size: .84rem; }
 .todo-main { display: grid; gap: 3px; min-width: 0; padding: 4px 0; border: 0; background: none; color: var(--ink); text-align: left; }
 button.todo-main { cursor: pointer; }
 .todo-name { font-weight: 700; font-size: 1.02rem; overflow-wrap: anywhere; }
@@ -4632,19 +4646,23 @@ window.KOMAT_ART = [
   function openLink(tg) { K.go('recipe', { id: tg.id, comp: tg.ci }); }
 
   /* ---------- to-do rows ---------- */
+  /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
+     tap the words to add a comment, ! flags it urgent for everyone */
   function todoRow(o) {
     const nkey = o.noteKey;
+    const done = (btn) => { if (btn) btn.classList.add('ticked'); K.vibrate(12); setTimeout(o.onDone, btn ? 160 : 0); };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
-      h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
-        h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
-        o.note ? h('span', { class: 'tnote' }, o.note) : null,
-        h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
-          o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
-          nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
-      h('div', { class: 'todo-acts' },
-        o.onUrgent ? h('button', { type: 'button', class: 'pbtn flag' + (o.urgent ? ' on' : ''), 'aria-pressed': o.urgent ? 'true' : 'false', 'aria-label': (o.urgent ? 'Unmark ' : 'Mark ') + o.name + ' as urgent', title: 'Urgent', onclick: o.onUrgent }, '!') : null,
-        o.onRemove ? h('button', { type: 'button', class: 'pbtn ghost', 'aria-label': 'Remove ' + o.name, onclick: o.onRemove }, K.icon('close')) : null,
-        h('button', { type: 'button', class: 'pbtn done', onclick: o.onDone }, K.icon('check'), 'Done')));
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
+      h('div', { class: 'sw-in' },
+        h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
+        h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
+          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
+          o.note ? h('span', { class: 'tnote' }, o.note) : null,
+          h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
+            o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
+            nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
+        o.onUrgent ? h('button', { type: 'button', class: 'mflag' + (o.urgent ? ' on' : ''), 'aria-pressed': o.urgent ? 'true' : 'false', 'aria-label': (o.urgent ? 'Unmark ' : 'Mark ') + o.name + ' as urgent', onclick: o.onUrgent }, '!') : null));
+    K.swipeable(row, { right: { run: () => done(null) }, left: o.onRemove ? { run: o.onRemove } : null });
     const f = nkey ? noteForm(nkey, o.note, o.onNote) : null;
     return f ? h('div', { class: 'todo-wrap' }, row, f) : row;
   }
@@ -4721,6 +4739,7 @@ window.KOMAT_ART = [
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
+    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Swipe left to remove a task.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     left.append(todo);
@@ -4833,10 +4852,13 @@ window.KOMAT_ART = [
     return h('section', { class: 'block card tmr', id: 't-tmr' },
       h('h2', { class: 'block-title' }, 'For tomorrow', h('span', { class: 'n' }, K.prettyDate(K.day(1), { weekday: 'long' }))),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
-      list.length ? h('div', { class: 'todos' }, list.map((x) => h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
-        h('div', { class: 'todo-main' }, h('span', { class: 'todo-name' }, x.d.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
-          h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
-        h('div', { class: 'todo-acts' }, h('button', { class: 'pbtn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))))) : null,
+      list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
+        h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
+        h('div', { class: 'sw-in no-check' },
+          h('div', { class: 'todo-main' }, h('span', { class: 'todo-name' }, x.d.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
+            h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
+          h('button', { class: 'mflag', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
+        { left: { run: () => K.removePrep(x.id) } }))) : null,
       addTaskForm('tmr', 'e.g. Defrost 4 lamb saddles', 'Leave it', (t, urg, note) => K.leaveForTomorrow(st, t, urg, note)),
       h('p', { class: 'hint' }, 'For another station? Switch “I’m on” at the top first.'));
   }
