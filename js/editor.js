@@ -6,7 +6,7 @@
 
   function blank(cat, type) {
     return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
-      photo: '', videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
+      photo: '', gallery: [], videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
   }
   function editComp(c) {
     c = K.normComp(c);
@@ -19,6 +19,7 @@
     ui.orig = r ? K.clone(r) : null;
     const e = K.clone(r || blank(cat, type));
     e.stepsText = e.steps.join('\n');
+    e.gallery = Array.isArray(e.gallery) ? e.gallery.filter((g) => g && g.id) : [];
     e.yieldQty = String(e.yieldQty || '');
     e.components = (e.components || []).map(editComp);
     e.components.forEach((c) => { c.open = false; });
@@ -28,8 +29,9 @@
     K.go('edit');
   };
   const dirty = () => ui.edit && JSON.stringify(ui.edit) !== ui.editBase;
-  const assetIds = (r) => { if (!r) return []; const a = []; if (r.photo) a.push(r.photo); (r.videos || []).forEach((v) => a.push(v.id)); return a; };
-  const dropAssets = (ids) => { if (!K.assets) return; ids.forEach((id) => { K.assets.delete(id).catch(() => {}); }); };
+  const assetIds = (r) => { if (!r) return []; const a = []; if (r.photo) a.push(r.photo); (r.gallery || []).forEach((g) => a.push(g.id)); (r.videos || []).forEach((v) => a.push(v.id)); return a; };
+  /* the book's own photos (paths like assets/photos/…) are files, not uploads, so they are never deleted */
+  const dropAssets = (ids) => { if (!K.assets) return; ids.forEach((id) => { if (!/[/:]/.test(id)) K.assets.delete(id).catch(() => {}); }); };
   function leave() {
     const keep = assetIds(ui.orig);
     dropAssets(assetIds(ui.edit).filter((id) => !keep.includes(id)));
@@ -277,6 +279,7 @@
           }) }, K.icon('photo'), e.photo ? 'Replace photo' : 'Add photo'),
           e.photo ? h('button', { class: 'btn', type: 'button', onclick: () => { const old = e.photo; e.photo = ''; if (!assetIds(ui.orig).includes(old)) dropAssets([old]); K.render(); } }, 'Remove') : null),
         !K.assets ? h('p', { class: 'hint' }, 'Only editors can add photos.') : null)));
+    w.append(galleryField(e));
 
     if (isDish) w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Parts'),
       h('p', { class: 'hint' }, 'Each part of the dish (fennel foam, roasted fennel…) gets its own yield, ingredients and method.'),
@@ -306,10 +309,29 @@
     }
     w.append(allergenField(e));
     w.append(K.field('Notes', h('textarea', { class: 'input', id: 'enotes', rows: '4', value: e.notes, oninput: (ev) => { e.notes = ev.target.value; } }), 'Storage, shelf life, holding temperature.'));
-    w.append(h('div', { class: 'btns end' }, h('button', { class: 'btn primary', type: 'button', onclick: save, disabled: ui.busy || !!ui.uploading }, ui.busy ? 'Saving…' : 'Save ' + noun)));
     if (!ui.isNew) w.append(h('div', { class: 'danger-zone' }, h('button', { class: 'btn danger', type: 'button', disabled: ui.busy, onclick: del }, K.icon('trash'), ui.confirmDel ? 'Tap again to delete for good' : 'Delete ' + noun)));
-    return { top: top, body: w, tabs: false };
+    const bar = h('button', { class: 'btn primary wide', type: 'button', onclick: save, disabled: ui.busy || !!ui.uploading || (ui.scan && ui.scan.state === 'reading') }, K.icon('check'), ui.busy ? 'Saving…' : 'Save ' + noun);
+    return { top: top, body: w, tabs: false, bar: bar };
   };
+
+  /* more photos of the plate, for the plating section and the photo viewer */
+  function galleryField(e) {
+    const add = () => K.pickFile('image/*', true, (files) => {
+      ui.uploading = files.length > 1 ? 'Uploading ' + files.length + ' photos…' : 'Uploading photo…'; K.render();
+      files.reduce((p, f) => p.then(() => K.shrinkImage(f, 1600).then((b) => K.assets.upload(b)).then((r) => { e.gallery.push({ id: r.id, title: '' }); })), Promise.resolve())
+        .then(() => { ui.uploading = ''; K.render(); },
+          (err) => { ui.uploading = ''; K.render(); K.toast(err && err.message === 'read' ? 'A photo could not be read. The others were added.' : K.uploadErr(err), { tone: 'bad' }); });
+    });
+    return h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Plating photos'),
+      h('p', { class: 'hint' }, 'Close-ups of the finished plate from a few angles. The team swipes through them on the recipe page.'),
+      e.gallery.length ? h('div', { class: 'gal-edit' }, e.gallery.map((g, i) => h('div', { class: 'ge' },
+        h('img', { src: K.media(g.id), alt: 'Plating photo ' + (i + 1), loading: 'lazy' }),
+        h('input', { class: 'input small', id: 'gt' + i, placeholder: 'Caption (optional)', 'aria-label': 'Caption for photo ' + (i + 1), value: g.title || '', oninput: (ev) => { g.title = ev.target.value; } }),
+        h('div', { class: 'ge-acts' },
+          i > 0 ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move photo ' + (i + 1) + ' earlier', onclick: () => { e.gallery.splice(i - 1, 0, e.gallery.splice(i, 1)[0]); K.render(); } }, K.icon('back')) : h('span'),
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove photo ' + (i + 1), onclick: () => { e.gallery.splice(i, 1); if (!assetIds(ui.orig).includes(g.id)) dropAssets([g.id]); K.render(); } }, K.icon('trash')))))) : null,
+      h('button', { class: 'btn', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: add }, K.icon('plus'), e.gallery.length ? 'Add more photos' : 'Add photos'));
+  }
 
   function del() {
     if (!ui.confirmDel) { ui.confirmDel = true; K.render(); return; }
@@ -343,7 +365,7 @@
     }
     const rec = {
       name: name, category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
-      photo: e.photo || '', videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
+      photo: e.photo || '', gallery: e.gallery.map((g) => ({ id: g.id, title: (g.title || '').trim() })), videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
       ingredients: clean(e.ingredients), steps: (e.stepsText || '').split('\n').map((s) => s.trim()).filter(Boolean),
       plating: (e.plating || '').trim(), notes: (e.notes || '').trim(), allergens: e.allergens.slice(), allergensChecked: !!e.allergensChecked,
       components: comps, type: e.type === 'dish' ? 'dish' : 'recipe', station: e.station || '', services: (e.services || []).filter((x) => K.SV[x]), onMenu: e.onMenu !== false, updated: Date.now(),

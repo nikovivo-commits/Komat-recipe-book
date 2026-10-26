@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Komat Kitchen Book</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +43,8 @@
   --gutter-l: max(16px, env(safe-area-inset-left, 0px));
   --gutter-r: max(16px, env(safe-area-inset-right, 0px));
   --tabbar-h: 64px;
+  --top-h: 63px;
+  --low: #9A720A;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -51,7 +54,7 @@
     --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
     --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
     --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566;
+    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
     color-scheme: dark;
   }
@@ -63,7 +66,7 @@
   --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
   --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
   --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566;
+  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
   color-scheme: dark;
 }
@@ -209,8 +212,6 @@ body.has-tabs { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-botto
   .tabbar { display: none; }
   body.has-tabs { padding-bottom: 0; }
 }
-.foot { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; justify-content: center; max-width: 1180px; margin: 0 auto; padding: 20px var(--gutter-r) 24px var(--gutter-l); border-top: 1px solid var(--line); }
-.mode-note { flex-basis: 100%; text-align: center; color: var(--muted); font-size: .8rem; }
 .banner { display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); }
 .banner.bad { background: var(--urgent-soft); border-color: var(--urgent); color: var(--ink); }
 .banner.bad b { color: var(--urgent); }
@@ -224,19 +225,28 @@ body.has-tabs { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-botto
 .display { font: 700 clamp(2rem, 7vw, 3rem)/1 var(--display); }
 
 /* ---------- hero and page heads ---------- */
-.hero, .phead { position: relative; color: var(--on-steel); overflow: hidden; }
-.hero::before { content: ""; position: absolute; inset: 0; background: var(--hero-img, none) center 30% / cover no-repeat; opacity: .28; }
-.hero-in { position: relative; display: grid; gap: 22px; padding-block: 28px 64px; }
-.hero-copy { display: grid; gap: 12px; justify-items: start; }
-.hero-title { font: 700 clamp(2.6rem, 9vw, 4.6rem)/.95 var(--display); letter-spacing: -.01em; }
+.hero, .phead { position: relative; isolation: isolate; color: var(--on-steel); overflow: hidden; background-color: var(--steel); }
+/* restaurant photo under the title, darkened top and bottom so the header and words stay readable */
+.ph-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
+.ph-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10, 10, 10, .62) 0%, rgba(10, 10, 10, .18) 34%, rgba(10, 10, 10, .3) 60%, rgba(10, 10, 10, .88) 100%); }
+.rays { display: block; pointer-events: none; }
+.rays svg { display: block; width: 100%; height: 100%; }
+.ph-rays { position: absolute; z-index: 0; right: -26px; bottom: -36px; width: 180px; height: 180px; color: var(--apron-on-steel); opacity: .26; }
+.phead.photo .ph-rays, .hero.photo .ph-rays { opacity: .34; }
+.hero-in { position: relative; z-index: 1; display: grid; gap: 6px; padding-block: 26px 56px; }
+.hero-title { font: 700 clamp(2.2rem, 8.6vw, 4rem)/.95 var(--display); letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
 .hero-title em { font-style: normal; color: var(--apron-on-steel); }
-.hero-sub { color: var(--steel-muted); max-width: 46ch; }
-.hero .btns { margin-top: 6px; }
-.approve { display: flex; align-items: center; gap: 16px; }
-.approve img { width: clamp(120px, 30vw, 220px); aspect-ratio: 3 / 2; object-fit: cover; border-radius: 4px; padding: 5px 5px 7px; background: var(--on-steel); transform: rotate(-2.5deg); box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
-.approve figcaption { font: 600 clamp(1.4rem, 5vw, 2.1rem)/1 var(--display); max-width: 10ch; }
-@media (min-width: 860px) { .hero-in { grid-template-columns: 1fr auto; align-items: end; } }
-.phead-in { position: relative; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; padding-block: 22px 22px; }
+.hero-sub { color: rgba(242, 242, 238, .86); max-width: 46ch; font-weight: 600; }
+.hero.slim .hero-in { padding-block: 30px 54px; }
+@media (min-width: 900px) { .hero.slim .hero-in { padding-block: 64px 64px; } }
+.phead-in { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; padding-block: 22px 22px; }
+.phead.photo .phead-in { padding-block: 40px 20px; }
+.phead.photo .ptitle { text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
+.phead.photo .psub { color: rgba(242, 242, 238, .86); }
+/* the header floats over the page photo until you scroll */
+.top { transition: background-color .2s ease, border-color .2s ease; }
+body.over-photo:not(.scrolled) .top.over { background-color: transparent; border-bottom-color: transparent; }
+.top.over + .main > .page > .phead:first-child, .top.over + .main > .page > .hero:first-child { margin-top: calc(-1 * var(--top-h)); padding-top: var(--top-h); }
 .ptitle { font: 700 clamp(2.2rem, 7vw, 3.2rem)/.95 var(--display); }
 .psub { display: flex; align-items: center; gap: 8px; color: var(--steel-muted); font-weight: 600; margin-top: 6px; }
 .phead-side { display: grid; gap: 10px; justify-items: start; }
@@ -244,16 +254,22 @@ body.has-tabs { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-botto
 .daydot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .5); }
 
 /* ---------- recipe list ---------- */
-.search { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: -30px; padding: 0 8px 0 16px; min-height: 60px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .35); color: var(--muted); }
+.search-dock { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--top-h)); z-index: 15; margin: -38px calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l)); padding: 8px var(--gutter-r) 8px var(--gutter-l); transition: background-color .15s ease, box-shadow .15s ease; }
+.search-dock.stuck { background: var(--ground); box-shadow: 0 1px 0 var(--line); }
+.search-dock.stuck .search { box-shadow: none; }
+.search { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 16px; min-height: 60px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .35); color: var(--muted); }
 .search .ico { width: 22px; height: 22px; }
 .search-in { flex: 1; min-width: 0; min-height: 56px; border: 0; background: transparent; color: var(--ink); font-size: 1.08rem; outline: none; }
 .search:focus-within { border-color: var(--apron); }
 .search.small { margin: 14px 0; min-height: 50px; box-shadow: none; }
 .search.small .search-in { min-height: 46px; font-size: 1rem; }
-.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
-.chips { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: none; }
+.chips { display: flex; align-items: center; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l)); padding: 8px var(--gutter-r) 2px var(--gutter-l); scrollbar-width: none; }
+.chips.filters { padding-top: 6px; }
+.chips .seg { flex: none; }
+.seg.small-seg { padding: 2px; }
+.seg.small-seg button { min-height: 34px; padding: 0 12px; font-size: .86rem; }
 .chips::-webkit-scrollbar { display: none; }
-.group { margin-top: 26px; }
+.group { margin-top: 22px; }
 .group-title { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; font: 700 1.6rem/1.05 var(--display); }
 .group-title .n, .block-title .n { font: 600 .8rem var(--mono); color: var(--muted); }
 .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
@@ -270,6 +286,15 @@ body.has-tabs { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-botto
 .card-in { color: var(--apron); font-weight: 700; font-size: .85rem; }
 .card-why { font-size: .82rem; color: var(--muted); font-style: italic; }
 .card-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+@media (max-width: 639px) {
+  .grid { gap: 8px; }
+  .rcard { grid-template-columns: 66px minmax(0, 1fr); gap: 12px; padding: 6px 10px 6px 6px; border-radius: 12px; }
+  .rcard .thumb { width: 66px; height: 66px; border-radius: 8px; }
+  .rcard .thumb.ph { font-size: 1.9rem; }
+  .card-txt { gap: 2px; }
+  .card-name { font-size: 1rem; }
+  .rcard .kicker { font-size: .66rem; }
+}
 @media (min-width: 980px) {
   .rcard { grid-template-columns: 1fr; padding: 0; overflow: hidden; align-items: start; }
   .rcard .thumb { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; }
@@ -286,8 +311,24 @@ body.has-tabs { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-botto
 /* ---------- recipe page ---------- */
 .rhead { display: grid; gap: 20px; }
 .rhead-txt { display: grid; gap: 14px; align-content: start; min-width: 0; }
-.dish-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; background: var(--surface-2); box-shadow: var(--shadow); }
-@media (min-width: 900px) { .rhead.has-photo { grid-template-columns: 5fr 6fr; gap: 36px; align-items: start; } .rhead.has-photo .dish-photo { position: sticky; top: 80px; } }
+.dish-photo-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: 16px; background: none; cursor: zoom-in; }
+.dish-photo { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 16px; background: var(--surface-2); box-shadow: var(--shadow); }
+.photo-count { position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font: 700 .82rem/1.2 var(--sans); }
+.photo-count .ico { width: 16px; height: 16px; }
+.dish-photo-btn.art { cursor: default; margin: 0; }
+.art-tag { position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font: 700 .76rem/1.2 var(--sans); }
+/* the product photo or letter on order lines */
+.pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
+.pthumb.ph { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font: 700 1.3rem/1 var(--display); text-transform: uppercase; }
+img.pc-mono { width: min(230px, 30vh, 100%); width: min(230px, 30dvh, 100%); height: auto; aspect-ratio: 1; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .5); }
+.sum-row { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+.sum-row .input { grid-column: 2 / -1; }
+.stock-name { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; }
+.stock-txt { display: grid; min-width: 0; }
+.stock-txt .muted { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oline { grid-template-columns: 40px auto minmax(0, 1fr); align-items: center; }
+.oline .pthumb { width: 40px; height: 40px; }
+@media (min-width: 900px) { .rhead.has-photo { grid-template-columns: 5fr 6fr; gap: 36px; align-items: start; } .dish-photo { aspect-ratio: 4 / 3; } .rhead.has-photo .dish-photo-btn { position: sticky; top: 80px; } }
 .rtitle { font: 700 clamp(2.2rem, 7vw, 3.4rem)/.98 var(--display); overflow-wrap: anywhere; }
 .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .mchip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font: 700 .8rem/1.3 var(--sans); color: var(--muted); }
@@ -425,16 +466,29 @@ body.toasting .timers { transform: translateY(-76px); }
 
 /* ---------- toast ---------- */
 .toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--ink); color: var(--ground); font-weight: 700; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .45); }
+/* a message never blocks the buttons under it; only its Undo takes taps */
+.toast { pointer-events: none; }
+.toast-act { pointer-events: auto; }
+body:not(.has-tabs) .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+.toast:not([hidden]) { animation: toastin .24s cubic-bezier(.2, 1.2, .4, 1); }
+@keyframes toastin { from { opacity: 0; transform: translate(-50%, 18px) scale(.96); } }
 .toast.bad { background: var(--urgent); color: var(--urgent-ink); }
+.toast.good { background: var(--ready); color: var(--ready-ink); }
+body.has-bar .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .toast-act { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1.5px solid currentColor; background: transparent; color: inherit; font-weight: 800; }
 @media (min-width: 900px) { .toast { bottom: 26px; } }
 body.cooking .toast { bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 
 /* ---------- sheets ---------- */
-.sheet-back { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(10, 10, 10, .5); }
-.sheet { display: grid; grid-template-rows: auto 1fr; width: 100%; max-width: 560px; max-height: 88vh; border-radius: 20px 20px 0 0; background: var(--ground); color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, .3); }
+.sheet-back { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(10, 10, 10, .5); animation: fadein .18s ease-out; }
+.sheet { display: grid; grid-template-rows: auto 1fr; width: 100%; max-width: 560px; max-height: 88vh; max-height: 88dvh; border-radius: 20px 20px 0 0; background: var(--ground); color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, .3); animation: sheetup .28s cubic-bezier(.2, .9, .3, 1); }
+.sheet-back.still, .sheet-back.still .sheet, .lightbox.still { animation: none; }
+@keyframes fadein { from { opacity: 0; } }
+@keyframes sheetup { from { transform: translateY(60px); opacity: .4; } }
 .sheet.wide { max-width: 720px; }
-.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 10px 6px 18px; }
+.sheet-head { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 20px 10px 6px 18px; touch-action: none; }
+.grab { position: absolute; top: 8px; left: 50%; width: 42px; height: 5px; margin-left: -21px; border-radius: 3px; background: var(--line); }
+@media (min-width: 700px) { .grab { display: none; } .sheet-head { padding-top: 14px; touch-action: auto; } }
 .sheet-head h2 { font: 700 1.5rem/1.1 var(--display); }
 .sheet-body { display: grid; gap: 14px; align-content: start; overflow: auto; padding: 4px 18px calc(22px + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 700px) { .sheet-back { align-items: center; } .sheet { border-radius: 20px; max-height: 84vh; } }
@@ -590,15 +644,26 @@ button.todo-main { cursor: pointer; }
 .mep-group.complete .gcount { color: var(--ready); font-weight: 800; }
 .mep-add { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; border: 1.5px solid var(--line); background: var(--surface); color: var(--apron); }
 .mep-add .ico { width: 18px; height: 18px; }
-.mrow { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; min-height: 52px; padding: 4px 6px 4px 8px; border-top: 1px solid var(--line); }
-.mrow:first-of-type { border-top: 0; }
+.mrow { position: relative; overflow: hidden; border-top: 1px solid var(--line); touch-action: pan-y; }
+.mep-gname + .mrow { border-top: 0; }
+.sw-in { position: relative; z-index: 1; display: grid; grid-template-columns: 50px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; min-height: 54px; padding: 4px 6px 4px 8px; background: var(--surface); }
 .mrow.ok .mname { color: var(--muted); }
-.mrow.urgent { background: var(--urgent-soft); box-shadow: inset 4px 0 0 var(--urgent); }
+.mrow.urgent .sw-in { background: var(--urgent-soft); box-shadow: inset 4px 0 0 var(--urgent); }
+.sw-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font: 800 .95rem/1 var(--sans); background: var(--surface-2); }
+.sw-bg span { display: inline-flex; align-items: center; gap: 6px; opacity: 0; transform: scale(.85); transition: opacity .12s ease, transform .15s cubic-bezier(.3, 1.6, .5, 1); }
+.sw-bg .ico { width: 22px; height: 22px; }
+.mrow.sw-r .sw-bg { background: var(--ready); color: var(--ready-ink); }
+.mrow.sw-l .sw-bg { background: var(--todo); color: var(--todo-ink); }
+.mrow.sw-r .sw-ready, .mrow.sw-l .sw-do { opacity: .65; }
+.mrow.sw-armed .sw-ready, .mrow.sw-armed .sw-do { opacity: 1; transform: scale(1.15); }
+.mrow.dragging .sw-in { box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .4); }
 .mbox { display: grid; place-items: center; width: 50px; height: 38px; border-radius: 8px; border: 2px dashed var(--line); background: transparent; color: var(--ink); font: 800 .82rem/1 var(--mono); letter-spacing: .04em; }
 .mbox:hover { border-color: var(--muted); }
 .mbox.do { border: 0; background: var(--todo); color: var(--todo-ink); clip-path: polygon(0 0, 100% 0, 94% 25%, 100% 50%, 94% 75%, 100% 100%, 0 100%, 6% 75%, 0 50%, 6% 25%); transform: rotate(-2deg); }
 .mbox.ok { border: 0; background: var(--ready); color: var(--ready-ink); }
 .mbox.ok .ico { width: 22px; height: 22px; }
+.mbox.pop { animation: pop .42s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes pop { 0% { transform: scale(.55); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .mbox.sample { display: inline-grid; width: 34px; height: 24px; vertical-align: middle; font-size: .62rem; cursor: default; }
 .mbox.sample .ico { width: 15px; height: 15px; }
 .mname { display: grid; gap: 2px; min-width: 0; font-size: .98rem; line-height: 1.25; }
@@ -621,8 +686,6 @@ button.todo-main { cursor: pointer; }
 .doneitem span { text-decoration: line-through; }
 .stocklist { display: grid; }
 .stock { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; padding: 10px 2px; border-bottom: 1px solid var(--line); }
-.stock-name { display: grid; min-width: 0; }
-.stock-name .muted { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stock .input.small { grid-column: 1 / -1; }
 .stock.flag-red { padding: 10px; margin: 4px 0; border: 0; border-radius: 12px; background: var(--urgent-soft); box-shadow: inset 4px 0 0 var(--urgent); }
 .stock.flag-ask { padding: 10px; margin: 4px 0; border: 0; border-radius: 12px; background: var(--todo-soft); }
@@ -763,12 +826,13 @@ button.todo-main { cursor: pointer; }
 .set-link > span { display: grid; gap: 2px; }
 .set-link .muted { font-size: .86rem; }
 .set-link .ico { width: 22px; height: 22px; }
+.set-link.quiet { background: transparent; box-shadow: none; }
+.set-link.quiet b { font-weight: 700; }
 .rep { display: grid; gap: 8px; padding: 10px; margin-bottom: 8px; box-shadow: none; }
 .daypick { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .daypick button { min-height: 38px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: .8rem; }
 .daypick button[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
 .logo-prev { display: inline-block; padding: 14px; border-radius: 12px; background: var(--steel); }
-.approve-prev { width: 100%; max-width: 320px; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; }
 .heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .heroes figure { position: relative; }
 .heroes img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
@@ -777,6 +841,147 @@ button.todo-main { cursor: pointer; }
 .bugitem { display: grid; gap: 6px; padding: 12px; box-shadow: none; }
 .bugitem.fixed { opacity: .55; }
 .bug-shot { max-width: 100%; max-height: 220px; justify-self: start; border-radius: 8px; }
+
+.pagephotos { display: grid; gap: 10px; }
+.pp { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px; box-shadow: none; }
+.pp img { width: 104px; height: 78px; object-fit: cover; border-radius: 8px; background: var(--steel); }
+.pp-txt { display: grid; gap: 4px; min-width: 0; }
+.gal-edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; margin-bottom: 4px; }
+.ge { display: grid; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.ge img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.ge-acts { display: flex; justify-content: space-between; }
+
+/* ---------- quiet moments: the courtyard cat ---------- */
+.rest { display: grid; justify-items: center; gap: 6px; margin-top: 14px; padding: 22px 18px 24px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); text-align: center; color: var(--muted); }
+.rest-cat { width: 128px; height: 128px; margin-bottom: 6px; border-radius: 50%; object-fit: cover; object-position: center 60%; box-shadow: 0 0 0 4px var(--surface), 0 0 0 5px var(--line); }
+.rest strong { color: var(--ink); font: 700 1.6rem/1.1 var(--display); }
+.rest p { max-width: 42ch; }
+
+/* ---------- photo galleries and the viewer ---------- */
+.gallery { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter-r)) 14px calc(-1 * var(--gutter-l)); padding: 2px var(--gutter-r) 10px var(--gutter-l); scroll-padding-inline: var(--gutter-l); scrollbar-width: none; }
+.gallery::-webkit-scrollbar { display: none; }
+.gal-item { position: relative; flex: none; width: min(74vw, 320px); aspect-ratio: 4 / 5; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: var(--surface-2); scroll-snap-align: start; box-shadow: var(--shadow); cursor: zoom-in; }
+.gal-item img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease; }
+.gal-item:hover img { transform: scale(1.03); }
+.gal-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 12px 10px; background: linear-gradient(transparent, rgba(0, 0, 0, .72)); color: #fff; font-weight: 700; font-size: .88rem; text-align: left; }
+@media (min-width: 900px) { .gallery { margin-inline: 0; padding-inline: 0; } .gal-item { width: 250px; } }
+.lightbox { position: fixed; inset: 0; z-index: 55; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; background: #0A0A0A; color: #fff; padding: env(safe-area-inset-top, 0px) var(--gutter-r) calc(10px + env(safe-area-inset-bottom, 0px)) var(--gutter-l); outline: none; animation: fadein .18s ease-out; }
+.lb-top { display: flex; align-items: center; justify-content: space-between; min-height: 56px; }
+.lb-count { color: rgba(255, 255, 255, .72); font-size: .9rem; }
+.lb-stage { position: relative; min-height: 0; }
+.lb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; animation: fadein .2s ease-out; }
+.lb-cap { padding: 10px 0 2px; text-align: center; font-weight: 700; }
+.lb-nav { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 6px; }
+.lb-dots { display: flex; gap: 6px; }
+.lb-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .3); transition: background-color .15s ease, transform .15s ease; }
+.lb-dots span.on { background: #fff; transform: scale(1.25); }
+
+/* ---------- Today: jump bar ---------- */
+.tjump { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--top-h)); z-index: 12; display: flex; gap: 6px; overflow-x: auto; margin: -18px calc(-1 * var(--gutter-r)) 16px calc(-1 * var(--gutter-l)); padding: 8px var(--gutter-r) 8px var(--gutter-l); background: var(--ground); border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.tjump::-webkit-scrollbar { display: none; }
+.tjump button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 800; font-size: .88rem; }
+.tjump b { font-size: .78rem; color: var(--muted); }
+.remind + .tjump { margin-top: 0; }
+#t-todo, #t-mep, #t-tmr { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--top-h) + 64px); }
+@media (min-width: 1000px) { .tjump { display: none; } }
+
+/* ---------- the order check: a deck of product cards ---------- */
+.deck-page { display: flex; flex-direction: column; min-height: calc(100vh - var(--top-h) - env(safe-area-inset-top, 0px)); min-height: calc(100dvh - var(--top-h) - env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); overflow: hidden; }
+.deck-head { display: grid; gap: 8px; padding-top: 14px; max-width: 520px; }
+.deck-q { font: 700 clamp(1.6rem, 6.4vw, 2.3rem)/1.02 var(--display); }
+.deck-prog { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.deck-prog span { display: block; height: 100%; border-radius: 3px; background: var(--ready); transition: width .25s ease; }
+.deck-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .88rem; font-weight: 700; }
+.deck { position: relative; flex: 1; width: 100%; max-width: 440px; min-height: 290px; max-height: 480px; margin: 16px auto 0; }
+.pcard { position: absolute; top: 0; bottom: 28px; left: var(--gutter-l); right: var(--gutter-r); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px 22px; border-radius: 26px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 18px 40px -20px rgba(0, 0, 0, .5); text-align: center; touch-action: none; user-select: none; -webkit-user-select: none; transition: transform .25s cubic-bezier(.2, 1.2, .4, 1); }
+.pcard.d1 { transform: translateY(14px) scale(.95); opacity: .92; }
+.pcard.d2 { transform: translateY(28px) scale(.9); opacity: .7; }
+.pcard.front { cursor: grab; animation: rise .22s ease-out; }
+.pcard.held { cursor: grabbing; box-shadow: 0 28px 54px -20px rgba(0, 0, 0, .6); }
+.pcard.flag-red { border-color: var(--urgent); }
+@keyframes rise { from { transform: translateY(14px) scale(.95); } }
+.stamp { position: absolute; top: 22px; padding: 5px 12px; border: 3px solid currentColor; border-radius: 10px; font: 800 1.45rem/1 var(--display); letter-spacing: .08em; text-transform: uppercase; opacity: 0; pointer-events: none; }
+.stamp.have { left: 18px; color: var(--ready); transform: rotate(-12deg); }
+.stamp.out { right: 18px; color: var(--urgent); transform: rotate(12deg); }
+.stamp.low { top: auto; bottom: 22px; left: 50%; color: var(--todo-ink); background: var(--todo); border-color: var(--todo); transform: translateX(-50%) rotate(-4deg); }
+.pc-mono { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; color: rgba(255, 255, 255, .94); font: 700 2.9rem/1 var(--display); text-transform: uppercase; }
+.pc-name { font: 700 clamp(1.8rem, 7.6vw, 2.5rem)/1.04 var(--display); overflow-wrap: anywhere; text-wrap: balance; }
+.pc-used { display: grid; gap: 4px; color: var(--muted); font-size: .92rem; max-width: 30ch; }
+.pc-flag { padding: 6px 10px; border-radius: 8px; background: var(--todo-soft); color: var(--todo-ink); font-weight: 700; font-size: .9rem; }
+.pc-flag.red { background: var(--urgent-soft); color: var(--urgent); }
+.pc-prev { color: var(--apron); font-weight: 700; font-size: .86rem; }
+.pc-never { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: 600 .8rem/1 var(--sans); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.codechip.basic { padding-right: 4px; }
+.chip-x { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
+.chip-x .ico { width: 14px; height: 14px; }
+.deck-acts { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 10px 0 4px; }
+.dbtn { display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--muted); font: 800 .82rem/1 var(--sans); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.dbtn > .ico { box-sizing: content-box; width: 30px; height: 30px; padding: 16px; border-radius: 50%; border: 2px solid currentColor; background: var(--surface); box-shadow: var(--shadow); transition: transform .12s ease; }
+.dbtn > span:not(.ico) { color: var(--ink); }
+.dbtn.out { color: var(--urgent); }
+.dbtn.have { color: var(--ready); }
+.dbtn.low { color: var(--low); }
+.dbtn.low > .ico { width: 24px; height: 24px; padding: 13px; }
+.dbtn:active > .ico { transform: scale(.88); }
+.deck-foot { display: flex; justify-content: space-between; gap: 10px; padding: 6px var(--gutter-r) 0 var(--gutter-l); max-width: 520px; width: 100%; margin: 0 auto; }
+.deck-foot .link-btn { text-decoration: none; }
+.deck-hint { padding: 4px var(--gutter-r) 0 var(--gutter-l); text-align: center; color: var(--muted); font-size: .84rem; }
+@media (max-height: 640px) { .deck-hint { display: none; } .deck-q { font-size: 1.5rem; } .pc-mono { width: 64px; height: 64px; font-size: 2.1rem; } }
+
+/* ---------- the order summary ---------- */
+.sum-head { display: grid; justify-items: center; gap: 8px; padding: 6px 0 18px; text-align: center; }
+.sum-badge { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ready); color: var(--ready-ink); animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.sum-badge .ico { width: 38px; height: 38px; }
+.sum-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.sstat { display: grid; justify-items: center; min-width: 72px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: .78rem; font-weight: 700; }
+.sstat b { font-size: 1.4rem; color: var(--ink); }
+.sstat.out b { color: var(--urgent); }
+.sstat.low b { color: var(--low); }
+.sstat.have b { color: var(--ready); }
+.sum-list { margin-bottom: 18px; }
+.sum-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 8px 10px 14px; border-top: 1px solid var(--line); }
+.sum-row:first-child { border-top: 0; }
+.sum-row.out { box-shadow: inset 4px 0 0 var(--urgent); }
+.sum-row.low { box-shadow: inset 4px 0 0 var(--todo); }
+.sum-row .input { grid-column: 1 / -1; }
+.sum-name { display: grid; min-width: 0; }
+.sum-name .muted { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg.mini-seg { padding: 2px; }
+.seg.mini-seg button { min-height: 34px; padding: 0 10px; font-size: .84rem; }
+.seg.mini-seg button:first-child[aria-pressed="true"] { background: var(--todo); color: var(--todo-ink); }
+.seg.mini-seg button:last-child[aria-pressed="true"] { background: var(--urgent); color: var(--urgent-ink); }
+.stock.low { box-shadow: inset 4px 0 0 var(--todo); padding-left: 10px; }
+.stock.out { box-shadow: inset 4px 0 0 var(--urgent); padding-left: 10px; }
+
+/* ---------- a save button that stays under your thumb ---------- */
+.actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 26; padding: 10px var(--gutter-r) calc(10px + env(safe-area-inset-bottom, 0px)) var(--gutter-l); background: color-mix(in srgb, var(--ground) 90%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
+.actionbar-in { display: flex; gap: 8px; max-width: 760px; margin: 0 auto; }
+.actionbar .btn.wide { flex: 1; }
+body.has-bar { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+body:not(.has-tabs) .timers { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+body.has-bar .timers { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+/* a running timer keeps its own space under the card deck */
+body.has-timers .deck-page { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+body.has-timers .deck-hint { display: none; }
+
+/* ---------- celebrations ---------- */
+.confetti { position: fixed; inset: 0; z-index: 70; width: 100%; height: 100%; pointer-events: none; }
+
+/* ---------- touch: quick taps, no zoom on focus, a little give when pressed ---------- */
+button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
+.btn, .chip, .pbtn, .mbox, .mflag, .mtab, .dtab, .seg button, .preset, .sbtn, .icon-btn, .set-link, .rcard, .mini, .dbtn, .tjump button, .jump button, .codechip, .back-btn { -webkit-user-select: none; user-select: none; }
+.btn, .chip, .pbtn, .mbox, .sbtn, .preset, .set-link, .mini, .tjump button, .jump button, .codechip { transition: transform .1s ease, background-color .12s ease, border-color .12s ease; }
+.btn:active:not(:disabled), .chip:active, .pbtn:active, .sbtn:active, .preset:active, .set-link:active, .mini:active, .tjump button:active, .jump button:active, .codechip:active, .icon-btn:active { transform: scale(.96); }
+.rcard:active { transform: scale(.985); }
+.mtab:active .tab-ico { transform: scale(.88); }
+.tab-ico { transition: transform .1s ease; }
+@media (pointer: coarse) {
+  .input:not(.big), .search-in, .mul input { font-size: 16px; }
+  .mbox { height: 44px; }
+  .mflag { width: 44px; height: 44px; }
+  .rcard:hover, .gal-item:hover img { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pcard, .sheet, .sheet-back, .lightbox { animation: none !important; } }
 
 </style>
 <div id="app"></div>
@@ -1478,6 +1683,192 @@ window.KOMAT_TR = {
 
 </script>
 <script>
+/* data/produce.js */
+/* Photos for the order check: product name (lower case, as the order check spells it) -> file in
+   assets/photos/produce/. Products without a photo show their first letter instead. */
+window.KOMAT_PRODUCE = {
+  "pro espuma cold": "foam-stabiliser",
+  "агар": "agar",
+  "алтернативно мляко": "plant-milk",
+  "бакпулвер": "baking-powder",
+  "балсамов оцет": "balsamic",
+  "бахар": "allspice",
+  "босилек": "basil",
+  "брашно": "flour",
+  "бъз": "elderflower",
+  "бял балсамов оцет": "white-balsamic",
+  "бял шоколад": "white-chocolate",
+  "бяла риба": "white-fish",
+  "бяло вино": "white-wine",
+  "ванилия": "vanilla",
+  "винен оцет": "wine-vinegar",
+  "галета": "breadcrumbs",
+  "гарум": "garum",
+  "гелкрем": "gelcrem",
+  "глицерин": "glycerin",
+  "гума мастиха": "mastic-gum",
+  "дафинов лист": "bay-leaf",
+  "декстроза": "dextrose",
+  "джин": "gin",
+  "джинджифил": "ginger",
+  "джинджифилова бира": "ginger-beer",
+  "джоджен": "mint",
+  "домат": "tomatoes",
+  "домат консерва": "canned-tomatoes",
+  "доматена паста": "tomato-paste",
+  "дюлева ракия": "quince-brandy",
+  "едросмляна горчица": "wholegrain-mustard",
+  "еластик": "elastic",
+  "желатин": "gelatin",
+  "жълта тай масала": "yellow-curry-paste",
+  "захар": "sugar",
+  "зелена чушка": "green-pepper",
+  "зелена ябълка": "green-apple",
+  "зехтин": "olive-oil",
+  "карамфил": "cloves",
+  "картофи": "potatoes",
+  "катък": "katyk",
+  "ким": "caraway",
+  "кимион": "cumin",
+  "кисело мляко кашу": "cashew-yogurt",
+  "копър": "dill",
+  "кориандър": "coriander",
+  "кралски печурки": "king-oyster",
+  "краставица": "cucumber",
+  "ксантан": "xanthan",
+  "лайм": "lime",
+  "лакто люти чушки": "fermented-chillies",
+  "леща белуга": "beluga-lentils",
+  "лимец": "einkorn",
+  "лимон": "lemon",
+  "лио малини": "freeze-dried-raspberries",
+  "лук": "onion",
+  "лук резанец": "chives",
+  "магданоз": "parsley",
+  "мадейра": "madeira",
+  "манатарка": "porcini",
+  "масло": "butter",
+  "мастика с шафран": "mastika-saffron",
+  "мащерка": "thyme",
+  "мед": "honey",
+  "микрозеленини": "microgreens",
+  "мирин": "mirin",
+  "мляко": "milk",
+  "морков": "carrots",
+  "нишесте": "corn-starch",
+  "олио": "sunflower-oil",
+  "олио рапица": "rapeseed-oil",
+  "орех": "walnuts",
+  "оризов оцет": "rice-vinegar",
+  "оцет": "vinegar",
+  "оцет оборотен": "vinegar",
+  "панчета": "pancetta",
+  "паста виолетки": "violet-paste",
+  "паста чушка": "pepper-paste",
+  "патешки бутчета": "duck-legs",
+  "печурка": "mushrooms",
+  "портокал": "orange",
+  "праз": "leek",
+  "пресен лук": "spring-onion",
+  "пресен чесън": "green-garlic",
+  "прокрем": "procrema",
+  "пълномаслено кисело мляко": "yogurt",
+  "пюре от дюля": "quince-puree",
+  "риган": "oregano",
+  "розов пипер": "pink-pepper",
+  "салеп": "salep",
+  "самардала": "samardala",
+  "свински крака": "pig-trotters",
+  "синап семена": "mustard-seeds",
+  "сирене кашу": "cashew-cheese",
+  "сироп бъз": "elderflower-syrup",
+  "скариди": "prawns",
+  "сметана": "cream",
+  "сода бикарбонат": "baking-soda",
+  "соев сос": "soy-sauce",
+  "спанак": "spinach",
+  "сублие": "sublie",
+  "сумак": "sumac",
+  "сусам": "sesame",
+  "сушени смръчкули": "dried-morels",
+  "тапиоково нишесте": "tapioca-starch",
+  "тахан": "tahini",
+  "телешка кайма": "minced-veal",
+  "тиква": "pumpkin",
+  "тиквено семе": "pumpkin-seeds",
+  "тиквички": "courgettes",
+  "тогараши": "togarashi",
+  "турбо къри": "curry-powder",
+  "фенел": "fennel",
+  "хайвер от треска": "cod-roe",
+  "хариса": "harissa",
+  "хляб": "bread",
+  "целина": "celeriac",
+  "чесън": "garlic",
+  "чили": "chilli",
+  "чубрица": "savory",
+  "шалот": "shallots",
+  "шери оцет": "sherry-vinegar",
+  "юфка": "yufka",
+  "ябълков оцет": "apple-vinegar",
+  "ягода": "strawberries",
+  "яйца": "eggs"
+};
+
+</script>
+<script>
+/* data/art.js */
+/* Recipes without a photo of their own get an illustration from assets/photos/art/<id>.jpg.
+   It is shown with an "Illustration" tag so nobody plates from it; a real photo always wins. */
+window.KOMAT_ART = [
+  "barkani-yaitsa",
+  "benedikt",
+  "cveklo",
+  "cveklo-gaspacho",
+  "domaten-sos",
+  "dresing-baz",
+  "gyozi-salamuriika-staro",
+  "gyozi-smes-staro",
+  "kazandibi",
+  "krem-fenel",
+  "listna-salata-teize",
+  "marinata-keil-fenel",
+  "mlechna-banitsa",
+  "muhamara",
+  "pate",
+  "pikal-daikon",
+  "proletna-razqdka",
+  "quince-dip",
+  "ragu-limets",
+  "reduktsiya",
+  "reduktsiya-devisil",
+  "revane",
+  "shakshuka",
+  "sorbe-limon",
+  "tarama",
+  "teleshki-ezik",
+  "teleshki-tartar",
+  "teleshko-bonfile",
+  "teleshko-bonfile-staro",
+  "terin-kervizh",
+  "vagyu",
+  "wa-batter",
+  "wa-blini",
+  "wa-creme-brulee",
+  "wa-granita",
+  "wa-krokmach-tarator",
+  "wa-marinated-zucchini",
+  "wa-orange-gel",
+  "wa-sesame-dressing",
+  "wa-tiger-milk",
+  "wa-togarashi-mix",
+  "yare",
+  "zelena-yabalka-marinovana",
+  "zeleno-kyopoolu"
+];
+
+</script>
+<script>
 /* js/core.js */
 /* Komat kitchen book: shared helpers (DOM, dates, quantities, toasts, sheets, icons). */
 (function () {
@@ -1652,12 +2043,15 @@ window.KOMAT_TR = {
   K.sheet = function (title, body, opts) {
     opts = opts || {};
     const close = opts.onClose || (() => { K.ui.sheet = null; K.render(); });
-    return h('div', { class: 'sheet-back', onclick: (e) => { if (e.target === e.currentTarget) close(); } },
-      h('div', { class: 'sheet' + (opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-        h('div', { class: 'sheet-head' },
-          h('h2', null, title),
-          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: close }, K.icon('close'))),
-        h('div', { class: 'sheet-body' }, body)));
+    const head = h('div', { class: 'sheet-head' },
+      h('span', { class: 'grab', 'aria-hidden': 'true' }),
+      h('h2', null, title),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: close }, K.icon('close')));
+    const sheet = h('div', { class: 'sheet' + (opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title,
+      onkeydown: (e) => { if (e.key === 'Escape') close(); } }, head, h('div', { class: 'sheet-body' }, body));
+    /* pull the sheet down by its top to put it away */
+    if (K.dragSheet) K.dragSheet(sheet, head, close);
+    return h('div', { class: 'sheet-back', onclick: (e) => { if (e.target === e.currentTarget) close(); } }, sheet);
   };
 
   /* labelled form field; give the control an id so focus survives a redraw */
@@ -2001,7 +2395,7 @@ window.KOMAT_TR = {
   const K = window.K;
   const D = (K.D = {
     loaded: false, recipesSrc: [], recipes: [],
-    branding: { logo: '', heroes: [], approve: '' },
+    branding: { logo: '', heroes: [], approve: '', pages: {} },
     checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
@@ -2019,6 +2413,8 @@ window.KOMAT_TR = {
     repeats: [{ id: 'bread', name: 'Поръчай хляб', station: 'pass', days: [0, 2, 4], item: 'Хляб' }],
     /* products to look at in every order check */
     daily: [{ station: 'pass', name: 'Микрозеленини' }],
+    /* basics the kitchen always has: never on the order check (salt, pepper and water never are) */
+    basics: [],
   };
   K.kitchen = () => Object.assign({}, DEFAULT_KITCHEN, D.kitchen || {});
 
@@ -2033,7 +2429,7 @@ window.KOMAT_TR = {
     const comps = Array.isArray(r.components) ? r.components.map(normComp) : [];
     return {
       id: r.id, name: r.name || 'Untitled', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
-      photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+      photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], gallery: Array.isArray(r.gallery) ? r.gallery.filter((g) => g && g.id) : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
       steps: Array.isArray(r.steps) ? r.steps : [], plating: r.plating || '', notes: r.notes || '', allergens: Array.isArray(r.allergens) ? r.allergens : [],
       allergensChecked: !!r.allergensChecked, updated: r.updated || 0, station: r.station || '',
       services: Array.isArray(r.services) ? r.services : [], onMenu: r.onMenu !== false, components: comps,
@@ -2123,14 +2519,23 @@ window.KOMAT_TR = {
 
   /* ---------- ordering: one line per product, no staples, nothing made in house ---------- */
   const ORD_QUAL = ['на много ситно', 'на много фино', 'на ситно', 'на фино', 'на дребно', 'на едро', 'на паста', 'нарязан без дръжки', 'нарязан', 'нарязана', 'без дръжки', 'изрезки', 'белен', 'белена', 'чистен', 'чистена', 'чистени', 'смачкани', 'бланширан', 'бланширани', 'бланширана', 'сурово', 'суров', 'печен', 'печена', 'печени', 'печено', 'готвено', 'остатъци', 'на купчета във фризера', 'на стайна температура', 'от мелничка', 'прясно смлян', 'шифонада', 'почистена', 'почистен', 'тънко', 'тънко нарязан'];
-  const ORD_SYN = { 'даф лист': 'дафинов лист', 'стар лук': 'лук', прокрема: 'прокрем', 'тиквени семки': 'тиквено семе', 'сок лайм': 'лайм', 'сок от лимон': 'лимонов сок', 'краве мляко': 'мляко', 'горчица едромляна': 'едросмляна горчица', 'зелени чушки': 'зелена чушка', 'кора от половин лимон': 'лимон', 'кора от половин портокал': 'портокал', 'оризов оцет с комбу': 'оризов оцет', 'лио малини без силиката': 'лио малини', sugar: 'захар', 'olive oil': 'зехтин', 'extra virgin olive oil': 'зехтин', 'rice vinegar': 'оризов оцет', xanthan: 'ксантан', 'agar agar': 'агар', dill: 'копър', 'fresh dill': 'копър', parsley: 'магданоз', 'garlic clove': 'чесън', katyk: 'катък', chili: 'чили', chives: 'лук резанец', 'balsamic vinegar': 'балсамов оцет', 'good balsamic vinegar': 'балсамов оцет', 'orange juice': 'портокалов сок', 'fresh orange juice': 'портокалов сок', 'juice of limes': 'лайм', 'lime juice': 'лайм', 'fresh lemon juice': 'лимонов сок', 'wild garlic oil': 'олио левурда', zucchini: 'тиквички', cornstarch: 'нишесте', togarashi: 'тогараши', mirin: 'мирин', 'white fish': 'бяла риба', gelcrem: 'гелкрем', basil: 'босилек', gin: 'джин', cucumber: 'краставица', 'cucumber with the peel': 'краставица', 'cucumber peels': 'краставица', 'orange peel': 'портокал', жълтъци: 'жълтък', жълтъка: 'жълтък', белтъци: 'белтък', орехи: 'орех', 'скилидки чесън': 'чесън', лимони: 'лимон', ягоди: 'ягода' };
-  const ORD_SKIP = /^(сол|вода|лед|пипер|черен пипер|бял пипер|зелен пипер|пипер зърна|черен пипер зърна|зърна черен пипер|бял пипер зърна|зелен пипер зърна|сол и пипер|salt|pepper|water|salt and pepper|ice|fine salt|salt, pepper|олио кервиз|олио левурда|зелено олио|wild garlic oil|лещен сос|крокмач)$/;
+  const ORD_SYN = { 'даф лист': 'дафинов лист', 'стар лук': 'лук', прокрема: 'прокрем', 'тиквени семки': 'тиквено семе', 'сок лайм': 'лайм', 'сок от лимон': 'лимонов сок', 'краве мляко': 'мляко', 'горчица едромляна': 'едросмляна горчица', 'зелени чушки': 'зелена чушка', 'кора от половин лимон': 'лимон', 'кора от половин портокал': 'портокал', 'оризов оцет с комбу': 'оризов оцет', 'лио малини без силиката': 'лио малини', sugar: 'захар', 'olive oil': 'зехтин', 'extra virgin olive oil': 'зехтин', 'rice vinegar': 'оризов оцет', xanthan: 'ксантан', 'agar agar': 'агар', dill: 'копър', 'fresh dill': 'копър', parsley: 'магданоз', 'garlic clove': 'чесън', katyk: 'катък', chili: 'чили', chives: 'лук резанец', 'balsamic vinegar': 'балсамов оцет', 'good balsamic vinegar': 'балсамов оцет', 'orange juice': 'портокалов сок', 'fresh orange juice': 'портокалов сок', 'juice of limes': 'лайм', 'lime juice': 'лайм', 'fresh lemon juice': 'лимонов сок', 'wild garlic oil': 'олио левурда', zucchini: 'тиквички', cornstarch: 'нишесте', togarashi: 'тогараши', mirin: 'мирин', 'white fish': 'бяла риба', gelcrem: 'гелкрем', basil: 'босилек', gin: 'джин', cucumber: 'краставица', 'cucumber with the peel': 'краставица', 'cucumber peels': 'краставица', 'orange peel': 'портокал', жълтъци: 'яйца', жълтъка: 'яйца', жълтък: 'яйца', белтъци: 'яйца', белтък: 'яйца', яйце: 'яйца', орехи: 'орех', 'скилидки чесън': 'чесън', лимони: 'лимон', ягоди: 'ягода',
+    /* one card per product: spellings and forms of the same thing order as one */
+    'слънчогледово олио': 'олио', 'рапица олио': 'олио рапица', 'оцет ябълков': 'ябълков оцет', 'кимион семена': 'кимион', 'кориандър семена': 'кориандър',
+    'свински крачета': 'свински крака', 'масло безсолно': 'масло', 'безсолно масло': 'масло', 'студено масло': 'масло', 'прясна мащерка': 'мащерка',
+    'желатин на прах': 'желатин', 'царевично нишесте': 'нишесте', 'джин или ракия': 'джин', 'сухо бяло вино': 'бяло вино', 'кутия манатарки': 'манатарка',
+    кикоман: 'соев сос', 'оцет оборотен': 'оцет', 'лимонов сок': 'лимон', 'лимонова кора': 'лимон', 'сок от лайм': 'лайм', 'портокалов сок': 'портокал',
+    'сироп бъз с джинджифил': 'сироп бъз', 'карамелизиран лук': 'лук', 'бял винен оцет': 'винен оцет', 'хариса от кенче': 'хариса' };
+  const ORD_SKIP = /^(сол|вода|(студена|ледена|хладка|топла|гореща|вряла|филтрирана) вода|лед|пипер|черен пипер|бял пипер|зелен пипер|пипер зърна|черен пипер зърна|зърна черен пипер|бял пипер зърна|зелен пипер зърна|сол и пипер|salt|pepper|water|salt and pepper|ice|fine salt|salt, pepper|олио кервиз|олио левурда|зелено олио|wild garlic oil|лещен сос|крокмач)$/;
   function ordKey(n) {
     let k = String(n || '').split(/[,(]/)[0].split(' да ')[0].toLowerCase().replace(/[0-9%.?]+/g, ' ').replace(/\s+/g, ' ').trim();
     ORD_QUAL.forEach((q) => { k = (' ' + k + ' ').replace(' ' + q + ' ', ' ').trim(); });
     k = k.replace(/\s+/g, ' ').trim();
-    return ORD_SYN[k] || k;
+    for (let i = 0; i < 3 && ORD_SYN[k]; i++) k = ORD_SYN[k];
+    return k;
   }
+  K.ordKey = ordKey;
+  let basics = null;
   let houseNames = null, houseFor = null;
   function isHouseMade(k) {
     if (houseFor !== D.recipesSrc) {
@@ -2141,7 +2546,7 @@ window.KOMAT_TR = {
   }
   function orderable(n) {
     const k = ordKey(n);
-    if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || isHouseMade(k)) return null;
+    if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || (basics && basics.has(k)) || isHouseMade(k)) return null;
     return { key: k, name: k.charAt(0).toUpperCase() + k.slice(1) };
   }
   function addIng(map, g, used) {
@@ -2169,6 +2574,7 @@ window.KOMAT_TR = {
   /* the products behind a station: today's menu preps, plus (when closing) every mise en place row */
   K.stockList = function (st, closing) {
     const map = {}, unlinked = [];
+    basics = new Set((K.kitchen().basics || []).map(ordKey));
     K.prepItems(st).forEach((it) => it.ingredients.forEach((g) => addIng(map, g, it.name)));
     if (closing) K.checkItems(st).forEach((it) => {
       const r = K.recipeFor(it);
@@ -2451,7 +2857,7 @@ window.KOMAT_TR = {
 
   /* ---------- settings ---------- */
   K.saveBranding = function (patch) {
-    const next = Object.assign({ logo: D.branding.logo || '', heroes: (D.branding.heroes || []).slice(), approve: D.branding.approve || '' }, patch);
+    const next = Object.assign({ logo: D.branding.logo || '', heroes: (D.branding.heroes || []).slice(), approve: D.branding.approve || '', pages: Object.assign({}, D.branding.pages || {}) }, patch);
     D.branding = next;
     K.refresh(true);
     return K.db.doc('settings/branding').set(next).catch(writeFailed);
@@ -2522,7 +2928,7 @@ window.KOMAT_TR = {
       K.refresh(first);
     }, (e) => { D.loadErr = e && e.code; D.loaded = true; K.refresh(true); });
     const setting = (name, fn) => db.doc('settings/' + name).onSnapshot((x) => { fn(x.exists ? x.data() : null); K.refresh(); }, onErr);
-    setting('branding', (d) => { D.branding = { logo: (d && d.logo) || '', heroes: d && Array.isArray(d.heroes) ? d.heroes.slice() : [], approve: (d && d.approve) || '' }; });
+    setting('branding', (d) => { D.branding = { logo: (d && d.logo) || '', heroes: d && Array.isArray(d.heroes) ? d.heroes.slice() : [], approve: (d && d.approve) || '', pages: d && d.pages && typeof d.pages === 'object' ? Object.assign({}, d.pages) : {} }; });
     setting('checklists', (d) => { D.checklists = d ? K.clone(d) : { stations: {} }; });
     setting('staff', (d) => { D.staff = d && Array.isArray(d.people) ? K.clone(d) : { people: [] }; });
     setting('shiftcodes', (d) => { D.codes = d && Array.isArray(d.codes) ? K.clone(d) : { codes: [] }; });
@@ -2649,6 +3055,7 @@ window.KOMAT_TR = {
     let tray = document.getElementById('timers');
     if (!tray) { tray = h('div', { id: 'timers', class: 'timers' }); document.body.append(tray); }
     tray.textContent = '';
+    document.body.classList.toggle('has-timers', timers.length > 0);
     if (!timers.length) { tray.hidden = true; clearInterval(tick); tick = null; return; }
     tray.hidden = false;
     let anyDone = false;
@@ -2675,6 +3082,126 @@ window.KOMAT_TR = {
     if (!tick) tick = setInterval(paint, 1000);
   }
   K.paintTimers = paint;
+})();
+
+</script>
+<script>
+/* js/gestures.js */
+/* Touch gestures and small celebrations: swipeable rows, drag-to-close sheets, confetti. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h;
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* A row that can be swiped sideways. The row holds .sw-bg (what shows underneath) and
+     .sw-in (the content that slides). opts.right / opts.left = {run} for each direction. */
+  K.swipeable = function (row, opts) {
+    const inner = row.querySelector('.sw-in');
+    const th = opts.threshold || 76;
+    let x0 = 0, y0 = 0, dx = 0, pid = null, axis = null, armed = false, swipedAt = 0;
+    const reset = () => {
+      inner.style.transition = 'transform .18s ease';
+      inner.style.transform = '';
+      row.classList.remove('sw-r', 'sw-l', 'sw-armed', 'dragging');
+    };
+    row.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.target.closest('input, textarea, select, a')) return;
+      x0 = e.clientX; y0 = e.clientY; dx = 0; pid = e.pointerId; axis = null; armed = false;
+      inner.style.transition = 'none';
+    });
+    row.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid) return;
+      const mx = e.clientX - x0, my = e.clientY - y0;
+      if (!axis) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        axis = Math.abs(mx) > Math.abs(my) * 1.2 ? 'x' : 'y';
+        if (axis === 'x') { try { row.setPointerCapture(pid); } catch (err) { /* not capturable */ } row.classList.add('dragging'); }
+      }
+      if (axis !== 'x') return;
+      dx = mx;
+      if ((dx > 0 && !opts.right) || (dx < 0 && !opts.left)) dx /= 4;
+      inner.style.transform = 'translateX(' + dx + 'px)';
+      row.classList.toggle('sw-r', dx > 0);
+      row.classList.toggle('sw-l', dx < 0);
+      const now = Math.abs(dx) > th;
+      if (now !== armed) { armed = now; row.classList.toggle('sw-armed', armed); if (armed) K.vibrate(6); }
+    });
+    const end = (e) => {
+      if (e.pointerId !== pid) return;
+      pid = null;
+      if (axis !== 'x') return;
+      swipedAt = Date.now();
+      const go = dx > th && opts.right ? opts.right : dx < -th && opts.left ? opts.left : null;
+      if (!go) { reset(); return; }
+      inner.style.transition = 'transform .16s ease-out';
+      inner.style.transform = 'translateX(' + (dx > 0 ? 110 : -110) + '%)';
+      K.vibrate(12);
+      setTimeout(() => { go.run(); reset(); }, 150);
+    };
+    row.addEventListener('pointerup', end);
+    row.addEventListener('pointercancel', (e) => { if (e.pointerId === pid) { pid = null; reset(); } });
+    /* a swipe is not a tap: swallow the click that follows it */
+    row.addEventListener('click', (e) => { if (Date.now() - swipedAt < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
+    return row;
+  };
+
+  /* drag a bottom sheet down by its handle to close it */
+  K.dragSheet = function (sheet, handle, onClose) {
+    let y0 = 0, dy = 0, pid = null, t0 = 0;
+    handle.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      pid = e.pointerId; y0 = e.clientY; dy = 0; t0 = Date.now();
+      try { handle.setPointerCapture(pid); } catch (err) { /* not capturable */ }
+      sheet.style.transition = 'none';
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid) return;
+      dy = Math.max(0, e.clientY - y0);
+      sheet.style.transform = 'translateY(' + dy + 'px)';
+    });
+    const end = (e) => {
+      if (e.pointerId !== pid) return;
+      pid = null;
+      const fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.6;
+      sheet.style.transition = 'transform .2s ease';
+      if (dy > 110 || fast) { sheet.style.transform = 'translateY(100%)'; setTimeout(onClose, 170); }
+      else sheet.style.transform = '';
+    };
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  };
+
+  /* confetti in the kitchen's colours, then a message */
+  K.celebrate = function (msg) {
+    if (msg) K.toast(msg, { tone: 'good' });
+    K.vibrate([20, 40, 20]);
+    if (reduced()) return;
+    const c = h('canvas', { class: 'confetti', 'aria-hidden': 'true' });
+    document.body.append(c);
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+    c.width = W * dpr; c.height = H * dpr;
+    const cx = c.getContext('2d');
+    cx.scale(dpr, dpr);
+    const colours = ['#E0AFA3', '#EDBE45', '#2E7A4E', '#C42F1C', '#2C6A98', '#F2F2EE', '#B8561F'];
+    const bits = Array.from({ length: 130 }, () => ({
+      x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35, vx: (Math.random() - 0.5) * 11, vy: -Math.random() * 13 - 4,
+      r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, w: 6 + Math.random() * 6, h2: 8 + Math.random() * 8, c: colours[(Math.random() * colours.length) | 0],
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+      const age = t - t0;
+      cx.clearRect(0, 0, W, H);
+      bits.forEach((b) => {
+        b.vy += 0.38; b.vx *= 0.99; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+        cx.save(); cx.translate(b.x, b.y); cx.rotate(b.r);
+        cx.globalAlpha = Math.max(0, 1 - age / 1900);
+        cx.fillStyle = b.c; cx.fillRect(-b.w / 2, -b.h2 / 2, b.w, b.h2 * Math.abs(Math.cos(b.r * 2)) + 2);
+        cx.restore();
+      });
+      if (age < 1900) requestAnimationFrame(frame); else c.remove();
+    })(t0);
+  };
 })();
 
 </script>
@@ -2711,9 +3238,12 @@ window.KOMAT_TR = {
     return false;
   }
   /* K.go('today') or K.go('recipe', {id, comp}) */
+  const scrollMem = {};
+  const pageKey = () => (ui.view === 'recipe' ? 'r.' + ui.id + '.' + ui.comp : ui.view);
   K.go = function (view, opts) {
     opts = opts || {};
     if (ui.wake && view !== 'recipe') K.releaseWake();
+    scrollMem[pageKey()] = window.scrollY;
     ui.view = view;
     if (view === 'recipe') {
       ui.id = opts.id; ui.comp = typeof opts.comp === 'number' ? opts.comp : -1;
@@ -2726,17 +3256,20 @@ window.KOMAT_TR = {
       try { if (hs && location.hash !== '#' + hs) history.pushState({ k: 1 }, '', '#' + hs); } catch (e) { /* file:// */ }
     }
     render(true);
+    if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   };
   window.addEventListener('popstate', () => {
     if (K.mode !== 'local') return;
     ui.sheet = null; ui.cook = null;
+    scrollMem[pageKey()] = window.scrollY;
     if (!fromHash(location.hash)) ui.view = 'recipes';
     render(true);
+    if (scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   });
   /* back from a sub-page: browser history on the stand-alone site, else the parent tab */
   K.back = function (fallback) {
     if (K.mode === 'local' && history.state && history.state.k) { history.back(); return; }
-    K.go(fallback || TAB_OF[ui.view] || 'recipes');
+    K.go(fallback || TAB_OF[ui.view] || 'recipes', { restore: true });
   };
 
   /* ---------- rendering ---------- */
@@ -2759,14 +3292,19 @@ window.KOMAT_TR = {
     let sel = null;
     try { if (fid && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { /* not a text field */ }
     const y = window.scrollY, sb = document.querySelector('.sheet-body'), sy = sb ? sb.scrollTop : 0, hadSheet = !!sb;
+    /* an overlay that is only being redrawn should not slide in again */
+    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox');
     app.textContent = '';
     const out = view();
     app.append(out.top || header());
+    document.body.classList.toggle('over-photo', !out.top);
     if (D.noWrite && K.mode === 'cloud') app.append(noWriteBanner());
     app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') }, out.body));
-    if (out.tabs !== false) app.append(footer(), tabbar());
+    if (out.tabs !== false) app.append(tabbar());
+    if (out.bar) app.append(h('div', { class: 'actionbar' }, h('div', { class: 'actionbar-in' }, out.bar)));
     document.body.classList.toggle('has-tabs', out.tabs !== false);
-    if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) app.append(s); }
+    document.body.classList.toggle('has-bar', !!out.bar);
+    if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) { if (hadOverlay) s.classList.add('still'); app.append(s); } }
     if (ui.cook && K.V.cook) app.append(K.V.cook());
     document.body.classList.toggle('locked', !!(ui.sheet || ui.cook));
     document.body.classList.toggle('cooking', !!ui.cook);
@@ -2782,6 +3320,9 @@ window.KOMAT_TR = {
     if (out.after) out.after();
   }
   K.render = render;
+  const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 24);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   function view() {
     if (K.mode === 'pending') return { body: loading('Opening the kitchen book…') };
@@ -2798,12 +3339,12 @@ window.KOMAT_TR = {
   }
   function unavailable() {
     return h('div', { class: 'boot' }, h('div', { class: 'boot-mark' }, brandMark()),
-      h('h1', { class: 'display' }, 'The kitchen book needs Claude'),
+      h('h1', { class: 'display' }, 'Open the book in Claude'),
       h('p', { class: 'muted measure' }, 'This copy keeps its recipes in Claude. Open the link from the Claude app or claude.ai while signed in, then reload.'),
       h('button', { class: 'btn primary', type: 'button', onclick: () => location.reload() }, 'Reload'));
   }
 
-  /* ---------- header, tabs, footer ---------- */
+  /* ---------- header and tabs ---------- */
   function brandMark() {
     const logo = D.branding && D.branding.logo;
     return logo ? h('img', { class: 'logo', src: K.media(logo), alt: 'Komat' }) : h('span', { class: 'wordmark' }, 'KOMAT');
@@ -2818,15 +3359,23 @@ window.KOMAT_TR = {
   }
   function tabButtons(cls) {
     const cur = TAB_OF[ui.view] || ui.view;
-    return TABS.map((t) => h('button', { type: 'button', class: cls, 'aria-current': cur === t[0] ? 'page' : null, onclick: () => K.go(t[0]) },
+    return TABS.map((t) => h('button', { type: 'button', class: cls, 'aria-current': cur === t[0] ? 'page' : null, onclick: () => tabTap(t[0]) },
       h('span', { class: 'tab-ico' }, K.icon(t[2]), badge(t[0])), h('span', { class: 'tab-lbl' }, t[1])));
+  }
+  /* with a mouse and keyboard the search is ready to type into; phones keep the keyboard down until asked */
+  const finePointer = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
+  /* tapping the tab you are on goes back to its top; on Recipes it opens the search */
+  function tabTap(tab) {
+    if (ui.view !== tab) { if (tab === 'recipes') ui.focusSearch = finePointer(); K.go(tab); return; }
+    if (tab === 'recipes' && K.focusSearch) { K.focusSearch(); return; }
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   K.langSwitch = function () {
     return h('div', { class: 'langsw', role: 'group', 'aria-label': 'Recipe language' },
       [['bg', 'БГ'], ['en', 'EN']].map((l) => h('button', { type: 'button', 'aria-pressed': K.lang === l[0] ? 'true' : 'false', title: l[0] === 'bg' ? 'Recipes in Bulgarian' : 'Recipes in English', onclick: () => K.setLang(l[0]) }, l[1])));
   };
   function header() {
-    return h('header', { class: 'top' }, h('div', { class: 'top-in' },
+    return h('header', { class: 'top over' }, h('div', { class: 'top-in' },
       h('button', { type: 'button', class: 'brand', 'aria-label': 'Komat recipes', onclick: () => K.go('recipes') }, brandMark()),
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
@@ -2842,13 +3391,6 @@ window.KOMAT_TR = {
   };
   function tabbar() {
     return h('nav', { class: 'tabbar', 'aria-label': 'Sections' }, tabButtons('mtab'));
-  }
-  function footer() {
-    const open = D.bugs.filter((b) => b.status !== 'fixed').length;
-    return h('footer', { class: 'foot' },
-      h('button', { type: 'button', class: 'link-btn', onclick: () => { ui.sheet = { type: 'bug', text: '', photo: '' }; render(); } }, K.icon('bug'), 'Something wrong? Report a problem'),
-      K.me.admin ? h('button', { type: 'button', class: 'link-btn strong', onclick: () => { ui.sheet = { type: 'bugs' }; render(); } }, 'Problem reports' + (open ? ' (' + open + ' open)' : '')) : null,
-      h('span', { class: 'mode-note' }, K.mode === 'cloud' ? 'Shared live: everyone on the team sees changes as they happen.' : 'Saved on this device only. Use the shared version in Claude for the team.'));
   }
   function noWriteBanner() {
     return h('div', { class: 'banner bad', role: 'alert' },
@@ -2916,11 +3458,106 @@ window.KOMAT_TR = {
       try { history.replaceState({ k: 0 }, '', location.hash || '#' + hashFor()); } catch (e) { /* file:// */ }
     }
     if (K.mode === 'cloud') fromHash(location.hash);
+    ui.focusSearch = ui.view === 'recipes' && finePointer();
     K.subscribe();
     render(true);
     K.paintTimers();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+
+</script>
+<script>
+/* js/photos.js */
+/* Photos of the restaurant: page headers, the napkin's K-ray mark, the courtyard cat for
+   quiet moments, plating galleries and a full-screen photo viewer. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, D = K.D, ui = K.ui;
+  const DIR = 'assets/photos/theme/';
+  const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule', events: 'events' };
+  /* the recipe book opens on a different dish each day */
+  const DAILY = ['recipes', 'salmon', 'soup', 'chocolate', 'cauliflower', 'fishcakes', 'sandwiches', 'herring'];
+  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Orders'], ['schedule', 'Schedule'], ['events', 'Events']];
+
+  K.defaultPagePhoto = function (tab) {
+    if (tab === 'recipes') {
+      const d = Math.floor(K.kitchenNow().getTime() / 86400000);
+      return DIR + DAILY[d % DAILY.length] + '.jpg';
+    }
+    return PAGE[tab] ? DIR + PAGE[tab] + '.jpg' : '';
+  };
+  /* the head chef can pick a photo per page in Branding; the recipe book also takes the first header photo */
+  K.pagePhoto = function (tab) {
+    const b = D.branding || {}, p = (b.pages || {})[tab];
+    if (p) return K.media(p);
+    if (tab === 'recipes' && b.heroes && b.heroes[0]) return K.media(b.heroes[0]);
+    return K.defaultPagePhoto(tab);
+  };
+  K.photoLayer = function (src) {
+    if (!src) return [];
+    return [
+      h('img', { class: 'ph-img', src: src, alt: '', fetchpriority: 'high', onerror: (e) => { e.target.remove(); } }),
+      h('div', { class: 'ph-shade', 'aria-hidden': 'true' }),
+    ];
+  };
+
+  /* the K mark from the napkins: a stem with rays fanning out */
+  K.rays = function (cls) {
+    const span = h('span', { class: 'rays' + (cls ? ' ' + cls : ''), 'aria-hidden': 'true' });
+    const lines = [[0, 100, 0, 0], [0, 46, 100, 0], [0, 46, 100, 26], [0, 46, 92, 58], [0, 46, 70, 92], [0, 46, 38, 100]];
+    span.innerHTML = '<svg viewBox="-4 -4 108 108" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' +
+      lines.map((l) => '<line x1="' + l[0] + '" y1="' + l[1] + '" x2="' + l[2] + '" y2="' + l[3] + '"/>').join('') + '</svg>';
+    return span;
+  };
+
+  /* quiet states: the courtyard cat asleep on the steps */
+  K.catRest = function (title, text, extra) {
+    return h('div', { class: 'rest' },
+      h('img', { class: 'rest-cat', src: DIR + 'cat.jpg', alt: 'The courtyard cat asleep on the steps', loading: 'lazy' }),
+      h('strong', null, title), text ? h('p', null, text) : null, extra || null);
+  };
+
+  /* ---------- galleries ---------- */
+  K.gallery = function (list, label) {
+    if (!list || !list.length) return null;
+    return h('div', { class: 'gallery', role: 'list', 'aria-label': label || 'Photos' }, list.map((p, i) =>
+      h('button', { type: 'button', class: 'gal-item', role: 'listitem', 'aria-label': 'Open photo ' + (i + 1) + (p.title ? ': ' + p.title : ''), onclick: () => K.openPhotos(list, i) },
+        h('img', { src: K.media(p.id), alt: p.title || '', loading: 'lazy', decoding: 'async' }),
+        p.title ? h('span', { class: 'gal-cap' }, p.title) : null)));
+  };
+  K.openPhotos = function (list, i) { ui.sheet = { type: 'photos', list: list, i: i || 0 }; K.render(); };
+
+  K.SHEETS.photos = function (S) {
+    const list = S.list, n = list.length, p = list[S.i];
+    if (!p) return null;
+    const close = () => { ui.sheet = null; K.render(); };
+    const go = (d) => { if (n < 2) return; S.i = (S.i + d + n) % n; K.render(); };
+    const img = h('img', { class: 'lb-img', src: K.media(p.id), alt: p.title || 'Photo ' + (S.i + 1) });
+    const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Photo ' + (S.i + 1) + ' of ' + n, tabindex: '-1',
+      onkeydown: (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); },
+      onclick: (e) => { if (e.target === e.currentTarget || e.target.classList.contains('lb-stage')) close(); } },
+      h('div', { class: 'lb-top' },
+        n > 1 ? h('span', { class: 'lb-count mono' }, (S.i + 1) + ' / ' + n) : h('span'),
+        h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Close', onclick: close }, K.icon('close'))),
+      h('div', { class: 'lb-stage' }, img),
+      p.title ? h('p', { class: 'lb-cap' }, p.title) : null,
+      n > 1 ? h('div', { class: 'lb-nav' },
+        h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Previous photo', onclick: () => go(-1) }, K.icon('back')),
+        h('div', { class: 'lb-dots', 'aria-hidden': 'true' }, list.map((x, j) => h('span', { class: j === S.i ? 'on' : '' }))),
+        h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Next photo', onclick: () => go(1) }, K.icon('next'))) : null);
+    let x0 = null, y0 = 0;
+    box.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    box.addEventListener('touchend', (e) => {
+      if (x0 == null) return;
+      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+      else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
+    });
+    setTimeout(() => { if (!box.contains(document.activeElement)) box.focus({ preventScroll: true }); }, 0);
+    return box;
+  };
 })();
 
 </script>
@@ -2939,42 +3576,61 @@ window.KOMAT_TR = {
     return out.join(' · ');
   }
   const countIn = (c) => D.recipes.filter((r) => r.category === c).length;
-  function addButtons(cat, onDark) {
-    return h('div', { class: 'btns' },
-      K.sample ? h('button', { class: 'btn ' + (onDark ? 'light' : 'primary'), type: 'button', onclick: () => K.scanNew(cat) }, K.icon('camera'), 'Scan a recipe sheet') : null,
-      h('button', { class: 'btn ' + (onDark ? (K.sample ? 'ghost-light' : 'light') : K.sample ? '' : 'primary'), type: 'button', onclick: () => K.startEdit(null, cat, 'dish') }, K.icon('plus'), 'New dish'),
-      h('button', { class: 'btn ' + (onDark ? 'ghost-light' : ''), type: 'button', onclick: () => K.startEdit(null, cat, 'recipe') }, K.icon('plus'), 'New recipe'));
-  }
+  /* adding lives in Settings and in empty folders, so the list stays clear for searching */
+  K.openAdd = function (cat) { ui.sheet = { type: 'add', cat: cat || '' }; K.render(); };
+  K.SHEETS.add = function (S) {
+    const pick = (fn) => () => { ui.sheet = null; fn(); };
+    return K.sheet('Add to the book', h('div', { class: 'settings' },
+      K.sample ? h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.scanNew(S.cat)) }, K.icon('camera'),
+        h('span', null, h('b', null, 'Scan a recipe sheet'), h('span', { class: 'muted' }, 'Take a photo; Claude types it up for you to check')), K.icon('next')) : null,
+      h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.startEdit(null, S.cat, 'dish')) }, K.icon('chef'),
+        h('span', null, h('b', null, 'New dish'), h('span', { class: 'muted' }, 'A plate on the menu, built from several recipes')), K.icon('next')),
+      h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.startEdit(null, S.cat, 'recipe')) }, K.icon('note'),
+        h('span', null, h('b', null, 'New recipe'), h('span', { class: 'muted' }, 'One prep: a sauce, a dough, a stock')), K.icon('next'))));
+  };
+  const addBtn = (cat) => h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.openAdd(cat) }, K.icon('plus'), 'Add a recipe'));
 
   K.V.recipes = function () {
     const body = h('div', { class: 'page' });
-    const hero = h('section', { class: 'hero speckle' }, h('div', { class: 'wrap hero-in' },
-      h('div', { class: 'hero-copy' },
-        h('p', { class: 'eyebrow' }, 'Komat · kitchen book'),
+    const src = K.pagePhoto('recipes');
+    body.append(h('section', { class: 'hero photo slim' + (src ? '' : ' speckle') }, K.photoLayer(src), K.rays('ph-rays'),
+      h('div', { class: 'wrap hero-in' },
         h('h1', { class: 'hero-title' }, 'What are we ', h('em', null, 'cooking'), '?'),
-        h('p', { class: 'hero-sub' }, D.recipes.length ? tally() + ' · every weight is clean, prepped product' : 'Recipes, yields, method and plating for the Komat team.'),
-        K.me.admin ? addButtons('', true) : null),
-      D.branding.approve ? h('figure', { class: 'approve' }, h('img', { src: K.media(D.branding.approve), alt: 'The chefs who signed off these recipes' }), h('figcaption', null, 'We approve these recipes.')) : null));
-    if (D.branding.heroes && D.branding.heroes[0]) hero.style.setProperty('--hero-img', 'url("' + K.media(D.branding.heroes[0]) + '")');
-    body.append(hero);
+        D.recipes.length ? h('p', { class: 'hero-sub' }, tally()) : null)));
     const w = h('div', { class: 'wrap' });
     body.append(w);
     const q = h('input', {
-      class: 'search-in', id: 'q', type: 'search', placeholder: 'Search a dish, prep or ingredient', 'aria-label': 'Search recipes', value: ui.q, autocomplete: 'off',
+      class: 'search-in', id: 'q', type: 'search', placeholder: 'Search a dish, prep or ingredient', 'aria-label': 'Search recipes', value: ui.q,
+      autocomplete: 'off', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'search',
       oninput: (e) => { ui.q = e.target.value; results(); },
+      onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); },
     });
-    w.append(h('div', { class: 'search' }, K.icon('search'), q, ui.q ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Clear search', onclick: () => { ui.q = ''; K.render(); } }, K.icon('close')) : null));
+    /* the search rides along under the header, so it is always one tap away */
+    w.append(h('div', { class: 'search-dock', id: 'sdock' }, h('div', { class: 'search' }, K.icon('search'), q,
+      ui.q ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Clear search', onclick: () => { ui.q = ''; K.render(); const el = document.getElementById('q'); if (el) el.focus(); } }, K.icon('close')) : null)));
     if (D.loaded && D.recipes.length) {
-      w.append(h('div', { class: 'filters' },
-        K.seg([['', 'All'], ['dish', 'Dishes'], ['recipe', 'Recipes']], ui.type, (v) => { ui.type = v; K.render(); }, { 'aria-label': 'Show' }),
-        h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.onMenu ? 'true' : 'false', onclick: () => { ui.onMenu = !ui.onMenu; K.render(); } }, 'On the menu now')));
       const fs = K.folders().filter((c) => countIn(c) > 0 || ui.cat === c);
       w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Folder' },
-        [['', 'All folders', D.recipes.length]].concat(fs.map((c) => [c, c, countIn(c)])).map((c) =>
+        [['', 'All', D.recipes.length]].concat(fs.map((c) => [c, c, countIn(c)])).map((c) =>
           h('button', { class: 'chip', type: 'button', 'aria-pressed': ui.cat === c[0] ? 'true' : 'false', onclick: () => { ui.cat = c[0]; K.render(); } }, c[1], h('span', { class: 'cn' }, String(c[2]))))));
+      w.append(h('div', { class: 'chips filters' },
+        K.seg([['', 'Everything'], ['dish', 'Dishes'], ['recipe', 'Recipes']], ui.type, (v) => { ui.type = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
+        h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.onMenu ? 'true' : 'false', onclick: () => { ui.onMenu = !ui.onMenu; K.render(); } }, 'On the menu')));
     }
     w.append(h('div', { id: 'results' }));
-    return { body: body, after: results };
+    return { body: body, after: () => { results(); dockState(); if (ui.focusSearch) { ui.focusSearch = false; const el = document.getElementById('q'); if (el) el.focus(); } } };
+  };
+  /* a soft backdrop behind the search once it sticks under the header */
+  function dockState() {
+    const d = document.getElementById('sdock'), top = document.querySelector('.top');
+    if (d && top) d.classList.toggle('stuck', d.getBoundingClientRect().top <= top.getBoundingClientRect().bottom + 1);
+  }
+  window.addEventListener('scroll', dockState, { passive: true });
+  /* tapping Recipes again jumps straight into the search */
+  K.focusSearch = function () {
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const el = document.getElementById('q');
+    if (el) el.focus({ preventScroll: true });
   };
 
   function hay(r, c) {
@@ -3013,9 +3669,13 @@ window.KOMAT_TR = {
   }
   const TINTS = 6;
   function tint(s) { let x = 0; for (const ch of String(s)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return 't' + (x % TINTS); }
+  /* an illustration for a recipe that has no photo yet (a real photo always wins) */
+  K.artFor = (r) => (r && !r.photo && (window.KOMAT_ART || []).includes(r.id) ? 'assets/photos/art/' + r.id + '.jpg' : '');
   function thumb(r, name) {
-    return r && r.photo ? h('img', { class: 'thumb', src: K.media(r.photo), alt: '', loading: 'lazy' })
-      : h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
+    const letter = () => h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
+    const ph = r && (r.photo || (r.gallery[0] && r.gallery[0].id));
+    const src = ph ? K.media(ph) : K.artFor(r);
+    return src ? h('img', { class: 'thumb', src: src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => { e.target.replaceWith(letter()); } }) : letter();
   }
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
@@ -3041,15 +3701,14 @@ window.KOMAT_TR = {
     box.textContent = '';
     if (!D.loaded) { box.append(h('div', { class: 'empty' }, h('strong', null, 'Loading recipes'), 'One moment.')); return; }
     if (!D.recipes.length) {
-      box.append(h('div', { class: 'empty' }, h('strong', null, 'No recipes yet'),
-        K.me.admin ? 'Add a dish (built from several recipes) or a single recipe.' : 'Recipes appear here as soon as the head chef adds them.',
-        K.me.admin ? addButtons('', false) : null));
+      box.append(K.catRest('The book is ready for its first recipe', K.me.admin ? 'Add a dish, a prep, or scan a recipe sheet.' : 'Recipes appear here as soon as the head chef adds them.',
+        K.me.admin ? addBtn('') : null));
       return;
     }
     const q = ui.q.trim().toLowerCase(), list = entries();
     if (!list.length) {
-      box.append(h('div', { class: 'empty' }, h('strong', null, 'Nothing matches'), q ? 'Try another word, or search in Latin letters like "gyozi".' : 'Nothing in this folder yet.',
-        ui.cat && K.me.admin && !q ? addButtons(ui.cat, false) : null));
+      box.append(h('div', { class: 'empty' }, h('strong', null, q ? 'Nothing called “' + ui.q.trim() + '” yet' : 'This folder is empty'),
+        q ? 'Try a shorter word or an ingredient. Latin letters work too, like "gyozi".' : 'Pick another folder above.'));
       return;
     }
     if (q) {
@@ -3225,8 +3884,13 @@ window.KOMAT_TR = {
       h('span', { class: 'label' }, comps.length + ' parts' + (P.hasMain ? ' + assembly' : '')),
       h('ol', null, comps.map((c) => h('li', null, h('button', { type: 'button', onclick: () => jump('s-' + c.key) },
         h('span', { class: 'pn mono' }, String(c.ci + 1)), h('span', { class: 'pname' }, c.name), c.yieldQty ? h('span', { class: 'muted mono' }, K.yieldText(c.yieldQty, c.yieldUnit)) : null))))) : null;
-    body.append(h('div', { class: 'rhead' + (r.photo ? ' has-photo' : '') },
-      r.photo ? h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }) : null,
+    const art = K.artFor(r);
+    body.append(h('div', { class: 'rhead' + (r.photo || art ? ' has-photo' : '') },
+      r.photo ? h('button', { type: 'button', class: 'dish-photo-btn', 'aria-label': 'Open photos of ' + r.name, onclick: () => K.openPhotos([{ id: r.photo, title: r.name }].concat(r.gallery), 0) },
+        h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }),
+        r.gallery.length ? h('span', { class: 'photo-count' }, K.icon('photo'), String(r.gallery.length + 1)) : null)
+        : art ? h('figure', { class: 'dish-photo-btn art' }, h('img', { class: 'dish-photo', src: art, alt: '', onerror: (e) => { e.target.parentNode.remove(); } }),
+          h('figcaption', { class: 'art-tag' }, 'Illustration, not our plating')) : null,
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),
         h('h1', { class: 'rtitle' }, r.name),
@@ -3235,7 +3899,7 @@ window.KOMAT_TR = {
         index, al, CLEAN())));
     if (comps.length > 1) body.append(h('nav', { class: 'jump', 'aria-label': 'Jump to' }, comps.map((c) => h('button', { type: 'button', onclick: () => jump('s-' + c.key) }, c.name)),
       P.hasMain ? h('button', { type: 'button', onclick: () => jump('s-m') }, 'Assembly') : null,
-      r.plating || r.videos.length ? h('button', { type: 'button', onclick: () => jump('s-plating') }, 'Plating') : null));
+      r.plating || r.videos.length || r.gallery.length ? h('button', { type: 'button', onclick: () => jump('s-plating') }, 'Plating') : null));
     comps.forEach((c) => {
       const st = K.stationOf(r, r.components[c.ci]);
       body.append(h('section', { class: 'part', id: 's-' + c.key },
@@ -3253,8 +3917,9 @@ window.KOMAT_TR = {
         comps.length ? scaler(main, true) : null,
         partCols(main, comps.length ? 'Extra ingredients' : 'Ingredients', comps.length ? 'Assembly' : 'Method', r.name)));
     } else if (!comps.length) body.append(h('p', { class: 'none' }, 'No ingredients or method written yet.'));
-    if (r.plating || r.videos.length) {
+    if (r.plating || r.videos.length || r.gallery.length) {
       body.append(h('section', { class: 'part', id: 's-plating' }, h('h2', { class: 'sec-title' }, 'Plating for service'),
+        K.gallery(r.gallery, 'Plating photos of ' + r.name),
         r.videos.length ? h('div', { class: 'videos' }, r.videos.map((v) => h('figure', { class: 'vid' },
           h('video', { src: K.media(v.id), controls: true, playsinline: true, preload: 'metadata' }), v.title ? h('figcaption', null, v.title) : null))) : null,
         r.plating ? h('p', { class: 'prose' }, r.plating) : null));
@@ -3344,7 +4009,7 @@ window.KOMAT_TR = {
 
   function blank(cat, type) {
     return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
-      photo: '', videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
+      photo: '', gallery: [], videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
   }
   function editComp(c) {
     c = K.normComp(c);
@@ -3357,6 +4022,7 @@ window.KOMAT_TR = {
     ui.orig = r ? K.clone(r) : null;
     const e = K.clone(r || blank(cat, type));
     e.stepsText = e.steps.join('\n');
+    e.gallery = Array.isArray(e.gallery) ? e.gallery.filter((g) => g && g.id) : [];
     e.yieldQty = String(e.yieldQty || '');
     e.components = (e.components || []).map(editComp);
     e.components.forEach((c) => { c.open = false; });
@@ -3366,8 +4032,9 @@ window.KOMAT_TR = {
     K.go('edit');
   };
   const dirty = () => ui.edit && JSON.stringify(ui.edit) !== ui.editBase;
-  const assetIds = (r) => { if (!r) return []; const a = []; if (r.photo) a.push(r.photo); (r.videos || []).forEach((v) => a.push(v.id)); return a; };
-  const dropAssets = (ids) => { if (!K.assets) return; ids.forEach((id) => { K.assets.delete(id).catch(() => {}); }); };
+  const assetIds = (r) => { if (!r) return []; const a = []; if (r.photo) a.push(r.photo); (r.gallery || []).forEach((g) => a.push(g.id)); (r.videos || []).forEach((v) => a.push(v.id)); return a; };
+  /* the book's own photos (paths like assets/photos/…) are files, not uploads, so they are never deleted */
+  const dropAssets = (ids) => { if (!K.assets) return; ids.forEach((id) => { if (!/[/:]/.test(id)) K.assets.delete(id).catch(() => {}); }); };
   function leave() {
     const keep = assetIds(ui.orig);
     dropAssets(assetIds(ui.edit).filter((id) => !keep.includes(id)));
@@ -3615,6 +4282,7 @@ window.KOMAT_TR = {
           }) }, K.icon('photo'), e.photo ? 'Replace photo' : 'Add photo'),
           e.photo ? h('button', { class: 'btn', type: 'button', onclick: () => { const old = e.photo; e.photo = ''; if (!assetIds(ui.orig).includes(old)) dropAssets([old]); K.render(); } }, 'Remove') : null),
         !K.assets ? h('p', { class: 'hint' }, 'Only editors can add photos.') : null)));
+    w.append(galleryField(e));
 
     if (isDish) w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Parts'),
       h('p', { class: 'hint' }, 'Each part of the dish (fennel foam, roasted fennel…) gets its own yield, ingredients and method.'),
@@ -3644,10 +4312,29 @@ window.KOMAT_TR = {
     }
     w.append(allergenField(e));
     w.append(K.field('Notes', h('textarea', { class: 'input', id: 'enotes', rows: '4', value: e.notes, oninput: (ev) => { e.notes = ev.target.value; } }), 'Storage, shelf life, holding temperature.'));
-    w.append(h('div', { class: 'btns end' }, h('button', { class: 'btn primary', type: 'button', onclick: save, disabled: ui.busy || !!ui.uploading }, ui.busy ? 'Saving…' : 'Save ' + noun)));
     if (!ui.isNew) w.append(h('div', { class: 'danger-zone' }, h('button', { class: 'btn danger', type: 'button', disabled: ui.busy, onclick: del }, K.icon('trash'), ui.confirmDel ? 'Tap again to delete for good' : 'Delete ' + noun)));
-    return { top: top, body: w, tabs: false };
+    const bar = h('button', { class: 'btn primary wide', type: 'button', onclick: save, disabled: ui.busy || !!ui.uploading || (ui.scan && ui.scan.state === 'reading') }, K.icon('check'), ui.busy ? 'Saving…' : 'Save ' + noun);
+    return { top: top, body: w, tabs: false, bar: bar };
   };
+
+  /* more photos of the plate, for the plating section and the photo viewer */
+  function galleryField(e) {
+    const add = () => K.pickFile('image/*', true, (files) => {
+      ui.uploading = files.length > 1 ? 'Uploading ' + files.length + ' photos…' : 'Uploading photo…'; K.render();
+      files.reduce((p, f) => p.then(() => K.shrinkImage(f, 1600).then((b) => K.assets.upload(b)).then((r) => { e.gallery.push({ id: r.id, title: '' }); })), Promise.resolve())
+        .then(() => { ui.uploading = ''; K.render(); },
+          (err) => { ui.uploading = ''; K.render(); K.toast(err && err.message === 'read' ? 'A photo could not be read. The others were added.' : K.uploadErr(err), { tone: 'bad' }); });
+    });
+    return h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Plating photos'),
+      h('p', { class: 'hint' }, 'Close-ups of the finished plate from a few angles. The team swipes through them on the recipe page.'),
+      e.gallery.length ? h('div', { class: 'gal-edit' }, e.gallery.map((g, i) => h('div', { class: 'ge' },
+        h('img', { src: K.media(g.id), alt: 'Plating photo ' + (i + 1), loading: 'lazy' }),
+        h('input', { class: 'input small', id: 'gt' + i, placeholder: 'Caption (optional)', 'aria-label': 'Caption for photo ' + (i + 1), value: g.title || '', oninput: (ev) => { g.title = ev.target.value; } }),
+        h('div', { class: 'ge-acts' },
+          i > 0 ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move photo ' + (i + 1) + ' earlier', onclick: () => { e.gallery.splice(i - 1, 0, e.gallery.splice(i, 1)[0]); K.render(); } }, K.icon('back')) : h('span'),
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove photo ' + (i + 1), onclick: () => { e.gallery.splice(i, 1); if (!assetIds(ui.orig).includes(g.id)) dropAssets([g.id]); K.render(); } }, K.icon('trash')))))) : null,
+      h('button', { class: 'btn', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: add }, K.icon('plus'), e.gallery.length ? 'Add more photos' : 'Add photos'));
+  }
 
   function del() {
     if (!ui.confirmDel) { ui.confirmDel = true; K.render(); return; }
@@ -3681,7 +4368,7 @@ window.KOMAT_TR = {
     }
     const rec = {
       name: name, category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
-      photo: e.photo || '', videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
+      photo: e.photo || '', gallery: e.gallery.map((g) => ({ id: g.id, title: (g.title || '').trim() })), videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
       ingredients: clean(e.ingredients), steps: (e.stepsText || '').split('\n').map((s) => s.trim()).filter(Boolean),
       plating: (e.plating || '').trim(), notes: (e.notes || '').trim(), allergens: e.allergens.slice(), allergensChecked: !!e.allergensChecked,
       components: comps, type: e.type === 'dish' ? 'dish' : 'recipe', station: e.station || '', services: (e.services || []).filter((x) => K.SV[x]), onMenu: e.onMenu !== false, updated: Date.now(),
@@ -3804,11 +4491,32 @@ window.KOMAT_TR = {
   K.getStation = () => (K.ST[ui.station] ? ui.station : 'hot');
   K.pickStation = (st) => { ui.station = st; K.store.set('station', st); ui.noteFor = null; ui.addTo = null; K.render(); };
   K.dayDot = (ds) => h('span', { class: 'daydot', style: { background: K.DAY_DOTS[(K.parseYmd(ds).getDay() + 6) % 7] }, 'aria-hidden': 'true' });
-  K.pageHead = function (title, sub, extra) {
-    return h('section', { class: 'phead speckle' }, h('div', { class: 'wrap phead-in' },
-      h('div', null, h('h1', { class: 'ptitle' }, title), sub ? h('p', { class: 'psub' }, sub) : null),
-      extra || null));
+  /* page head: a restaurant photo (per page, chosen in Branding) under the title */
+  K.pageHead = function (title, sub, extra, photo) {
+    const src = photo ? K.pagePhoto(photo) : '';
+    return h('section', { class: 'phead' + (src ? ' photo' : ' speckle') }, K.photoLayer(src), K.rays('ph-rays'),
+      h('div', { class: 'wrap phead-in' },
+        h('div', null, h('h1', { class: 'ptitle' }, title), sub ? h('p', { class: 'psub' }, sub) : null),
+        extra || null));
   };
+  /* a little encouragement that follows the station's progress */
+  function cheer(ready, total) {
+    if (!total) return 'No mise en place list yet';
+    if (ready === total) return 'Ready for service';
+    const p = ready / total;
+    return p === 0 ? 'Let’s get set up' : p < 0.34 ? 'Good start' : p < 0.67 ? 'Halfway there' : p < 0.9 ? 'Looking good' : 'Nearly there';
+  }
+  /* the whole station ticked off: celebrate it */
+  function maybeCelebrate(st) {
+    const items = K.checkItems(st);
+    if (items.length && items.every((it) => K.markState(st, it.id) === 'ok')) { K.celebrate(K.ST[st] + ' is ready for service. Beautiful work!'); return true; }
+    return false;
+  }
+  function markReady(st, it) {
+    ui.pop = it.id;
+    K.setMark(st, it, { d: 'ok' });
+    return maybeCelebrate(st);
+  }
   function greeting() {
     const m = K.kitchenMinutes();
     return m < 11 * 60 ? 'Morning prep' : m < 16 * 60 ? 'Afternoon' : m < 23 * 60 ? 'Evening service' : 'Closing time';
@@ -3852,7 +4560,7 @@ window.KOMAT_TR = {
           h('b', null, d.name), d.note ? h('span', { class: 'tnote' }, d.note) : null,
           h('span', { class: 'urgmeta' }, [K.ST[d.station] || d.station, d.urgentAt || d.at ? 'since ' + K.hm(d.urgentAt || d.at) : '', K.nameOf(d.by)].filter(Boolean).join(' · '))),
         h('button', { type: 'button', class: 'pbtn done', onclick: () => (d.check ? doneMark(d.station, d.it) : doneTask(d.station, { key: d.key, name: d.name }, d._id)) }, K.icon('check'), 'Done'))))
-        : h('p', { class: 'none' }, 'Nothing urgent. Tap ! on any row to flag it for everyone.')));
+        : h('p', { class: 'none' }, 'Nothing urgent. Smooth so far.')));
     if (ev.length) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'Events coming up'),
       h('div', { class: 'evmini' }, ev.map((e) => h('button', { type: 'button', class: 'evchip', onclick: () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); } },
         h('b', null, K.countdown(e)), h('span', null, (e.title || 'Event') + (e.time ? ' · ' + e.time : '') + (e.guests ? ' · ' + e.guests + ' guests' : '')))))));
@@ -3866,15 +4574,15 @@ window.KOMAT_TR = {
   /* ---------- actions with undo ---------- */
   function doneMark(st, it) {
     const prev = K.mark(st, it.id) || {};
-    K.setMark(st, it, { d: 'ok' });
     K.vibrate(15);
-    K.toast('Ready: ' + it.name, { undo: () => K.setMark(st, it, { d: prev.d || 'do', u: !!prev.u }) });
+    if (markReady(st, it)) return;
+    K.toast('Ready: ' + it.name, { tone: 'good', undo: () => K.setMark(st, it, { d: prev.d || 'do', u: !!prev.u }) });
   }
   function doneTask(st, it, id) {
     const before = id && D.prep[id] ? K.clone(D.prep[id]) : null;
     K.setPrep(st, it, 'done');
     K.vibrate(15);
-    K.toast('Done: ' + it.name, { undo: () => {
+    K.toast('Done: ' + it.name, { tone: 'good', undo: () => {
       if (!before) { K.setPrep(st, it, ''); return; }
       if (id !== K.prepId(it.key)) K.removePrep(K.prepId(it.key));
       K.restorePrep(id, before);
@@ -3937,7 +4645,7 @@ window.KOMAT_TR = {
   K.V.today = function () {
     const st = K.getStation(), body = h('div', { class: 'page' });
     body.append(K.pageHead('Today', null, h('div', { class: 'phead-side' },
-      h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker())));
+      h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker()), 'today'));
     const w = h('div', { class: 'wrap today' });
     body.append(w);
     const rb = K.reminder(false);
@@ -3952,6 +4660,12 @@ window.KOMAT_TR = {
     const reps = K.repeatsToday(st).filter((x) => !x.done);
     const todoN = doItems.length + todoTasks.length + evTodo.length + reps.length;
 
+    /* phones: a sticky bar to jump between the parts of the page */
+    const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
+    w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
+      h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
+      h('button', { type: 'button', onclick: () => jumpTo('t-mep') }, 'Mise en place', h('b', { class: 'mono' }, ready + '/' + items.length)),
+      h('button', { type: 'button', onclick: () => jumpTo('t-tmr') }, 'Tomorrow')));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);
     const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
@@ -3964,15 +4678,15 @@ window.KOMAT_TR = {
     left.append(h('section', { class: 'progress card' + (items.length && ready === items.length ? ' all' : '') },
       ring(pct),
       h('div', { class: 'prog-txt' },
-        h('b', null, items.length && ready === items.length ? K.ST[st] + ' is ready. Nice work.' : ready + ' of ' + items.length + ' ready'),
-        h('span', { class: 'muted' }, todoN ? todoN + ' on the to-do list' : items.length ? 'Nothing on the to-do list' : 'No mise en place list yet'))));
+        h('b', null, cheer(ready, items.length)),
+        h('span', { class: 'muted' }, items.length ? ready + ' of ' + items.length + ' ready' + (todoN ? ' · ' + todoN + ' on the to-do list' : '') : 'The head chef can add one with Edit list'))));
 
     /* to do */
-    const todo = h('section', { class: 'block' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))));
+    const todo = h('section', { class: 'block', id: 't-todo' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: [(k.late ? 'Overdue · ' : '') + 'Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
-      onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + k.name, { undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
+      onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + k.name, { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
     todoTasks.forEach((d) => {
       const it = { key: d.key, name: d.name, note: d.note || '', origId: d._orig };
       rows.push(todoRow({
@@ -3994,29 +4708,29 @@ window.KOMAT_TR = {
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
-    todo.append(rows.length ? h('div', { class: 'todos' }, rows) : h('p', { class: 'none' }, 'Nothing to do yet. Tap a row in the mise en place list to mark it DO, or add a task.'));
+    todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     left.append(todo);
 
     /* order */
     const order = K.orderFor(st);
-    left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => startStock(st, false) },
+    left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
         h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Mark what is low or out, or write it on the whiteboard')),
       K.icon('next')));
 
     /* mise en place */
-    left.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Mise en place'),
+    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
       h('div', { class: 'btns' },
         items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      items.length ? h('p', { class: 'hint legend-row' }, h('span', { class: 'mbox sample' }), 'Tap once: ', h('span', { class: 'mbox sample do' }, 'DO'), ' to do · twice: ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready · ', h('b', { class: 'flagtxt' }, '!'), ' urgent for everyone') : null);
+      items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
     left.append(checklist(st));
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => startStock(st, true) }, cl ? 'Check ingredients again' : 'Finish mise en place')));
+      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : 'Finish mise en place')));
 
     right.append(tomorrowBlock(st));
     if (doneTasks.length) right.append(h('details', { class: 'block card donebox' }, h('summary', null, 'Done today', h('span', { class: 'n' }, String(doneTasks.length))),
@@ -4081,21 +4795,29 @@ window.KOMAT_TR = {
     const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
     const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
     const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
-    return h('div', { class: 'mrow' + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
-      h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
-        onclick: () => { K.setMark(st, it, { d: next }); if (next === 'ok') K.vibrate(12); } }, s === 'do' ? 'DO' : s === 'ok' ? K.icon('check') : ''),
+    const pop = ui.pop === it.id;
+    if (pop) setTimeout(() => { if (ui.pop === it.id) ui.pop = null; }, 0);
+    const row = h('div', { class: 'mrow' + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
+      h('div', { class: 'sw-in' },
+      h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else K.setMark(st, it, { d: next }); } }, s === 'do' ? 'DO' : s === 'ok' ? K.icon('check') : ''),
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
         note ? h('span', { class: 'tnote' }, note) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
-      h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!'));
+      h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
+    return K.swipeable(row, {
+      right: s === 'ok' ? null : { run: () => markReady(st, it) },
+      left: s === 'do' ? null : { run: () => K.setMark(st, it, { d: 'do' }) },
+    });
   }
 
   /* ---------- for tomorrow ---------- */
   function tomorrowBlock(st) {
     const list = K.tomorrowTasks(st);
-    return h('section', { class: 'block card tmr' },
+    return h('section', { class: 'block card tmr', id: 't-tmr' },
       h('h2', { class: 'block-title' }, 'For tomorrow', h('span', { class: 'n' }, K.prettyDate(K.day(1), { weekday: 'long' }))),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
       list.length ? h('div', { class: 'todos' }, list.map((x) => h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
@@ -4104,78 +4826,6 @@ window.KOMAT_TR = {
         h('div', { class: 'todo-acts' }, h('button', { class: 'pbtn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))))) : null,
       addTaskForm('tmr', 'e.g. Defrost 4 lamb saddles', 'Leave it', (t, urg, note) => K.leaveForTomorrow(st, t, urg, note)),
       h('p', { class: 'hint' }, 'For another station? Switch “I’m on” at the top first.'));
-  }
-
-  /* ---------- stock check / order ---------- */
-  function startStock(st, closing) {
-    const prev = K.orderFor(st), m = {}, extras = [];
-    if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
-    ui.stock = { st: st, m: m, extras: extras, q: '', close: !!closing };
-    K.go('stock');
-  }
-  K.startStock = startStock;
-  K.V.stock = function () {
-    const S = ui.stock, st = S.st, sl = K.stockList(st, S.close), ings = sl.ings;
-    const marked = Object.keys(S.m).length + S.extras.filter((x) => (x.n || '').trim()).length;
-    const goLabel = S.close ? 'Confirm and finish' : marked ? 'Send order (' + marked + ')' : 'Send order';
-    const top = K.subbar(K.ST[st], () => K.go('today'), [h('button', { class: 'btn small primary', type: 'button', disabled: ui.busy, onclick: send }, ui.busy ? 'Saving…' : goLabel)]);
-    const w = h('div', { class: 'wrap page narrow' });
-    if (S.close) {
-      const notReady = K.checkItems(st).filter((it) => K.markState(st, it.id) === 'do' || K.isUrgent(st, it.id));
-      w.append(h('h1', { class: 'rtitle' }, 'Finish mise en place'),
-        h('p', { class: 'lead' }, 'Do you have what you need for tomorrow?'),
-        h('p', { class: 'muted' }, 'These are the products behind ' + K.ST[st] + '’s mise en place. Mark anything low or out and it goes on tonight’s order.'));
-      if (notReady.length) w.append(h('div', { class: 'banner warn' }, h('b', null, 'Still not ready: '), notReady.map((x) => x.name).join(', '), h('span', null, 'Leave a note for tomorrow if someone needs to finish them.')));
-      if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + ' rows have no recipe yet, so their ingredients are not listed'),
-        h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their ingredients show up here. Check these by eye for now.')));
-    } else {
-      w.append(h('h1', { class: 'rtitle' }, 'Anything to order?'), h('p', { class: 'muted' }, 'Everything ' + K.ST[st] + ' uses on today’s menus. Tap Low or Out for what you need and leave the rest.'));
-    }
-    w.append(h('div', { class: 'search small' }, K.icon('search'), h('input', { class: 'search-in', id: 'stockq', type: 'search', placeholder: 'Find a product', value: S.q, 'aria-label': 'Find a product',
-      oninput: (e) => { S.q = e.target.value; const l = document.getElementById('stocklist'); if (l) l.replaceWith(stockRows(ings)); } })));
-    w.append(stockRows(ings));
-    w.append(h('section', { class: 'block' }, h('h2', { class: 'block-title' }, 'Something else'),
-      h('p', { class: 'hint' }, 'Cleaning products, packaging, anything not in a recipe.'),
-      S.extras.map((x, i) => h('div', { class: 'xrow' },
-        h('input', { class: 'input', id: 'xn' + i, placeholder: 'Product', 'aria-label': 'Product ' + (i + 1), value: x.n, oninput: (e) => { x.n = e.target.value; } }),
-        h('input', { class: 'input', id: 'xq' + i, placeholder: 'How much', 'aria-label': 'Amount ' + (i + 1), value: x.note, oninput: (e) => { x.note = e.target.value; } }),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + (x.n || 'product'), onclick: () => { S.extras.splice(i, 1); K.render(); } }, K.icon('close')))),
-      h('button', { class: 'btn', type: 'button', onclick: () => { S.extras.push({ n: '', note: '' }); K.render(); const el = document.getElementById('xn' + (S.extras.length - 1)); if (el) el.focus(); } }, K.icon('plus'), 'Add a product')));
-    w.append(h('div', { class: 'btns end' }, h('button', { class: 'btn primary', type: 'button', disabled: ui.busy, onclick: send }, ui.busy ? 'Saving…' : goLabel)));
-    return { top: top, body: w, tabs: false };
-  };
-  function stockRows(ings) {
-    const S = ui.stock, q = S.q.trim().toLowerCase();
-    const list = ings.filter((g) => !q || g.name.toLowerCase().includes(q) || K.latin(g.name).includes(q));
-    if (!list.length) return h('div', { id: 'stocklist' }, h('p', { class: 'none' }, ings.length ? 'No product matches.' : 'No products in this station’s recipes yet. Use “Something else” below.'));
-    return h('div', { id: 'stocklist', class: 'stocklist' }, list.map((g) => {
-      const k = g.name.toLowerCase(), cur = S.m[k] || { s: 'ok', note: '' };
-      const row = h('div', { class: 'stock' + (cur.s !== 'ok' ? ' ' + cur.s : '') + (g.flag ? ' flag-' + g.flag : '') },
-        h('div', { class: 'stock-name' }, h('b', null, g.name), h('span', { class: 'muted' }, g.usedIn.join(', '))),
-        h('div', { class: 'stock-acts', role: 'group', 'aria-label': g.name }, [['ok', 'OK'], ['low', 'Low'], ['out', 'Out']].map((o) =>
-          h('button', { type: 'button', class: 'sbtn ' + o[0], 'aria-pressed': cur.s === o[0] ? 'true' : 'false', onclick: () => {
-            if (o[0] === 'ok') delete S.m[k]; else S.m[k] = { s: o[0], note: cur.note || '' };
-            const l = document.getElementById('stocklist');
-            if (l) l.replaceWith(stockRows(ings));
-            const b = document.querySelector('.top .btn.primary');
-            if (b && !S.close) { const n = Object.keys(S.m).length + S.extras.filter((x) => (x.n || '').trim()).length; b.textContent = n ? 'Send order (' + n + ')' : 'Send order'; }
-          } }, o[1]))),
-        cur.s !== 'ok' ? h('input', { class: 'input small', id: 'sq-' + K.safeId(k), placeholder: 'How much? e.g. 2 kg', 'aria-label': 'Amount of ' + g.name, value: cur.note, oninput: (e) => { S.m[k].note = e.target.value; } }) : null);
-      return row;
-    }));
-  }
-  function send() {
-    const S = ui.stock, st = S.st, byKey = {};
-    K.stockList(st, S.close).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
-    const items = Object.keys(S.m).map((k) => ({ n: byKey[k] || k, s: S.m[k].s, note: (S.m[k].note || '').trim() }))
-      .concat(S.extras.filter((x) => (x.n || '').trim()).map((x) => ({ n: x.n.trim(), s: 'out', note: (x.note || '').trim(), extra: true })));
-    if (!items.length && !K.orderFor(st) && !S.close) { K.toast('Nothing is marked low or out, so there is nothing to send.'); K.go('today'); return; }
-    ui.busy = true; K.render();
-    K.sendOrder(st, items, S.close).then(() => {
-      ui.busy = false; ui.stock = null;
-      K.go('today');
-      K.toast(S.close ? 'Mise en place finished' + (items.length ? ' · ' + items.length + ' to order' : '') : items.length ? 'Order sent for ' + K.ST[st] : 'Order cleared');
-    }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
   }
 
   /* ---------- the head chef's list editor ---------- */
@@ -4219,10 +4869,268 @@ window.KOMAT_TR = {
           h('button', { class: 'btn small', type: 'button', onclick: () => { g.items.push({ id: 'i' + K.uid(), name: '' }); K.render(); } }, K.icon('plus'), 'Item'))),
         h('button', { class: 'btn small', type: 'button', onclick: () => { sec.groups.push({ key: 'g' + K.uid(), name: '', items: [] }); K.render(); } }, K.icon('plus'), 'Dish or group')));
     });
-    w.append(h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { L.secs.push({ title: 'New section', groups: [] }); K.render(); } }, K.icon('plus'), 'Section'),
-      h('button', { class: 'btn primary', type: 'button', onclick: saveList }, 'Save list')));
-    return { top: top, body: w, tabs: false };
+    w.append(h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { L.secs.push({ title: 'New section', groups: [] }); K.render(); } }, K.icon('plus'), 'Section')));
+    return { top: top, body: w, tabs: false, bar: h('button', { class: 'btn primary wide', type: 'button', onclick: saveList }, K.icon('check'), 'Save list') };
   };
+})();
+
+</script>
+<script>
+/* js/ordercheck.js */
+/* The order check: one product card at a time. Swipe right = have it, left = out,
+   up = running low. A summary at the end takes amounts and sends the order.
+   The classic list stays available for anyone who prefers it. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, ui = K.ui;
+
+  K.startStock = function (st, closing) {
+    const prev = K.orderFor(st), m = {}, extras = [];
+    if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
+    ui.stock = { st: st, m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
+    K.go('stock');
+  };
+
+  /* a product's photo, if the book has one */
+  K.produceImg = function (name) {
+    const P = window.KOMAT_PRODUCE || {}, n = String(name || '').toLowerCase(), slug = P[n] || P[K.ordKey(n)];
+    return slug ? 'assets/photos/produce/' + slug + '.jpg' : '';
+  };
+  /* photo, or the first letter on a colour when there is none (or it fails to load) */
+  K.produceThumb = function (name, cls) {
+    const src = K.produceImg(name), letter = h('span', { class: (cls || 'pthumb') + ' ph t' + (String(name).charCodeAt(0) % 6), 'aria-hidden': 'true' }, String(name).charAt(0));
+    if (!src) return letter;
+    return h('img', { class: cls || 'pthumb', src: src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => { e.target.replaceWith(letter); } });
+  };
+  const count = (S) => Object.keys(S.m).length + S.extras.filter((x) => (x.n || '').trim()).length;
+  const clock = (ms) => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  K.V.stock = function () {
+    const S = ui.stock, sl = K.stockList(S.st, S.close), ings = sl.ings;
+    const modeSeg = K.seg([['swipe', 'Swipe'], ['list', 'List']], S.mode, (v) => { S.mode = v; K.store.set('stockMode', v); if (v === 'swipe' && S.idx >= ings.length) S.summary = true; K.render(true); }, { 'aria-label': 'Check by', class: 'seg on-dark small-seg' });
+    const top = K.subbar(K.ST[S.st], () => K.go('today'), [modeSeg], S.close ? 'Finish mise en place' : 'Order check');
+    if (S.mode === 'list') return listMode(S, sl, top);
+    if (S.summary || S.idx >= ings.length) return summary(S, sl, top);
+    return deck(S, ings, top);
+  };
+
+  /* ---------- the card deck ---------- */
+  function deck(S, ings, top) {
+    const left = ings.length - S.idx, pct = Math.round((S.idx / Math.max(1, ings.length)) * 100);
+    const wrap = h('div', { class: 'deck-page' });
+    wrap.append(h('div', { class: 'deck-head wrap' },
+      h('p', { class: 'deck-q' }, S.close ? 'Do you have what you need for tomorrow?' : 'Anything to order?'),
+      h('div', { class: 'deck-prog', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(ings.length), 'aria-valuenow': String(S.idx) }, h('span', { style: { width: pct + '%' } })),
+      h('div', { class: 'deck-meta' }, h('span', { class: 'mono' }, (S.idx + 1) + ' / ' + ings.length), h('span', null, count(S) ? count(S) + ' to order so far' : left + ' to go'))));
+    const stack = h('div', { class: 'deck', id: 'deck' });
+    for (let i = Math.min(ings.length - 1, S.idx + 2); i >= S.idx; i--) stack.append(card(ings[i], i - S.idx, S));
+    wrap.append(stack);
+    wrap.append(h('div', { class: 'deck-acts' },
+      h('button', { type: 'button', class: 'dbtn out', onclick: () => fling('out') }, K.icon('close'), h('span', null, 'Out')),
+      h('button', { type: 'button', class: 'dbtn low', onclick: () => fling('low') }, K.icon('up'), h('span', null, 'Low')),
+      h('button', { type: 'button', class: 'dbtn have', onclick: () => fling('have') }, K.icon('check'), h('span', null, 'Have'))));
+    wrap.append(h('div', { class: 'deck-foot' },
+      h('button', { type: 'button', class: 'link-btn', disabled: !S.hist.length, onclick: undo }, K.icon('back'), 'Undo'),
+      h('button', { type: 'button', class: 'link-btn', onclick: () => { S.summary = true; K.render(true); } }, 'Skip to the summary', K.icon('next'))));
+    wrap.append(h('p', { class: 'deck-hint' }, 'Swipe right if you have it, left if it’s out, up if it’s running low.'));
+    return { top: top, body: wrap, tabs: false, after: () => { const c = document.querySelector('.pcard.front'); if (c) drag(c); } };
+  }
+  function card(g, depth, S) {
+    const k = g.name.toLowerCase(), cur = S.m[k];
+    return h('article', { class: 'pcard d' + depth + (depth === 0 ? ' front' : '') + (g.flag ? ' flag-' + g.flag : ''), 'aria-hidden': depth ? 'true' : null, 'aria-label': depth ? null : g.name },
+      h('span', { class: 'stamp have' }, 'Have'), h('span', { class: 'stamp out' }, 'Out'), h('span', { class: 'stamp low' }, 'Low'),
+      K.produceThumb(g.name, 'pc-mono'),
+      h('h2', { class: 'pc-name' }, g.name),
+      g.flag === 'red' ? h('p', { class: 'pc-flag red' }, g.usedIn[0]) : g.flag === 'ask' ? h('p', { class: 'pc-flag' }, g.usedIn[0]) : null,
+      !g.flag && g.usedIn.length ? h('p', { class: 'pc-used' }, h('span', { class: 'label' }, 'Used in'), g.usedIn.slice(0, 3).join(' · ') + (g.usedIn.length > 3 ? ' +' + (g.usedIn.length - 3) : '')) : null,
+      cur ? h('p', { class: 'pc-prev' }, 'Marked ' + (cur.s === 'out' ? 'out' : 'low') + ' earlier' + (cur.note ? ': ' + cur.note : '')) : null,
+      K.me.admin && !g.flag && depth === 0 ? h('button', { type: 'button', class: 'pc-never', onclick: () => neverAsk(g) }, 'Always in stock? Stop asking') : null);
+  }
+  /* the head chef can take a basic off the check for good (Kitchen rules lists them) */
+  function neverAsk(g) {
+    const before = (K.kitchen().basics || []).slice();
+    K.saveKitchen({ basics: before.concat([g.name]) });
+    K.vibrate(10);
+    K.toast(g.name + ' won’t be asked again', { tone: 'good', undo: () => K.saveKitchen({ basics: before }) });
+  }
+  /* follow the finger; let go past the edge to decide */
+  function drag(el) {
+    let x0 = 0, y0 = 0, dx = 0, dy = 0, pid = null, t0 = 0;
+    const stamps = { have: el.querySelector('.stamp.have'), out: el.querySelector('.stamp.out'), low: el.querySelector('.stamp.low') };
+    const paint = () => {
+      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + dx / 16 + 'deg)';
+      const up = -dy > Math.abs(dx);
+      stamps.have.style.opacity = !up && dx > 0 ? Math.min(1, dx / 90) : 0;
+      stamps.out.style.opacity = !up && dx < 0 ? Math.min(1, -dx / 90) : 0;
+      stamps.low.style.opacity = up ? Math.min(1, -dy / 80) : 0;
+    };
+    el.addEventListener('pointerdown', (e) => {
+      if (busy || e.target.closest('button')) return;
+      pid = e.pointerId; x0 = e.clientX; y0 = e.clientY; dx = 0; dy = 0; t0 = Date.now();
+      try { el.setPointerCapture(pid); } catch (err) { /* not capturable */ }
+      el.style.transition = 'none';
+      el.classList.add('held');
+    });
+    el.addEventListener('pointermove', (e) => { if (e.pointerId !== pid) return; dx = e.clientX - x0; dy = Math.min(40, e.clientY - y0); if (e.clientY - y0 < 0) dy = e.clientY - y0; paint(); });
+    const end = (e) => {
+      if (e.pointerId !== pid) return;
+      pid = null;
+      el.classList.remove('held');
+      const dt = Math.max(1, Date.now() - t0), vx = dx / dt, vy = dy / dt;
+      const up = -dy > Math.abs(dx);
+      let choice = null;
+      if (up && (dy < -90 || (vy < -0.5 && dy < -40))) choice = 'low';
+      else if (!up && (dx > 100 || (vx > 0.55 && dx > 40))) choice = 'have';
+      else if (!up && (dx < -100 || (vx < -0.55 && dx < -40))) choice = 'out';
+      if (choice) { decide(choice, el, dx, dy); return; }
+      el.style.transition = 'transform .25s cubic-bezier(.2,1.4,.4,1)';
+      dx = 0; dy = 0; paint();
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  }
+  let busy = false;
+  function fling(choice) {
+    const el = document.querySelector('.pcard.front');
+    if (!el || busy) return;
+    const s = el.querySelector('.stamp.' + choice);
+    if (s) s.style.opacity = 1;
+    decide(choice, el, choice === 'have' ? 1 : choice === 'out' ? -1 : 0, choice === 'low' ? -1 : 0);
+  }
+  function decide(choice, el, dx, dy) {
+    const S = ui.stock, ings = K.stockList(S.st, S.close).ings, g = ings[S.idx];
+    if (!g || busy) return;
+    busy = true;
+    const k = g.name.toLowerCase();
+    S.hist.push({ k: k, prev: S.m[k] ? K.clone(S.m[k]) : null });
+    if (choice === 'have') delete S.m[k]; else S.m[k] = { s: choice, note: (S.m[k] && S.m[k].note) || '' };
+    S.idx++;
+    K.vibrate(choice === 'have' ? 8 : choice === 'low' ? [8, 30, 8] : 18);
+    const W = innerWidth;
+    const tx = choice === 'have' ? W * 1.1 : choice === 'out' ? -W * 1.1 : dx * 2, ty = choice === 'low' ? -innerHeight : dy * 2;
+    el.style.transition = 'transform .2s ease-in, opacity .2s ease-in';
+    el.style.transform = 'translate(' + tx + 'px,' + ty + 'px) rotate(' + (choice === 'have' ? 18 : choice === 'out' ? -18 : 0) + 'deg)';
+    el.style.opacity = '0.6';
+    setTimeout(() => {
+      busy = false;
+      if (S.idx >= ings.length) { S.summary = true; S.took = Date.now() - S.start; }
+      K.render(true);
+    }, 170);
+  }
+  function undo() {
+    const S = ui.stock, last = S.hist.pop();
+    if (!last) return;
+    if (last.prev) S.m[last.k] = last.prev; else delete S.m[last.k];
+    S.idx = Math.max(0, S.idx - 1);
+    S.summary = false;
+    K.render(true);
+  }
+  document.addEventListener('keydown', (e) => {
+    const S = ui.stock;
+    if (ui.view !== 'stock' || !S || S.mode !== 'swipe' || S.summary || ui.sheet) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
+    const map = { ArrowRight: 'have', ArrowLeft: 'out', ArrowUp: 'low' };
+    if (map[e.key]) { e.preventDefault(); fling(map[e.key]); }
+    else if (e.key === 'Backspace' || e.key === 'z') { e.preventDefault(); undo(); }
+  });
+
+  /* ---------- the summary ---------- */
+  function summary(S, sl, top) {
+    const ings = sl.ings, byKey = {};
+    ings.forEach((g) => { byKey[g.name.toLowerCase()] = g; });
+    const marked = Object.keys(S.m).map((k) => ({ k: k, g: byKey[k] || { name: k, usedIn: [] }, m: S.m[k] })).sort((a, b) => (a.m.s === b.m.s ? a.g.name.localeCompare(b.g.name) : a.m.s === 'out' ? -1 : 1));
+    const outs = marked.filter((x) => x.m.s === 'out').length, lows = marked.length - outs;
+    const n = count(S);
+    const w = h('div', { class: 'wrap page narrow sum' });
+    w.append(h('div', { class: 'sum-head' },
+      h('span', { class: 'sum-badge' }, K.icon('check')),
+      h('h1', { class: 'rtitle' }, S.idx >= ings.length ? 'All checked' : 'Your order so far'),
+      h('p', { class: 'lead' }, n ? n + (n === 1 ? ' thing' : ' things') + ' to order. Everything else is covered.' : 'Fully stocked. Nothing to order.'),
+      h('div', { class: 'sum-stats' },
+        h('span', { class: 'sstat out' }, h('b', { class: 'mono' }, String(outs)), 'out'),
+        h('span', { class: 'sstat low' }, h('b', { class: 'mono' }, String(lows)), 'low'),
+        h('span', { class: 'sstat have' }, h('b', { class: 'mono' }, String(Math.max(0, Math.min(S.idx, ings.length) - marked.length))), 'have'),
+        S.took && S.idx >= ings.length ? h('span', { class: 'sstat' }, h('b', { class: 'mono' }, clock(S.took)), 'to check') : null)));
+    if (S.close) {
+      const notReady = K.checkItems(S.st).filter((it) => K.markState(S.st, it.id) === 'do' || K.isUrgent(S.st, it.id));
+      if (notReady.length) w.append(h('div', { class: 'banner warn' }, h('b', null, 'Still in progress: '), notReady.map((x) => x.name).join(', '), h('span', null, 'Leave a note for tomorrow so the next shift can pick them up.')));
+      if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + ' rows have no recipe yet, so their products are not on the cards'),
+        h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their products join the check.')));
+    }
+    if (marked.length) {
+      w.append(h('div', { class: 'olist card sum-list' }, marked.map((x) => h('div', { class: 'sum-row ' + x.m.s },
+        K.produceThumb(x.g.name),
+        h('div', { class: 'sum-name' }, h('b', null, x.g.name), x.g.usedIn && x.g.usedIn.length ? h('span', { class: 'muted' }, x.g.usedIn.slice(0, 2).join(', ')) : null),
+        K.seg([['low', 'Low'], ['out', 'Out']], x.m.s, (v) => { x.m.s = v; K.render(); }, { 'aria-label': x.g.name, class: 'seg mini-seg' }),
+        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'We have ' + x.g.name + ' after all', title: 'We have it', onclick: () => { delete S.m[x.k]; K.render(); } }, K.icon('close')),
+        h('input', { class: 'input small', id: 'sq-' + K.safeId(x.k), placeholder: 'How much? e.g. 2 kg', 'aria-label': 'Amount of ' + x.g.name, enterkeyhint: 'done', value: x.m.note, oninput: (e) => { x.m.note = e.target.value; } })))));
+    } else {
+      w.append(K.catRest('All stocked up', S.close ? 'Nothing needed for tomorrow. Enjoy the rest of your shift.' : 'Nothing to order from ' + K.ST[S.st] + ' right now.'));
+    }
+    w.append(extrasBlock(S));
+    w.append(h('div', { class: 'btns center' }, h('button', { type: 'button', class: 'link-btn', onclick: () => { S.idx = 0; S.hist = []; S.summary = false; S.start = Date.now(); S.took = 0; K.render(true); } }, K.icon('back'), 'Check again from the start')));
+    return { top: top, body: w, tabs: false, bar: sendBar(S) };
+  }
+  function extrasBlock(S) {
+    return h('section', { class: 'block' }, h('h2', { class: 'block-title' }, 'Something else'),
+      h('p', { class: 'hint' }, 'Cleaning products, packaging, anything not in a recipe.'),
+      S.extras.map((x, i) => h('div', { class: 'xrow' },
+        h('input', { class: 'input', id: 'xn' + i, placeholder: 'Product', 'aria-label': 'Product ' + (i + 1), value: x.n, enterkeyhint: 'next', oninput: (e) => { x.n = e.target.value; } }),
+        h('input', { class: 'input', id: 'xq' + i, placeholder: 'How much', 'aria-label': 'Amount ' + (i + 1), value: x.note, enterkeyhint: 'done', oninput: (e) => { x.note = e.target.value; } }),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + (x.n || 'product'), onclick: () => { S.extras.splice(i, 1); K.render(); } }, K.icon('close')))),
+      h('button', { class: 'btn', type: 'button', onclick: () => { S.extras.push({ n: '', note: '' }); K.render(); const el = document.getElementById('xn' + (S.extras.length - 1)); if (el) el.focus(); } }, K.icon('plus'), 'Add a product'));
+  }
+  function sendBar(S) {
+    const n = count(S);
+    const label = S.close ? 'Confirm and finish' : n ? 'Send order (' + n + ')' : K.orderFor(S.st) ? 'Clear the order' : 'Done, nothing to order';
+    return h('button', { class: 'btn primary wide', type: 'button', disabled: ui.busy, onclick: send }, ui.busy ? 'Saving…' : label);
+  }
+
+  /* ---------- the classic list ---------- */
+  function listMode(S, sl, top) {
+    const ings = sl.ings;
+    const w = h('div', { class: 'wrap page narrow' });
+    w.append(h('h1', { class: 'rtitle' }, S.close ? 'Finish mise en place' : 'Anything to order?'),
+      h('p', { class: 'muted' }, S.close ? 'The products behind ' + K.ST[S.st] + '’s mise en place. Mark anything low or out and it goes on tonight’s order.' : 'Everything ' + K.ST[S.st] + ' uses on today’s menus. Tap Low or Out for what you need.'));
+    w.append(h('div', { class: 'search small' }, K.icon('search'), h('input', { class: 'search-in', id: 'stockq', type: 'search', enterkeyhint: 'search', placeholder: 'Find a product', value: S.q, 'aria-label': 'Find a product',
+      oninput: (e) => { S.q = e.target.value; const l = document.getElementById('stocklist'); if (l) l.replaceWith(rows(ings)); } })));
+    w.append(rows(ings));
+    w.append(extrasBlock(S));
+    return { top: top, body: w, tabs: false, bar: sendBar(S) };
+  }
+  function rows(ings) {
+    const S = ui.stock, q = S.q.trim().toLowerCase();
+    const list = ings.filter((g) => !q || g.name.toLowerCase().includes(q) || K.latin(g.name).includes(q));
+    if (!list.length) return h('div', { id: 'stocklist' }, h('p', { class: 'none' }, ings.length ? 'No product matches.' : 'No products in this station’s recipes yet. Use “Something else” below.'));
+    return h('div', { id: 'stocklist', class: 'stocklist' }, list.map((g) => {
+      const k = g.name.toLowerCase(), cur = S.m[k] || { s: 'ok', note: '' };
+      return h('div', { class: 'stock' + (cur.s !== 'ok' ? ' ' + cur.s : '') + (g.flag ? ' flag-' + g.flag : '') },
+        h('div', { class: 'stock-name' }, K.produceThumb(g.name), h('span', { class: 'stock-txt' }, h('b', null, g.name), h('span', { class: 'muted' }, g.usedIn.join(', ')))),
+        h('div', { class: 'stock-acts', role: 'group', 'aria-label': g.name }, [['ok', 'Have'], ['low', 'Low'], ['out', 'Out']].map((o) =>
+          h('button', { type: 'button', class: 'sbtn ' + o[0], 'aria-pressed': cur.s === o[0] ? 'true' : 'false', onclick: () => {
+            if (o[0] === 'ok') delete S.m[k]; else S.m[k] = { s: o[0], note: cur.note || '' };
+            K.vibrate(8);
+            K.render();
+          } }, o[1]))),
+        cur.s !== 'ok' ? h('input', { class: 'input small', id: 'sq-' + K.safeId(k), placeholder: 'How much? e.g. 2 kg', enterkeyhint: 'done', 'aria-label': 'Amount of ' + g.name, value: cur.note, oninput: (e) => { S.m[k].note = e.target.value; } }) : null);
+    }));
+  }
+
+  /* ---------- send ---------- */
+  function send() {
+    const S = ui.stock, st = S.st, byKey = {};
+    K.stockList(st, S.close).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
+    const items = Object.keys(S.m).map((k) => ({ n: byKey[k] || k, s: S.m[k].s, note: (S.m[k].note || '').trim() }))
+      .concat(S.extras.filter((x) => (x.n || '').trim()).map((x) => ({ n: x.n.trim(), s: 'out', note: (x.note || '').trim(), extra: true })));
+    if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
+    ui.busy = true; K.render();
+    K.sendOrder(st, items, S.close).then(() => {
+      ui.busy = false; ui.stock = null;
+      K.go('today');
+      if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
+      else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
+    }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
+  }
 })();
 
 </script>
@@ -4257,7 +5165,7 @@ window.KOMAT_TR = {
     const list = combined(date), board = D.boards[date];
     const body = h('div', { class: 'page' });
     body.append(K.pageHead('Orders', null, h('div', { class: 'phead-side' }, h('p', { class: 'psub' }, K.dayDot(date), K.prettyDate(date)),
-      K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' }))));
+      K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' })), 'orders'));
     const w = h('div', { class: 'wrap orders' });
     body.append(w);
     if (isToday) { const rb = K.reminder(true); if (rb) w.append(rb); }
@@ -4273,11 +5181,11 @@ window.KOMAT_TR = {
     main.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Order list', h('span', { class: 'n' }, list.length ? list.length + ' all day' : '')),
       list.length ? h('button', { class: 'btn small', type: 'button', onclick: () => K.copyText(orderText(date, list)) }, K.icon('copy'), 'Copy list') : null));
     if (!list.length) {
-      main.append(h('div', { class: 'empty' }, h('strong', null, 'No app orders'),
-        'That is fine: the whiteboard photo is the main order. Stations can also mark Low or Out from Today.',
-        isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, 'Check ' + K.ST[K.getStation()] + ' now')) : null));
+      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'All good: the whiteboard photo is the main order. Stations can add to it here with a quick swipe check.',
+        isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, K.icon('order'), 'Check ' + K.ST[K.getStation()] + ' now')) : null));
     } else {
       main.append(h('div', { class: 'olist card' }, list.map((x) => h('div', { class: 'oline ' + x.s },
+        K.produceThumb(x.n),
         h('span', { class: 'obadge' }, x.s === 'out' ? 'Out' : 'Low'),
         h('div', { class: 'oline-txt' }, h('b', null, x.n),
           h('span', { class: 'muted' }, x.rows.map((r) => K.ST[r.st] + (r.note ? ': ' + r.note : '')).join(' · ')))))));
@@ -4319,14 +5227,14 @@ window.KOMAT_TR = {
       h('div', { class: 'weeknav' },
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
         h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = K.thisWeek(); K.render(); } }, 'This week'),
-        h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next'))))));
+        h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
     if (!doc) {
-      w.append(h('div', { class: 'empty' }, h('strong', null, 'No schedule for this week yet'),
+      w.append(K.catRest('No schedule for this week yet', K.me.admin ? 'Start from last week and change what is different.' : 'The head chef has not posted it yet. Enjoy the quiet.',
         K.me.admin ? h('div', { class: 'btns center' },
           h('button', { class: 'btn primary', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : 'The head chef has not posted it yet.'));
+          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
       w.append(legend());
       return { body: body };
     }
@@ -4524,7 +5432,7 @@ window.KOMAT_TR = {
     const up = K.upcomingEvents().filter(K.isLive), sel = ui.calSel;
     const body = h('div', { class: 'page' });
     body.append(K.pageHead('Events', up.length ? up.length + ' coming up · next: ' + (up[0].title || 'Event') + ', ' + K.countdown(up[0]).toLowerCase() : 'Groups, breakfast events and private dinners',
-      K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'event', e: blankEvent(sel) }; K.render(); } }, K.icon('plus'), 'Add event') : null));
+      K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'event', e: blankEvent(sel) }; K.render(); } }, K.icon('plus'), 'Add event') : null, 'events'));
     const w = h('div', { class: 'wrap events' });
     body.append(w);
     const grid = h('div', { class: 'events-grid' });
@@ -4541,7 +5449,7 @@ window.KOMAT_TR = {
     } else {
       list.append(h('h2', { class: 'block-title' }, 'Coming up'));
       const all = K.upcomingEvents();
-      if (!all.length) list.append(h('div', { class: 'empty' }, h('strong', null, 'No upcoming events'), K.me.admin ? 'Tap a day in the calendar, or Add event.' : 'They show up here as soon as they are booked.'));
+      if (!all.length) list.append(K.catRest('No events booked yet', K.me.admin ? 'Tap a day in the calendar, or Add event, when the next one comes in.' : 'They show up here as soon as they are booked.'));
       all.forEach((e) => list.append(eventCard(e)));
       const past = D.events.filter((e) => e.date < K.day(0) && e.date >= K.day(-30)).sort((a, b) => b.date.localeCompare(a.date));
       if (past.length) list.append(h('details', { class: 'past' }, h('summary', null, 'Last 30 days · ' + past.length), past.map(eventCard)));
@@ -4629,7 +5537,7 @@ window.KOMAT_TR = {
       h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.' : 'This browser only. Nothing reaches the rest of the team from here.'))));
     if (K.me.admin) {
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'kitchen', k: K.clone(K.kitchen()) }; K.render(); } }, K.icon('chef'), h('span', null, h('b', null, 'Kitchen rules'), h('span', { class: 'muted' }, 'Order deadline, repeating tasks, products to check daily')), K.icon('next')));
-      rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and restaurant photos')), K.icon('next')));
+      rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and the photo at the top of each page')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'bugs' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Problem reports'), h('span', { class: 'muted' }, D.bugs.filter((b) => b.status !== 'fixed').length + ' open')), K.icon('next')));
     }
     if (K.mode === 'cloud' && K.me.admin) {
@@ -4650,6 +5558,9 @@ window.KOMAT_TR = {
           ui.confirmReset = false; K.db.importAll(K.seedDocs()); ui.sheet = null; K.go('recipes'); K.toast('The book is back to its original recipes');
         } }, ui.confirmReset ? 'Tap again to reset' : 'Reset')));
     }
+    /* tucked away at the bottom: recipes are mostly added through Claude, problems are rare */
+    if (K.me.admin) rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => K.openAdd(ui.view === 'recipes' ? ui.cat : '') }, K.icon('plus'), h('span', null, h('b', null, 'Add a recipe by hand'), h('span', { class: 'muted' }, 'New dish, new prep, or scan a recipe sheet')), K.icon('next')));
+    rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => { ui.sheet = { type: 'bug', text: '', photo: '' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Report a problem'), h('span', { class: 'muted' }, 'Something broken or confusing? Tell the head chef')), K.icon('next')));
     return K.sheet('Settings', h('div', { class: 'settings' }, rows));
   };
   function exportBackup() {
@@ -4671,7 +5582,8 @@ window.KOMAT_TR = {
   /* ---------- kitchen rules ---------- */
   K.SHEETS.kitchen = function (S) {
     const k = S.k;
-    k.repeats = k.repeats || []; k.daily = k.daily || [];
+    k.repeats = k.repeats || []; k.daily = k.daily || []; k.basics = k.basics || [];
+    const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
       h('div', { class: 'two' },
         K.field('Whiteboard photo due by', h('input', { class: 'input mono', id: 'k-due', type: 'time', value: k.orderDue || '23:00', oninput: (e) => { k.orderDue = e.target.value; } }), 'The reminder starts two hours before.'),
@@ -4694,9 +5606,17 @@ window.KOMAT_TR = {
           K.select(K.STATIONS, x.station || 'pass', (v) => { x.station = v; }, { class: 'input', 'aria-label': 'Station' }),
           h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + x.name, onclick: () => { k.daily.splice(i, 1); K.render(); } }, K.icon('close')))),
         h('button', { class: 'btn small', type: 'button', onclick: () => { k.daily.push({ station: K.getStation(), name: '' }); K.render(); } }, K.icon('plus'), 'Product')),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Never on the order check'),
+        h('p', { class: 'hint' }, 'Basics the kitchen always has, so nobody has to swipe past them. Salt, pepper and water are always left out.'),
+        k.basics.length ? h('div', { class: 'tags' }, k.basics.map((x, i) => h('span', { class: 'codechip basic' }, x,
+          h('button', { type: 'button', class: 'chip-x', 'aria-label': 'Put ' + x + ' back on the order check', onclick: () => { k.basics.splice(i, 1); K.render(); } }, K.icon('close'))))) : null,
+        h('form', { class: 'inline-form', onsubmit: addBasic },
+          h('input', { class: 'input', id: 'k-basic', placeholder: 'e.g. Брашно', 'aria-label': 'Product to leave out', enterkeyhint: 'done' }),
+          h('button', { class: 'btn', type: 'submit' }, 'Leave out'))),
       h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => {
         k.repeats = k.repeats.filter((r) => (r.name || '').trim() && (r.days || []).length).map((r) => ({ id: r.id || K.uid(), name: r.name.trim(), station: r.station || 'pass', days: r.days.slice().sort(), item: (r.item || '').trim() }));
         k.daily = k.daily.filter((x) => (x.name || '').trim()).map((x) => ({ station: x.station || 'pass', name: x.name.trim() }));
+        k.basics = k.basics.map((x) => String(x).trim()).filter(Boolean);
         ui.sheet = null;
         K.saveKitchen(k).then(() => K.toast('Kitchen rules saved'));
       } }, 'Save'))), { wide: true });
@@ -4731,12 +5651,24 @@ window.KOMAT_TR = {
         files.reduce((p, f) => p.then(() => upload(f, 2000, 'Uploading photos…').then((r) => ids.push(r.id))), Promise.resolve()).catch(() => {})
           .then(() => { if (ids.length) K.saveBranding({ heroes: hs.concat(ids) }); });
       }) }, K.icon('plus'), 'Add photos')));
-    w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, '“We approve” photo'),
-      h('p', { class: 'hint' }, 'The chefs who sign off the recipes, shown next to the words “We approve these recipes.”'),
-      b.approve ? h('img', { class: 'approve-prev', src: K.media(b.approve), alt: 'Current photo' }) : null,
-      h('div', { class: 'btns' },
-        h('button', { class: 'btn', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: () => K.pickFile('image/*', false, (f) => upload(f[0], 1400, 'Uploading the photo…').then((r) => { const old = b.approve; return K.saveBranding({ approve: r.id }).then(() => drop(old)); }).catch(() => {})) }, K.icon('upload'), b.approve ? 'Replace photo' : 'Add photo'),
-        b.approve ? h('button', { class: 'btn', type: 'button', onclick: () => { const old = b.approve; K.saveBranding({ approve: '' }).then(() => drop(old)); } }, 'Remove') : null)));
+    const pages = b.pages || {};
+    w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Page photos'),
+      h('p', { class: 'hint' }, 'The photo at the top of each page. Recipes changes dish every day unless you pick one.'),
+      h('div', { class: 'pagephotos' }, K.PAGE_PHOTO_TABS.map((t) => {
+        const cur = pages[t[0]];
+        return h('div', { class: 'pp card' },
+          h('img', { src: K.pagePhoto(t[0]), alt: '', loading: 'lazy' }),
+          h('div', { class: 'pp-txt' }, h('b', null, t[1]), h('span', { class: 'muted small' }, cur ? 'Your photo' : t[0] === 'recipes' && hs[0] ? 'Header photo' : t[0] === 'recipes' ? 'A dish a day' : 'Komat photo'),
+            h('div', { class: 'btns' },
+              h('button', { class: 'btn small', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: () => K.pickFile('image/*', false, (f) => upload(f[0], 2000, 'Uploading the photo…').then((r) => {
+                const n = Object.assign({}, pages); n[t[0]] = r.id;
+                return K.saveBranding({ pages: n }).then(() => { if (cur && cur.indexOf('/') < 0) drop(cur); });
+              }).catch(() => {})) }, K.icon('photo'), 'Change'),
+              cur ? h('button', { class: 'btn small', type: 'button', onclick: () => {
+                const n = Object.assign({}, pages); delete n[t[0]];
+                K.saveBranding({ pages: n }).then(() => { if (cur.indexOf('/') < 0) drop(cur); });
+              } }, 'Reset') : null)));
+      }))));
     if (!K.assets) w.append(h('p', { class: 'banner warn' }, 'Uploading needs editor access to the book.'));
     return { top: top, body: w, tabs: false };
   };

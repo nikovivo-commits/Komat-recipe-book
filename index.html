@@ -18,6 +18,8 @@
 <div id="app"></div>
 <!-- starting data for the stand-alone site -->
 <script src="data/translations.js"></script>
+<script src="data/produce.js"></script>
+<script src="data/art.js"></script>
 <script src="data/recipes.js"></script>
 <script src="data/settings.js"></script>
 <!-- the app; tools/build.mjs inlines this same list for the Claude artifact -->
@@ -26,13 +28,18 @@
 <script src="js/store.js"></script>
 <script src="js/data.js"></script>
 <script src="js/timers.js"></script>
+<script src="js/gestures.js"></script>
 <script src="js/app.js"></script>
+<script src="js/photos.js"></script>
 <script src="js/recipes.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/today.js"></script>
+<script src="js/ordercheck.js"></script>
 <script src="js/orders.js"></script>
 <script src="js/schedule.js"></script>
 <script src="js/events.js"></script>
 <script src="js/admin.js"></script>
+<!-- works offline once opened (stand-alone site only) -->
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
 </body>
 </html>

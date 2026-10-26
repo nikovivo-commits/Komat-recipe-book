@@ -13,6 +13,7 @@ const fonts = index.match(/<link rel="stylesheet" href="(https:\/\/fonts\.google
 const read = (p) => readFileSync(join(root, p), 'utf8').replace(/<\/(script|style)/gi, '<\\/$1');
 
 const page = [
+  '<meta charset="utf-8">',
   '<title>Komat Kitchen Book</title>',
   '<meta name="claude:viewport-fit-sides" content="cover">',
   '<link rel="preconnect" href="https://fonts.googleapis.com">',

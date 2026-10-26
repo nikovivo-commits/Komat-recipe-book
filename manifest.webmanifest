@@ -2,7 +2,7 @@
   "name": "Komat Kitchen Book",
   "short_name": "Komat",
   "description": "Recipes, daily mise en place, orders, the rota and events for the Komat kitchen.",
-  "start_url": "./#today",
+  "start_url": "./#recipes",
   "display": "standalone",
   "background_color": "#1F2020",
   "theme_color": "#1F2020",

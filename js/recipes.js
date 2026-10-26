@@ -11,42 +11,61 @@
     return out.join(' · ');
   }
   const countIn = (c) => D.recipes.filter((r) => r.category === c).length;
-  function addButtons(cat, onDark) {
-    return h('div', { class: 'btns' },
-      K.sample ? h('button', { class: 'btn ' + (onDark ? 'light' : 'primary'), type: 'button', onclick: () => K.scanNew(cat) }, K.icon('camera'), 'Scan a recipe sheet') : null,
-      h('button', { class: 'btn ' + (onDark ? (K.sample ? 'ghost-light' : 'light') : K.sample ? '' : 'primary'), type: 'button', onclick: () => K.startEdit(null, cat, 'dish') }, K.icon('plus'), 'New dish'),
-      h('button', { class: 'btn ' + (onDark ? 'ghost-light' : ''), type: 'button', onclick: () => K.startEdit(null, cat, 'recipe') }, K.icon('plus'), 'New recipe'));
-  }
+  /* adding lives in Settings and in empty folders, so the list stays clear for searching */
+  K.openAdd = function (cat) { ui.sheet = { type: 'add', cat: cat || '' }; K.render(); };
+  K.SHEETS.add = function (S) {
+    const pick = (fn) => () => { ui.sheet = null; fn(); };
+    return K.sheet('Add to the book', h('div', { class: 'settings' },
+      K.sample ? h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.scanNew(S.cat)) }, K.icon('camera'),
+        h('span', null, h('b', null, 'Scan a recipe sheet'), h('span', { class: 'muted' }, 'Take a photo; Claude types it up for you to check')), K.icon('next')) : null,
+      h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.startEdit(null, S.cat, 'dish')) }, K.icon('chef'),
+        h('span', null, h('b', null, 'New dish'), h('span', { class: 'muted' }, 'A plate on the menu, built from several recipes')), K.icon('next')),
+      h('button', { class: 'set-link', type: 'button', onclick: pick(() => K.startEdit(null, S.cat, 'recipe')) }, K.icon('note'),
+        h('span', null, h('b', null, 'New recipe'), h('span', { class: 'muted' }, 'One prep: a sauce, a dough, a stock')), K.icon('next'))));
+  };
+  const addBtn = (cat) => h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.openAdd(cat) }, K.icon('plus'), 'Add a recipe'));
 
   K.V.recipes = function () {
     const body = h('div', { class: 'page' });
-    const hero = h('section', { class: 'hero speckle' }, h('div', { class: 'wrap hero-in' },
-      h('div', { class: 'hero-copy' },
-        h('p', { class: 'eyebrow' }, 'Komat · kitchen book'),
+    const src = K.pagePhoto('recipes');
+    body.append(h('section', { class: 'hero photo slim' + (src ? '' : ' speckle') }, K.photoLayer(src), K.rays('ph-rays'),
+      h('div', { class: 'wrap hero-in' },
         h('h1', { class: 'hero-title' }, 'What are we ', h('em', null, 'cooking'), '?'),
-        h('p', { class: 'hero-sub' }, D.recipes.length ? tally() + ' · every weight is clean, prepped product' : 'Recipes, yields, method and plating for the Komat team.'),
-        K.me.admin ? addButtons('', true) : null),
-      D.branding.approve ? h('figure', { class: 'approve' }, h('img', { src: K.media(D.branding.approve), alt: 'The chefs who signed off these recipes' }), h('figcaption', null, 'We approve these recipes.')) : null));
-    if (D.branding.heroes && D.branding.heroes[0]) hero.style.setProperty('--hero-img', 'url("' + K.media(D.branding.heroes[0]) + '")');
-    body.append(hero);
+        D.recipes.length ? h('p', { class: 'hero-sub' }, tally()) : null)));
     const w = h('div', { class: 'wrap' });
     body.append(w);
     const q = h('input', {
-      class: 'search-in', id: 'q', type: 'search', placeholder: 'Search a dish, prep or ingredient', 'aria-label': 'Search recipes', value: ui.q, autocomplete: 'off',
+      class: 'search-in', id: 'q', type: 'search', placeholder: 'Search a dish, prep or ingredient', 'aria-label': 'Search recipes', value: ui.q,
+      autocomplete: 'off', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'search',
       oninput: (e) => { ui.q = e.target.value; results(); },
+      onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); },
     });
-    w.append(h('div', { class: 'search' }, K.icon('search'), q, ui.q ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Clear search', onclick: () => { ui.q = ''; K.render(); } }, K.icon('close')) : null));
+    /* the search rides along under the header, so it is always one tap away */
+    w.append(h('div', { class: 'search-dock', id: 'sdock' }, h('div', { class: 'search' }, K.icon('search'), q,
+      ui.q ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Clear search', onclick: () => { ui.q = ''; K.render(); const el = document.getElementById('q'); if (el) el.focus(); } }, K.icon('close')) : null)));
     if (D.loaded && D.recipes.length) {
-      w.append(h('div', { class: 'filters' },
-        K.seg([['', 'All'], ['dish', 'Dishes'], ['recipe', 'Recipes']], ui.type, (v) => { ui.type = v; K.render(); }, { 'aria-label': 'Show' }),
-        h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.onMenu ? 'true' : 'false', onclick: () => { ui.onMenu = !ui.onMenu; K.render(); } }, 'On the menu now')));
       const fs = K.folders().filter((c) => countIn(c) > 0 || ui.cat === c);
       w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Folder' },
-        [['', 'All folders', D.recipes.length]].concat(fs.map((c) => [c, c, countIn(c)])).map((c) =>
+        [['', 'All', D.recipes.length]].concat(fs.map((c) => [c, c, countIn(c)])).map((c) =>
           h('button', { class: 'chip', type: 'button', 'aria-pressed': ui.cat === c[0] ? 'true' : 'false', onclick: () => { ui.cat = c[0]; K.render(); } }, c[1], h('span', { class: 'cn' }, String(c[2]))))));
+      w.append(h('div', { class: 'chips filters' },
+        K.seg([['', 'Everything'], ['dish', 'Dishes'], ['recipe', 'Recipes']], ui.type, (v) => { ui.type = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
+        h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.onMenu ? 'true' : 'false', onclick: () => { ui.onMenu = !ui.onMenu; K.render(); } }, 'On the menu')));
     }
     w.append(h('div', { id: 'results' }));
-    return { body: body, after: results };
+    return { body: body, after: () => { results(); dockState(); if (ui.focusSearch) { ui.focusSearch = false; const el = document.getElementById('q'); if (el) el.focus(); } } };
+  };
+  /* a soft backdrop behind the search once it sticks under the header */
+  function dockState() {
+    const d = document.getElementById('sdock'), top = document.querySelector('.top');
+    if (d && top) d.classList.toggle('stuck', d.getBoundingClientRect().top <= top.getBoundingClientRect().bottom + 1);
+  }
+  window.addEventListener('scroll', dockState, { passive: true });
+  /* tapping Recipes again jumps straight into the search */
+  K.focusSearch = function () {
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const el = document.getElementById('q');
+    if (el) el.focus({ preventScroll: true });
   };
 
   function hay(r, c) {
@@ -85,9 +104,13 @@
   }
   const TINTS = 6;
   function tint(s) { let x = 0; for (const ch of String(s)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return 't' + (x % TINTS); }
+  /* an illustration for a recipe that has no photo yet (a real photo always wins) */
+  K.artFor = (r) => (r && !r.photo && (window.KOMAT_ART || []).includes(r.id) ? 'assets/photos/art/' + r.id + '.jpg' : '');
   function thumb(r, name) {
-    return r && r.photo ? h('img', { class: 'thumb', src: K.media(r.photo), alt: '', loading: 'lazy' })
-      : h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
+    const letter = () => h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
+    const ph = r && (r.photo || (r.gallery[0] && r.gallery[0].id));
+    const src = ph ? K.media(ph) : K.artFor(r);
+    return src ? h('img', { class: 'thumb', src: src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => { e.target.replaceWith(letter()); } }) : letter();
   }
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
@@ -113,15 +136,14 @@
     box.textContent = '';
     if (!D.loaded) { box.append(h('div', { class: 'empty' }, h('strong', null, 'Loading recipes'), 'One moment.')); return; }
     if (!D.recipes.length) {
-      box.append(h('div', { class: 'empty' }, h('strong', null, 'No recipes yet'),
-        K.me.admin ? 'Add a dish (built from several recipes) or a single recipe.' : 'Recipes appear here as soon as the head chef adds them.',
-        K.me.admin ? addButtons('', false) : null));
+      box.append(K.catRest('The book is ready for its first recipe', K.me.admin ? 'Add a dish, a prep, or scan a recipe sheet.' : 'Recipes appear here as soon as the head chef adds them.',
+        K.me.admin ? addBtn('') : null));
       return;
     }
     const q = ui.q.trim().toLowerCase(), list = entries();
     if (!list.length) {
-      box.append(h('div', { class: 'empty' }, h('strong', null, 'Nothing matches'), q ? 'Try another word, or search in Latin letters like "gyozi".' : 'Nothing in this folder yet.',
-        ui.cat && K.me.admin && !q ? addButtons(ui.cat, false) : null));
+      box.append(h('div', { class: 'empty' }, h('strong', null, q ? 'Nothing called “' + ui.q.trim() + '” yet' : 'This folder is empty'),
+        q ? 'Try a shorter word or an ingredient. Latin letters work too, like "gyozi".' : 'Pick another folder above.'));
       return;
     }
     if (q) {
@@ -297,8 +319,13 @@
       h('span', { class: 'label' }, comps.length + ' parts' + (P.hasMain ? ' + assembly' : '')),
       h('ol', null, comps.map((c) => h('li', null, h('button', { type: 'button', onclick: () => jump('s-' + c.key) },
         h('span', { class: 'pn mono' }, String(c.ci + 1)), h('span', { class: 'pname' }, c.name), c.yieldQty ? h('span', { class: 'muted mono' }, K.yieldText(c.yieldQty, c.yieldUnit)) : null))))) : null;
-    body.append(h('div', { class: 'rhead' + (r.photo ? ' has-photo' : '') },
-      r.photo ? h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }) : null,
+    const art = K.artFor(r);
+    body.append(h('div', { class: 'rhead' + (r.photo || art ? ' has-photo' : '') },
+      r.photo ? h('button', { type: 'button', class: 'dish-photo-btn', 'aria-label': 'Open photos of ' + r.name, onclick: () => K.openPhotos([{ id: r.photo, title: r.name }].concat(r.gallery), 0) },
+        h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }),
+        r.gallery.length ? h('span', { class: 'photo-count' }, K.icon('photo'), String(r.gallery.length + 1)) : null)
+        : art ? h('figure', { class: 'dish-photo-btn art' }, h('img', { class: 'dish-photo', src: art, alt: '', onerror: (e) => { e.target.parentNode.remove(); } }),
+          h('figcaption', { class: 'art-tag' }, 'Illustration, not our plating')) : null,
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),
         h('h1', { class: 'rtitle' }, r.name),
@@ -307,7 +334,7 @@
         index, al, CLEAN())));
     if (comps.length > 1) body.append(h('nav', { class: 'jump', 'aria-label': 'Jump to' }, comps.map((c) => h('button', { type: 'button', onclick: () => jump('s-' + c.key) }, c.name)),
       P.hasMain ? h('button', { type: 'button', onclick: () => jump('s-m') }, 'Assembly') : null,
-      r.plating || r.videos.length ? h('button', { type: 'button', onclick: () => jump('s-plating') }, 'Plating') : null));
+      r.plating || r.videos.length || r.gallery.length ? h('button', { type: 'button', onclick: () => jump('s-plating') }, 'Plating') : null));
     comps.forEach((c) => {
       const st = K.stationOf(r, r.components[c.ci]);
       body.append(h('section', { class: 'part', id: 's-' + c.key },
@@ -325,8 +352,9 @@
         comps.length ? scaler(main, true) : null,
         partCols(main, comps.length ? 'Extra ingredients' : 'Ingredients', comps.length ? 'Assembly' : 'Method', r.name)));
     } else if (!comps.length) body.append(h('p', { class: 'none' }, 'No ingredients or method written yet.'));
-    if (r.plating || r.videos.length) {
+    if (r.plating || r.videos.length || r.gallery.length) {
       body.append(h('section', { class: 'part', id: 's-plating' }, h('h2', { class: 'sec-title' }, 'Plating for service'),
+        K.gallery(r.gallery, 'Plating photos of ' + r.name),
         r.videos.length ? h('div', { class: 'videos' }, r.videos.map((v) => h('figure', { class: 'vid' },
           h('video', { src: K.media(v.id), controls: true, playsinline: true, preload: 'metadata' }), v.title ? h('figcaption', null, v.title) : null))) : null,
         r.plating ? h('p', { class: 'prose' }, r.plating) : null));

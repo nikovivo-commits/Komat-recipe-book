@@ -22,14 +22,14 @@
       h('div', { class: 'weeknav' },
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
         h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = K.thisWeek(); K.render(); } }, 'This week'),
-        h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next'))))));
+        h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
     if (!doc) {
-      w.append(h('div', { class: 'empty' }, h('strong', null, 'No schedule for this week yet'),
+      w.append(K.catRest('No schedule for this week yet', K.me.admin ? 'Start from last week and change what is different.' : 'The head chef has not posted it yet. Enjoy the quiet.',
         K.me.admin ? h('div', { class: 'btns center' },
           h('button', { class: 'btn primary', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : 'The head chef has not posted it yet.'));
+          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
       w.append(legend());
       return { body: body };
     }

@@ -29,9 +29,12 @@
     return false;
   }
   /* K.go('today') or K.go('recipe', {id, comp}) */
+  const scrollMem = {};
+  const pageKey = () => (ui.view === 'recipe' ? 'r.' + ui.id + '.' + ui.comp : ui.view);
   K.go = function (view, opts) {
     opts = opts || {};
     if (ui.wake && view !== 'recipe') K.releaseWake();
+    scrollMem[pageKey()] = window.scrollY;
     ui.view = view;
     if (view === 'recipe') {
       ui.id = opts.id; ui.comp = typeof opts.comp === 'number' ? opts.comp : -1;
@@ -44,17 +47,20 @@
       try { if (hs && location.hash !== '#' + hs) history.pushState({ k: 1 }, '', '#' + hs); } catch (e) { /* file:// */ }
     }
     render(true);
+    if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   };
   window.addEventListener('popstate', () => {
     if (K.mode !== 'local') return;
     ui.sheet = null; ui.cook = null;
+    scrollMem[pageKey()] = window.scrollY;
     if (!fromHash(location.hash)) ui.view = 'recipes';
     render(true);
+    if (scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   });
   /* back from a sub-page: browser history on the stand-alone site, else the parent tab */
   K.back = function (fallback) {
     if (K.mode === 'local' && history.state && history.state.k) { history.back(); return; }
-    K.go(fallback || TAB_OF[ui.view] || 'recipes');
+    K.go(fallback || TAB_OF[ui.view] || 'recipes', { restore: true });
   };
 
   /* ---------- rendering ---------- */
@@ -77,14 +83,19 @@
     let sel = null;
     try { if (fid && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { /* not a text field */ }
     const y = window.scrollY, sb = document.querySelector('.sheet-body'), sy = sb ? sb.scrollTop : 0, hadSheet = !!sb;
+    /* an overlay that is only being redrawn should not slide in again */
+    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox');
     app.textContent = '';
     const out = view();
     app.append(out.top || header());
+    document.body.classList.toggle('over-photo', !out.top);
     if (D.noWrite && K.mode === 'cloud') app.append(noWriteBanner());
     app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') }, out.body));
-    if (out.tabs !== false) app.append(footer(), tabbar());
+    if (out.tabs !== false) app.append(tabbar());
+    if (out.bar) app.append(h('div', { class: 'actionbar' }, h('div', { class: 'actionbar-in' }, out.bar)));
     document.body.classList.toggle('has-tabs', out.tabs !== false);
-    if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) app.append(s); }
+    document.body.classList.toggle('has-bar', !!out.bar);
+    if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) { if (hadOverlay) s.classList.add('still'); app.append(s); } }
     if (ui.cook && K.V.cook) app.append(K.V.cook());
     document.body.classList.toggle('locked', !!(ui.sheet || ui.cook));
     document.body.classList.toggle('cooking', !!ui.cook);
@@ -100,6 +111,9 @@
     if (out.after) out.after();
   }
   K.render = render;
+  const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 24);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   function view() {
     if (K.mode === 'pending') return { body: loading('Opening the kitchen book…') };
@@ -116,12 +130,12 @@
   }
   function unavailable() {
     return h('div', { class: 'boot' }, h('div', { class: 'boot-mark' }, brandMark()),
-      h('h1', { class: 'display' }, 'The kitchen book needs Claude'),
+      h('h1', { class: 'display' }, 'Open the book in Claude'),
       h('p', { class: 'muted measure' }, 'This copy keeps its recipes in Claude. Open the link from the Claude app or claude.ai while signed in, then reload.'),
       h('button', { class: 'btn primary', type: 'button', onclick: () => location.reload() }, 'Reload'));
   }
 
-  /* ---------- header, tabs, footer ---------- */
+  /* ---------- header and tabs ---------- */
   function brandMark() {
     const logo = D.branding && D.branding.logo;
     return logo ? h('img', { class: 'logo', src: K.media(logo), alt: 'Komat' }) : h('span', { class: 'wordmark' }, 'KOMAT');
@@ -136,15 +150,23 @@
   }
   function tabButtons(cls) {
     const cur = TAB_OF[ui.view] || ui.view;
-    return TABS.map((t) => h('button', { type: 'button', class: cls, 'aria-current': cur === t[0] ? 'page' : null, onclick: () => K.go(t[0]) },
+    return TABS.map((t) => h('button', { type: 'button', class: cls, 'aria-current': cur === t[0] ? 'page' : null, onclick: () => tabTap(t[0]) },
       h('span', { class: 'tab-ico' }, K.icon(t[2]), badge(t[0])), h('span', { class: 'tab-lbl' }, t[1])));
+  }
+  /* with a mouse and keyboard the search is ready to type into; phones keep the keyboard down until asked */
+  const finePointer = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
+  /* tapping the tab you are on goes back to its top; on Recipes it opens the search */
+  function tabTap(tab) {
+    if (ui.view !== tab) { if (tab === 'recipes') ui.focusSearch = finePointer(); K.go(tab); return; }
+    if (tab === 'recipes' && K.focusSearch) { K.focusSearch(); return; }
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   K.langSwitch = function () {
     return h('div', { class: 'langsw', role: 'group', 'aria-label': 'Recipe language' },
       [['bg', 'БГ'], ['en', 'EN']].map((l) => h('button', { type: 'button', 'aria-pressed': K.lang === l[0] ? 'true' : 'false', title: l[0] === 'bg' ? 'Recipes in Bulgarian' : 'Recipes in English', onclick: () => K.setLang(l[0]) }, l[1])));
   };
   function header() {
-    return h('header', { class: 'top' }, h('div', { class: 'top-in' },
+    return h('header', { class: 'top over' }, h('div', { class: 'top-in' },
       h('button', { type: 'button', class: 'brand', 'aria-label': 'Komat recipes', onclick: () => K.go('recipes') }, brandMark()),
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
@@ -160,13 +182,6 @@
   };
   function tabbar() {
     return h('nav', { class: 'tabbar', 'aria-label': 'Sections' }, tabButtons('mtab'));
-  }
-  function footer() {
-    const open = D.bugs.filter((b) => b.status !== 'fixed').length;
-    return h('footer', { class: 'foot' },
-      h('button', { type: 'button', class: 'link-btn', onclick: () => { ui.sheet = { type: 'bug', text: '', photo: '' }; render(); } }, K.icon('bug'), 'Something wrong? Report a problem'),
-      K.me.admin ? h('button', { type: 'button', class: 'link-btn strong', onclick: () => { ui.sheet = { type: 'bugs' }; render(); } }, 'Problem reports' + (open ? ' (' + open + ' open)' : '')) : null,
-      h('span', { class: 'mode-note' }, K.mode === 'cloud' ? 'Shared live: everyone on the team sees changes as they happen.' : 'Saved on this device only. Use the shared version in Claude for the team.'));
   }
   function noWriteBanner() {
     return h('div', { class: 'banner bad', role: 'alert' },
@@ -234,6 +249,7 @@
       try { history.replaceState({ k: 0 }, '', location.hash || '#' + hashFor()); } catch (e) { /* file:// */ }
     }
     if (K.mode === 'cloud') fromHash(location.hash);
+    ui.focusSearch = ui.view === 'recipes' && finePointer();
     K.subscribe();
     render(true);
     K.paintTimers();

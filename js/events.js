@@ -81,7 +81,7 @@
     const up = K.upcomingEvents().filter(K.isLive), sel = ui.calSel;
     const body = h('div', { class: 'page' });
     body.append(K.pageHead('Events', up.length ? up.length + ' coming up · next: ' + (up[0].title || 'Event') + ', ' + K.countdown(up[0]).toLowerCase() : 'Groups, breakfast events and private dinners',
-      K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'event', e: blankEvent(sel) }; K.render(); } }, K.icon('plus'), 'Add event') : null));
+      K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'event', e: blankEvent(sel) }; K.render(); } }, K.icon('plus'), 'Add event') : null, 'events'));
     const w = h('div', { class: 'wrap events' });
     body.append(w);
     const grid = h('div', { class: 'events-grid' });
@@ -98,7 +98,7 @@
     } else {
       list.append(h('h2', { class: 'block-title' }, 'Coming up'));
       const all = K.upcomingEvents();
-      if (!all.length) list.append(h('div', { class: 'empty' }, h('strong', null, 'No upcoming events'), K.me.admin ? 'Tap a day in the calendar, or Add event.' : 'They show up here as soon as they are booked.'));
+      if (!all.length) list.append(K.catRest('No events booked yet', K.me.admin ? 'Tap a day in the calendar, or Add event, when the next one comes in.' : 'They show up here as soon as they are booked.'));
       all.forEach((e) => list.append(eventCard(e)));
       const past = D.events.filter((e) => e.date < K.day(0) && e.date >= K.day(-30)).sort((a, b) => b.date.localeCompare(a.date));
       if (past.length) list.append(h('details', { class: 'past' }, h('summary', null, 'Last 30 days · ' + past.length), past.map(eventCard)));

@@ -12,7 +12,7 @@
       h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.' : 'This browser only. Nothing reaches the rest of the team from here.'))));
     if (K.me.admin) {
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'kitchen', k: K.clone(K.kitchen()) }; K.render(); } }, K.icon('chef'), h('span', null, h('b', null, 'Kitchen rules'), h('span', { class: 'muted' }, 'Order deadline, repeating tasks, products to check daily')), K.icon('next')));
-      rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and restaurant photos')), K.icon('next')));
+      rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and the photo at the top of each page')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'bugs' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Problem reports'), h('span', { class: 'muted' }, D.bugs.filter((b) => b.status !== 'fixed').length + ' open')), K.icon('next')));
     }
     if (K.mode === 'cloud' && K.me.admin) {
@@ -33,6 +33,9 @@
           ui.confirmReset = false; K.db.importAll(K.seedDocs()); ui.sheet = null; K.go('recipes'); K.toast('The book is back to its original recipes');
         } }, ui.confirmReset ? 'Tap again to reset' : 'Reset')));
     }
+    /* tucked away at the bottom: recipes are mostly added through Claude, problems are rare */
+    if (K.me.admin) rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => K.openAdd(ui.view === 'recipes' ? ui.cat : '') }, K.icon('plus'), h('span', null, h('b', null, 'Add a recipe by hand'), h('span', { class: 'muted' }, 'New dish, new prep, or scan a recipe sheet')), K.icon('next')));
+    rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => { ui.sheet = { type: 'bug', text: '', photo: '' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Report a problem'), h('span', { class: 'muted' }, 'Something broken or confusing? Tell the head chef')), K.icon('next')));
     return K.sheet('Settings', h('div', { class: 'settings' }, rows));
   };
   function exportBackup() {
@@ -54,7 +57,8 @@
   /* ---------- kitchen rules ---------- */
   K.SHEETS.kitchen = function (S) {
     const k = S.k;
-    k.repeats = k.repeats || []; k.daily = k.daily || [];
+    k.repeats = k.repeats || []; k.daily = k.daily || []; k.basics = k.basics || [];
+    const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
       h('div', { class: 'two' },
         K.field('Whiteboard photo due by', h('input', { class: 'input mono', id: 'k-due', type: 'time', value: k.orderDue || '23:00', oninput: (e) => { k.orderDue = e.target.value; } }), 'The reminder starts two hours before.'),
@@ -77,9 +81,17 @@
           K.select(K.STATIONS, x.station || 'pass', (v) => { x.station = v; }, { class: 'input', 'aria-label': 'Station' }),
           h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + x.name, onclick: () => { k.daily.splice(i, 1); K.render(); } }, K.icon('close')))),
         h('button', { class: 'btn small', type: 'button', onclick: () => { k.daily.push({ station: K.getStation(), name: '' }); K.render(); } }, K.icon('plus'), 'Product')),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Never on the order check'),
+        h('p', { class: 'hint' }, 'Basics the kitchen always has, so nobody has to swipe past them. Salt, pepper and water are always left out.'),
+        k.basics.length ? h('div', { class: 'tags' }, k.basics.map((x, i) => h('span', { class: 'codechip basic' }, x,
+          h('button', { type: 'button', class: 'chip-x', 'aria-label': 'Put ' + x + ' back on the order check', onclick: () => { k.basics.splice(i, 1); K.render(); } }, K.icon('close'))))) : null,
+        h('form', { class: 'inline-form', onsubmit: addBasic },
+          h('input', { class: 'input', id: 'k-basic', placeholder: 'e.g. Брашно', 'aria-label': 'Product to leave out', enterkeyhint: 'done' }),
+          h('button', { class: 'btn', type: 'submit' }, 'Leave out'))),
       h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => {
         k.repeats = k.repeats.filter((r) => (r.name || '').trim() && (r.days || []).length).map((r) => ({ id: r.id || K.uid(), name: r.name.trim(), station: r.station || 'pass', days: r.days.slice().sort(), item: (r.item || '').trim() }));
         k.daily = k.daily.filter((x) => (x.name || '').trim()).map((x) => ({ station: x.station || 'pass', name: x.name.trim() }));
+        k.basics = k.basics.map((x) => String(x).trim()).filter(Boolean);
         ui.sheet = null;
         K.saveKitchen(k).then(() => K.toast('Kitchen rules saved'));
       } }, 'Save'))), { wide: true });
@@ -114,12 +126,24 @@
         files.reduce((p, f) => p.then(() => upload(f, 2000, 'Uploading photos…').then((r) => ids.push(r.id))), Promise.resolve()).catch(() => {})
           .then(() => { if (ids.length) K.saveBranding({ heroes: hs.concat(ids) }); });
       }) }, K.icon('plus'), 'Add photos')));
-    w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, '“We approve” photo'),
-      h('p', { class: 'hint' }, 'The chefs who sign off the recipes, shown next to the words “We approve these recipes.”'),
-      b.approve ? h('img', { class: 'approve-prev', src: K.media(b.approve), alt: 'Current photo' }) : null,
-      h('div', { class: 'btns' },
-        h('button', { class: 'btn', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: () => K.pickFile('image/*', false, (f) => upload(f[0], 1400, 'Uploading the photo…').then((r) => { const old = b.approve; return K.saveBranding({ approve: r.id }).then(() => drop(old)); }).catch(() => {})) }, K.icon('upload'), b.approve ? 'Replace photo' : 'Add photo'),
-        b.approve ? h('button', { class: 'btn', type: 'button', onclick: () => { const old = b.approve; K.saveBranding({ approve: '' }).then(() => drop(old)); } }, 'Remove') : null)));
+    const pages = b.pages || {};
+    w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Page photos'),
+      h('p', { class: 'hint' }, 'The photo at the top of each page. Recipes changes dish every day unless you pick one.'),
+      h('div', { class: 'pagephotos' }, K.PAGE_PHOTO_TABS.map((t) => {
+        const cur = pages[t[0]];
+        return h('div', { class: 'pp card' },
+          h('img', { src: K.pagePhoto(t[0]), alt: '', loading: 'lazy' }),
+          h('div', { class: 'pp-txt' }, h('b', null, t[1]), h('span', { class: 'muted small' }, cur ? 'Your photo' : t[0] === 'recipes' && hs[0] ? 'Header photo' : t[0] === 'recipes' ? 'A dish a day' : 'Komat photo'),
+            h('div', { class: 'btns' },
+              h('button', { class: 'btn small', type: 'button', disabled: !K.assets || !!ui.uploading, onclick: () => K.pickFile('image/*', false, (f) => upload(f[0], 2000, 'Uploading the photo…').then((r) => {
+                const n = Object.assign({}, pages); n[t[0]] = r.id;
+                return K.saveBranding({ pages: n }).then(() => { if (cur && cur.indexOf('/') < 0) drop(cur); });
+              }).catch(() => {})) }, K.icon('photo'), 'Change'),
+              cur ? h('button', { class: 'btn small', type: 'button', onclick: () => {
+                const n = Object.assign({}, pages); delete n[t[0]];
+                K.saveBranding({ pages: n }).then(() => { if (cur.indexOf('/') < 0) drop(cur); });
+              } }, 'Reset') : null)));
+      }))));
     if (!K.assets) w.append(h('p', { class: 'banner warn' }, 'Uploading needs editor access to the book.'));
     return { top: top, body: w, tabs: false };
   };

@@ -4,15 +4,16 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
 
 ## What's in it
 
-- **Recipes**: search in Bulgarian or Latin letters (`gyozi` finds Гьози), or by ingredient. Filter by folder, dish/recipe and "on the menu now". Dishes are broken into their parts, each with its own yield.
+- **Recipes**: the search sits at the top and stays under the header as you scroll (tap Recipes again to jump into it). Search in Bulgarian or Latin letters (`gyozi` finds Гьози), or by ingredient. Filter by folder, dish/recipe and "on the menu now". Dishes are broken into their parts, each with its own yield. Plating photos open full screen and swipe; recipes without a photo show an illustration marked as such.
   - Scale by yield, ×½ to ×4, a custom factor, or from what you have ("I have 750 g celeriac"). Grams switch to kilos at 1000.
   - Tap ingredients and steps to cross them off. Times in a method ("20 минути") become tap-to-start **timers**. They keep running across pages and ring when done. Temperatures are highlighted.
   - **Cook mode**: one big step at a time, swipe or tap Next. The screen stays on.
   - Allergens (EU 14) are found automatically from the ingredient names, then confirmed by the head chef.
   - Bulgarian / English switch for recipe text.
-  - Editor: paste a whole ingredient list at once, reorder parts, add photos and plating videos. In the Claude version you can also scan a paper recipe sheet.
-- **Today**: pick your station (Hot, Cold, Pass & pastry). Tap a mise en place row once for **DO**, twice for **ready**, and **!** flags it urgent for the whole kitchen. You get a to-do list with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events, who's on and the whiteboard. Every "Done" has an Undo.
-- **Orders**: each station marks Low / Out; the Orders tab combines them into one copyable list next to the whiteboard photo.
+  - Editor (Settings → Add a recipe by hand, or Edit on a recipe): paste a whole ingredient list at once, reorder parts, add photos, plating photos and videos. In the Claude version you can also scan a paper recipe sheet.
+- **Today**: pick your station (Hot, Cold, Pass & pastry). Tap a mise en place row once for **DO**, twice for **ready**, or swipe it (right = ready, left = DO); **!** flags it urgent for the whole kitchen. Finishing a station gets confetti. You get a to-do list with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events, who's on and the whiteboard. Every "Done" has an Undo.
+- **Order check**: one product card at a time, with a photo. Swipe right = have it, left = out, up = running low (or use the buttons, or the classic list). Spellings of the same product are merged, salt, pepper and water are never asked, and the head chef can retire any other basic with "Stop asking" (listed in Kitchen rules).
+- **Orders**: the Orders tab combines every station's Low / Out into one copyable list next to the whiteboard photo.
 - **Schedule**: your own week at a glance plus the full rota, using the same shift codes as the spreadsheet. The head chef sets shifts with a few taps.
 - **Events**: calendar, countdowns, the food (linked recipes open already scaled to the guest count) and a prep list that lands on each station's Today on the right day.
 
@@ -26,7 +27,7 @@ Open `index.html` through any static web server, for example GitHub Pages, or lo
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-It starts with the book's 52 recipes, the stations' mise en place lists and the rota codes from `data/`. Everything you change is **saved in that browser only**. Settings → Backup exports and imports a file. Settings → Start over restores the original book. "Add to home screen" on a phone gives it an app icon.
+It starts with the book's 52 recipes, the stations' mise en place lists and the rota codes from `data/`. Everything you change is **saved in that browser only**. Settings → Backup exports and imports a file. Settings → Start over restores the original book. "Add to home screen" on a phone gives it an app icon, and once opened it keeps working offline (`sw.js`).
 
 ### 2. Shared, inside Claude (for the team)
 
@@ -49,6 +50,8 @@ The collections and fields are the same as the first version of the book (`recip
 
 The repo is public, so `data/` only holds recipes, mise en place lists and shift codes. Staff names, rotas, events, problem reports and the team photos stay in the private shared database and are not committed.
 
+Photos: `assets/photos/theme` (page headers, the courtyard cat), `assets/photos/gallery` (plating photos), `assets/photos/produce` (order-check products, named in `data/produce.js`) and `assets/photos/art` (illustrations for recipes without a photo, listed in `data/art.js`). Product photos and illustrations are AI-generated.
+
 ## Code
 
 Plain HTML, CSS and JavaScript with no dependencies or build step for the site.
@@ -61,14 +64,18 @@ js/allergens.js     allergen detection (English + Bulgarian)
 js/store.js         storage: Claude database or this browser, one API
 js/data.js          live data, recipes model, stations, tasks, orders, rota, events
 js/timers.js        timers found in method text
+js/gestures.js      swipeable rows, drag-to-close sheets, confetti
 js/app.js           boot, routing, header, tab bar
+js/photos.js        page photos, galleries, photo viewer, quiet-state cat
 js/recipes.js       list, recipe pages, scaling, cook mode
 js/editor.js        recipe editor, recipe-sheet scanning, list sync
-js/today.js         Today, stock check, list editor
+js/today.js         Today, list editor
+js/ordercheck.js    the swipe order check and its summary
 js/orders.js        Orders
 js/schedule.js      Schedule
 js/events.js        Events
 js/admin.js         settings, kitchen rules, branding, problem reports
-data/*.js           starting data for the site
+data/*.js           starting data for the site, product photo names, illustrated recipes
+sw.js               offline cache for the stand-alone site
 tools/build.mjs     builds the single-file artifact page
 ```

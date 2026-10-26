@@ -171,12 +171,15 @@
   K.sheet = function (title, body, opts) {
     opts = opts || {};
     const close = opts.onClose || (() => { K.ui.sheet = null; K.render(); });
-    return h('div', { class: 'sheet-back', onclick: (e) => { if (e.target === e.currentTarget) close(); } },
-      h('div', { class: 'sheet' + (opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-        h('div', { class: 'sheet-head' },
-          h('h2', null, title),
-          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: close }, K.icon('close'))),
-        h('div', { class: 'sheet-body' }, body)));
+    const head = h('div', { class: 'sheet-head' },
+      h('span', { class: 'grab', 'aria-hidden': 'true' }),
+      h('h2', null, title),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: close }, K.icon('close')));
+    const sheet = h('div', { class: 'sheet' + (opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title,
+      onkeydown: (e) => { if (e.key === 'Escape') close(); } }, head, h('div', { class: 'sheet-body' }, body));
+    /* pull the sheet down by its top to put it away */
+    if (K.dragSheet) K.dragSheet(sheet, head, close);
+    return h('div', { class: 'sheet-back', onclick: (e) => { if (e.target === e.currentTarget) close(); } }, sheet);
   };
 
   /* labelled form field; give the control an id so focus survives a redraw */

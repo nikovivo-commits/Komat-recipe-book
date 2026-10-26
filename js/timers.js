@@ -94,6 +94,7 @@
     let tray = document.getElementById('timers');
     if (!tray) { tray = h('div', { id: 'timers', class: 'timers' }); document.body.append(tray); }
     tray.textContent = '';
+    document.body.classList.toggle('has-timers', timers.length > 0);
     if (!timers.length) { tray.hidden = true; clearInterval(tick); tick = null; return; }
     tray.hidden = false;
     let anyDone = false;

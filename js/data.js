@@ -6,7 +6,7 @@
   const K = window.K;
   const D = (K.D = {
     loaded: false, recipesSrc: [], recipes: [],
-    branding: { logo: '', heroes: [], approve: '' },
+    branding: { logo: '', heroes: [], approve: '', pages: {} },
     checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
@@ -24,6 +24,8 @@
     repeats: [{ id: 'bread', name: 'Поръчай хляб', station: 'pass', days: [0, 2, 4], item: 'Хляб' }],
     /* products to look at in every order check */
     daily: [{ station: 'pass', name: 'Микрозеленини' }],
+    /* basics the kitchen always has: never on the order check (salt, pepper and water never are) */
+    basics: [],
   };
   K.kitchen = () => Object.assign({}, DEFAULT_KITCHEN, D.kitchen || {});
 
@@ -38,7 +40,7 @@
     const comps = Array.isArray(r.components) ? r.components.map(normComp) : [];
     return {
       id: r.id, name: r.name || 'Untitled', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
-      photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+      photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], gallery: Array.isArray(r.gallery) ? r.gallery.filter((g) => g && g.id) : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
       steps: Array.isArray(r.steps) ? r.steps : [], plating: r.plating || '', notes: r.notes || '', allergens: Array.isArray(r.allergens) ? r.allergens : [],
       allergensChecked: !!r.allergensChecked, updated: r.updated || 0, station: r.station || '',
       services: Array.isArray(r.services) ? r.services : [], onMenu: r.onMenu !== false, components: comps,
@@ -128,14 +130,23 @@
 
   /* ---------- ordering: one line per product, no staples, nothing made in house ---------- */
   const ORD_QUAL = ['на много ситно', 'на много фино', 'на ситно', 'на фино', 'на дребно', 'на едро', 'на паста', 'нарязан без дръжки', 'нарязан', 'нарязана', 'без дръжки', 'изрезки', 'белен', 'белена', 'чистен', 'чистена', 'чистени', 'смачкани', 'бланширан', 'бланширани', 'бланширана', 'сурово', 'суров', 'печен', 'печена', 'печени', 'печено', 'готвено', 'остатъци', 'на купчета във фризера', 'на стайна температура', 'от мелничка', 'прясно смлян', 'шифонада', 'почистена', 'почистен', 'тънко', 'тънко нарязан'];
-  const ORD_SYN = { 'даф лист': 'дафинов лист', 'стар лук': 'лук', прокрема: 'прокрем', 'тиквени семки': 'тиквено семе', 'сок лайм': 'лайм', 'сок от лимон': 'лимонов сок', 'краве мляко': 'мляко', 'горчица едромляна': 'едросмляна горчица', 'зелени чушки': 'зелена чушка', 'кора от половин лимон': 'лимон', 'кора от половин портокал': 'портокал', 'оризов оцет с комбу': 'оризов оцет', 'лио малини без силиката': 'лио малини', sugar: 'захар', 'olive oil': 'зехтин', 'extra virgin olive oil': 'зехтин', 'rice vinegar': 'оризов оцет', xanthan: 'ксантан', 'agar agar': 'агар', dill: 'копър', 'fresh dill': 'копър', parsley: 'магданоз', 'garlic clove': 'чесън', katyk: 'катък', chili: 'чили', chives: 'лук резанец', 'balsamic vinegar': 'балсамов оцет', 'good balsamic vinegar': 'балсамов оцет', 'orange juice': 'портокалов сок', 'fresh orange juice': 'портокалов сок', 'juice of limes': 'лайм', 'lime juice': 'лайм', 'fresh lemon juice': 'лимонов сок', 'wild garlic oil': 'олио левурда', zucchini: 'тиквички', cornstarch: 'нишесте', togarashi: 'тогараши', mirin: 'мирин', 'white fish': 'бяла риба', gelcrem: 'гелкрем', basil: 'босилек', gin: 'джин', cucumber: 'краставица', 'cucumber with the peel': 'краставица', 'cucumber peels': 'краставица', 'orange peel': 'портокал', жълтъци: 'жълтък', жълтъка: 'жълтък', белтъци: 'белтък', орехи: 'орех', 'скилидки чесън': 'чесън', лимони: 'лимон', ягоди: 'ягода' };
-  const ORD_SKIP = /^(сол|вода|лед|пипер|черен пипер|бял пипер|зелен пипер|пипер зърна|черен пипер зърна|зърна черен пипер|бял пипер зърна|зелен пипер зърна|сол и пипер|salt|pepper|water|salt and pepper|ice|fine salt|salt, pepper|олио кервиз|олио левурда|зелено олио|wild garlic oil|лещен сос|крокмач)$/;
+  const ORD_SYN = { 'даф лист': 'дафинов лист', 'стар лук': 'лук', прокрема: 'прокрем', 'тиквени семки': 'тиквено семе', 'сок лайм': 'лайм', 'сок от лимон': 'лимонов сок', 'краве мляко': 'мляко', 'горчица едромляна': 'едросмляна горчица', 'зелени чушки': 'зелена чушка', 'кора от половин лимон': 'лимон', 'кора от половин портокал': 'портокал', 'оризов оцет с комбу': 'оризов оцет', 'лио малини без силиката': 'лио малини', sugar: 'захар', 'olive oil': 'зехтин', 'extra virgin olive oil': 'зехтин', 'rice vinegar': 'оризов оцет', xanthan: 'ксантан', 'agar agar': 'агар', dill: 'копър', 'fresh dill': 'копър', parsley: 'магданоз', 'garlic clove': 'чесън', katyk: 'катък', chili: 'чили', chives: 'лук резанец', 'balsamic vinegar': 'балсамов оцет', 'good balsamic vinegar': 'балсамов оцет', 'orange juice': 'портокалов сок', 'fresh orange juice': 'портокалов сок', 'juice of limes': 'лайм', 'lime juice': 'лайм', 'fresh lemon juice': 'лимонов сок', 'wild garlic oil': 'олио левурда', zucchini: 'тиквички', cornstarch: 'нишесте', togarashi: 'тогараши', mirin: 'мирин', 'white fish': 'бяла риба', gelcrem: 'гелкрем', basil: 'босилек', gin: 'джин', cucumber: 'краставица', 'cucumber with the peel': 'краставица', 'cucumber peels': 'краставица', 'orange peel': 'портокал', жълтъци: 'яйца', жълтъка: 'яйца', жълтък: 'яйца', белтъци: 'яйца', белтък: 'яйца', яйце: 'яйца', орехи: 'орех', 'скилидки чесън': 'чесън', лимони: 'лимон', ягоди: 'ягода',
+    /* one card per product: spellings and forms of the same thing order as one */
+    'слънчогледово олио': 'олио', 'рапица олио': 'олио рапица', 'оцет ябълков': 'ябълков оцет', 'кимион семена': 'кимион', 'кориандър семена': 'кориандър',
+    'свински крачета': 'свински крака', 'масло безсолно': 'масло', 'безсолно масло': 'масло', 'студено масло': 'масло', 'прясна мащерка': 'мащерка',
+    'желатин на прах': 'желатин', 'царевично нишесте': 'нишесте', 'джин или ракия': 'джин', 'сухо бяло вино': 'бяло вино', 'кутия манатарки': 'манатарка',
+    кикоман: 'соев сос', 'оцет оборотен': 'оцет', 'лимонов сок': 'лимон', 'лимонова кора': 'лимон', 'сок от лайм': 'лайм', 'портокалов сок': 'портокал',
+    'сироп бъз с джинджифил': 'сироп бъз', 'карамелизиран лук': 'лук', 'бял винен оцет': 'винен оцет', 'хариса от кенче': 'хариса' };
+  const ORD_SKIP = /^(сол|вода|(студена|ледена|хладка|топла|гореща|вряла|филтрирана) вода|лед|пипер|черен пипер|бял пипер|зелен пипер|пипер зърна|черен пипер зърна|зърна черен пипер|бял пипер зърна|зелен пипер зърна|сол и пипер|salt|pepper|water|salt and pepper|ice|fine salt|salt, pepper|олио кервиз|олио левурда|зелено олио|wild garlic oil|лещен сос|крокмач)$/;
   function ordKey(n) {
     let k = String(n || '').split(/[,(]/)[0].split(' да ')[0].toLowerCase().replace(/[0-9%.?]+/g, ' ').replace(/\s+/g, ' ').trim();
     ORD_QUAL.forEach((q) => { k = (' ' + k + ' ').replace(' ' + q + ' ', ' ').trim(); });
     k = k.replace(/\s+/g, ' ').trim();
-    return ORD_SYN[k] || k;
+    for (let i = 0; i < 3 && ORD_SYN[k]; i++) k = ORD_SYN[k];
+    return k;
   }
+  K.ordKey = ordKey;
+  let basics = null;
   let houseNames = null, houseFor = null;
   function isHouseMade(k) {
     if (houseFor !== D.recipesSrc) {
@@ -146,7 +157,7 @@
   }
   function orderable(n) {
     const k = ordKey(n);
-    if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || isHouseMade(k)) return null;
+    if (!k || ORD_SKIP.test(k) || /^(щипка|pinch|вода да покрие)/.test(k) || (basics && basics.has(k)) || isHouseMade(k)) return null;
     return { key: k, name: k.charAt(0).toUpperCase() + k.slice(1) };
   }
   function addIng(map, g, used) {
@@ -174,6 +185,7 @@
   /* the products behind a station: today's menu preps, plus (when closing) every mise en place row */
   K.stockList = function (st, closing) {
     const map = {}, unlinked = [];
+    basics = new Set((K.kitchen().basics || []).map(ordKey));
     K.prepItems(st).forEach((it) => it.ingredients.forEach((g) => addIng(map, g, it.name)));
     if (closing) K.checkItems(st).forEach((it) => {
       const r = K.recipeFor(it);
@@ -456,7 +468,7 @@
 
   /* ---------- settings ---------- */
   K.saveBranding = function (patch) {
-    const next = Object.assign({ logo: D.branding.logo || '', heroes: (D.branding.heroes || []).slice(), approve: D.branding.approve || '' }, patch);
+    const next = Object.assign({ logo: D.branding.logo || '', heroes: (D.branding.heroes || []).slice(), approve: D.branding.approve || '', pages: Object.assign({}, D.branding.pages || {}) }, patch);
     D.branding = next;
     K.refresh(true);
     return K.db.doc('settings/branding').set(next).catch(writeFailed);
@@ -527,7 +539,7 @@
       K.refresh(first);
     }, (e) => { D.loadErr = e && e.code; D.loaded = true; K.refresh(true); });
     const setting = (name, fn) => db.doc('settings/' + name).onSnapshot((x) => { fn(x.exists ? x.data() : null); K.refresh(); }, onErr);
-    setting('branding', (d) => { D.branding = { logo: (d && d.logo) || '', heroes: d && Array.isArray(d.heroes) ? d.heroes.slice() : [], approve: (d && d.approve) || '' }; });
+    setting('branding', (d) => { D.branding = { logo: (d && d.logo) || '', heroes: d && Array.isArray(d.heroes) ? d.heroes.slice() : [], approve: (d && d.approve) || '', pages: d && d.pages && typeof d.pages === 'object' ? Object.assign({}, d.pages) : {} }; });
     setting('checklists', (d) => { D.checklists = d ? K.clone(d) : { stations: {} }; });
     setting('staff', (d) => { D.staff = d && Array.isArray(d.people) ? K.clone(d) : { people: [] }; });
     setting('shiftcodes', (d) => { D.codes = d && Array.isArray(d.codes) ? K.clone(d) : { codes: [] }; });

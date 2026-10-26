@@ -335,6 +335,20 @@ window.KOMAT_SEED.recipes = [
     "yieldUnit": ""
    }
   ],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/beluga-lenti-1.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/beluga-lenti-2.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/beluga-lenti-3.jpg",
+    "title": ""
+   }
+  ],
   "id": "beluga-lenti",
   "ingredients": [],
   "name": "Белуга леща",
@@ -1296,6 +1310,12 @@ window.KOMAT_SEED.recipes = [
     "yieldUnit": ""
    }
   ],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/gyozi-1.jpg",
+    "title": ""
+   }
+  ],
   "id": "gyozi",
   "ingredients": [],
   "name": "Гьози с говеждо и скариди",
@@ -2129,6 +2149,20 @@ window.KOMAT_SEED.recipes = [
   "allergensChecked": false,
   "category": "Mains",
   "components": [],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/patitsa-1.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/patitsa-2.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/patitsa-3.jpg",
+    "title": ""
+   }
+  ],
   "id": "patitsa",
   "ingredients": [
    {
@@ -2178,6 +2212,12 @@ window.KOMAT_SEED.recipes = [
   "allergensChecked": false,
   "category": "Starters",
   "components": [],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/pechena-chushka-1.jpg",
+    "title": ""
+   }
+  ],
   "id": "pechena-chushka",
   "ingredients": [
    {
@@ -2581,6 +2621,16 @@ window.KOMAT_SEED.recipes = [
     ],
     "yieldQty": "",
     "yieldUnit": ""
+   }
+  ],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/pumpkin-terrine-lamb-1.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/pumpkin-terrine-lamb-2.jpg",
+    "title": ""
    }
   ],
   "id": "pumpkin-terrine-lamb",
@@ -3219,6 +3269,16 @@ window.KOMAT_SEED.recipes = [
     "steps": [],
     "yieldQty": "",
     "yieldUnit": ""
+   }
+  ],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/rock-sea-bass-1.jpg",
+    "title": ""
+   },
+   {
+    "id": "assets/photos/gallery/rock-sea-bass-2.jpg",
+    "title": ""
    }
   ],
   "id": "rock-sea-bass",
@@ -4989,6 +5049,12 @@ window.KOMAT_SEED.recipes = [
   "allergensChecked": false,
   "category": "Specials",
   "components": [],
+  "gallery": [
+   {
+    "id": "assets/photos/gallery/wa-svinska-pacha-1.jpg",
+    "title": ""
+   }
+  ],
   "id": "wa-svinska-pacha",
   "ingredients": [
    {

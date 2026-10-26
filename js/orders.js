@@ -27,7 +27,7 @@
     const list = combined(date), board = D.boards[date];
     const body = h('div', { class: 'page' });
     body.append(K.pageHead('Orders', null, h('div', { class: 'phead-side' }, h('p', { class: 'psub' }, K.dayDot(date), K.prettyDate(date)),
-      K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' }))));
+      K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' })), 'orders'));
     const w = h('div', { class: 'wrap orders' });
     body.append(w);
     if (isToday) { const rb = K.reminder(true); if (rb) w.append(rb); }
@@ -43,11 +43,11 @@
     main.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Order list', h('span', { class: 'n' }, list.length ? list.length + ' all day' : '')),
       list.length ? h('button', { class: 'btn small', type: 'button', onclick: () => K.copyText(orderText(date, list)) }, K.icon('copy'), 'Copy list') : null));
     if (!list.length) {
-      main.append(h('div', { class: 'empty' }, h('strong', null, 'No app orders'),
-        'That is fine: the whiteboard photo is the main order. Stations can also mark Low or Out from Today.',
-        isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, 'Check ' + K.ST[K.getStation()] + ' now')) : null));
+      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'All good: the whiteboard photo is the main order. Stations can add to it here with a quick swipe check.',
+        isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, K.icon('order'), 'Check ' + K.ST[K.getStation()] + ' now')) : null));
     } else {
       main.append(h('div', { class: 'olist card' }, list.map((x) => h('div', { class: 'oline ' + x.s },
+        K.produceThumb(x.n),
         h('span', { class: 'obadge' }, x.s === 'out' ? 'Out' : 'Low'),
         h('div', { class: 'oline-txt' }, h('b', null, x.n),
           h('span', { class: 'muted' }, x.rows.map((r) => K.ST[r.st] + (r.note ? ': ' + r.note : '')).join(' · ')))))));
