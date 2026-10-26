@@ -33,6 +33,10 @@
           K.housekeeping(30).then((n) => { ui.cleaning = false; K.render(); K.toast(n ? 'Cleared ' + n + ' old records' : 'Nothing old to clear'); }, (e) => { ui.cleaning = false; K.render(); K.writeFailed(e); });
         } }, ui.cleaning ? 'Clearing…' : 'Clear')));
     }
+    if ((K.mode === 'firebase' || K.mode === 'local') && K.me.admin) {
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Add from a file'), h('span', { class: 'muted' }, 'An event, a week of the rota or recipes sent to you as a file. Adds them and changes nothing else.')),
+        h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => K.importBackup({ keep: true }) }, K.icon('plus'), ui.backupBusy ? 'Adding…' : 'Add')));
+    }
     if (K.mode === 'firebase' && K.me.admin) {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, rota and events to a file, or load one back. Loading replaces them for everyone.')),
         h('div', { class: 'btns' },
@@ -73,7 +77,18 @@
     if (!map || K.mode !== 'firebase') return Promise.resolve();
     return Object.keys(map).reduce((p, id) => p.then(() => fetch(map[id]).then((r) => r.blob()).then((b) => K.assets.put(id, b))), Promise.resolve());
   }
-  K.importBackup = function () {
+  /* what a file added, in words: "1 event", "2 recipes and a week of the rota" */
+  const WHAT = { events: ['event', 'events', 'events'], schedules: ['week of the rota', 'weeks of the rota', 'schedule'], recipes: ['recipe', 'recipes', 'recipes'], settings: ['setting', 'settings', 'recipes'] };
+  function added(docs) {
+    const n = {};
+    Object.keys(docs).forEach((p) => { const c = p.split('/')[0]; n[c] = (n[c] || 0) + 1; });
+    const parts = Object.keys(n).filter((c) => WHAT[c]).map((c) => n[c] + ' ' + WHAT[c][n[c] === 1 ? 0 : 1]);
+    const first = Object.keys(n).find((c) => WHAT[c]);
+    return { text: parts.length ? 'Added ' + parts.join(' and ') : 'Nothing to add in that file', tab: first ? WHAT[first][2] : 'recipes' };
+  }
+  /* opts.keep: add the file's records and leave everything else as it is (otherwise the file replaces the book) */
+  K.importBackup = function (opts) {
+    const keep = !!(opts && opts.keep);
     K.pickFile('application/json,.json', false, (f) => {
       f[0].text().then((t) => {
         const o = JSON.parse(t);
@@ -81,8 +96,12 @@
         return o;
       }).then((o) => {
         ui.backupBusy = true; K.render();
-        return loadAssets(o.assets).then(() => K.db.importAll(o.docs)).then(() => {
-          ui.backupBusy = false; ui.sheet = null; K.go('recipes'); K.toast('Backup loaded');
+        const load = () => (keep ? (K.mode === 'firebase' ? K.db.importAll(o.docs, { keep: true }) : K.db.importAll(Object.assign(K.db.exportAll(), o.docs))) : K.db.importAll(o.docs));
+        return loadAssets(o.assets).then(load).then(() => {
+          const a = added(o.docs);
+          ui.backupBusy = false; ui.sheet = null;
+          if (keep) { if (a.tab === 'events' && o.docs) { const ev = Object.keys(o.docs).find((p) => p.startsWith('events/')); if (ev) { ui.calSel = o.docs[ev].date; ui.calMonth = String(o.docs[ev].date || '').slice(0, 7); } } K.go(a.tab); K.toast(a.text); }
+          else { K.go('recipes'); K.toast('Backup loaded'); }
         }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
       }, () => K.toast('That file is not a Komat backup.', { tone: 'bad' }));
     });

@@ -40,6 +40,7 @@ Setting it up (about 10 minutes, once):
 6. Open the site with `#setup` at the end of the address (for example `https://nikovivo-commits.github.io/Komat-recipe-book/#setup`). Enter your name, email, a password and the kitchen code for cooks. The first account to do this becomes the owner; nobody else can afterwards.
 7. The empty book offers **Load a backup** (a backup file from the Claude version or the device-only site) or **Start with the built-in recipes**.
 8. Tell the team the address and the kitchen code. Settings → People and kitchen code shows who has joined.
+9. Anything prepared for you as a file (an event, a week of the rota, recipes) goes in with Settings → **Add from a file**, which adds it and changes nothing else. Settings → Backup → Import instead replaces the whole book.
 
 The rules are tested against the Firebase emulators: `cd tools/firebase && npm install && npm run emulators`, then `npm run test:rules` in another terminal.
 
