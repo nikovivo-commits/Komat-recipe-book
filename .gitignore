@@ -2,3 +2,4 @@
 node_modules/
 _artifact-test.html
 private/
+*-debug.log

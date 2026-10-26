@@ -18,27 +18,47 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
 - **Schedule**: your own week at a glance plus the full rota, using the same shift codes as the spreadsheet. The head chef sets shifts with a few taps.
 - **Events**: calendar, countdowns, the food (linked recipes open already scaled to the guest count) and a prep list that lands on each station's Today on the right day.
 
-## Two ways to run it
+## Three ways to run it
 
-### 1. Stand-alone site (this repo)
+### 1. The real app: the stand-alone site with the kitchen's own database
 
-Open `index.html` through any static web server, for example GitHub Pages, or locally:
+The site in this repo (GitHub Pages) plus a free Google Firebase project. Cooks add the site to their phone's home screen and it opens full screen like an app. Everyone shares one live book, no Claude accounts needed:
+
+- **Cooks** join once per phone with their name and the **kitchen code**. They can tick, add tasks, orders, photos and problem reports.
+- **The head chef** signs in with email and password and can also change recipes, lists, the rota, events and settings, see and change the kitchen code, make other people head chef, and remove people who have left.
+- A copy of the book stays on each phone, so it opens and ticks save without Wi-Fi, then catch up.
+- Photos and videos are kept in the database too, so the free plan (no card) is enough.
+
+Setting it up (about 10 minutes, once):
+
+1. At [console.firebase.google.com](https://console.firebase.google.com) create a project (Google Analytics is not needed).
+2. **Build → Authentication → Get started → Sign-in method**: turn on **Email/Password** and **Anonymous**.
+3. **Build → Firestore Database → Create database**: pick a location near the restaurant (for example `eur3`), start in production mode.
+4. **Firestore → Rules**: replace everything with the contents of [`firebase/firestore.rules`](firebase/firestore.rules) and Publish.
+5. **Project settings → Your apps → Web (`</>`)**: register an app (no hosting), copy the `firebaseConfig` values into [`firebase-config.js`](firebase-config.js) and push. These values are meant to be public; the rules decide who sees what.
+6. Open the site with `#setup` at the end of the address (for example `https://nikovivo-commits.github.io/Komat-recipe-book/#setup`). Enter your name, email, a password and the kitchen code for cooks. The first account to do this becomes the owner; nobody else can afterwards.
+7. The empty book offers **Load a backup** (a backup file from the Claude version or the device-only site) or **Start with the built-in recipes**.
+8. Tell the team the address and the kitchen code. Settings → People and kitchen code shows who has joined.
+
+The rules are tested against the Firebase emulators: `cd tools/firebase && npm install && npm run emulators`, then `npm run test:rules` in another terminal.
+
+### 2. Device-only site
+
+With `firebase-config.js` left as `null`, the same site keeps everything **in that browser only**. It starts with the book's 52 recipes, the stations' mise en place lists and the rota codes from `data/`. Settings → Backup exports and imports a file; Settings → Start over restores the original book. Run it locally with any static server:
 
 ```sh
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-It starts with the book's 52 recipes, the stations' mise en place lists and the rota codes from `data/`. Everything you change is **saved in that browser only**. Settings → Backup exports and imports a file. Settings → Start over restores the original book. "Add to home screen" on a phone gives it an app icon, and once opened it keeps working offline (`sw.js`).
+### 3. Shared, inside Claude
 
-### 2. Shared, inside Claude (for the team)
-
-The same code runs as a Claude artifact with a live shared database: every cook sees ticks, tasks and orders as they happen. Build the single-file page with:
+The same code runs as a Claude artifact with a live shared database: every cook with access sees ticks, tasks and orders as they happen. Build the single-file page with:
 
 ```sh
 node tools/build.mjs   # writes dist/komat-kitchen-book.html
 ```
 
-Publish it as an artifact with these capabilities: `db` (rules below), `assets`, `user` (scope `profile`) and `sample`. The artifact version holds no recipes in the page; they live in its database.
+Publish it as an artifact with these capabilities: `db` (rules below), `assets`, `user` (scope `profile`) and `sample`. The artifact version holds no recipes in the page; they live in its database. Only this version can scan a paper recipe sheet.
 
 | Path | Who can write |
 | --- | --- |
@@ -49,13 +69,15 @@ Publish it as an artifact with these capabilities: `db` (rules below), `assets`,
 
 The collections and fields are the same as the first version of the book (`recipes`, `settings/{branding,checklists,staff,shiftcodes}`, `checks`, `prep`, `orders`, `boards`, `schedules`, `events`, `bugs`), plus `settings/kitchen` for the closing hour (when the list turns to tomorrow's), repeating tasks, products to check daily and basics never asked about. A row marked for tomorrow is saved in `checks/<tomorrow>_<station>`. So this version can run on top of the existing live data.
 
-The repo is public, so `data/` only holds recipes, mise en place lists and shift codes. Staff names, rotas, events, problem reports and the team photos stay in the private shared database and are not committed.
+The kitchen's own database adds `members/<id>` (name and role of everyone who has joined), `private/owner` and `private/join` (the owner and the kitchen code, readable by head chefs only) and `blobs/<id>` (uploaded photos and videos, stored in pieces under `blobs/<id>/p`). A backup file is `{docs: {path: data}}` and may carry photos as `{assets: {id: data URL}}`.
+
+The repo is public, so `data/` only holds recipes, mise en place lists and shift codes. Staff names, rotas, events, problem reports and the team photos stay in the private shared databases and are not committed.
 
 Photos: `assets/photos/theme` (page headers, the courtyard cat), `assets/photos/gallery` (plating photos), `assets/photos/produce` (order-check products, named in `data/produce.js`) and `assets/photos/art` (illustrations for recipes without a photo, listed in `data/art.js`). Product photos and illustrations are AI-generated.
 
 ## Code
 
-Plain HTML, CSS and JavaScript with no dependencies or build step for the site.
+Plain HTML, CSS and JavaScript with no build step for the site. The one dependency, the Firebase SDK, is bundled into `vendor/firebase.js` (rebuild with `cd tools/firebase && npm install && npm run bundle`).
 
 ```
 index.html          site entry
@@ -64,6 +86,7 @@ js/core.js          DOM helper, dates (the kitchen day runs to 4 am), quantities
 js/allergens.js     allergen detection (English + Bulgarian)
 js/store.js         storage: Claude database or this browser, one API
 js/data.js          live data, recipes model, stations, tasks, orders, rota, events
+js/cloud.js         the kitchen's own database (Firebase): same API, sign-in, photos, offline copy
 js/timers.js        timers found in method text
 js/gestures.js      swipeable rows, drag-to-close sheets, confetti
 js/app.js           boot, routing, header, tab bar
@@ -75,8 +98,13 @@ js/ordercheck.js    the swipe order check and its summary
 js/orders.js        Orders
 js/schedule.js      Schedule
 js/events.js        Events
-js/admin.js         settings, kitchen rules, branding, problem reports
+js/admin.js         settings, kitchen rules, branding, backups, problem reports
+js/login.js         joining the kitchen, head chef sign-in and setup, people and kitchen code
 data/*.js           starting data for the site, product photo names, illustrated recipes
+firebase-config.js  the Firebase project's web settings (null = device-only)
+firebase/           Firestore security rules
+vendor/firebase.js  the Firebase SDK, bundled
 sw.js               offline cache for the stand-alone site
 tools/build.mjs     builds the single-file artifact page
+tools/firebase/     bundles the SDK, runs the emulators, tests the rules
 ```

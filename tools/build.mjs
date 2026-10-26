@@ -1,6 +1,7 @@
 // Builds the single-file page published as the shared Claude artifact.
 // The artifact keeps its recipes and lists in its live database, so the starting data
-// files (data/recipes.js, data/settings.js) are left out; the translation list stays in.
+// files (data/recipes.js, data/settings.js) and the Firebase files are left out; the
+// translation list stays in.
 //   node tools/build.mjs        -> dist/komat-kitchen-book.html
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -8,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const index = readFileSync(join(root, 'index.html'), 'utf8');
-const scripts = [...index.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !/^data\/(recipes|settings)\.js$/.test(s));
+// the starting data and the kitchen's own database (Firebase) belong to the stand-alone site only
+const SITE_ONLY = /^(data\/(recipes|settings)\.js|vendor\/firebase\.js|firebase-config\.js|js\/(cloud|login)\.js)$/;
+const scripts = [...index.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !SITE_ONLY.test(s));
 const fonts = index.match(/<link rel="stylesheet" href="(https:\/\/fonts\.googleapis\.com[^"]+)">/)[1];
 const read = (p) => readFileSync(join(root, p), 'utf8').replace(/<\/(script|style)/gi, '<\\/$1');
 

@@ -170,6 +170,7 @@
     if (!id) return '';
     if (/[/:]/.test(id)) return id;
     if (K.mode === 'cloud') return '/_blob/' + id;
+    if (K.mode === 'firebase') return K.Fire.assets.url(id);
     return LocalAssets.urls[id] || 'assets/photos/' + id + '.jpg';
   };
 

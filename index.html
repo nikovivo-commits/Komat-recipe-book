@@ -26,11 +26,15 @@
 <script src="data/art.js"></script>
 <script src="data/recipes.js"></script>
 <script src="data/settings.js"></script>
+<!-- the kitchen's own shared database (stand-alone site only) -->
+<script src="vendor/firebase.js"></script>
+<script src="firebase-config.js"></script>
 <!-- the app; tools/build.mjs inlines this same list for the Claude artifact -->
 <script src="js/core.js"></script>
 <script src="js/allergens.js"></script>
 <script src="js/store.js"></script>
 <script src="js/data.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/timers.js"></script>
 <script src="js/gestures.js"></script>
 <script src="js/app.js"></script>
@@ -43,6 +47,7 @@
 <script src="js/schedule.js"></script>
 <script src="js/events.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/login.js"></script>
 <!-- works offline once opened (stand-alone site only) -->
 <script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
 </body>

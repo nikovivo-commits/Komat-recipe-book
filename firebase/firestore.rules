@@ -1,0 +1,58 @@
+rules_version = '2';
+// Who can do what in the Komat kitchen book.
+//   Cooks join on their phone with the kitchen code. They can read everything, tick lists,
+//   add tasks, orders and problem reports, and add photos.
+//   Head chefs (the owner who set the kitchen up, and anyone the owner or a head chef promotes)
+//   also change recipes, station lists, the rota, events and settings, see the kitchen code
+//   and manage the people list.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function mePath() { return /databases/$(db)/documents/members/$(request.auth.uid); }
+    function ownerPath() { return /databases/$(db)/documents/private/owner; }
+    function joinPath() { return /databases/$(db)/documents/private/join; }
+    function member() { return signedIn() && exists(mePath()); }
+    function owner() { return signedIn() && exists(ownerPath()) && get(ownerPath()).data.uid == request.auth.uid; }
+    function admin() { return member() && get(mePath()).data.role == 'admin'; }
+    function isOwnerDoc(uid) { return exists(ownerPath()) && get(ownerPath()).data.uid == uid; }
+    function goodName(d) { return d.name is string && d.name.size() > 0 && d.name.size() <= 40; }
+
+    // the head chef's account, claimed once when the kitchen is set up (email sign-in only)
+    match /private/owner {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.resource.data.keys().hasOnly(['uid', 'at']) && request.resource.data.uid == request.auth.uid;
+    }
+    // the kitchen code cooks join with
+    match /private/join {
+      allow read: if admin();
+      allow write: if admin() && request.resource.data.keys().hasOnly(['code', 'at'])
+        && request.resource.data.code is string && request.resource.data.code.size() >= 6 && request.resource.data.code.size() <= 40;
+    }
+    // everyone who can open the book
+    match /members/{uid} {
+      allow read: if member() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'role', 'code', 'at'])
+        && goodName(request.resource.data)
+        && ((request.resource.data.role == 'cook' && exists(joinPath()) && request.resource.data.code == get(joinPath()).data.code)
+          || (request.resource.data.role == 'admin' && owner()));
+      // you can change your own name; head chefs can also change roles, but the owner stays head chef
+      allow update: if goodName(request.resource.data) && (
+          (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']))
+          || (admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'role'])
+            && request.resource.data.role in ['cook', 'admin'] && (request.resource.data.role == 'admin' || !isOwnerDoc(uid))));
+      allow delete: if signedIn() && (request.auth.uid == uid || (admin() && !isOwnerDoc(uid)));
+    }
+    // the book itself
+    match /{coll}/{id} {
+      allow read: if member() && coll in ['recipes', 'settings', 'schedules', 'events', 'checks', 'prep', 'orders', 'boards', 'bugs', 'blobs'];
+      allow write: if (admin() && coll in ['recipes', 'settings', 'schedules', 'events'])
+        || (member() && coll in ['checks', 'prep', 'orders', 'boards', 'bugs', 'blobs']);
+    }
+    // photos and videos are stored in pieces under blobs/{id}/p/{n}
+    match /blobs/{id}/p/{n} {
+      allow read, write: if member();
+    }
+  }
+}

@@ -31,6 +31,8 @@
   /* K.go('today') or K.go('recipe', {id, comp}) */
   const scrollMem = {};
   const pageKey = () => (ui.view === 'recipe' ? 'r.' + ui.id + '.' + ui.comp : ui.view);
+  /* the stand-alone site (device copy or the kitchen's own database) has real browser history */
+  const site = () => K.mode === 'local' || K.mode === 'firebase';
   K.go = function (view, opts) {
     opts = opts || {};
     if (ui.wake && view !== 'recipe') K.releaseWake();
@@ -42,7 +44,7 @@
       K.rememberRecent(opts.id);
     }
     ui.sheet = null;
-    if (K.mode === 'local') {
+    if (site()) {
       const hs = hashFor();
       try { if (hs && location.hash !== '#' + hs) history.pushState({ k: 1 }, '', '#' + hs); } catch (e) { /* file:// */ }
     }
@@ -50,7 +52,7 @@
     if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   };
   window.addEventListener('popstate', () => {
-    if (K.mode !== 'local') return;
+    if (!site()) return;
     ui.sheet = null; ui.cook = null;
     scrollMem[pageKey()] = window.scrollY;
     if (!fromHash(location.hash)) ui.view = 'recipes';
@@ -59,7 +61,7 @@
   });
   /* back from a sub-page: browser history on the stand-alone site, else the parent tab */
   K.back = function (fallback) {
-    if (K.mode === 'local' && history.state && history.state.k) { history.back(); return; }
+    if (site() && history.state && history.state.k) { history.back(); return; }
     K.go(fallback || TAB_OF[ui.view] || 'recipes', { restore: true });
   };
 
@@ -118,6 +120,7 @@
   function view() {
     if (K.mode === 'pending') return { body: loading('Opening the kitchen book…') };
     if (K.mode === 'none') return { body: unavailable() };
+    if (K.mode === 'firebase' && ui.auth) return K.V.login();
     if (ui.view === 'recipe' && (!D.loaded || !K.find(ui.id))) {
       if (!D.loaded) return { body: loading('Loading recipes…') };
       ui.view = 'recipes';
@@ -142,7 +145,7 @@
   }
   K.brandMark = brandMark;
   function badge(tab) {
-    if (K.mode === 'pending' || K.mode === 'none') return null;
+    if (K.mode === 'pending' || K.mode === 'none' || ui.auth) return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
     return null;
@@ -233,6 +236,20 @@
         K.sample = s;
         if (s && typeof s.limits === 'function') s.limits().then((l) => { K.sampleImages = l && l.images ? Math.min(4, l.images.maxCount || 1) : 0; K.refresh(); }).catch(() => {});
       }).catch(() => {});
+    } else if (K.Fire) {
+      /* the kitchen's own database: data starts flowing once this phone has joined (cloud.js) */
+      K.mode = 'firebase';
+      K.db = K.Fire.db;
+      K.assets = K.Fire.assets;
+      ui.auth = 'wait';
+      if (location.hash === '#setup') ui.authWant = 'setup';
+      else fromHash(location.hash);
+      try { history.replaceState({ k: 0 }, '', location.hash === '#setup' ? '#recipes' : location.hash || '#' + hashFor()); } catch (e) { /* file:// */ }
+      ui.focusSearch = ui.view === 'recipes' && finePointer();
+      K.Fire.start();
+      render(true);
+      K.paintTimers();
+      return;
     } else if (K.BUILD === 'artifact') {
       K.mode = 'none';
       render();

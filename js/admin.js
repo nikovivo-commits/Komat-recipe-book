@@ -9,24 +9,44 @@
     const rows = [];
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Recipe language'), h('span', { class: 'muted' }, 'The book is written in Bulgarian. English uses the translation list.')), K.langSwitch()));
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Where your changes go'),
-      h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.' : 'This browser only. Nothing reaches the rest of the team from here.'))));
+      h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.'
+        : K.mode === 'firebase' ? 'Shared live with the whole kitchen. A copy stays on this phone, so it keeps working when the Wi-Fi drops.'
+          : 'This browser only. Nothing reaches the rest of the team from here.'))));
+    if (K.mode === 'firebase') {
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Signed in as ' + (K.me.name || 'you')),
+        h('span', { class: 'muted' }, (K.me.admin ? 'Head chef' : 'Cook') + (K.me.email ? ' · ' + K.me.email : ''))),
+        h('button', { class: 'btn small', type: 'button', onclick: () => {
+          if (K.me.guest && !ui.confirmOut) { ui.confirmOut = true; K.render(); return; }
+          ui.confirmOut = false; K.Fire.signOut();
+        } }, ui.confirmOut ? 'Tap again: you will need the code' : 'Sign out')));
+      if (K.me.admin) rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => K.openPeople() }, K.icon('chef'), h('span', null, h('b', null, 'People and kitchen code'), h('span', { class: 'muted' }, Object.keys(D.members).length + ' people can open the book')), K.icon('next')));
+    }
     if (K.me.admin) {
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'kitchen', k: K.clone(K.kitchen()) }; K.render(); } }, K.icon('chef'), h('span', null, h('b', null, 'Kitchen rules'), h('span', { class: 'muted' }, 'Order deadline, repeating tasks, products to check daily')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and the photo at the top of each page')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'bugs' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Problem reports'), h('span', { class: 'muted' }, D.bugs.filter((b) => b.status !== 'fixed').length + ' open')), K.icon('next')));
     }
-    if (K.mode === 'cloud' && K.me.admin) {
+    if ((K.mode === 'cloud' || K.mode === 'firebase') && K.me.admin) {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Clear old daily records'), h('span', { class: 'muted' }, 'Ticks, tasks, orders and whiteboard photos older than 30 days. Keeps the shared database lean.')),
         h('button', { class: 'btn small', type: 'button', disabled: !!ui.cleaning, onclick: () => {
           ui.cleaning = true; K.render();
           K.housekeeping(30).then((n) => { ui.cleaning = false; K.render(); K.toast(n ? 'Cleared ' + n + ' old records' : 'Nothing old to clear'); }, (e) => { ui.cleaning = false; K.render(); K.writeFailed(e); });
         } }, ui.cleaning ? 'Clearing…' : 'Clear')));
     }
+    if (K.mode === 'firebase' && K.me.admin) {
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, rota and events to a file, or load one back. Loading replaces them for everyone.')),
+        h('div', { class: 'btns' },
+          h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: exportBackup }, K.icon('download'), 'Export'),
+          h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
+            if (!ui.confirmImport) { ui.confirmImport = true; K.render(); return; }
+            ui.confirmImport = false; K.render(); K.importBackup();
+          } }, K.icon('upload'), ui.backupBusy ? 'Loading…' : ui.confirmImport ? 'Tap again to choose a file' : 'Import'))));
+    }
     if (K.mode === 'local') {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save everything on this device to a file, or load one back.')),
         h('div', { class: 'btns' },
           h('button', { class: 'btn small', type: 'button', onclick: exportBackup }, K.icon('download'), 'Export'),
-          h('button', { class: 'btn small', type: 'button', onclick: importBackup }, K.icon('upload'), 'Import'))));
+          h('button', { class: 'btn small', type: 'button', onclick: () => K.importBackup() }, K.icon('upload'), 'Import'))));
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Start over'), h('span', { class: 'muted' }, 'Put back the original recipes and lists. Your ticks, tasks and edits on this device are removed.')),
         h('button', { class: 'btn small danger', type: 'button', onclick: () => {
           if (!ui.confirmReset) { ui.confirmReset = true; K.render(); return; }
@@ -39,20 +59,34 @@
     return K.sheet('Settings', h('div', { class: 'settings' }, rows));
   };
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ app: 'komat-kitchen-book', at: new Date().toISOString(), docs: K.db.exportAll() }, null, 1)], { type: 'application/json' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: 'komat-backup-' + K.day(0) + '.json' });
-    document.body.append(a); a.click(); a.remove();
-    K.toast('Backup saved. Photos you added stay on this device.');
+    ui.backupBusy = true; K.render();
+    Promise.resolve(K.db.exportAll()).then((docs) => {
+      ui.backupBusy = false; K.render();
+      const blob = new Blob([JSON.stringify({ app: 'komat-kitchen-book', at: new Date().toISOString(), docs: docs }, null, 1)], { type: 'application/json' });
+      const a = h('a', { href: URL.createObjectURL(blob), download: 'komat-backup-' + K.day(0) + '.json' });
+      document.body.append(a); a.click(); a.remove();
+      K.toast(K.mode === 'firebase' ? 'Backup saved. Photos stay in the kitchen database.' : 'Backup saved. Photos you added stay on this device.');
+    }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
   }
-  function importBackup() {
+  /* a backup can carry photos too ({assets: {id: data URL}}); the kitchen database keeps them */
+  function loadAssets(map) {
+    if (!map || K.mode !== 'firebase') return Promise.resolve();
+    return Object.keys(map).reduce((p, id) => p.then(() => fetch(map[id]).then((r) => r.blob()).then((b) => K.assets.put(id, b))), Promise.resolve());
+  }
+  K.importBackup = function () {
     K.pickFile('application/json,.json', false, (f) => {
       f[0].text().then((t) => {
         const o = JSON.parse(t);
         if (!o || !o.docs || typeof o.docs !== 'object') throw new Error('shape');
-        K.db.importAll(o.docs); ui.sheet = null; K.go('recipes'); K.toast('Backup loaded');
-      }).catch(() => K.toast('That file is not a Komat backup.', { tone: 'bad' }));
+        return o;
+      }).then((o) => {
+        ui.backupBusy = true; K.render();
+        return loadAssets(o.assets).then(() => K.db.importAll(o.docs)).then(() => {
+          ui.backupBusy = false; ui.sheet = null; K.go('recipes'); K.toast('Backup loaded');
+        }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
+      }, () => K.toast('That file is not a Komat backup.', { tone: 'bad' }));
     });
-  }
+  };
 
   /* ---------- kitchen rules ---------- */
   K.SHEETS.kitchen = function (S) {

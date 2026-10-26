@@ -137,6 +137,17 @@
     box.textContent = '';
     if (!D.loaded) { box.append(h('div', { class: 'empty' }, h('strong', null, 'Loading recipes'), 'One moment.')); return; }
     if (!D.recipes.length) {
+      /* a brand-new kitchen database: bring the book in from a backup, or start from the recipes built into the app */
+      if (K.mode === 'firebase' && K.me.admin) {
+        box.append(K.catRest('The book is ready for its recipes', 'Load the backup from the Claude version to bring everything across, or start with the recipes built into the app.',
+          h('div', { class: 'btns center' },
+            h('button', { class: 'btn primary', type: 'button', disabled: !!ui.backupBusy, onclick: () => K.importBackup() }, K.icon('upload'), ui.backupBusy ? 'Loading…' : 'Load a backup'),
+            h('button', { class: 'btn', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
+              ui.backupBusy = true; K.render();
+              K.db.importAll(K.seedDocs(), { keep: true }).then(() => { ui.backupBusy = false; K.render(); K.toast('The built-in recipes are in'); }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
+            } }, 'Start with the built-in recipes'))));
+        return;
+      }
       box.append(K.catRest('The book is ready for its first recipe', K.me.admin ? 'Add a dish, a prep, or scan a recipe sheet.' : 'Recipes appear here as soon as the head chef adds them.',
         K.me.admin ? addBtn('') : null));
       return;

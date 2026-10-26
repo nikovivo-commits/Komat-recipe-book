@@ -1003,6 +1003,27 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 }
 @media (prefers-reduced-motion: reduce) { .pcard, .sheet, .sheet-back, .lightbox { animation: none !important; } }
 
+/* ---------- signing in to the kitchen (the real app) ---------- */
+.login-hero .hero-in { padding-block: calc(28px + env(safe-area-inset-top, 0px)) 92px; }
+.login-mark { display: inline-grid; place-items: center; justify-self: start; margin-bottom: 14px; }
+.login-mark .logo { height: 46px; }
+.login { position: relative; z-index: 2; margin-top: -64px; padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
+.login-card { display: grid; gap: 4px; max-width: 460px; margin: 0 auto; padding: 22px 20px 20px; }
+.login-card > .muted { margin-bottom: 14px; }
+.login-card .banner { margin-bottom: 12px; }
+.login-title { font: 700 1.9rem/1.05 var(--display); margin-bottom: 4px; }
+.login-alt { display: grid; justify-items: center; gap: 14px; margin-top: 16px; }
+.login-alt .linkish { font-weight: 600; color: var(--muted); }
+.code-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1.5px dashed var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.kcode { font-size: 1.3rem; letter-spacing: .04em; overflow-wrap: anywhere; }
+.sel { -webkit-user-select: all; user-select: all; overflow-wrap: anywhere; }
+.people { list-style: none; margin: 0; padding: 0; display: grid; }
+.person { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.person .p-name { flex: 1; min-width: 120px; }
+.person .btns { flex-basis: 100%; }
+.codechip.chef { background: var(--apron-soft); border-color: var(--apron); color: var(--apron); }
+@media (min-width: 560px) { .person .btns { flex-basis: auto; } }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -2389,6 +2410,7 @@ window.KOMAT_ART = [
     if (!id) return '';
     if (/[/:]/.test(id)) return id;
     if (K.mode === 'cloud') return '/_blob/' + id;
+    if (K.mode === 'firebase') return K.Fire.assets.url(id);
     return LocalAssets.urls[id] || 'assets/photos/' + id + '.jpg';
   };
 
@@ -3293,6 +3315,8 @@ window.KOMAT_ART = [
   /* K.go('today') or K.go('recipe', {id, comp}) */
   const scrollMem = {};
   const pageKey = () => (ui.view === 'recipe' ? 'r.' + ui.id + '.' + ui.comp : ui.view);
+  /* the stand-alone site (device copy or the kitchen's own database) has real browser history */
+  const site = () => K.mode === 'local' || K.mode === 'firebase';
   K.go = function (view, opts) {
     opts = opts || {};
     if (ui.wake && view !== 'recipe') K.releaseWake();
@@ -3304,7 +3328,7 @@ window.KOMAT_ART = [
       K.rememberRecent(opts.id);
     }
     ui.sheet = null;
-    if (K.mode === 'local') {
+    if (site()) {
       const hs = hashFor();
       try { if (hs && location.hash !== '#' + hs) history.pushState({ k: 1 }, '', '#' + hs); } catch (e) { /* file:// */ }
     }
@@ -3312,7 +3336,7 @@ window.KOMAT_ART = [
     if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   };
   window.addEventListener('popstate', () => {
-    if (K.mode !== 'local') return;
+    if (!site()) return;
     ui.sheet = null; ui.cook = null;
     scrollMem[pageKey()] = window.scrollY;
     if (!fromHash(location.hash)) ui.view = 'recipes';
@@ -3321,7 +3345,7 @@ window.KOMAT_ART = [
   });
   /* back from a sub-page: browser history on the stand-alone site, else the parent tab */
   K.back = function (fallback) {
-    if (K.mode === 'local' && history.state && history.state.k) { history.back(); return; }
+    if (site() && history.state && history.state.k) { history.back(); return; }
     K.go(fallback || TAB_OF[ui.view] || 'recipes', { restore: true });
   };
 
@@ -3380,6 +3404,7 @@ window.KOMAT_ART = [
   function view() {
     if (K.mode === 'pending') return { body: loading('Opening the kitchen book…') };
     if (K.mode === 'none') return { body: unavailable() };
+    if (K.mode === 'firebase' && ui.auth) return K.V.login();
     if (ui.view === 'recipe' && (!D.loaded || !K.find(ui.id))) {
       if (!D.loaded) return { body: loading('Loading recipes…') };
       ui.view = 'recipes';
@@ -3404,7 +3429,7 @@ window.KOMAT_ART = [
   }
   K.brandMark = brandMark;
   function badge(tab) {
-    if (K.mode === 'pending' || K.mode === 'none') return null;
+    if (K.mode === 'pending' || K.mode === 'none' || ui.auth) return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
     return null;
@@ -3495,6 +3520,20 @@ window.KOMAT_ART = [
         K.sample = s;
         if (s && typeof s.limits === 'function') s.limits().then((l) => { K.sampleImages = l && l.images ? Math.min(4, l.images.maxCount || 1) : 0; K.refresh(); }).catch(() => {});
       }).catch(() => {});
+    } else if (K.Fire) {
+      /* the kitchen's own database: data starts flowing once this phone has joined (cloud.js) */
+      K.mode = 'firebase';
+      K.db = K.Fire.db;
+      K.assets = K.Fire.assets;
+      ui.auth = 'wait';
+      if (location.hash === '#setup') ui.authWant = 'setup';
+      else fromHash(location.hash);
+      try { history.replaceState({ k: 0 }, '', location.hash === '#setup' ? '#recipes' : location.hash || '#' + hashFor()); } catch (e) { /* file:// */ }
+      ui.focusSearch = ui.view === 'recipes' && finePointer();
+      K.Fire.start();
+      render(true);
+      K.paintTimers();
+      return;
     } else if (K.BUILD === 'artifact') {
       K.mode = 'none';
       render();
@@ -3763,6 +3802,17 @@ window.KOMAT_ART = [
     box.textContent = '';
     if (!D.loaded) { box.append(h('div', { class: 'empty' }, h('strong', null, 'Loading recipes'), 'One moment.')); return; }
     if (!D.recipes.length) {
+      /* a brand-new kitchen database: bring the book in from a backup, or start from the recipes built into the app */
+      if (K.mode === 'firebase' && K.me.admin) {
+        box.append(K.catRest('The book is ready for its recipes', 'Load the backup from the Claude version to bring everything across, or start with the recipes built into the app.',
+          h('div', { class: 'btns center' },
+            h('button', { class: 'btn primary', type: 'button', disabled: !!ui.backupBusy, onclick: () => K.importBackup() }, K.icon('upload'), ui.backupBusy ? 'Loading…' : 'Load a backup'),
+            h('button', { class: 'btn', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
+              ui.backupBusy = true; K.render();
+              K.db.importAll(K.seedDocs(), { keep: true }).then(() => { ui.backupBusy = false; K.render(); K.toast('The built-in recipes are in'); }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
+            } }, 'Start with the built-in recipes'))));
+        return;
+      }
       box.append(K.catRest('The book is ready for its first recipe', K.me.admin ? 'Add a dish, a prep, or scan a recipe sheet.' : 'Recipes appear here as soon as the head chef adds them.',
         K.me.admin ? addBtn('') : null));
       return;
@@ -5627,24 +5677,44 @@ window.KOMAT_ART = [
     const rows = [];
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Recipe language'), h('span', { class: 'muted' }, 'The book is written in Bulgarian. English uses the translation list.')), K.langSwitch()));
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Where your changes go'),
-      h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.' : 'This browser only. Nothing reaches the rest of the team from here.'))));
+      h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.'
+        : K.mode === 'firebase' ? 'Shared live with the whole kitchen. A copy stays on this phone, so it keeps working when the Wi-Fi drops.'
+          : 'This browser only. Nothing reaches the rest of the team from here.'))));
+    if (K.mode === 'firebase') {
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Signed in as ' + (K.me.name || 'you')),
+        h('span', { class: 'muted' }, (K.me.admin ? 'Head chef' : 'Cook') + (K.me.email ? ' · ' + K.me.email : ''))),
+        h('button', { class: 'btn small', type: 'button', onclick: () => {
+          if (K.me.guest && !ui.confirmOut) { ui.confirmOut = true; K.render(); return; }
+          ui.confirmOut = false; K.Fire.signOut();
+        } }, ui.confirmOut ? 'Tap again: you will need the code' : 'Sign out')));
+      if (K.me.admin) rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => K.openPeople() }, K.icon('chef'), h('span', null, h('b', null, 'People and kitchen code'), h('span', { class: 'muted' }, Object.keys(D.members).length + ' people can open the book')), K.icon('next')));
+    }
     if (K.me.admin) {
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'kitchen', k: K.clone(K.kitchen()) }; K.render(); } }, K.icon('chef'), h('span', null, h('b', null, 'Kitchen rules'), h('span', { class: 'muted' }, 'Order deadline, repeating tasks, products to check daily')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and the photo at the top of each page')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'bugs' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Problem reports'), h('span', { class: 'muted' }, D.bugs.filter((b) => b.status !== 'fixed').length + ' open')), K.icon('next')));
     }
-    if (K.mode === 'cloud' && K.me.admin) {
+    if ((K.mode === 'cloud' || K.mode === 'firebase') && K.me.admin) {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Clear old daily records'), h('span', { class: 'muted' }, 'Ticks, tasks, orders and whiteboard photos older than 30 days. Keeps the shared database lean.')),
         h('button', { class: 'btn small', type: 'button', disabled: !!ui.cleaning, onclick: () => {
           ui.cleaning = true; K.render();
           K.housekeeping(30).then((n) => { ui.cleaning = false; K.render(); K.toast(n ? 'Cleared ' + n + ' old records' : 'Nothing old to clear'); }, (e) => { ui.cleaning = false; K.render(); K.writeFailed(e); });
         } }, ui.cleaning ? 'Clearing…' : 'Clear')));
     }
+    if (K.mode === 'firebase' && K.me.admin) {
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, rota and events to a file, or load one back. Loading replaces them for everyone.')),
+        h('div', { class: 'btns' },
+          h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: exportBackup }, K.icon('download'), 'Export'),
+          h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
+            if (!ui.confirmImport) { ui.confirmImport = true; K.render(); return; }
+            ui.confirmImport = false; K.render(); K.importBackup();
+          } }, K.icon('upload'), ui.backupBusy ? 'Loading…' : ui.confirmImport ? 'Tap again to choose a file' : 'Import'))));
+    }
     if (K.mode === 'local') {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save everything on this device to a file, or load one back.')),
         h('div', { class: 'btns' },
           h('button', { class: 'btn small', type: 'button', onclick: exportBackup }, K.icon('download'), 'Export'),
-          h('button', { class: 'btn small', type: 'button', onclick: importBackup }, K.icon('upload'), 'Import'))));
+          h('button', { class: 'btn small', type: 'button', onclick: () => K.importBackup() }, K.icon('upload'), 'Import'))));
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Start over'), h('span', { class: 'muted' }, 'Put back the original recipes and lists. Your ticks, tasks and edits on this device are removed.')),
         h('button', { class: 'btn small danger', type: 'button', onclick: () => {
           if (!ui.confirmReset) { ui.confirmReset = true; K.render(); return; }
@@ -5657,20 +5727,34 @@ window.KOMAT_ART = [
     return K.sheet('Settings', h('div', { class: 'settings' }, rows));
   };
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ app: 'komat-kitchen-book', at: new Date().toISOString(), docs: K.db.exportAll() }, null, 1)], { type: 'application/json' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: 'komat-backup-' + K.day(0) + '.json' });
-    document.body.append(a); a.click(); a.remove();
-    K.toast('Backup saved. Photos you added stay on this device.');
+    ui.backupBusy = true; K.render();
+    Promise.resolve(K.db.exportAll()).then((docs) => {
+      ui.backupBusy = false; K.render();
+      const blob = new Blob([JSON.stringify({ app: 'komat-kitchen-book', at: new Date().toISOString(), docs: docs }, null, 1)], { type: 'application/json' });
+      const a = h('a', { href: URL.createObjectURL(blob), download: 'komat-backup-' + K.day(0) + '.json' });
+      document.body.append(a); a.click(); a.remove();
+      K.toast(K.mode === 'firebase' ? 'Backup saved. Photos stay in the kitchen database.' : 'Backup saved. Photos you added stay on this device.');
+    }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
   }
-  function importBackup() {
+  /* a backup can carry photos too ({assets: {id: data URL}}); the kitchen database keeps them */
+  function loadAssets(map) {
+    if (!map || K.mode !== 'firebase') return Promise.resolve();
+    return Object.keys(map).reduce((p, id) => p.then(() => fetch(map[id]).then((r) => r.blob()).then((b) => K.assets.put(id, b))), Promise.resolve());
+  }
+  K.importBackup = function () {
     K.pickFile('application/json,.json', false, (f) => {
       f[0].text().then((t) => {
         const o = JSON.parse(t);
         if (!o || !o.docs || typeof o.docs !== 'object') throw new Error('shape');
-        K.db.importAll(o.docs); ui.sheet = null; K.go('recipes'); K.toast('Backup loaded');
-      }).catch(() => K.toast('That file is not a Komat backup.', { tone: 'bad' }));
+        return o;
+      }).then((o) => {
+        ui.backupBusy = true; K.render();
+        return loadAssets(o.assets).then(() => K.db.importAll(o.docs)).then(() => {
+          ui.backupBusy = false; ui.sheet = null; K.go('recipes'); K.toast('Backup loaded');
+        }, (e) => { ui.backupBusy = false; K.render(); K.writeFailed(e); });
+      }, () => K.toast('That file is not a Komat backup.', { tone: 'bad' }));
     });
-  }
+  };
 
   /* ---------- kitchen rules ---------- */
   K.SHEETS.kitchen = function (S) {
