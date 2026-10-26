@@ -23,6 +23,15 @@
     if (tab === 'recipes' && b.heroes && b.heroes[0]) return K.media(b.heroes[0]);
     return K.defaultPagePhoto(tab);
   };
+  /* an image that tries a second address, then gives way to a stand-in */
+  K.photoWithFallback = function (src, alt, standIn, attrs) {
+    return h('img', Object.assign({}, attrs, { src: src, onerror: (e) => {
+      const im = e.target;
+      if (alt && im.getAttribute('src') !== alt) im.src = alt;
+      else if (typeof standIn === 'function') standIn(im);
+      else if (standIn) im.replaceWith(standIn); else im.remove();
+    } }));
+  };
   K.photoLayer = function (src) {
     if (!src) return [];
     return [

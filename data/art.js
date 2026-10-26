@@ -1,5 +1,6 @@
 /* Recipes without a photo of their own get an illustration from assets/photos/art/<id>.jpg.
-   It is shown with an "Illustration" tag so nobody plates from it; a real photo always wins. */
+   It is shown with an "Illustration" tag so nobody plates from it; a real photo always wins.
+   If the file is not there, the picture loads from where it was generated (KOMAT_ART_SRC). */
 window.KOMAT_ART = [
   "barkani-yaitsa",
   "benedikt",
@@ -46,3 +47,49 @@ window.KOMAT_ART = [
   "zelena-yabalka-marinovana",
   "zeleno-kyopoolu"
 ];
+window.KOMAT_ART_SRC = {
+  "barkani-yaitsa": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021126_222ac96d-fa0c-420a-a0b8-9b4cd3d5750a.png",
+  "benedikt": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021125_ed16fea2-c52f-4806-938e-b9872cfa0f38.png",
+  "cveklo": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021126_8b201e02-ff31-4767-b8e8-76b4c19eee9a.png",
+  "cveklo-gaspacho": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021126_771646c4-7415-4f23-b505-46709e25360e.png",
+  "domaten-sos": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021125_9c87879c-a47f-487c-8c0c-bba4bc0b91cd.png",
+  "dresing-baz": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021127_3be56c10-f268-4fd8-a21f-aeda03c5e3f1.png",
+  "gyozi-salamuriika-staro": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021124_8e6857d5-1c02-4ae8-bf72-d61fc0ab9a23.png",
+  "gyozi-smes-staro": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021126_5b63decf-bd6a-456e-b40d-a02486bc7a6f.png",
+  "kazandibi": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021125_736bd755-cc29-4f54-91cb-81385548b2a0.png",
+  "krem-fenel": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021125_eea1c7c1-d06e-432e-b4ed-b47cb6bb8d94.png",
+  "listna-salata-teize": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021127_caefd184-5411-40a6-8b4b-089aaeacd8ec.png",
+  "marinata-keil-fenel": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021124_e004e24d-97b7-4ad6-81a6-8596859380c6.png",
+  "mlechna-banitsa": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021152_1d40c52f-5651-4b19-a3b6-66ed4ef9892c.png",
+  "muhamara": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021150_1910ddfe-86ae-482c-bb3f-b2ed72ad11b2.png",
+  "pate": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021150_644ff0a8-b589-401e-a3d8-f9bfd46fa57c.png",
+  "pikal-daikon": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021151_0886db82-2e91-4556-8b36-c4cda5d6e966.png",
+  "proletna-razqdka": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021153_875966f5-1128-45b8-81ab-d474012bd1aa.png",
+  "quince-dip": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021152_f11823a8-6733-4644-9afc-0db0750d39e2.png",
+  "ragu-limets": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021153_ee6db785-5db4-4c9b-90af-e99792842106.png",
+  "reduktsiya": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021151_ba326a9e-d312-4b7b-a44e-2a8e9e950ba5.png",
+  "reduktsiya-devisil": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021152_88f55ef7-0b56-456c-aa7f-8f6cc8dff53b.png",
+  "revane": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021153_08370198-8eed-4eeb-8b18-6e972af23fad.png",
+  "shakshuka": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021151_a1310d15-e2c3-444c-a5b1-e9dd0a9c6a63.png",
+  "sorbe-limon": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021151_c51c67cf-6d75-4b4c-a4e2-c42f1bacd89f.png",
+  "tarama": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021217_262bc5b7-b033-4adb-8599-4044d39498c4.png",
+  "teleshki-ezik": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021219_44e63150-346d-4eb0-bfa6-957a64e8c951.png",
+  "teleshki-tartar": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021216_3c85675d-6ceb-46b8-bca6-c77222bc859d.png",
+  "teleshko-bonfile": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021217_9e357775-db9d-4944-be4f-781c40584d13.png",
+  "teleshko-bonfile-staro": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021217_2f404382-4ef3-4019-bfcf-398d17c09b0b.png",
+  "terin-kervizh": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021218_d67bd4a7-2aaa-45f5-861a-387709859132.png",
+  "vagyu": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021216_dd031760-84bb-4662-8b15-602d9a17b532.png",
+  "wa-batter": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021218_f6f987df-8648-457c-98c3-3bffe78b91f6.png",
+  "wa-blini": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021218_82af8eb2-fe60-41fa-90ab-5a1127f34688.png",
+  "wa-creme-brulee": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021217_38f2de96-864e-4139-a893-0e2880cd3931.png",
+  "wa-granita": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021218_b4a50bbd-984f-48c1-a588-463a298d9a03.png",
+  "wa-krokmach-tarator": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021218_4a710440-3c0f-4a07-bb34-6492c7ce46de.png",
+  "wa-marinated-zucchini": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021238_eb4bb581-e043-4ee0-a30d-977d9f18a21a.png",
+  "wa-orange-gel": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021237_d9cfe584-c6e7-4dc7-9521-90b1f98a1e32.png",
+  "wa-sesame-dressing": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021237_4ecaa0cc-f165-4945-a138-c0b52593c7de.png",
+  "wa-tiger-milk": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021238_ad36f61f-bb44-4eaa-bab6-8ec9c98c2fc6.png",
+  "wa-togarashi-mix": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021237_3fd5efc9-b98a-45d0-9a41-9b3deb4a07b1.png",
+  "yare": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021238_58b9488b-a5b5-4137-b2ad-7ba8d793bf9e.png",
+  "zelena-yabalka-marinovana": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021238_4ef4bf64-48a5-4fcd-bd64-71c7906e7340.png",
+  "zeleno-kyopoolu": "https://d8j0ntlcm91z4.cloudfront.net/user_3K4D3Uj13d1sWpz3kgnC0sa4h1J/hf_20261026_021238_296087df-4f78-44d6-873e-e89c440b39e3.png"
+};

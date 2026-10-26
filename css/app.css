@@ -313,6 +313,9 @@ body.over-photo:not(.scrolled) .top.over { background-color: transparent; border
 /* the product photo or letter on order lines */
 .pthumb { flex: none; display: block; width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
 .pthumb.ph { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font: 700 1.3rem/1 var(--display); text-transform: uppercase; }
+/* the photo must not be dragged or long-pressed on its own: the whole card moves */
+.pcard { -webkit-touch-callout: none; }
+.pcard img { pointer-events: none; -webkit-user-drag: none; user-select: none; }
 img.pc-mono { width: min(230px, 30vh, 100%); width: min(230px, 30dvh, 100%); height: auto; aspect-ratio: 1; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .5); }
 .sum-row { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
 .sum-row .input { grid-column: 2 / -1; }

@@ -12,16 +12,12 @@
     K.go('stock');
   };
 
-  /* a product's photo, if the book has one */
-  K.produceImg = function (name) {
-    const P = window.KOMAT_PRODUCE || {}, n = String(name || '').toLowerCase(), slug = P[n] || P[K.ordKey(n)];
-    return slug ? 'assets/photos/produce/' + slug + '.jpg' : '';
-  };
-  /* photo, or the first letter on a colour when there is none (or it fails to load) */
+  /* a product's photo: the book's own file, else where it was generated, else its first letter */
   K.produceThumb = function (name, cls) {
-    const src = K.produceImg(name), letter = h('span', { class: (cls || 'pthumb') + ' ph t' + (String(name).charCodeAt(0) % 6), 'aria-hidden': 'true' }, String(name).charAt(0));
-    if (!src) return letter;
-    return h('img', { class: cls || 'pthumb', src: src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => { e.target.replaceWith(letter); } });
+    const P = window.KOMAT_PRODUCE || {}, n = String(name || '').toLowerCase(), slug = P[n] || P[K.ordKey(n)];
+    const letter = h('span', { class: (cls || 'pthumb') + ' ph t' + (String(name).charCodeAt(0) % 6), 'aria-hidden': 'true' }, String(name).charAt(0));
+    if (!slug) return letter;
+    return K.photoWithFallback('assets/photos/produce/' + slug + '.jpg', (window.KOMAT_PRODUCE_SRC || {})[slug], letter, { class: cls || 'pthumb', alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' });
   };
   const count = (S) => Object.keys(S.m).length + S.extras.filter((x) => (x.n || '').trim()).length;
   const clock = (ms) => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };

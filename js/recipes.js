@@ -106,11 +106,12 @@
   function tint(s) { let x = 0; for (const ch of String(s)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return 't' + (x % TINTS); }
   /* an illustration for a recipe that has no photo yet (a real photo always wins) */
   K.artFor = (r) => (r && !r.photo && (window.KOMAT_ART || []).includes(r.id) ? 'assets/photos/art/' + r.id + '.jpg' : '');
+  K.artSrc = (r) => (r && (window.KOMAT_ART_SRC || {})[r.id]) || '';
   function thumb(r, name) {
     const letter = () => h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
     const ph = r && (r.photo || (r.gallery[0] && r.gallery[0].id));
     const src = ph ? K.media(ph) : K.artFor(r);
-    return src ? h('img', { class: 'thumb', src: src, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => { e.target.replaceWith(letter()); } }) : letter();
+    return src ? K.photoWithFallback(src, ph ? '' : K.artSrc(r), letter(), { class: 'thumb', alt: '', loading: 'lazy', decoding: 'async' }) : letter();
   }
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
@@ -324,7 +325,7 @@
       r.photo ? h('button', { type: 'button', class: 'dish-photo-btn', 'aria-label': 'Open photos of ' + r.name, onclick: () => K.openPhotos([{ id: r.photo, title: r.name }].concat(r.gallery), 0) },
         h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }),
         r.gallery.length ? h('span', { class: 'photo-count' }, K.icon('photo'), String(r.gallery.length + 1)) : null)
-        : art ? h('figure', { class: 'dish-photo-btn art' }, h('img', { class: 'dish-photo', src: art, alt: '', onerror: (e) => { e.target.parentNode.remove(); } }),
+        : art ? h('figure', { class: 'dish-photo-btn art' }, K.photoWithFallback(art, K.artSrc(r), (im) => im.parentNode.remove(), { class: 'dish-photo', alt: '' }),
           h('figcaption', { class: 'art-tag' }, 'Illustration, not our plating')) : null,
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),
