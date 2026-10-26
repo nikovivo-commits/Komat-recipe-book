@@ -341,6 +341,10 @@ img.pc-mono { width: min(230px, 30vh, 100%); width: min(230px, 30dvh, 100%); hei
 .parts ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .parts li button { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; width: 100%; min-height: 46px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; font-weight: 700; }
 .parts li button:hover .pname { color: var(--apron); }
+.parts li button.has-thumb { grid-template-columns: 54px 1fr auto; }
+.pthumb-wrap { position: relative; width: 54px; height: 40px; }
+.part-thumb { display: block; width: 54px; height: 40px; object-fit: cover; border-radius: 8px; background: var(--surface-2); }
+.pthumb-wrap .pn { position: absolute; left: -6px; top: -6px; width: 22px; height: 22px; font-size: .72rem; box-shadow: 0 0 0 2px var(--ground); }
 .pn, .part-n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--apron); color: var(--apron-ink); font: 700 .85rem var(--mono); }
 .part-n .ico { width: 16px; height: 16px; }
 .jump { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 10; display: flex; gap: 6px; overflow-x: auto; margin: 22px calc(-1 * var(--gutter-l)) 0 calc(-1 * var(--gutter-l)); padding: 8px var(--gutter-r) 8px var(--gutter-l); background: var(--ground); border-bottom: 1px solid var(--line); scrollbar-width: none; }

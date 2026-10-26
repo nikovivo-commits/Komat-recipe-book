@@ -107,6 +107,8 @@
   /* an illustration for a recipe that has no photo yet (a real photo always wins) */
   K.artFor = (r) => (r && !r.photo && (window.KOMAT_ART || []).includes(r.id) ? 'assets/photos/art/' + r.id + '.jpg' : '');
   K.artSrc = (r) => (r && (window.KOMAT_ART_SRC || {})[r.id]) || '';
+  /* the parts of a dish have their own illustrations (assets/photos/art/parts/<part id>.jpg) */
+  K.partArt = (r, ci) => { const c = r && r.components[ci]; return c && c.cid && (window.KOMAT_PART_ART || []).includes(c.cid) ? 'assets/photos/art/parts/' + c.cid + '.jpg' : ''; };
   function thumb(r, name) {
     const letter = () => h('div', { class: 'thumb ph ' + tint((r && r.category) || name), 'aria-hidden': 'true' }, (name || '?').charAt(0).toUpperCase());
     const ph = r && (r.photo || (r.gallery[0] && r.gallery[0].id));
@@ -329,8 +331,12 @@
     const al = allergenBlock(K.detectAllergens(K.allIngLists(r)), r.allergens, r.allergensChecked, r.type === 'dish' ? 'Allergens in the whole dish' : 'Allergens');
     const index = comps.length ? h('nav', { class: 'parts', 'aria-label': 'Parts of the dish' },
       h('span', { class: 'label' }, comps.length + ' parts' + (P.hasMain ? ' + assembly' : '')),
-      h('ol', null, comps.map((c) => h('li', null, h('button', { type: 'button', onclick: () => jump('s-' + c.key) },
-        h('span', { class: 'pn mono' }, String(c.ci + 1)), h('span', { class: 'pname' }, c.name), c.yieldQty ? h('span', { class: 'muted mono' }, K.yieldText(c.yieldQty, c.yieldUnit)) : null))))) : null;
+      h('ol', null, comps.map((c) => {
+        const pa = K.partArt(r, c.ci), n = h('span', { class: 'pn mono' }, String(c.ci + 1));
+        return h('li', null, h('button', { type: 'button', class: pa ? 'has-thumb' : null, onclick: () => jump('s-' + c.key) },
+          pa ? h('span', { class: 'pthumb-wrap' }, K.photoWithFallback(pa, '', (im) => im.remove(), { class: 'part-thumb', alt: '', loading: 'lazy', decoding: 'async' }), n) : n,
+          h('span', { class: 'pname' }, c.name), c.yieldQty ? h('span', { class: 'muted mono' }, K.yieldText(c.yieldQty, c.yieldUnit)) : null));
+      }))) : null;
     const art = K.artFor(r);
     body.append(h('div', { class: 'rhead' + (r.photo || art ? ' has-photo' : '') },
       r.photo ? h('button', { type: 'button', class: 'dish-photo-btn', 'aria-label': 'Open photos of ' + r.name, onclick: () => K.openPhotos([{ id: r.photo, title: r.name }].concat(r.gallery), 0) },
@@ -377,8 +383,11 @@
 
   function compPage(r, c) {
     const ci = ui.comp, part = { key: 'x', ci: ci, name: c.name, yieldQty: c.yieldQty, yieldUnit: c.yieldUnit, ingredients: c.ingredients, steps: c.steps };
-    const body = h('div', { class: 'wrap page recipe' });
-    body.append(h('div', { class: 'rhead' }, h('div', { class: 'rhead-txt' },
+    const body = h('div', { class: 'wrap page recipe' }), pa = K.partArt(r, ci);
+    body.append(h('div', { class: 'rhead' + (pa ? ' has-photo' : '') },
+      pa ? h('figure', { class: 'dish-photo-btn art' }, K.photoWithFallback(pa, '', (im) => im.parentNode.remove(), { class: 'dish-photo', alt: '' }),
+        h('figcaption', { class: 'art-tag' }, 'Illustration, not our prep')) : null,
+      h('div', { class: 'rhead-txt' },
       h('p', { class: 'kicker' }, 'Recipe · part ' + (ci + 1) + ' of ' + r.components.length),
       h('h1', { class: 'rtitle' }, c.name),
       h('button', { class: 'partof', type: 'button', onclick: () => K.go('recipe', { id: r.id }) }, h('span', { class: 'muted' }, 'Part of the dish'), h('b', null, r.name), K.icon('next')),
