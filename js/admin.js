@@ -14,7 +14,7 @@
           : 'This browser only. Nothing reaches the rest of the team from here.'))));
     if (K.mode === 'firebase') {
       rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Signed in as ' + (K.me.name || 'you')),
-        h('span', { class: 'muted' }, (K.me.admin ? 'Head chef' : 'Cook') + (K.me.email ? ' · ' + K.me.email : ''))),
+        h('span', { class: 'muted' }, K.Fire.roleName(K.me.role) + (K.me.email ? ' · ' + K.me.email : ''))),
         h('button', { class: 'btn small', type: 'button', onclick: () => {
           if (K.me.guest && !ui.confirmOut) { ui.confirmOut = true; K.render(); return; }
           ui.confirmOut = false; K.Fire.signOut();

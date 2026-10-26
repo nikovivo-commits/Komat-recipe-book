@@ -221,7 +221,7 @@
       if (s.metadata.hasPendingWrites) return;
       if (s.exists()) {
         const m = s.data();
-        K.me = { id: u.uid, admin: m.role === 'admin', canWrite: true, name: m.name || '', email: u.email || '', guest: !!u.isAnonymous };
+        K.me = { id: u.uid, admin: m.role === 'admin' || m.role === 'dev', role: m.role || 'cook', canWrite: true, name: m.name || '', email: u.email || '', guest: !!u.isAnonymous };
         K.ui.auth = null;
         enter();
         K.subscribeBugs();
@@ -277,6 +277,9 @@
   };
   S.getCode = () => F.getDoc(F.doc(fs, 'private/join')).then((s) => (s.exists() ? s.data().code : ''), (e) => Promise.reject(err(e)));
   S.setCode = (code) => write(F.setDoc(F.doc(fs, 'private/join'), { code: code, at: Date.now() }));
+  /* who can do what: cooks tick and add tasks; head chefs and devs (whoever builds the app) change everything */
+  S.ROLES = [['cook', 'Cook'], ['admin', 'Head chef'], ['dev', 'Dev']];
+  S.roleName = (role) => (S.ROLES.find((r) => r[0] === role) || S.ROLES[0])[1];
   S.setRole = (uid, role) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { role: role }));
   S.rename = (name) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { name: name }));
   S.remove = (uid) => write(F.deleteDoc(F.doc(fs, 'members/' + uid)));

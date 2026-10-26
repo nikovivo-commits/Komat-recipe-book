@@ -3,8 +3,9 @@ rules_version = '2';
 //   Cooks join on their phone with the kitchen code. They can read everything, tick lists,
 //   add tasks, orders and problem reports, and add photos.
 //   Head chefs (the owner who set the kitchen up, and anyone the owner or a head chef promotes)
-//   also change recipes, station lists, the rota, events and settings, see the kitchen code
-//   and manage the people list.
+//   and devs (whoever builds and looks after the app; the same powers, its own name) also
+//   change recipes, station lists, the rota, events and settings, see the kitchen code and
+//   manage the people list.
 service cloud.firestore {
   match /databases/{db}/documents {
     function signedIn() { return request.auth != null; }
@@ -13,7 +14,7 @@ service cloud.firestore {
     function joinPath() { return /databases/$(db)/documents/private/join; }
     function member() { return signedIn() && exists(mePath()); }
     function owner() { return signedIn() && exists(ownerPath()) && get(ownerPath()).data.uid == request.auth.uid; }
-    function admin() { return member() && get(mePath()).data.role == 'admin'; }
+    function admin() { return member() && get(mePath()).data.role in ['admin', 'dev']; }
     function isOwnerDoc(uid) { return exists(ownerPath()) && get(ownerPath()).data.uid == uid; }
     function goodName(d) { return d.name is string && d.name.size() > 0 && d.name.size() <= 40; }
 
@@ -37,11 +38,11 @@ service cloud.firestore {
         && goodName(request.resource.data)
         && ((request.resource.data.role == 'cook' && exists(joinPath()) && request.resource.data.code == get(joinPath()).data.code)
           || (request.resource.data.role == 'admin' && owner()));
-      // you can change your own name; head chefs can also change roles, but the owner stays head chef
+      // you can change your own name; head chefs and devs can also change roles, but the owner stays head chef
       allow update: if goodName(request.resource.data) && (
           (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']))
           || (admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'role'])
-            && request.resource.data.role in ['cook', 'admin'] && (request.resource.data.role == 'admin' || !isOwnerDoc(uid))));
+            && request.resource.data.role in ['cook', 'admin', 'dev'] && (request.resource.data.role == 'admin' || !isOwnerDoc(uid))));
       allow delete: if signedIn() && (request.auth.uid == uid || (admin() && !isOwnerDoc(uid)));
     }
     // the book itself
