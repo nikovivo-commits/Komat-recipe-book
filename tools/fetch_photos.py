@@ -7,6 +7,7 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src = json.load(open(os.path.join(ROOT, 'tools', 'photo-sources.json')))
 jobs = [('produce', k, v, 480, 480) for k, v in src['produce'].items()] + [('art', k, v, 800, 600) for k, v in src['art'].items()]
+jobs += [('theme', k, v, 1600, 900) for k, v in src.get('theme', {}).items()]
 saved = failed = 0
 for folder, name, url, w, h in jobs:
     out = os.path.join(ROOT, 'assets', 'photos', folder, name + '.jpg')
