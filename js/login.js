@@ -34,7 +34,7 @@
       msg(),
       submit('Join', 'Joining…'),
       h('div', { class: 'login-alt' },
-        signedIn ? linkBtn('Sign out', () => K.Fire.signOut()) : linkBtn('Head chef? Sign in with email', () => go('chef'))));
+        signedIn ? linkBtn('Sign out', () => K.Fire.signOut()) : linkBtn('Chef? Sign in with email', () => go('chef'))));
   }
   function chefForm() {
     const v = lg();
@@ -43,7 +43,7 @@
       if (!v.email.trim() || !v.pw) { ui.authErr = 'Write your email and password.'; K.render(); return; }
       run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; });
     } },
-      h('h2', { class: 'login-title' }, 'Head chef sign-in'),
+      h('h2', { class: 'login-title' }, 'Chef sign-in'),
       K.field('Email', input('email', { type: 'email', autocomplete: 'username', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'next' })),
       K.field('Password', input('pw', { type: 'password', autocomplete: 'current-password', enterkeyhint: 'go' })),
       msg(),
@@ -108,7 +108,7 @@
   };
   K.SHEETS.people = function (S) {
     const owner = K.Fire.ownerUid, list = Object.keys(D.members).map((id) => Object.assign({ id: id }, D.members[id]))
-      .sort((a, b) => { const o = { admin: 0, dev: 1, cook: 2 }; return (o[a.role] - o[b.role]) || a.name.localeCompare(b.name); });
+      .sort((a, b) => { const o = { admin: 0, sous: 1, dev: 2, cook: 3 }; return ((o[a.role] || 3) - (o[b.role] || 3)) || a.name.localeCompare(b.name); });
     const site = location.origin + location.pathname.replace(/index\.html$/, '');
     const codeBox = S.editCode
       ? h('form', { class: 'inline-form', onsubmit: (e) => {
@@ -130,7 +130,7 @@
           const rid = K.rotaIdFor(p.name), staff = (D.staff && D.staff.people) || [];
           return h('li', { class: 'person' },
             h('span', { class: 'p-name' }, h('b', null, p.name || 'No name'), me ? h('span', { class: 'muted' }, ' (you)') : null),
-            h('span', { class: 'codechip' + (p.role === 'admin' ? ' chef' : p.role === 'dev' ? ' dev' : '') }, isOwner ? 'Owner' : K.Fire.roleName(p.role)),
+            h('span', { class: 'codechip' + (p.role === 'dev' ? ' dev' : K.Fire.FULL.includes(p.role) ? ' chef' : '') }, K.Fire.roleName(p.role) + (isOwner ? ' · owner' : '')),
             staff.length ? h('label', { class: 'p-rota' }, h('span', { class: 'muted' }, 'On the rota as'),
               K.select((rid ? [] : [['', 'Not linked']]).concat(staff.map((s) => [s.id, s.name])), rid, (v) => {
                 const s = staff.find((x) => x.id === v);
@@ -138,6 +138,9 @@
                 if (document.activeElement) document.activeElement.blur();
                 if (s) K.Fire.renameMember(p.id, s.name).then(() => K.toast(s.name + '’s week now shows their shifts'), K.writeFailed);
               }, { class: 'input small', 'aria-label': 'On the rota as' })) : null,
+            /* your own title can change, but never to one without the full rights */
+            me && K.Fire.FULL.includes(p.role) ? h('span', { class: 'btns' },
+              K.select(K.Fire.ROLES.filter((r) => K.Fire.FULL.includes(r[0])), p.role, (v) => { if (document.activeElement) document.activeElement.blur(); K.Fire.setRole(p.id, v).then(() => K.toast('You are now ' + K.Fire.roleName(v).toLowerCase()), K.writeFailed); }, { class: 'input small role-pick', 'aria-label': 'Your title' })) : null,
             !isOwner && !me ? h('span', { class: 'btns' },
               K.select(K.Fire.ROLES, p.role || 'cook', (v) => { if (document.activeElement) document.activeElement.blur(); K.Fire.setRole(p.id, v).then(() => K.toast(p.name + ' is now ' + K.Fire.roleName(v).toLowerCase()), K.writeFailed); }, { class: 'input small role-pick', 'aria-label': 'Role of ' + p.name }),
               h('button', { class: 'btn small danger', type: 'button', onclick: () => {
@@ -145,6 +148,6 @@
                 S.confirm = ''; K.Fire.remove(p.id).then(() => K.toast(p.name + ' removed'), K.writeFailed);
               } }, sure ? 'Tap again to remove' : 'Remove')) : null);
         })),
-        h('p', { class: 'hint' }, 'Head chefs and devs can change recipes, lists, the rota, events and settings; a dev is whoever builds and looks after the app. Remove people who have left the team.'))), { wide: true });
+        h('p', { class: 'hint' }, 'Sous chefs, head chefs and devs can change recipes, lists, the rota, events and settings; a dev is whoever builds and looks after the app. Remove people who have left the team.'))), { wide: true });
   };
 })();
