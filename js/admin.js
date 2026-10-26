@@ -16,7 +16,7 @@
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'bugs' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Problem reports'), h('span', { class: 'muted' }, D.bugs.filter((b) => b.status !== 'fixed').length + ' open')), K.icon('next')));
     }
     if (K.mode === 'cloud' && K.me.admin) {
-      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Clear old daily records'), h('span', { class: 'muted' }, 'Ticks, tasks, orders and whiteboard photos older than 30 days. The shared database holds 5,000 records in total.')),
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Clear old daily records'), h('span', { class: 'muted' }, 'Ticks, tasks, orders and whiteboard photos older than 30 days. Keeps the shared database lean.')),
         h('button', { class: 'btn small', type: 'button', disabled: !!ui.cleaning, onclick: () => {
           ui.cleaning = true; K.render();
           K.housekeeping(30).then((n) => { ui.cleaning = false; K.render(); K.toast(n ? 'Cleared ' + n + ' old records' : 'Nothing old to clear'); }, (e) => { ui.cleaning = false; K.render(); K.writeFailed(e); });

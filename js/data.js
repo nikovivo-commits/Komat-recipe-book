@@ -543,7 +543,7 @@
     bugSub = K.db.collection('bugs').onSnapshot((s) => { D.bugs = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, () => {});
   };
 
-  /* clear daily records older than `days` (keeps the shared database under its size cap) */
+  /* clear daily records older than `days` (the shared database has a document cap) */
   K.housekeeping = function (days) {
     const cut = K.day(-days);
     const jobs = ['prep', 'checks', 'orders', 'boards'].map((c) => K.db.collection(c).where('date', '<', cut).get().then((s) => s.docs.map((x) => c + '/' + x.id)));
