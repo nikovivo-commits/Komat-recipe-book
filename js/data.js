@@ -519,7 +519,8 @@
     const db = K.db;
     db.collection('recipes').onSnapshot((s) => {
       const list = [];
-      s.docs.forEach((x) => { try { const o = x.data() || {}; o.id = x.id; list.push(K.norm(o)); } catch (e) { /* unreadable row */ } });
+      /* snapshot data is frozen: copy it before adding the id */
+      s.docs.forEach((x) => { try { list.push(K.norm(Object.assign({}, x.data() || {}, { id: x.id }))); } catch (e) { /* unreadable row */ } });
       const first = !D.loaded;
       setRecipes(list);
       D.loaded = true;

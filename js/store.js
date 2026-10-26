@@ -8,10 +8,11 @@
 
   /* ---------- local database ---------- */
   const DB_KEY = 'komat.db.v1';
+  function freeze(o) { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.values(o).forEach(freeze); Object.freeze(o); } return o; }
   function parentOf(path) { const i = path.lastIndexOf('/'); return i < 0 ? '' : path.slice(0, i); }
   function snap(path, data) {
     const id = path.slice(path.lastIndexOf('/') + 1);
-    return { id: id, exists: data !== undefined, data: () => (data === undefined ? undefined : K.clone(data)), metadata: { fromCache: false, hasPendingWrites: false } };
+    return { id: id, exists: data !== undefined, data: () => (data === undefined ? undefined : freeze(K.clone(data))), metadata: { fromCache: false, hasPendingWrites: false } };
   }
   function merge(into, patch) {
     for (const k of Object.keys(patch)) {
