@@ -29,7 +29,7 @@
     } },
       h('h2', { class: 'login-title' }, 'Join the kitchen'),
       h('p', { class: 'muted' }, signedIn ? 'Signed in as ' + u.email + ', but not part of this kitchen yet. Join with the kitchen code.' : 'Your name and the kitchen code from the head chef. You only do this once on this phone.'),
-      K.field('Your name', input('name', { autocomplete: 'given-name', maxlength: 40, enterkeyhint: 'next', placeholder: 'First name' })),
+      K.field('Your name', input('name', { autocomplete: 'given-name', maxlength: 40, enterkeyhint: 'next', placeholder: 'First name' }), 'As it is on the rota, so your shifts find you.'),
       K.field('Kitchen code', input('code', { autocomplete: 'off', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'go', class: 'input big mono' })),
       msg(),
       submit('Join', 'Joining…'),
@@ -127,9 +127,17 @@
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'People (' + list.length + ')'),
         h('ul', { class: 'people' }, list.map((p) => {
           const me = p.id === K.me.id, isOwner = p.id === owner, sure = S.confirm === p.id;
+          const rid = K.rotaIdFor(p.name), staff = (D.staff && D.staff.people) || [];
           return h('li', { class: 'person' },
             h('span', { class: 'p-name' }, h('b', null, p.name || 'No name'), me ? h('span', { class: 'muted' }, ' (you)') : null),
             h('span', { class: 'codechip' + (p.role === 'admin' ? ' chef' : '') }, isOwner ? 'Owner' : p.role === 'admin' ? 'Head chef' : 'Cook'),
+            staff.length ? h('label', { class: 'p-rota' }, h('span', { class: 'muted' }, 'On the rota as'),
+              K.select((rid ? [] : [['', 'Not linked']]).concat(staff.map((s) => [s.id, s.name])), rid, (v) => {
+                const s = staff.find((x) => x.id === v);
+                /* let go of the picker so the list redraws with the new name straight away */
+                if (document.activeElement) document.activeElement.blur();
+                if (s) K.Fire.renameMember(p.id, s.name).then(() => K.toast(s.name + '’s week now shows their shifts'), K.writeFailed);
+              }, { class: 'input small', 'aria-label': 'On the rota as' })) : null,
             !isOwner && !me ? h('span', { class: 'btns' },
               h('button', { class: 'btn small', type: 'button', onclick: () => K.Fire.setRole(p.id, p.role === 'admin' ? 'cook' : 'admin').catch(K.writeFailed) }, p.role === 'admin' ? 'Make cook' : 'Make head chef'),
               h('button', { class: 'btn small danger', type: 'button', onclick: () => {

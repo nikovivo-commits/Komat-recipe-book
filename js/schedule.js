@@ -4,7 +4,22 @@
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const QUICK = ['P', 'X', '1', '2', 'BR', 'BR+P', '0', '12', '13', 'DO 21'];
   const EMPTY = () => ['', '', '', '', '', '', ''];
-  K.getMe = () => K.store.get('me', '');
+  /* Latin letters for a Bulgarian name, so "Ali", "али" and "Али" are the same person */
+  const LAT = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: 'y', ю: 'yu', я: 'ya' };
+  const plain = (s) => String(s || '').toLowerCase().replace(/[а-я]/g, (c) => LAT[c] || '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+  /* the rota person a kitchen name belongs to: the same name, or the same first name when only one person has it */
+  K.rotaIdFor = function (name) {
+    const n = plain(name);
+    if (!n) return '';
+    const ppl = ((D.staff && D.staff.people) || []).map((p) => ({ id: p.id, full: plain(p.name) }));
+    const exact = ppl.filter((p) => p.full === n || p.id === n.replace(/ /g, ''));
+    if (exact.length === 1) return exact[0].id;
+    const f = n.split(' ')[0], first = ppl.filter((p) => p.full.split(' ')[0] === f || p.id === f);
+    return first.length === 1 ? first[0].id : '';
+  };
+  /* in the kitchen's own database your week is locked to the name you joined with; elsewhere this phone remembers a pick */
+  const locked = () => K.mode === 'firebase';
+  K.getMe = () => (locked() ? K.rotaIdFor(K.me.name) : K.store.get('me', ''));
 
   function newWeekFrom(wk, copy) {
     const prevKey = Object.keys(D.weeks).filter((k) => k < wk).sort().pop(), prev = prevKey ? D.weeks[prevKey] : null;
@@ -37,8 +52,9 @@
 
     /* my week */
     if (people.length) {
-      const pick = K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' });
-      const mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), pick)));
+      const pick = locked() ? (me ? h('span', { class: 'mename' }, K.personName(me)) : null)
+        : h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' }));
+      const mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
       if (me && people.includes(me)) {
         const r = (doc.rows || {})[me] || [];
         mine.append(h('div', { class: 'mydays' }, K.DAYS.map((d, i) => {
@@ -47,6 +63,9 @@
             h('span', { class: 'myday-d' }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), d, ' ', dd.getDate()),
             h('b', { class: 'mono' }, c || '–'), K.codeLabel(c) ? h('small', null, K.codeLabel(c)) : null);
         })));
+      } else if (locked()) {
+        mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
+          : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')));
       } else mine.append(h('p', { class: 'hint' }, 'Pick your name once and your shifts show here. This phone remembers it.'));
       w.append(mine);
     }

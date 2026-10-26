@@ -280,6 +280,8 @@
   S.setRole = (uid, role) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { role: role }));
   S.rename = (name) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { name: name }));
   S.remove = (uid) => write(F.deleteDoc(F.doc(fs, 'members/' + uid)));
+  /* head chef: give someone their name as it is on the rota, so their week finds them */
+  S.renameMember = (uid, name) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { name: name }));
   /* friendly words for sign-in problems */
   S.authErr = function (e) {
     const c = (e && e.code) || '';
