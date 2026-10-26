@@ -558,14 +558,6 @@ select.input { appearance: auto; }
 .today-grid { display: grid; gap: 22px; }
 @media (min-width: 1000px) { .today-grid { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
 .today-main, .today-side { display: grid; gap: 18px; min-width: 0; align-content: start; }
-.remind { display: flex; gap: 12px; align-items: flex-start; width: 100%; margin-bottom: 18px; padding: 14px; border-radius: var(--r); border: 1.5px solid var(--todo); background: var(--todo-soft); color: var(--ink); text-align: left; font: inherit; }
-.remind .ico { width: 24px; height: 24px; margin-top: 2px; }
-.remind div { display: grid; gap: 2px; }
-.remind span { font-size: .9rem; color: var(--muted); }
-.remind.late { background: var(--urgent); border-color: var(--urgent); color: var(--urgent-ink); }
-.remind.late span { color: inherit; opacity: .9; }
-.remind.ok { border-color: var(--line); background: var(--surface); }
-.remind.ok .ico { color: var(--ready); }
 .brief { display: grid; gap: 14px; padding: 16px; }
 .brief-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .brief-head h2 { font: 700 1.6rem/1 var(--display); }
@@ -649,6 +641,14 @@ button.todo-main { cursor: pointer; }
 .legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .flagtxt { color: var(--urgent); font-size: 1.05rem; }
 .mep { display: grid; gap: 18px; }
+/* today / tomorrow switch above the list; tomorrow's prep list gets a calm blue-grey wash */
+.daypick-row { flex-basis: 100%; }
+.seg.daypick-seg { display: flex; width: 100%; }
+.seg.daypick-seg button { flex: 1; min-height: 42px; padding: 0 8px; font-size: .9rem; white-space: nowrap; }
+@media (max-width: 380px) { .seg.daypick-seg button { font-size: .82rem; padding: 0 4px; } }
+.plan-note { flex-basis: 100%; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--cold) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--cold) 35%, var(--line)); font-size: .92rem; }
+.mep.planning .mep-gname { background: color-mix(in srgb, var(--cold) 10%, var(--surface-2)); }
+.gcount.tomake { color: var(--todo-ink); background: var(--todo-soft); padding: 1px 8px; border-radius: 999px; font-weight: 800; }
 .mep-title { font: 700 .8rem/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .mep-groups { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); align-items: start; }
 .mep-group { overflow: hidden; }
@@ -898,7 +898,6 @@ button.todo-main { cursor: pointer; }
 .tjump::-webkit-scrollbar { display: none; }
 .tjump button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 800; font-size: .88rem; }
 .tjump b { font-size: .78rem; color: var(--muted); }
-.remind + .tjump { margin-top: 0; }
 #t-todo, #t-mep, #t-tmr { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--top-h) + 64px); }
 @media (min-width: 1000px) { .tjump { display: none; } }
 
@@ -2425,7 +2424,8 @@ window.KOMAT_ART = [
   K.SV_HINT = { breakfast: 'Every day', lunch: 'Mon–Fri', brunch: 'Sat–Sun', alacarte: 'Dinner' };
   K.BASE_CATS = ['Meat & fish prep', 'Sauces & stocks', 'Starters', 'Mains', 'Garnish', 'Desserts', 'Bread & pastry', 'Mise en place', 'Pickles & ferments'];
   const DEFAULT_KITCHEN = {
-    orderDue: '23:00', orderContact: '',
+    /* from this time the mise en place list is tomorrow's prep list */
+    planFrom: '21:00',
     /* tasks that come back on set weekdays (0 = Sunday); item goes to the top of the order check */
     repeats: [{ id: 'bread', name: 'Поръчай хляб', station: 'pass', days: [0, 2, 4], item: 'Хляб' }],
     /* products to look at in every order check */
@@ -2614,40 +2614,48 @@ window.KOMAT_ART = [
   /* ---------- mise en place checklists ---------- */
   K.sections = (st) => (D.checklists && D.checklists.stations && D.checklists.stations[st] && D.checklists.stations[st].sections) || [];
   K.checkId = (st, date) => (date || K.day(0)) + '_' + st;
-  K.checkItems = function (st) {
-    const out = [], d = D.checks[K.checkId(st)];
+  /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
+  K.planningTomorrow = function () {
+    const f = K.ui.listFor;
+    if (f && f.day === K.day(0)) return f.v === 'tomorrow';
+    return K.kitchenMinutes() >= (K.toMinutes(K.kitchen().planFrom) || 21 * 60);
+  };
+  K.listDay = () => K.day(K.planningTomorrow() ? 1 : 0);
+  const dayBefore = (date, k) => K.ymd(K.addDays(K.parseYmd(date), -k));
+  K.checkItems = function (st, date) {
+    const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
       g.items.forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, link: it.link || '' }));
       ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, extra: true }));
     }));
     return out;
   };
-  /* today's mark for a row; a DO (or urgent) left open on one of the last 3 days carries over */
-  K.mark = function (st, id) {
-    const t = D.checks[K.checkId(st)], m = t && t.marks && t.marks[id];
+  /* a row's mark for a day (today by default); a DO (or urgent) left open on one of the 3 days before carries over */
+  K.mark = function (st, id, date) {
+    const base = date || K.day(0), t = D.checks[K.checkId(st, base)], m = t && t.marks && t.marks[id];
     if (m && 'd' in m) return Object.assign({}, m, { d: m.d === 'urg' ? 'do' : m.d });
     for (let k = 1; k <= 3; k++) {
-      const p = D.checks[K.checkId(st, K.day(-k))], pm = p && p.marks && p.marks[id];
+      const p = D.checks[K.checkId(st, dayBefore(base, k))], pm = p && p.marks && p.marks[id];
       if (pm && 'd' in pm) {
-        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: K.day(-k) });
+        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: dayBefore(base, k) });
         return m || null;
       }
     }
     return m || null;
   };
-  K.markState = (st, id) => { const m = K.mark(st, id); return (m && m.d) || ''; };
-  K.isUrgent = (st, id) => { const m = K.mark(st, id); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
-  K.markNote = (st, id) => { const m = K.mark(st, id); return (m && m.c) || ''; };
+  K.markState = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.d) || ''; };
+  K.isUrgent = (st, id, date) => { const m = K.mark(st, id, date); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
+  K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
 
   /* patch one row's mark: {d:'do'|'ok'|''} or {u:bool} or {c:'comment'} */
-  K.setMark = function (st, it, patch) {
-    const id = K.checkId(st);
+  K.setMark = function (st, it, patch, date) {
+    const day = date || K.day(0), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
-    if (!doc) doc = D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} };
+    if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
     const prev = doc.marks[it.id] ? K.clone(doc.marks[it.id]) : undefined;
-    const em = K.mark(st, it.id) || {};
+    const em = K.mark(st, it.id, day) || {};
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
     if (em.from) { if (m.c === undefined && em.c) m.c = em.c; if (m.d === undefined) m.d = em.d; if (m.u === undefined && em.u) m.u = em.u; }
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
@@ -2656,29 +2664,29 @@ window.KOMAT_ART = [
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
     body.marks[it.id] = m;
-    const full = () => ref.set({ date: K.day(0), station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => { if (prev === undefined) delete doc.marks[it.id]; else doc.marks[it.id] = prev; K.refresh(true); writeFailed(e); });
   };
-  K.addExtra = function (st, gkey, name) {
-    const id = K.checkId(st);
-    const doc = D.checks[id] || (D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} });
+  K.addExtra = function (st, gkey, name, date) {
+    const day = date || K.day(0), id = K.checkId(st, day);
+    const doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     doc.extra = doc.extra || {};
     const list = (doc.extra[gkey] || []).concat([{ id: 'x' + K.uid(), name: name }]);
-    return saveExtra(st, gkey, list);
+    return saveExtra(st, gkey, list, day);
   };
-  K.removeExtra = function (st, gkey, itemId) {
-    const doc = D.checks[K.checkId(st)];
+  K.removeExtra = function (st, gkey, itemId, date) {
+    const doc = D.checks[K.checkId(st, date)];
     if (!doc || !doc.extra) return;
-    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId));
+    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.day(0));
   };
-  function saveExtra(st, gkey, list) {
-    const id = K.checkId(st), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
+  function saveExtra(st, gkey, list, day) {
+    const id = K.checkId(st, day), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
     doc.extra[gkey] = list;
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), patch = { extra: {}, at: Date.now() };
     patch.extra[gkey] = list;
-    const full = () => ref.set({ date: K.day(0), station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
+    const full = () => ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
     return ref.update(patch).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)))
       .catch((e) => { doc.extra[gkey] = old; K.refresh(true); writeFailed(e); });
   }
@@ -2927,7 +2935,7 @@ window.KOMAT_ART = [
       D[into] = m;
       K.refresh();
     }, onErr));
-    coll('checks', [0, -1, -2, -3], 'checks');
+    coll('checks', [1, 0, -1, -2, -3], 'checks');
     coll('prep', [0, 1, -1, -2, -3], 'prep');
     coll('orders', [0, -1], 'orders');
     coll('boards', [0, -1], 'boards');
@@ -3371,7 +3379,6 @@ window.KOMAT_ART = [
     if (K.mode === 'pending' || K.mode === 'none') return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
-    if (tab === 'orders') { const late = K.kitchenMinutes() >= 21 * 60 && !D.boards[K.day(0)]; return late ? h('span', { class: 'badge dot', 'aria-label': 'Whiteboard photo missing' }) : null; }
     return null;
   }
   function tabButtons(cls) {
@@ -4555,17 +4562,6 @@ window.KOMAT_ART = [
       h('div', { class: 'stpick-btns' }, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1])))));
   }
 
-  /* whiteboard reminder: the closing cook photographs the order board */
-  K.reminder = function (force) {
-    const b = D.boards[K.day(0)], m = K.kitchenMinutes(), kc = K.kitchen(), due = K.toMinutes(kc.orderDue) || 23 * 60;
-    if (!force && m < due - 120) return null;
-    if (b) return h('div', { class: 'remind ok' }, K.icon('check'), h('div', null, h('b', null, 'Whiteboard photo is in (' + K.hm(b.at) + ').'), h('span', null, 'Forgot something? Write it on the board and replace the photo.')));
-    const late = m >= due;
-    return h('button', { class: 'remind' + (late ? ' late' : ''), type: 'button', disabled: !!ui.boardBusy, onclick: K.addBoardPhoto },
-      K.icon('camera'),
-      h('div', null, h('b', null, ui.boardBusy ? 'Saving the photo…' : late ? 'Late: photograph the whiteboard now' : 'Closing? Photograph the whiteboard by ' + kc.orderDue),
-        h('span', null, 'One photo covers everything written on the board today' + (kc.orderContact ? ' and goes to ' + kc.orderContact : '') + '.')));
-  };
   K.addBoardPhoto = function () {
     K.pickFile('image/*', false, (f) => {
       ui.boardBusy = true; K.render();
@@ -4578,7 +4574,7 @@ window.KOMAT_ART = [
 
   /* ---------- the daily brief ---------- */
   function brief() {
-    const urg = K.openUrgents(), os = K.onToday(), b = D.boards[K.day(0)];
+    const urg = K.openUrgents(), os = K.onToday();
     const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e));
     const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
     box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
@@ -4593,8 +4589,6 @@ window.KOMAT_ART = [
         h('b', null, K.countdown(e)), h('span', null, (e.title || 'Event') + (e.time ? ' · ' + e.time : '') + (e.guests ? ' · ' + e.guests + ' guests' : '')))))));
     if (os.length) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'On today'),
       h('div', { class: 'tags' }, os.map((x) => h('span', { class: 'codechip ' + K.codeClass(x.code) }, K.personName(x.id), h('b', { class: 'mono' }, x.code))))));
-    box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'Order'),
-      h('p', { class: 'none' }, b ? 'Whiteboard photo in at ' + K.hm(b.at) + '.' : 'Whiteboard photo due by ' + K.kitchen().orderDue + '.')));
     return box;
   }
 
@@ -4679,8 +4673,6 @@ window.KOMAT_ART = [
       h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker()), 'today'));
     const w = h('div', { class: 'wrap today' });
     body.append(w);
-    const rb = K.reminder(false);
-    if (rb) w.append(rb);
     const items = K.checkItems(st);
     const ready = items.filter((it) => K.markState(st, it.id) === 'ok').length;
     const doItems = items.filter((it) => K.markState(st, it.id) === 'do' || K.isUrgent(st, it.id)).sort((a, b) => (K.isUrgent(st, b.id) ? 1 : 0) - (K.isUrgent(st, a.id) ? 1 : 0));
@@ -4749,16 +4741,21 @@ window.KOMAT_ART = [
     left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
-        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Mark what is low or out, or write it on the whiteboard')),
+        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Swipe through the products and mark what is low or out')),
       K.icon('next')));
 
-    /* mise en place */
-    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
+    /* mise en place: today's list, or (after closing time) tomorrow's prep list */
+    const tmr = K.planningTomorrow(), listDay = K.listDay();
+    const dayName = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+    const pickDay = (v) => { ui.listFor = { v: v, day: K.day(0) }; ui.addTo = null; K.render(); };
+    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, tmr ? 'Tomorrow’s prep list' : 'Mise en place'),
       h('div', { class: 'btns' },
-        items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
+        items.length && !tmr ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
-    left.append(checklist(st));
+      h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
+      tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
+        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+    left.append(checklist(st, tmr ? listDay : null));
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -4799,31 +4796,34 @@ window.KOMAT_ART = [
   }
 
   /* ---------- checklist ---------- */
-  function checklist(st) {
-    const secs = K.sections(st), doc = D.checks[K.checkId(st)];
+  /* day: null for today's list, or tomorrow's date while writing tomorrow's prep list */
+  function checklist(st, day) {
+    const secs = K.sections(st), doc = D.checks[K.checkId(st, day)], when = day ? 'tomorrow' : 'today';
     if (!secs.length) return h('div', { class: 'empty' }, h('strong', null, 'No list for ' + K.ST[st] + ' yet'), K.me.admin ? 'Tap Edit list to add dishes and their prep.' : 'The head chef has not set it up yet.');
-    return h('div', { class: 'mep' }, secs.map((sec) => h('section', { class: 'mep-sec' },
+    return h('div', { class: 'mep' + (day ? ' planning' : '') }, secs.map((sec) => h('section', { class: 'mep-sec' },
       secs.length > 1 ? h('h3', { class: 'mep-title' }, sec.title) : null,
       h('div', { class: 'mep-groups' }, sec.groups.map((g) => {
         const extra = ((doc && doc.extra && doc.extra[g.key]) || []).map((x) => Object.assign({ extra: true }, x));
         let its = g.items.concat(extra).map((it) => Object.assign({ group: g.name, gkey: g.key }, it));
         const total = its.length, done = its.filter((it) => K.markState(st, it.id) === 'ok').length;
-        if (ui.leftOnly) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
+        const toMake = day ? its.filter((it) => K.markState(st, it.id, day) === 'do').length : 0;
+        if (ui.leftOnly && !day) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
         const adding = ui.addTo === st + '|' + g.key;
         const dish = groupDish(g.name, g.items);
-        return h('div', { class: 'mep-group card' + (total && done === total ? ' complete' : '') },
+        return h('div', { class: 'mep-group card' + (!day && total && done === total ? ' complete' : '') },
           h('div', { class: 'mep-gname' },
             dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, g.name) : h('b', null, g.name),
-            total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
-            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for today', 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
-          its.map((it) => mrow(st, it)),
-          !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add today’s items.') : null,
-          ui.leftOnly && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
-          adding ? h('form', { class: 'addx', onsubmit: (e) => { e.preventDefault(); const v = document.getElementById('addx').value.trim(); if (!v) return; ui.addTo = null; K.addExtra(st, g.key, v); } },
-            h('input', { class: 'input', id: 'addx', placeholder: 'Item for today only', 'aria-label': 'Item for today' }), h('button', { class: 'btn primary small', type: 'submit' }, 'Add')) : null);
+            day ? (toMake ? h('span', { class: 'gcount tomake' }, toMake + ' to make') : null) : total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
+            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
+          its.map((it) => mrow(st, it, day)),
+          !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add ' + (day ? 'tomorrow’s' : 'today’s') + ' items.') : null,
+          ui.leftOnly && !day && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
+          adding ? h('form', { class: 'addx', onsubmit: (e) => { e.preventDefault(); const v = document.getElementById('addx').value.trim(); if (!v) return; ui.addTo = null; K.addExtra(st, g.key, v, day || undefined); } },
+            h('input', { class: 'input', id: 'addx', placeholder: 'Item for ' + when + ' only', 'aria-label': 'Item for ' + when }), h('button', { class: 'btn primary small', type: 'submit' }, 'Add')) : null);
       })))));
   }
-  function mrow(st, it) {
+  function mrow(st, it, day) {
+    if (day) return planRow(st, it, day);
     const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
     const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
     const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
@@ -4843,6 +4843,26 @@ window.KOMAT_ART = [
     return K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it) },
       left: s === 'do' ? null : { run: () => K.setMark(st, it, { d: 'do' }) },
+    });
+  }
+  /* a row on tomorrow's prep list: DO = make it tomorrow, empty = we have enough */
+  function planRow(st, it, day) {
+    const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
+    const set = (v) => { K.vibrate(v ? 10 : 6); K.setMark(st, it, { d: v }, day); };
+    const row = h('div', { class: 'mrow' + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
+      h('div', { class: 'sw-in' },
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? 'DO' : ''),
+        h('div', { class: 'mname' },
+          tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
+          it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
+          m.from ? h('span', { class: 'xtag' }, 'not finished today') : null,
+          note ? h('span', { class: 'tnote' }, note) : null),
+        it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
+        h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
+    return K.swipeable(row, {
+      right: s ? { run: () => set('') } : null,
+      left: s ? null : { run: () => set('do') },
     });
   }
 
@@ -5199,7 +5219,6 @@ window.KOMAT_ART = [
       K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' })), 'orders'));
     const w = h('div', { class: 'wrap orders' });
     body.append(w);
-    if (isToday) { const rb = K.reminder(true); if (rb) w.append(rb); }
     w.append(h('div', { class: 'ostations' }, K.STATIONS.map((s) => {
       const d = K.orderFor(s[0], date);
       return h('div', { class: 'ost card' + (d ? ' in' : '') }, h('span', { class: 'ost-name' }, K.icon(K.ST_ICON[s[0]]), s[1]),
@@ -5212,7 +5231,7 @@ window.KOMAT_ART = [
     main.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Order list', h('span', { class: 'n' }, list.length ? list.length + ' all day' : '')),
       list.length ? h('button', { class: 'btn small', type: 'button', onclick: () => K.copyText(orderText(date, list)) }, K.icon('copy'), 'Copy list') : null));
     if (!list.length) {
-      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'All good: the whiteboard photo is the main order. Stations can add to it here with a quick swipe check.',
+      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'Each station can check its products with a quick swipe and send what is low or out.',
         isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, K.icon('order'), 'Check ' + K.ST[K.getStation()] + ' now')) : null));
     } else {
       main.append(h('div', { class: 'olist card' }, list.map((x) => h('div', { class: 'oline ' + x.s },
@@ -5224,7 +5243,7 @@ window.KOMAT_ART = [
     const side = h('section', { class: 'block card board' },
       h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Whiteboard'),
         isToday ? h('button', { class: 'btn small' + (board ? '' : ' primary'), type: 'button', disabled: !!ui.boardBusy, onclick: K.addBoardPhoto }, K.icon('camera'), ui.boardBusy ? 'Saving…' : board ? 'Replace' : 'Add photo') : null),
-      h('p', { class: 'muted' }, board ? 'Added ' + K.hm(board.at) + (K.nameOf(board.by) ? ' by ' + K.nameOf(board.by) : '') : isToday ? 'Missing. Whoever closes takes one photo of the board by ' + K.kitchen().orderDue + '.' : 'No photo that day.'),
+      h('p', { class: 'muted' }, board ? 'Added ' + K.hm(board.at) + (K.nameOf(board.by) ? ' by ' + K.nameOf(board.by) : '') : isToday ? 'If the order is written on the board, add a photo of it here.' : 'No photo that day.'),
       board ? h('a', { href: board.photo, target: '_blank', rel: 'noopener', class: 'board-link' }, h('img', { class: 'board-img', src: board.photo, alt: 'Photo of the kitchen whiteboard' })) : null);
     grid.append(side);
     return { body: body };
@@ -5616,9 +5635,8 @@ window.KOMAT_ART = [
     k.repeats = k.repeats || []; k.daily = k.daily || []; k.basics = k.basics || [];
     const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
-      h('div', { class: 'two' },
-        K.field('Whiteboard photo due by', h('input', { class: 'input mono', id: 'k-due', type: 'time', value: k.orderDue || '23:00', oninput: (e) => { k.orderDue = e.target.value; } }), 'The reminder starts two hours before.'),
-        K.field('Order goes to', h('input', { class: 'input', id: 'k-contact', value: k.orderContact || '', placeholder: 'e.g. the head chef', oninput: (e) => { k.orderContact = e.target.value; } }))),
+      K.field('Tomorrow’s prep list starts at', h('input', { class: 'input mono', id: 'k-plan', type: 'time', value: k.planFrom || '21:00', oninput: (e) => { k.planFrom = e.target.value; } }),
+        'From this time until 4 am the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Repeating tasks'),
         h('p', { class: 'hint' }, 'They appear on a station’s to-do list on the chosen days, like ordering bread. A product name adds it to the top of that day’s order check.'),
         k.repeats.map((rp, i) => h('div', { class: 'rep card' },

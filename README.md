@@ -11,7 +11,8 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
   - Allergens (EU 14) are found automatically from the ingredient names, then confirmed by the head chef.
   - Bulgarian / English switch for recipe text.
   - Editor (Settings → Add a recipe by hand, or Edit on a recipe): paste a whole ingredient list at once, reorder parts, add photos, plating photos and videos. In the Claude version you can also scan a paper recipe sheet.
-- **Today**: pick your station (Hot, Cold, Pass & pastry). Tap a mise en place row once for **DO**, twice for **ready**, or swipe it (right = ready, left = DO); **!** flags it urgent for the whole kitchen. Finishing a station gets confetti. You get a to-do list with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events, who's on and the whiteboard. Every "Done" has an Undo.
+- **Today**: pick your station (Hot, Cold, Pass & pastry). Tap a mise en place row once for **DO**, twice for **ready**, or swipe it (right = ready, left = DO); **!** flags it urgent for the whole kitchen. Finishing a station gets confetti. You get a to-do list (tap the circle or swipe right when done, swipe left to remove) with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events and who's on. Every "Done" has an Undo.
+  - **Tomorrow's prep list**: from the closing hour (21:00 by default, set in Kitchen rules) the mise en place list switches to tomorrow. Whoever closes marks DO on what the next shift must make, and the morning shift finds it on its list and to-do. A Today / Tomorrow switch is always there. The kitchen day runs until 4 am.
 - **Order check**: one product card at a time, with a photo. Swipe right = have it, left = out, up = running low (or use the buttons, or the classic list). Spellings of the same product are merged, salt, pepper and water are never asked, and the head chef can retire any other basic with "Stop asking" (listed in Kitchen rules).
 - **Orders**: the Orders tab combines every station's Low / Out into one copyable list next to the whiteboard photo.
 - **Schedule**: your own week at a glance plus the full rota, using the same shift codes as the spreadsheet. The head chef sets shifts with a few taps.
@@ -46,7 +47,7 @@ Publish it as an artifact with these capabilities: `db` (rules below), `assets`,
 
 ## Data
 
-The collections and fields are the same as the first version of the book (`recipes`, `settings/{branding,checklists,staff,shiftcodes}`, `checks`, `prep`, `orders`, `boards`, `schedules`, `events`, `bugs`), plus `settings/kitchen` for the order deadline, repeating tasks and products to check daily. So this version can run on top of the existing live data.
+The collections and fields are the same as the first version of the book (`recipes`, `settings/{branding,checklists,staff,shiftcodes}`, `checks`, `prep`, `orders`, `boards`, `schedules`, `events`, `bugs`), plus `settings/kitchen` for the closing hour (when the list turns to tomorrow's), repeating tasks, products to check daily and basics never asked about. A row marked for tomorrow is saved in `checks/<tomorrow>_<station>`. So this version can run on top of the existing live data.
 
 The repo is public, so `data/` only holds recipes, mise en place lists and shift codes. Staff names, rotas, events, problem reports and the team photos stay in the private shared database and are not committed.
 

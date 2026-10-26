@@ -551,14 +551,6 @@ select.input { appearance: auto; }
 .today-grid { display: grid; gap: 22px; }
 @media (min-width: 1000px) { .today-grid { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
 .today-main, .today-side { display: grid; gap: 18px; min-width: 0; align-content: start; }
-.remind { display: flex; gap: 12px; align-items: flex-start; width: 100%; margin-bottom: 18px; padding: 14px; border-radius: var(--r); border: 1.5px solid var(--todo); background: var(--todo-soft); color: var(--ink); text-align: left; font: inherit; }
-.remind .ico { width: 24px; height: 24px; margin-top: 2px; }
-.remind div { display: grid; gap: 2px; }
-.remind span { font-size: .9rem; color: var(--muted); }
-.remind.late { background: var(--urgent); border-color: var(--urgent); color: var(--urgent-ink); }
-.remind.late span { color: inherit; opacity: .9; }
-.remind.ok { border-color: var(--line); background: var(--surface); }
-.remind.ok .ico { color: var(--ready); }
 .brief { display: grid; gap: 14px; padding: 16px; }
 .brief-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .brief-head h2 { font: 700 1.6rem/1 var(--display); }
@@ -642,6 +634,14 @@ button.todo-main { cursor: pointer; }
 .legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .flagtxt { color: var(--urgent); font-size: 1.05rem; }
 .mep { display: grid; gap: 18px; }
+/* today / tomorrow switch above the list; tomorrow's prep list gets a calm blue-grey wash */
+.daypick-row { flex-basis: 100%; }
+.seg.daypick-seg { display: flex; width: 100%; }
+.seg.daypick-seg button { flex: 1; min-height: 42px; padding: 0 8px; font-size: .9rem; white-space: nowrap; }
+@media (max-width: 380px) { .seg.daypick-seg button { font-size: .82rem; padding: 0 4px; } }
+.plan-note { flex-basis: 100%; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--cold) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--cold) 35%, var(--line)); font-size: .92rem; }
+.mep.planning .mep-gname { background: color-mix(in srgb, var(--cold) 10%, var(--surface-2)); }
+.gcount.tomake { color: var(--todo-ink); background: var(--todo-soft); padding: 1px 8px; border-radius: 999px; font-weight: 800; }
 .mep-title { font: 700 .8rem/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .mep-groups { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); align-items: start; }
 .mep-group { overflow: hidden; }
@@ -891,7 +891,6 @@ button.todo-main { cursor: pointer; }
 .tjump::-webkit-scrollbar { display: none; }
 .tjump button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 800; font-size: .88rem; }
 .tjump b { font-size: .78rem; color: var(--muted); }
-.remind + .tjump { margin-top: 0; }
 #t-todo, #t-mep, #t-tmr { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--top-h) + 64px); }
 @media (min-width: 1000px) { .tjump { display: none; } }
 

@@ -60,9 +60,8 @@
     k.repeats = k.repeats || []; k.daily = k.daily || []; k.basics = k.basics || [];
     const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
-      h('div', { class: 'two' },
-        K.field('Whiteboard photo due by', h('input', { class: 'input mono', id: 'k-due', type: 'time', value: k.orderDue || '23:00', oninput: (e) => { k.orderDue = e.target.value; } }), 'The reminder starts two hours before.'),
-        K.field('Order goes to', h('input', { class: 'input', id: 'k-contact', value: k.orderContact || '', placeholder: 'e.g. the head chef', oninput: (e) => { k.orderContact = e.target.value; } }))),
+      K.field('Tomorrow’s prep list starts at', h('input', { class: 'input mono', id: 'k-plan', type: 'time', value: k.planFrom || '21:00', oninput: (e) => { k.planFrom = e.target.value; } }),
+        'From this time until 4 am the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Repeating tasks'),
         h('p', { class: 'hint' }, 'They appear on a station’s to-do list on the chosen days, like ordering bread. A product name adds it to the top of that day’s order check.'),
         k.repeats.map((rp, i) => h('div', { class: 'rep card' },

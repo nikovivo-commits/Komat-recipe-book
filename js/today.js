@@ -44,17 +44,6 @@
       h('div', { class: 'stpick-btns' }, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1])))));
   }
 
-  /* whiteboard reminder: the closing cook photographs the order board */
-  K.reminder = function (force) {
-    const b = D.boards[K.day(0)], m = K.kitchenMinutes(), kc = K.kitchen(), due = K.toMinutes(kc.orderDue) || 23 * 60;
-    if (!force && m < due - 120) return null;
-    if (b) return h('div', { class: 'remind ok' }, K.icon('check'), h('div', null, h('b', null, 'Whiteboard photo is in (' + K.hm(b.at) + ').'), h('span', null, 'Forgot something? Write it on the board and replace the photo.')));
-    const late = m >= due;
-    return h('button', { class: 'remind' + (late ? ' late' : ''), type: 'button', disabled: !!ui.boardBusy, onclick: K.addBoardPhoto },
-      K.icon('camera'),
-      h('div', null, h('b', null, ui.boardBusy ? 'Saving the photo…' : late ? 'Late: photograph the whiteboard now' : 'Closing? Photograph the whiteboard by ' + kc.orderDue),
-        h('span', null, 'One photo covers everything written on the board today' + (kc.orderContact ? ' and goes to ' + kc.orderContact : '') + '.')));
-  };
   K.addBoardPhoto = function () {
     K.pickFile('image/*', false, (f) => {
       ui.boardBusy = true; K.render();
@@ -67,7 +56,7 @@
 
   /* ---------- the daily brief ---------- */
   function brief() {
-    const urg = K.openUrgents(), os = K.onToday(), b = D.boards[K.day(0)];
+    const urg = K.openUrgents(), os = K.onToday();
     const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e));
     const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
     box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
@@ -82,8 +71,6 @@
         h('b', null, K.countdown(e)), h('span', null, (e.title || 'Event') + (e.time ? ' · ' + e.time : '') + (e.guests ? ' · ' + e.guests + ' guests' : '')))))));
     if (os.length) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'On today'),
       h('div', { class: 'tags' }, os.map((x) => h('span', { class: 'codechip ' + K.codeClass(x.code) }, K.personName(x.id), h('b', { class: 'mono' }, x.code))))));
-    box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'Order'),
-      h('p', { class: 'none' }, b ? 'Whiteboard photo in at ' + K.hm(b.at) + '.' : 'Whiteboard photo due by ' + K.kitchen().orderDue + '.')));
     return box;
   }
 
@@ -168,8 +155,6 @@
       h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker()), 'today'));
     const w = h('div', { class: 'wrap today' });
     body.append(w);
-    const rb = K.reminder(false);
-    if (rb) w.append(rb);
     const items = K.checkItems(st);
     const ready = items.filter((it) => K.markState(st, it.id) === 'ok').length;
     const doItems = items.filter((it) => K.markState(st, it.id) === 'do' || K.isUrgent(st, it.id)).sort((a, b) => (K.isUrgent(st, b.id) ? 1 : 0) - (K.isUrgent(st, a.id) ? 1 : 0));
@@ -238,16 +223,21 @@
     left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
-        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Mark what is low or out, or write it on the whiteboard')),
+        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : 'Swipe through the products and mark what is low or out')),
       K.icon('next')));
 
-    /* mise en place */
-    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
+    /* mise en place: today's list, or (after closing time) tomorrow's prep list */
+    const tmr = K.planningTomorrow(), listDay = K.listDay();
+    const dayName = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+    const pickDay = (v) => { ui.listFor = { v: v, day: K.day(0) }; ui.addTo = null; K.render(); };
+    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, tmr ? 'Tomorrow’s prep list' : 'Mise en place'),
       h('div', { class: 'btns' },
-        items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
+        items.length && !tmr ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
-    left.append(checklist(st));
+      h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
+      tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
+        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+    left.append(checklist(st, tmr ? listDay : null));
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -288,31 +278,34 @@
   }
 
   /* ---------- checklist ---------- */
-  function checklist(st) {
-    const secs = K.sections(st), doc = D.checks[K.checkId(st)];
+  /* day: null for today's list, or tomorrow's date while writing tomorrow's prep list */
+  function checklist(st, day) {
+    const secs = K.sections(st), doc = D.checks[K.checkId(st, day)], when = day ? 'tomorrow' : 'today';
     if (!secs.length) return h('div', { class: 'empty' }, h('strong', null, 'No list for ' + K.ST[st] + ' yet'), K.me.admin ? 'Tap Edit list to add dishes and their prep.' : 'The head chef has not set it up yet.');
-    return h('div', { class: 'mep' }, secs.map((sec) => h('section', { class: 'mep-sec' },
+    return h('div', { class: 'mep' + (day ? ' planning' : '') }, secs.map((sec) => h('section', { class: 'mep-sec' },
       secs.length > 1 ? h('h3', { class: 'mep-title' }, sec.title) : null,
       h('div', { class: 'mep-groups' }, sec.groups.map((g) => {
         const extra = ((doc && doc.extra && doc.extra[g.key]) || []).map((x) => Object.assign({ extra: true }, x));
         let its = g.items.concat(extra).map((it) => Object.assign({ group: g.name, gkey: g.key }, it));
         const total = its.length, done = its.filter((it) => K.markState(st, it.id) === 'ok').length;
-        if (ui.leftOnly) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
+        const toMake = day ? its.filter((it) => K.markState(st, it.id, day) === 'do').length : 0;
+        if (ui.leftOnly && !day) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
         const adding = ui.addTo === st + '|' + g.key;
         const dish = groupDish(g.name, g.items);
-        return h('div', { class: 'mep-group card' + (total && done === total ? ' complete' : '') },
+        return h('div', { class: 'mep-group card' + (!day && total && done === total ? ' complete' : '') },
           h('div', { class: 'mep-gname' },
             dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, g.name) : h('b', null, g.name),
-            total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
-            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for today', 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
-          its.map((it) => mrow(st, it)),
-          !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add today’s items.') : null,
-          ui.leftOnly && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
-          adding ? h('form', { class: 'addx', onsubmit: (e) => { e.preventDefault(); const v = document.getElementById('addx').value.trim(); if (!v) return; ui.addTo = null; K.addExtra(st, g.key, v); } },
-            h('input', { class: 'input', id: 'addx', placeholder: 'Item for today only', 'aria-label': 'Item for today' }), h('button', { class: 'btn primary small', type: 'submit' }, 'Add')) : null);
+            day ? (toMake ? h('span', { class: 'gcount tomake' }, toMake + ' to make') : null) : total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
+            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
+          its.map((it) => mrow(st, it, day)),
+          !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add ' + (day ? 'tomorrow’s' : 'today’s') + ' items.') : null,
+          ui.leftOnly && !day && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
+          adding ? h('form', { class: 'addx', onsubmit: (e) => { e.preventDefault(); const v = document.getElementById('addx').value.trim(); if (!v) return; ui.addTo = null; K.addExtra(st, g.key, v, day || undefined); } },
+            h('input', { class: 'input', id: 'addx', placeholder: 'Item for ' + when + ' only', 'aria-label': 'Item for ' + when }), h('button', { class: 'btn primary small', type: 'submit' }, 'Add')) : null);
       })))));
   }
-  function mrow(st, it) {
+  function mrow(st, it, day) {
+    if (day) return planRow(st, it, day);
     const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
     const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
     const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
@@ -332,6 +325,26 @@
     return K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it) },
       left: s === 'do' ? null : { run: () => K.setMark(st, it, { d: 'do' }) },
+    });
+  }
+  /* a row on tomorrow's prep list: DO = make it tomorrow, empty = we have enough */
+  function planRow(st, it, day) {
+    const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
+    const set = (v) => { K.vibrate(v ? 10 : 6); K.setMark(st, it, { d: v }, day); };
+    const row = h('div', { class: 'mrow' + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
+      h('div', { class: 'sw-in' },
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? 'DO' : ''),
+        h('div', { class: 'mname' },
+          tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
+          it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
+          m.from ? h('span', { class: 'xtag' }, 'not finished today') : null,
+          note ? h('span', { class: 'tnote' }, note) : null),
+        it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
+        h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
+    return K.swipeable(row, {
+      right: s ? { run: () => set('') } : null,
+      left: s ? null : { run: () => set('do') },
     });
   }
 

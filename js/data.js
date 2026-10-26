@@ -19,7 +19,8 @@
   K.SV_HINT = { breakfast: 'Every day', lunch: 'Mon–Fri', brunch: 'Sat–Sun', alacarte: 'Dinner' };
   K.BASE_CATS = ['Meat & fish prep', 'Sauces & stocks', 'Starters', 'Mains', 'Garnish', 'Desserts', 'Bread & pastry', 'Mise en place', 'Pickles & ferments'];
   const DEFAULT_KITCHEN = {
-    orderDue: '23:00', orderContact: '',
+    /* from this time the mise en place list is tomorrow's prep list */
+    planFrom: '21:00',
     /* tasks that come back on set weekdays (0 = Sunday); item goes to the top of the order check */
     repeats: [{ id: 'bread', name: 'Поръчай хляб', station: 'pass', days: [0, 2, 4], item: 'Хляб' }],
     /* products to look at in every order check */
@@ -208,40 +209,48 @@
   /* ---------- mise en place checklists ---------- */
   K.sections = (st) => (D.checklists && D.checklists.stations && D.checklists.stations[st] && D.checklists.stations[st].sections) || [];
   K.checkId = (st, date) => (date || K.day(0)) + '_' + st;
-  K.checkItems = function (st) {
-    const out = [], d = D.checks[K.checkId(st)];
+  /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
+  K.planningTomorrow = function () {
+    const f = K.ui.listFor;
+    if (f && f.day === K.day(0)) return f.v === 'tomorrow';
+    return K.kitchenMinutes() >= (K.toMinutes(K.kitchen().planFrom) || 21 * 60);
+  };
+  K.listDay = () => K.day(K.planningTomorrow() ? 1 : 0);
+  const dayBefore = (date, k) => K.ymd(K.addDays(K.parseYmd(date), -k));
+  K.checkItems = function (st, date) {
+    const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
       g.items.forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, link: it.link || '' }));
       ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, extra: true }));
     }));
     return out;
   };
-  /* today's mark for a row; a DO (or urgent) left open on one of the last 3 days carries over */
-  K.mark = function (st, id) {
-    const t = D.checks[K.checkId(st)], m = t && t.marks && t.marks[id];
+  /* a row's mark for a day (today by default); a DO (or urgent) left open on one of the 3 days before carries over */
+  K.mark = function (st, id, date) {
+    const base = date || K.day(0), t = D.checks[K.checkId(st, base)], m = t && t.marks && t.marks[id];
     if (m && 'd' in m) return Object.assign({}, m, { d: m.d === 'urg' ? 'do' : m.d });
     for (let k = 1; k <= 3; k++) {
-      const p = D.checks[K.checkId(st, K.day(-k))], pm = p && p.marks && p.marks[id];
+      const p = D.checks[K.checkId(st, dayBefore(base, k))], pm = p && p.marks && p.marks[id];
       if (pm && 'd' in pm) {
-        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: K.day(-k) });
+        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: dayBefore(base, k) });
         return m || null;
       }
     }
     return m || null;
   };
-  K.markState = (st, id) => { const m = K.mark(st, id); return (m && m.d) || ''; };
-  K.isUrgent = (st, id) => { const m = K.mark(st, id); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
-  K.markNote = (st, id) => { const m = K.mark(st, id); return (m && m.c) || ''; };
+  K.markState = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.d) || ''; };
+  K.isUrgent = (st, id, date) => { const m = K.mark(st, id, date); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
+  K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
 
   /* patch one row's mark: {d:'do'|'ok'|''} or {u:bool} or {c:'comment'} */
-  K.setMark = function (st, it, patch) {
-    const id = K.checkId(st);
+  K.setMark = function (st, it, patch, date) {
+    const day = date || K.day(0), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
-    if (!doc) doc = D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} };
+    if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
     const prev = doc.marks[it.id] ? K.clone(doc.marks[it.id]) : undefined;
-    const em = K.mark(st, it.id) || {};
+    const em = K.mark(st, it.id, day) || {};
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
     if (em.from) { if (m.c === undefined && em.c) m.c = em.c; if (m.d === undefined) m.d = em.d; if (m.u === undefined && em.u) m.u = em.u; }
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
@@ -250,29 +259,29 @@
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
     body.marks[it.id] = m;
-    const full = () => ref.set({ date: K.day(0), station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => { if (prev === undefined) delete doc.marks[it.id]; else doc.marks[it.id] = prev; K.refresh(true); writeFailed(e); });
   };
-  K.addExtra = function (st, gkey, name) {
-    const id = K.checkId(st);
-    const doc = D.checks[id] || (D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} });
+  K.addExtra = function (st, gkey, name, date) {
+    const day = date || K.day(0), id = K.checkId(st, day);
+    const doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     doc.extra = doc.extra || {};
     const list = (doc.extra[gkey] || []).concat([{ id: 'x' + K.uid(), name: name }]);
-    return saveExtra(st, gkey, list);
+    return saveExtra(st, gkey, list, day);
   };
-  K.removeExtra = function (st, gkey, itemId) {
-    const doc = D.checks[K.checkId(st)];
+  K.removeExtra = function (st, gkey, itemId, date) {
+    const doc = D.checks[K.checkId(st, date)];
     if (!doc || !doc.extra) return;
-    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId));
+    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.day(0));
   };
-  function saveExtra(st, gkey, list) {
-    const id = K.checkId(st), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
+  function saveExtra(st, gkey, list, day) {
+    const id = K.checkId(st, day), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
     doc.extra[gkey] = list;
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), patch = { extra: {}, at: Date.now() };
     patch.extra[gkey] = list;
-    const full = () => ref.set({ date: K.day(0), station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
+    const full = () => ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
     return ref.update(patch).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)))
       .catch((e) => { doc.extra[gkey] = old; K.refresh(true); writeFailed(e); });
   }
@@ -521,7 +530,7 @@
       D[into] = m;
       K.refresh();
     }, onErr));
-    coll('checks', [0, -1, -2, -3], 'checks');
+    coll('checks', [1, 0, -1, -2, -3], 'checks');
     coll('prep', [0, 1, -1, -2, -3], 'prep');
     coll('orders', [0, -1], 'orders');
     coll('boards', [0, -1], 'boards');

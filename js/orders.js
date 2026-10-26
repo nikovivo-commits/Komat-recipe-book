@@ -30,7 +30,6 @@
       K.seg([[K.day(0), 'Today'], [K.day(-1), 'Yesterday']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Day', class: 'seg on-dark' })), 'orders'));
     const w = h('div', { class: 'wrap orders' });
     body.append(w);
-    if (isToday) { const rb = K.reminder(true); if (rb) w.append(rb); }
     w.append(h('div', { class: 'ostations' }, K.STATIONS.map((s) => {
       const d = K.orderFor(s[0], date);
       return h('div', { class: 'ost card' + (d ? ' in' : '') }, h('span', { class: 'ost-name' }, K.icon(K.ST_ICON[s[0]]), s[1]),
@@ -43,7 +42,7 @@
     main.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Order list', h('span', { class: 'n' }, list.length ? list.length + ' all day' : '')),
       list.length ? h('button', { class: 'btn small', type: 'button', onclick: () => K.copyText(orderText(date, list)) }, K.icon('copy'), 'Copy list') : null));
     if (!list.length) {
-      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'All good: the whiteboard photo is the main order. Stations can add to it here with a quick swipe check.',
+      main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'Each station can check its products with a quick swipe and send what is low or out.',
         isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, K.icon('order'), 'Check ' + K.ST[K.getStation()] + ' now')) : null));
     } else {
       main.append(h('div', { class: 'olist card' }, list.map((x) => h('div', { class: 'oline ' + x.s },
@@ -55,7 +54,7 @@
     const side = h('section', { class: 'block card board' },
       h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Whiteboard'),
         isToday ? h('button', { class: 'btn small' + (board ? '' : ' primary'), type: 'button', disabled: !!ui.boardBusy, onclick: K.addBoardPhoto }, K.icon('camera'), ui.boardBusy ? 'Saving…' : board ? 'Replace' : 'Add photo') : null),
-      h('p', { class: 'muted' }, board ? 'Added ' + K.hm(board.at) + (K.nameOf(board.by) ? ' by ' + K.nameOf(board.by) : '') : isToday ? 'Missing. Whoever closes takes one photo of the board by ' + K.kitchen().orderDue + '.' : 'No photo that day.'),
+      h('p', { class: 'muted' }, board ? 'Added ' + K.hm(board.at) + (K.nameOf(board.by) ? ' by ' + K.nameOf(board.by) : '') : isToday ? 'If the order is written on the board, add a photo of it here.' : 'No photo that day.'),
       board ? h('a', { href: board.photo, target: '_blank', rel: 'noopener', class: 'board-link' }, h('img', { class: 'board-img', src: board.photo, alt: 'Photo of the kitchen whiteboard' })) : null);
     grid.append(side);
     return { body: body };

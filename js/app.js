@@ -145,7 +145,6 @@
     if (K.mode === 'pending' || K.mode === 'none') return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
-    if (tab === 'orders') { const late = K.kitchenMinutes() >= 21 * 60 && !D.boards[K.day(0)]; return late ? h('span', { class: 'badge dot', 'aria-label': 'Whiteboard photo missing' }) : null; }
     return null;
   }
   function tabButtons(cls) {
