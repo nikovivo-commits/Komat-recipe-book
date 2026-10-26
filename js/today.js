@@ -187,7 +187,8 @@
         h('span', { class: 'muted' }, items.length ? ready + ' of ' + items.length + ' ready' + (todoN ? ' · ' + todoN + ' on the to-do list' : '') : 'The head chef can add one with Edit list'))));
 
     /* to do */
-    const todo = h('section', { class: 'block', id: 't-todo' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))));
+    const todo = h('section', { class: 'block', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
+      K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: [(k.late ? 'Overdue · ' : '') + 'Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],

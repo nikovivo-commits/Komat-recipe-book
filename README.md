@@ -12,6 +12,7 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
   - Bulgarian / English switch for recipe text.
   - Editor (Settings → Add a recipe by hand, or Edit on a recipe): paste a whole ingredient list at once, reorder parts, add photos, plating photos and videos. In the Claude version you can also scan a paper recipe sheet.
 - **Today**: pick your station (Hot, Cold, Pass & pastry). Tap a mise en place row once for **DO**, twice for **ready**, or swipe it (right = ready, left = DO); **!** flags it urgent for the whole kitchen. Finishing a station gets confetti. You get a to-do list (tap the circle or swipe right when done, swipe left to remove) with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events and who's on. Every "Done" has an Undo.
+  - **Print**: the small printer icon next to To do prints a black-and-white sheet with tick boxes and lines to write on, for today or tomorrow, one station or all three (one page each). On the stand-alone site; the Claude version cannot print.
   - **Tomorrow's prep list**: from the closing hour (21:00 by default, set in Kitchen rules) the mise en place list switches to tomorrow. Whoever closes marks DO on what the next shift must make, and the morning shift finds it on its list and to-do. A Today / Tomorrow switch is always there. The kitchen day runs until 4 am.
 - **Order check**: it asks only about the ingredients for what is marked DO on tomorrow's prep list (mark Benedict, and it asks about butter, eggs, lemons and the rest of that dish, with the amounts). Sauces and other house-made parts open up into their own ingredients. One product card at a time, with a photo. Swipe right = have it, left = out, up = running low (or use the buttons, or the classic list). Spellings of the same product are merged, salt, pepper and water are never asked, and the head chef can retire any other basic with "Stop asking" (listed in Kitchen rules).
 - **Orders**: the Orders tab combines every station's Low / Out into one copyable list next to the whiteboard photo.
@@ -100,6 +101,7 @@ js/schedule.js      Schedule
 js/events.js        Events
 js/admin.js         settings, kitchen rules, branding, backups, problem reports
 js/login.js         joining the kitchen, head chef sign-in and setup, people and kitchen code
+js/print.js         the printed to-do list
 data/*.js           starting data for the site, product photo names, illustrated recipes
 firebase-config.js  the Firebase project's web settings (null = device-only)
 firebase/           Firestore security rules

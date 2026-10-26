@@ -1016,3 +1016,49 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 .person .btns { flex-basis: 100%; }
 .codechip.chef { background: var(--apron-soft); border-color: var(--apron); color: var(--apron); }
 @media (min-width: 560px) { .person .btns { flex-basis: auto; } }
+
+/* ---------- printing the to-do list: black ink on white paper ---------- */
+.print-btn { width: 38px; height: 38px; border: 1.5px solid var(--line); color: var(--muted); }
+.print-btn:hover { color: var(--ink); border-color: var(--ink); }
+.print-btn .ico { width: 20px; height: 20px; }
+.print-opts { display: grid; gap: 18px; }
+.print-pick { display: grid; gap: 4px; align-content: start; }
+.print-pick .btn .ico { margin-right: 6px; }
+@media (min-width: 720px) { .print-opts { grid-template-columns: minmax(0, 1fr) 252px; align-items: start; } }
+/* the preview is a sheet of A4 (210 mm = 794 px) shown at 30% */
+.pr-preview { justify-self: center; width: 240px; height: 340px; overflow: hidden; border-radius: 4px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .18), 0 12px 30px -12px rgba(0, 0, 0, .45); }
+.pr-paper { width: 794px; padding: 53px; transform: scale(.3023); transform-origin: 0 0; }
+#printsheet { display: none; }
+.pr-page { color: #000; background: #fff; font: 400 10.5pt/1.35 var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pr-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16pt; padding-bottom: 10pt; border-bottom: 2.5pt solid #000; }
+.pr-logo { display: block; height: 52pt; width: auto; }
+.pr-title { text-align: right; }
+.pr-kicker { display: block; font: 700 7.5pt/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; }
+.pr-title h1 { font: 700 30pt/1 var(--display); margin: 5pt 0 3pt; }
+.pr-title p { font-size: 10pt; }
+.pr-sec { margin-top: 14pt; }
+.pr-sec h2 { display: flex; justify-content: space-between; align-items: baseline; font: 700 12pt/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding-bottom: 3pt; border-bottom: .9pt solid #000; }
+.pr-sec h2 span { font: 500 9pt var(--mono); letter-spacing: 0; }
+.pr-sec ul { list-style: none; margin: 0; padding: 0; }
+.pr-sec li { display: grid; grid-template-columns: 13pt minmax(0, 1fr); gap: 9pt; align-items: start; padding: 6pt 0; border-bottom: .5pt solid #b5b5b5; break-inside: avoid; }
+.pr-box { width: 12pt; height: 12pt; margin-top: 1pt; border: 1.2pt solid #000; border-radius: 2.5pt; }
+.pr-sec li.urg .pr-box { border-width: 2.6pt; }
+.pr-txt b { font-weight: 600; }
+.pr-txt em { display: inline-block; margin-left: 6pt; padding: 1pt 4pt; border-radius: 2pt; background: #000; color: #fff; font: 700 6.5pt/1.2 var(--sans); font-style: normal; letter-spacing: .14em; text-transform: uppercase; vertical-align: 1.5pt; }
+.pr-note { display: block; font-style: italic; }
+.pr-meta { display: block; color: #555; font-size: 8.5pt; }
+.pr-groups.two { column-count: 2; column-gap: 20pt; }
+.pr-group { break-inside: avoid; }
+.pr-group h3 { margin: 9pt 0 0; font: 700 9.5pt/1.2 var(--sans); }
+.pr-blank li { min-height: 25pt; }
+.pr-none { margin-top: 14pt; font-style: italic; }
+.pr-foot { display: flex; justify-content: space-between; gap: 12pt; margin-top: 18pt; padding-top: 6pt; border-top: .9pt solid #000; font-size: 8pt; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  html, body { background: #fff !important; }
+  body { padding: 0 !important; }
+  body::before { display: none !important; }
+  body > *:not(#printsheet) { display: none !important; }
+  #printsheet { display: block; }
+  .pr-page + .pr-page { break-before: page; }
+}

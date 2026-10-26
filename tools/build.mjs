@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 // the starting data and the kitchen's own database (Firebase) belong to the stand-alone site only
-const SITE_ONLY = /^(data\/(recipes|settings)\.js|vendor\/firebase\.js|firebase-config\.js|js\/(cloud|login)\.js)$/;
+const SITE_ONLY = /^(data\/(recipes|settings)\.js|vendor\/firebase\.js|firebase-config\.js|js\/(cloud|login|print)\.js)$/;
 const scripts = [...index.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((s) => !SITE_ONLY.test(s));
 const fonts = index.match(/<link rel="stylesheet" href="(https:\/\/fonts\.googleapis\.com[^"]+)">/)[1];
 const read = (p) => readFileSync(join(root, p), 'utf8').replace(/<\/(script|style)/gi, '<\\/$1');
