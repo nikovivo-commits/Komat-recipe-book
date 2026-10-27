@@ -14,6 +14,7 @@
       inner.style.transition = 'transform .18s ease';
       inner.style.transform = '';
       row.classList.remove('sw-r', 'sw-l', 'sw-armed', 'dragging');
+      row.style.removeProperty('--p');
     };
     row.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -33,6 +34,7 @@
       dx = mx;
       if ((dx > 0 && !opts.right) || (dx < 0 && !opts.left)) dx /= 4;
       inner.style.transform = 'translateX(' + dx + 'px)';
+      row.style.setProperty('--p', Math.min(1, Math.abs(dx) / th).toFixed(3));
       row.classList.toggle('sw-r', dx > 0);
       row.classList.toggle('sw-l', dx < 0);
       const now = Math.abs(dx) > th;
@@ -45,10 +47,16 @@
       swipedAt = Date.now();
       const go = dx > th && opts.right ? opts.right : dx < -th && opts.left ? opts.left : null;
       if (!go) { reset(); return; }
-      inner.style.transition = 'transform .16s ease-out';
-      inner.style.transform = 'translateX(' + (dx > 0 ? 110 : -110) + '%)';
       K.vibrate(12);
-      setTimeout(() => { go.run(); reset(); }, 150);
+      /* a row that leaves the list flies off and folds away; one that stays springs back as it changes */
+      if (go.fold && K.foldAway && !reduced()) {
+        inner.style.transition = 'transform .2s cubic-bezier(.4, 0, .2, 1)';
+        inner.style.transform = 'translateX(' + (dx > 0 ? 112 : -112) + '%)';
+        setTimeout(() => K.foldAway(row, go.run), 160);
+        return;
+      }
+      reset();
+      go.run();
     };
     row.addEventListener('pointerup', end);
     row.addEventListener('pointercancel', (e) => { if (e.pointerId === pid) { pid = null; reset(); } });

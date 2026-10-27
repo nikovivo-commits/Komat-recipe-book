@@ -277,6 +277,32 @@
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => { if (prev === undefined) delete doc.marks[it.id]; else doc.marks[it.id] = prev; K.refresh(true); writeFailed(e); });
   };
+  /* patch several rows at once (All ready): [{it, patch}], one write */
+  K.setMarks = function (st, list, date) {
+    if (!list.length) return Promise.resolve();
+    const day = date || K.day(0), id = K.checkId(st, day);
+    let doc = D.checks[id];
+    const fresh = !doc;
+    if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
+    doc.marks = doc.marks || {};
+    const prevs = {}, body = { marks: {}, at: Date.now() };
+    list.forEach((x) => {
+      const prev = doc.marks[x.it.id] ? K.clone(doc.marks[x.it.id]) : undefined;
+      prevs[x.it.id] = prev;
+      const m = Object.assign({}, prev || {}, x.patch, { n: x.it.name, t: Date.now(), by: K.me.id || '' });
+      if ('d' in x.patch && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
+      doc.marks[x.it.id] = m;
+      body.marks[x.it.id] = m;
+    });
+    K.refresh(true);
+    const ref = K.db.doc('checks/' + id);
+    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
+    return p.catch((e) => {
+      Object.keys(prevs).forEach((k) => { if (prevs[k] === undefined) delete doc.marks[k]; else doc.marks[k] = prevs[k]; });
+      K.refresh(true); writeFailed(e);
+    });
+  };
   K.addExtra = function (st, gkey, name, date) {
     const day = date || K.day(0), id = K.checkId(st, day);
     const doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });

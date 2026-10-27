@@ -118,7 +118,7 @@
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
     const part = c || r, isDish = !c && r.type === 'dish';
-    return h('button', { class: 'rcard', type: 'button', onclick: () => K.go('recipe', { id: r.id, comp: en.ci }) },
+    return h('button', { class: 'rcard', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget); K.go('recipe', { id: r.id, comp: en.ci }); } },
       c ? thumb(null, c.name) : thumb(r, r.name),
       h('div', { class: 'card-txt' },
         h('span', { class: 'kicker' + (isDish ? ' dish' : '') }, isDish ? 'Dish' : 'Recipe'),
@@ -197,7 +197,7 @@
           chips.length ? h('div', { class: 'dotd-chips' }, chips.map((c) => h('span', null, c))) : null,
           h('h2', { class: 'dotd-title' }, r.name),
           h('div', { class: 'dotd-btns' },
-            h('button', { class: 'btn dotd-open', type: 'button', onclick: () => K.go('recipe', { id: r.id }) }, 'Open recipe'),
+            h('button', { class: 'btn dotd-open', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget.closest('.dotd')); K.go('recipe', { id: r.id }); } }, 'Open recipe'),
             cookable ? h('button', { class: 'btn primary', type: 'button', onclick: () => { K.go('recipe', { id: r.id }); K.openCook(r.id); } }, K.icon('cook'), 'Cook') : null))));
   }
 
@@ -212,10 +212,13 @@
     if (Math.abs(f - 1) < 0.0005) return '';
     return 'Scaled ×' + K.fmtNum(f) + (fr ? ' because you have ' + fr : '') + (b > 0 ? ' · original yield ' + K.fmtNum(b) + ' ' + part.yieldUnit : '');
   }
-  /* redraw one part's numbers in place, so typing in the yield box keeps the keyboard up */
-  function updateScaled(part) {
+  /* redraw one part's numbers in place, so typing in the yield box keeps the keyboard up;
+     after a tap on a preset the changed amounts roll into place */
+  function updateScaled(part, roll) {
     const box = document.getElementById('ings-' + part.key);
+    const was = roll && box ? Array.from(box.querySelectorAll('.amt')).map((e) => e.textContent) : null;
     if (box) box.replaceWith(ingList(part));
+    if (was) { const nb = document.getElementById('ings-' + part.key); if (nb) K.rollNumbers(was, nb.querySelectorAll('.amt')); }
     const n = document.getElementById('snote-' + part.key);
     if (n) n.textContent = scaleNote(part);
     document.querySelectorAll('.preset[data-p="' + part.key + '"]').forEach((b) => b.setAttribute('aria-pressed', Math.abs(factor(part) - parseFloat(b.dataset.k)) < 0.0005 ? 'true' : 'false'));
@@ -223,28 +226,37 @@
     if (y && document.activeElement !== y && base > 0) y.value = K.fmtNum(base * factor(part));
     const m = document.getElementById('mul-' + part.key);
     if (m && document.activeElement !== m) m.value = K.fmtNum(factor(part));
+    movePill(part, true);
+  }
+  /* the light pill behind the chosen preset slides to the new one */
+  function movePill(part, animate) {
+    const wrap = document.querySelector('.presets[data-p="' + part.key + '"]');
+    if (wrap) K.placePill(wrap.querySelector('.preset-pill'), wrap.querySelector('.preset[aria-pressed="true"]'), animate);
   }
   function scaler(part, compact) {
     const base = parseFloat(part.yieldQty);
     if (!(base > 0) && !part.ingredients.length) return null;
     const f = factor(part);
-    return h('section', { class: 'scaler' + (compact ? ' compact' : ''), 'aria-label': 'Scale ' + (part.name || 'recipe') },
+    const box = h('section', { class: 'scaler' + (compact ? ' compact' : ''), 'aria-label': 'Scale ' + (part.name || 'recipe') },
       h('div', { class: 'sc-row' },
         base > 0 ? h('label', { class: 'sc-yield' }, h('span', { class: 'label' }, 'Make'),
           h('input', {
             class: 'sc-in mono', id: 'yin-' + part.key, type: 'number', inputmode: 'decimal', step: 'any', min: '0', 'aria-label': 'Amount to make, in ' + part.yieldUnit, value: K.fmtNum(base * f),
             oninput: (e) => { const t = parseFloat(e.target.value); if (t > 0) { setFactor(part, t / base); updateScaled(part); } },
           }), h('span', { class: 'sc-unit' }, part.yieldUnit)) : h('span', { class: 'label' }, 'Scale'),
-        h('div', { class: 'presets', role: 'group', 'aria-label': 'Multiply' },
+        h('div', { class: 'presets', role: 'group', 'aria-label': 'Multiply', 'data-p': part.key },
+          h('span', { class: 'preset-pill', 'aria-hidden': 'true' }),
           [[0.5, '½'], [1, '×1'], [2, '×2'], [3, '×3'], [4, '×4']].map((s) => h('button', {
             class: 'preset', type: 'button', 'data-p': part.key, 'data-k': s[0], 'aria-pressed': Math.abs(f - s[0]) < 0.0005 ? 'true' : 'false',
-            onclick: () => { setFactor(part, s[0]); updateScaled(part); },
+            onclick: () => { setFactor(part, s[0]); updateScaled(part, true); },
           }, s[1])),
           h('label', { class: 'mul' }, h('span', null, '×'), h('input', {
             id: 'mul-' + part.key, class: 'mono', type: 'number', inputmode: 'decimal', step: 'any', min: '0', 'aria-label': 'Custom multiplier', value: K.fmtNum(f),
             oninput: (e) => { const v = parseFloat(e.target.value); if (v > 0) { setFactor(part, v); updateScaled(part); } },
           })))),
       h('p', { class: 'sc-note', id: 'snote-' + part.key, 'aria-live': 'polite' }, scaleNote(part)));
+    requestAnimationFrame(() => { movePill(part, false); const w = document.querySelector('.presets[data-p="' + part.key + '"]'); if (w) w.classList.add('has-pill'); });
+    return box;
   }
 
   /* tap a line to cross it off while working */
@@ -365,9 +377,9 @@
     const art = K.artFor(r);
     body.append(h('div', { class: 'rhead' + (r.photo || art ? ' has-photo' : '') },
       r.photo ? h('button', { type: 'button', class: 'dish-photo-btn', 'aria-label': 'Open photos of ' + r.name, onclick: () => K.openPhotos([{ id: r.photo, title: r.name }].concat(r.gallery), 0) },
-        h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name }),
+        K.morphTo(h('img', { class: 'dish-photo', src: K.media(r.photo), alt: 'Plated ' + r.name })),
         r.gallery.length ? h('span', { class: 'photo-count' }, K.icon('photo'), String(r.gallery.length + 1)) : null)
-        : art ? h('figure', { class: 'dish-photo-btn art' }, K.photoWithFallback(art, K.artSrc(r), (im) => im.parentNode.remove(), { class: 'dish-photo', alt: '' }),
+        : art ? h('figure', { class: 'dish-photo-btn art' }, K.morphTo(K.photoWithFallback(art, K.artSrc(r), (im) => im.parentNode.remove(), { class: 'dish-photo', alt: '' })),
           h('figcaption', { class: 'art-tag' }, 'Illustration, not our plating')) : null,
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),

@@ -1150,3 +1150,103 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 @media (min-width: 760px) { .dotd-btns { grid-template-columns: repeat(2, max-content); } }
 .dotd .btn.dotd-open { border-color: var(--on-steel); background: var(--on-steel); color: #1C1B1A; }
 @media (prefers-reduced-motion: reduce) { .welcome.draw .w-ray, .ready-back, .ready-back .b-ray, .ready-back .b-tick { animation: none !important; } }
+
+/* ---------- motion: page changes, station glow, the + button, folding rows, rolling numbers ---------- */
+/* page changes cross-fade; a tapped dish photo grows into the recipe page */
+/* a new page fades in; backwards fill, so nothing stays on .main once it has run */
+.main.page-in { animation: fadein .2s ease-out backwards; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
+::view-transition-group(k-hero) { animation-duration: .4s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+
+/* each station has its own glow behind the greeting: warm, frosty, gold */
+.welcome .w-tint, .welcome .w-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.w-tint.t-hot { background: radial-gradient(ellipse 80% 95% at 92% 0%, rgba(184, 86, 31, .5), rgba(184, 86, 31, 0) 62%); }
+.w-tint.t-cold { background: radial-gradient(ellipse 80% 95% at 92% 0%, rgba(70, 140, 196, .5), rgba(44, 106, 152, 0) 62%); }
+.w-tint.t-pass { background: radial-gradient(ellipse 80% 95% at 92% 0%, rgba(196, 160, 60, .45), rgba(122, 102, 38, 0) 62%); }
+.w-tint.in { animation: fadein .6s ease both; }
+.w-tint.out { animation: fadeout .6s ease both; }
+@keyframes fadeout { to { opacity: 0; } }
+.w-fx { overflow: hidden; }
+.w-fx i { position: absolute; width: 3px; height: 3px; border-radius: 50%; opacity: 0; }
+.w-fx i:nth-child(1) { left: 58%; top: 30%; }
+.w-fx i:nth-child(2) { left: 68%; top: 62%; animation-delay: .8s; }
+.w-fx i:nth-child(3) { left: 77%; top: 18%; animation-delay: 1.6s; }
+.w-fx i:nth-child(4) { left: 86%; top: 48%; animation-delay: 2.3s; }
+.w-fx i:nth-child(5) { left: 94%; top: 74%; animation-delay: 1.2s; }
+.fx-hot i { top: auto !important; bottom: 0; background: #FFB27A; box-shadow: 0 0 6px #FF8A3D; animation: ember 3.2s linear infinite; }
+.fx-cold i { top: 0 !important; width: 4px; height: 4px; border-radius: 1px; background: #CFE6F7; box-shadow: 0 0 6px #8EC3EA; animation: frost 4.2s linear infinite; }
+.fx-pass i { width: 4px; height: 4px; background: #F1D88A; box-shadow: 0 0 8px #EDBE45; animation: twinkle 2.2s ease-in-out infinite; }
+@keyframes ember { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translate(-14px, -230px); opacity: 0; } }
+@keyframes frost { 0% { transform: translate(0, -10px) rotate(0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translate(16px, 230px) rotate(180deg); opacity: 0; } }
+@keyframes twinkle { 0%, 100% { opacity: .1; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.3); } }
+
+/* the station pill slides from the old station to the new one */
+.stpick-btns { position: relative; }
+.st-pill { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 12px; background: var(--on-steel); opacity: 0; pointer-events: none; transition: transform .38s cubic-bezier(.34, 1.3, .64, 1), width .38s cubic-bezier(.34, 1.3, .64, 1), height .38s ease, opacity .2s ease; }
+.stpick-btns button, .stpick-btns button .ico { position: relative; z-index: 1; transition: color .18s ease; }
+.stpick-btns button.st-was, .stpick-btns button.st-was .ico { color: #1C1B1A; }
+.stpick-btns.has-pill button[aria-pressed="true"] { background: transparent; border-color: transparent; }
+.stpick-btns.sliding button[aria-pressed="true"], .stpick-btns.sliding button[aria-pressed="true"] .ico { color: var(--on-steel); }
+.st-enter > * { animation: rise-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+.st-enter > *:nth-child(2) { animation-delay: .05s; }
+.st-enter > *:nth-child(3) { animation-delay: .1s; }
+.st-enter > *:nth-child(n+4) { animation-delay: .15s; }
+.st-switch .wkick { animation: rise-in .4s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+
+/* the round + button on Today, and the Add a task sheet that blooms out of it */
+.fab { position: fixed; z-index: 40; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px)); display: grid; place-items: center; width: 60px; height: 60px; border: 0; border-radius: 50%; background: var(--apron); color: #fff; box-shadow: 0 14px 26px -10px rgba(40, 20, 16, .75); transition: transform .25s cubic-bezier(.34, 1.4, .64, 1), opacity .2s ease; }
+.fab .ico { width: 28px; height: 28px; }
+.fab:active { transform: scale(.9); }
+body.toasting .fab { transform: translateY(-68px); }
+.page.has-fab { padding-bottom: 96px; }
+/* it steps aside while you scroll down the list and comes back when you scroll up */
+body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity: 0; pointer-events: none; }
+.sheet.bloom-pre { visibility: hidden; animation: none; }
+.sheet.bloom { animation: bloom .46s cubic-bezier(.6, 0, .2, 1) both; }
+@keyframes bloom { from { clip-path: circle(30px at var(--cx) var(--cy)); } to { clip-path: circle(150% at var(--cx) var(--cy)); } }
+.addsheet { display: grid; gap: 16px; padding-bottom: 6px; }
+.addsheet .legend { display: block; margin-bottom: 6px; font-weight: 700; }
+.input.big { min-height: 56px; font-size: 1.12rem; }
+.seg.at-seg { display: flex; width: 100%; box-sizing: border-box; }
+.seg.at-seg button { flex: 1; min-height: 48px; padding: 0 8px; white-space: nowrap; }
+.switchrow { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--surface-2); color: var(--ink); text-align: left; font: inherit; }
+.switch-txt { flex: 1; display: grid; gap: 2px; }
+.switch-txt span { color: var(--muted); font-size: .88rem; }
+.switch { position: relative; flex: none; width: 54px; height: 32px; border-radius: 16px; background: var(--line); transition: background-color .2s ease; }
+.switch i { position: absolute; left: 3px; top: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .26s cubic-bezier(.34, 1.4, .64, 1); }
+.switchrow[aria-checked="true"] .switch { background: var(--urgent); }
+.switchrow[aria-checked="true"] .switch i { transform: translateX(22px); }
+.at-add { min-height: 56px; font-size: 1.05rem; }
+
+/* done rows fold away; the circle fills with a ring that ripples out */
+.folding { overflow: hidden; transition: height .24s cubic-bezier(.4, 0, .2, 1), opacity .2s ease, margin .24s cubic-bezier(.4, 0, .2, 1); }
+.tcheck, .mbox { position: relative; }
+.tcheck.ticked::after, .mbox.pop::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2.5px solid var(--ready); pointer-events: none; animation: ring-out .5s ease-out forwards; }
+.mbox.pop::after { border-radius: 10px; }
+@keyframes ring-out { from { transform: scale(.9); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+.tcheck.ticked .ico path { stroke-dasharray: 24; animation: draw-tick .3s ease-out both; }
+@keyframes draw-tick { from { stroke-dashoffset: 24; } }
+.todo.sw-r .sw-ready, .todo.sw-l .sw-del, .mrow.sw-r .sw-ready, .mrow.sw-l .sw-do { opacity: calc(.35 + var(--p, 0) * .65); transform: scale(calc(.75 + var(--p, 0) * .3)); }
+.todo.sw-armed .sw-ready, .todo.sw-armed .sw-del, .mrow.sw-armed .sw-ready, .mrow.sw-armed .sw-do { opacity: 1; transform: scale(1.15); }
+
+/* All ready: the group's boxes tick one after another, then the group glows */
+.allready { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px; background: var(--ready-soft); color: var(--ready); font: 800 .8rem/1 var(--sans); white-space: nowrap; }
+.allready .ico { width: 16px; height: 16px; }
+.allready:disabled { opacity: .5; }
+.mbox.cascade { animation: tick-in .32s cubic-bezier(.34, 1.56, .64, 1) both; }
+.mbox.cascade::before { content: ""; position: absolute; width: 14px; height: 7px; border-left: 3px solid var(--ready-ink); border-bottom: 3px solid var(--ready-ink); transform: translateY(-2px) rotate(-45deg); animation: fadein .2s ease both; animation-delay: inherit; }
+@keyframes tick-in { 0% { transform: scale(1); } 45% { transform: scale(.72); background: var(--ready); border-color: transparent; color: transparent; clip-path: none; } 100% { transform: scale(1); background: var(--ready); border-color: transparent; color: transparent; clip-path: none; } }
+.mep-group.glow { animation: group-glow 1.1s ease-out; }
+@keyframes group-glow { 0% { box-shadow: 0 0 0 0 rgba(46, 122, 78, .55); } 100% { box-shadow: 0 0 0 16px rgba(46, 122, 78, 0); } }
+
+/* scaling: the pill slides to the new preset and the changed amounts roll into place */
+.presets { position: relative; }
+.preset { position: relative; z-index: 1; transition: color .2s ease .16s, background-color .2s ease, border-color .2s ease; }
+.preset-pill { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 9px; background: var(--on-steel); opacity: 0; pointer-events: none; transition: transform .36s cubic-bezier(.34, 1.3, .64, 1), width .36s cubic-bezier(.34, 1.3, .64, 1), height .36s ease, opacity .2s ease; }
+.presets.has-pill .preset[aria-pressed="true"] { background: transparent; border-color: transparent; }
+.amt.roll { position: relative; display: inline-block; overflow: hidden; vertical-align: bottom; }
+.amt.roll > span { display: inline-block; animation: roll-in .42s cubic-bezier(.34, 1.4, .64, 1) var(--d, 0ms) both; }
+.amt.roll::before { content: attr(data-old); position: absolute; inset: 0; text-align: right; animation: roll-out .42s cubic-bezier(.34, 1.4, .64, 1) var(--d, 0ms) both; }
+@keyframes roll-in { from { transform: translateY(105%); opacity: 0; } }
+@keyframes roll-out { to { transform: translateY(-105%); opacity: 0; } }

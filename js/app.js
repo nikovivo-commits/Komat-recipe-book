@@ -48,8 +48,8 @@
       const hs = hashFor();
       try { if (hs && location.hash !== '#' + hs) history.pushState({ k: 1 }, '', '#' + hs); } catch (e) { /* file:// */ }
     }
-    render(true);
-    if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
+    const draw = () => { render(true); if (opts.restore && scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]); };
+    if (K.transition) K.transition(draw); else draw();
   };
   window.addEventListener('popstate', () => {
     if (!site()) return;
@@ -92,7 +92,8 @@
     app.append(out.top || header());
     document.body.classList.toggle('over-photo', !out.top);
     if (D.noWrite && K.mode === 'cloud') app.append(noWriteBanner());
-    app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') }, out.body));
+    app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') + (ui.pageIn ? ' page-in' : '') }, out.body));
+    ui.pageIn = false;
     if (out.tabs !== false) app.append(tabbar());
     if (out.bar) app.append(h('div', { class: 'actionbar' }, h('div', { class: 'actionbar-in' }, out.bar)));
     document.body.classList.toggle('has-tabs', out.tabs !== false);
