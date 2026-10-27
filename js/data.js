@@ -240,7 +240,6 @@
     return K.kitchenMinutes() >= (K.toMinutes(K.kitchen().planFrom) || 21 * 60);
   };
   K.listDay = () => K.day(K.planningTomorrow() ? 1 : 0);
-  const dayBefore = (date, k) => K.ymd(K.addDays(K.parseYmd(date), -k));
   K.checkItems = function (st, date) {
     const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
@@ -249,18 +248,11 @@
     }));
     return out;
   };
-  /* a row's mark for a day (today by default); a DO (or urgent) left open on one of the 3 days before carries over */
+  /* a row's mark for one day (today by default). Every day starts clean: nothing left open the day before comes back */
   K.mark = function (st, id, date) {
-    const base = date || K.day(0), t = D.checks[K.checkId(st, base)], m = t && t.marks && t.marks[id];
-    if (m && 'd' in m) return Object.assign({}, m, { d: m.d === 'urg' ? 'do' : m.d });
-    for (let k = 1; k <= 3; k++) {
-      const p = D.checks[K.checkId(st, dayBefore(base, k))], pm = p && p.marks && p.marks[id];
-      if (pm && 'd' in pm) {
-        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: dayBefore(base, k) });
-        return m || null;
-      }
-    }
-    return m || null;
+    const t = D.checks[K.checkId(st, date || K.day(0))], m = t && t.marks && t.marks[id];
+    if (!m) return null;
+    return m.d === 'urg' ? Object.assign({}, m, { d: 'do' }) : m;
   };
   K.markState = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.d) || ''; };
   K.isUrgent = (st, id, date) => { const m = K.mark(st, id, date); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
@@ -274,9 +266,7 @@
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
     const prev = doc.marks[it.id] ? K.clone(doc.marks[it.id]) : undefined;
-    const em = K.mark(st, it.id, day) || {};
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
-    if (em.from) { if (m.c === undefined && em.c) m.c = em.c; if (m.d === undefined) m.d = em.d; if (m.u === undefined && em.u) m.u = em.u; }
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
     if (!('c' in patch) || Object.keys(patch).length > 1) { m.t = Date.now(); m.by = K.me.id || ''; }
     doc.marks[it.id] = m;
@@ -326,7 +316,7 @@
 
   /* ---------- prep tasks (free tasks, tasks left for tomorrow, event tasks, repeats) ---------- */
   K.prepId = (key, date) => (date || K.day(0)) + '_day_' + K.safeId(key);
-  /* status: 'need' | 'done' | '' (removed). it = {key, name, note?, origId?} */
+  /* status: 'need' | 'done' | '' (removed). it = {key, name, note?} */
   K.setPrep = function (st, it, status, urgent) {
     const id = K.prepId(it.key), old = D.prep[id];
     let u = urgent === undefined ? !!(old && old.urgent) : !!urgent;
@@ -336,18 +326,11 @@
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
     if (nt) body.note = nt;
     if (u) body.urgentAt = (old && old.urgent && old.urgentAt) || Date.now();
-    const orig = it.origId && it.origId !== id ? it.origId : null, od = orig ? D.prep[orig] : null;
-    if (orig && od) {
-      if (od.leftBy && !body.leftBy) { body.leftBy = od.leftBy; body.leftAt = od.leftAt || 0; }
-      if (od.note && !body.note) body.note = od.note;
-      delete D.prep[orig];
-    }
     if (status === '') delete D.prep[id]; else D.prep[id] = body;
     K.refresh(true);
     const ref = K.db.doc('prep/' + id);
     return (status === '' ? ref.delete() : ref.set(body))
-      .then(() => { if (orig) return K.db.doc('prep/' + orig).delete().catch(() => {}); })
-      .catch((e) => { if (old) D.prep[id] = old; else delete D.prep[id]; if (orig && od) D.prep[orig] = od; K.refresh(true); writeFailed(e); });
+      .catch((e) => { if (old) D.prep[id] = old; else delete D.prep[id]; K.refresh(true); writeFailed(e); });
   };
   K.setPrepNote = function (id, text) {
     const d = D.prep[id];
@@ -369,19 +352,12 @@
     K.refresh(true);
     return K.db.doc('prep/' + id).set(body).catch(writeFailed);
   };
-  /* today's tasks for a station; unfinished free tasks from the last 3 days carry over */
+  /* today's tasks for a station. Every day starts clean: tasks left open on earlier days don't come back */
   K.dayTasks = function (st) {
-    const out = [], pre = K.day(0) + '_day_', have = {};
+    const out = [], pre = K.day(0) + '_day_';
     Object.keys(D.prep).forEach((id) => {
       const d = D.prep[id];
-      if (id.startsWith(pre) && d.station === st && d.status) { out.push(Object.assign({ _id: id }, d)); have[d.key] = 1; }
-    });
-    Object.keys(D.prep).forEach((id) => {
-      const d = D.prep[id];
-      if (d.station !== st || d.status !== 'need' || !d.task || have[d.key] || String(d.key).startsWith('evt-') || String(d.key).startsWith('auto-')) return;
-      if (!(d.date < K.day(0))) return;
-      have[d.key] = 1;
-      out.push(Object.assign({}, d, { _id: id, _orig: id, _from: d.date }));
+      if (id.startsWith(pre) && d.station === st && d.status) out.push(Object.assign({ _id: id }, d));
     });
     return out.sort((a, b) => (a.at || 0) - (b.at || 0));
   };
@@ -466,14 +442,14 @@
   K.dueDate = (e, t) => K.ymd(K.addDays(K.parseYmd(e.date), -(+t.before || 0)));
   K.countdown = (e) => { const d = K.daysUntil(e.date); return d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : d > 1 ? 'In ' + d + ' days' : K.prettyDate(e.date, { day: 'numeric', month: 'short' }); };
   K.evTaskStatus = (key) => { const d = D.prep[K.prepId(key)]; return d ? d.status : 'need'; };
-  /* event tasks that fall due today (or are overdue) for a station */
+  /* event tasks that fall due today for a station (a missed one does not come back the next day) */
   K.eventTasksToday = function (st) {
     const out = [], t = K.day(0);
     D.events.forEach((e) => {
       if (e.status === 'cancelled' || e.status === 'pending') return;
       K.evTasks(e).forEach((k) => {
         const due = K.dueDate(e, k);
-        if (k.station === st && due <= t && e.date >= t) out.push({ key: 'evt-' + e.id + '-' + k.id, name: k.text, event: e, late: due < t });
+        if (k.station === st && due === t) out.push({ key: 'evt-' + e.id + '-' + k.id, name: k.text, event: e });
       });
     });
     return out;

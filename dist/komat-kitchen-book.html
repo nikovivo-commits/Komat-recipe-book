@@ -2872,7 +2872,6 @@ window.KOMAT_PART_ART = [
     return K.kitchenMinutes() >= (K.toMinutes(K.kitchen().planFrom) || 21 * 60);
   };
   K.listDay = () => K.day(K.planningTomorrow() ? 1 : 0);
-  const dayBefore = (date, k) => K.ymd(K.addDays(K.parseYmd(date), -k));
   K.checkItems = function (st, date) {
     const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
@@ -2881,18 +2880,11 @@ window.KOMAT_PART_ART = [
     }));
     return out;
   };
-  /* a row's mark for a day (today by default); a DO (or urgent) left open on one of the 3 days before carries over */
+  /* a row's mark for one day (today by default). Every day starts clean: nothing left open the day before comes back */
   K.mark = function (st, id, date) {
-    const base = date || K.day(0), t = D.checks[K.checkId(st, base)], m = t && t.marks && t.marks[id];
-    if (m && 'd' in m) return Object.assign({}, m, { d: m.d === 'urg' ? 'do' : m.d });
-    for (let k = 1; k <= 3; k++) {
-      const p = D.checks[K.checkId(st, dayBefore(base, k))], pm = p && p.marks && p.marks[id];
-      if (pm && 'd' in pm) {
-        if (pm.d === 'do' || pm.d === 'urg') return Object.assign({}, pm, m || {}, { d: 'do', from: dayBefore(base, k) });
-        return m || null;
-      }
-    }
-    return m || null;
+    const t = D.checks[K.checkId(st, date || K.day(0))], m = t && t.marks && t.marks[id];
+    if (!m) return null;
+    return m.d === 'urg' ? Object.assign({}, m, { d: 'do' }) : m;
   };
   K.markState = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.d) || ''; };
   K.isUrgent = (st, id, date) => { const m = K.mark(st, id, date); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
@@ -2906,9 +2898,7 @@ window.KOMAT_PART_ART = [
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
     const prev = doc.marks[it.id] ? K.clone(doc.marks[it.id]) : undefined;
-    const em = K.mark(st, it.id, day) || {};
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
-    if (em.from) { if (m.c === undefined && em.c) m.c = em.c; if (m.d === undefined) m.d = em.d; if (m.u === undefined && em.u) m.u = em.u; }
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
     if (!('c' in patch) || Object.keys(patch).length > 1) { m.t = Date.now(); m.by = K.me.id || ''; }
     doc.marks[it.id] = m;
@@ -2958,7 +2948,7 @@ window.KOMAT_PART_ART = [
 
   /* ---------- prep tasks (free tasks, tasks left for tomorrow, event tasks, repeats) ---------- */
   K.prepId = (key, date) => (date || K.day(0)) + '_day_' + K.safeId(key);
-  /* status: 'need' | 'done' | '' (removed). it = {key, name, note?, origId?} */
+  /* status: 'need' | 'done' | '' (removed). it = {key, name, note?} */
   K.setPrep = function (st, it, status, urgent) {
     const id = K.prepId(it.key), old = D.prep[id];
     let u = urgent === undefined ? !!(old && old.urgent) : !!urgent;
@@ -2968,18 +2958,11 @@ window.KOMAT_PART_ART = [
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
     if (nt) body.note = nt;
     if (u) body.urgentAt = (old && old.urgent && old.urgentAt) || Date.now();
-    const orig = it.origId && it.origId !== id ? it.origId : null, od = orig ? D.prep[orig] : null;
-    if (orig && od) {
-      if (od.leftBy && !body.leftBy) { body.leftBy = od.leftBy; body.leftAt = od.leftAt || 0; }
-      if (od.note && !body.note) body.note = od.note;
-      delete D.prep[orig];
-    }
     if (status === '') delete D.prep[id]; else D.prep[id] = body;
     K.refresh(true);
     const ref = K.db.doc('prep/' + id);
     return (status === '' ? ref.delete() : ref.set(body))
-      .then(() => { if (orig) return K.db.doc('prep/' + orig).delete().catch(() => {}); })
-      .catch((e) => { if (old) D.prep[id] = old; else delete D.prep[id]; if (orig && od) D.prep[orig] = od; K.refresh(true); writeFailed(e); });
+      .catch((e) => { if (old) D.prep[id] = old; else delete D.prep[id]; K.refresh(true); writeFailed(e); });
   };
   K.setPrepNote = function (id, text) {
     const d = D.prep[id];
@@ -3001,19 +2984,12 @@ window.KOMAT_PART_ART = [
     K.refresh(true);
     return K.db.doc('prep/' + id).set(body).catch(writeFailed);
   };
-  /* today's tasks for a station; unfinished free tasks from the last 3 days carry over */
+  /* today's tasks for a station. Every day starts clean: tasks left open on earlier days don't come back */
   K.dayTasks = function (st) {
-    const out = [], pre = K.day(0) + '_day_', have = {};
+    const out = [], pre = K.day(0) + '_day_';
     Object.keys(D.prep).forEach((id) => {
       const d = D.prep[id];
-      if (id.startsWith(pre) && d.station === st && d.status) { out.push(Object.assign({ _id: id }, d)); have[d.key] = 1; }
-    });
-    Object.keys(D.prep).forEach((id) => {
-      const d = D.prep[id];
-      if (d.station !== st || d.status !== 'need' || !d.task || have[d.key] || String(d.key).startsWith('evt-') || String(d.key).startsWith('auto-')) return;
-      if (!(d.date < K.day(0))) return;
-      have[d.key] = 1;
-      out.push(Object.assign({}, d, { _id: id, _orig: id, _from: d.date }));
+      if (id.startsWith(pre) && d.station === st && d.status) out.push(Object.assign({ _id: id }, d));
     });
     return out.sort((a, b) => (a.at || 0) - (b.at || 0));
   };
@@ -3098,14 +3074,14 @@ window.KOMAT_PART_ART = [
   K.dueDate = (e, t) => K.ymd(K.addDays(K.parseYmd(e.date), -(+t.before || 0)));
   K.countdown = (e) => { const d = K.daysUntil(e.date); return d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : d > 1 ? 'In ' + d + ' days' : K.prettyDate(e.date, { day: 'numeric', month: 'short' }); };
   K.evTaskStatus = (key) => { const d = D.prep[K.prepId(key)]; return d ? d.status : 'need'; };
-  /* event tasks that fall due today (or are overdue) for a station */
+  /* event tasks that fall due today for a station (a missed one does not come back the next day) */
   K.eventTasksToday = function (st) {
     const out = [], t = K.day(0);
     D.events.forEach((e) => {
       if (e.status === 'cancelled' || e.status === 'pending') return;
       K.evTasks(e).forEach((k) => {
         const due = K.dueDate(e, k);
-        if (k.station === st && due <= t && e.date >= t) out.push({ key: 'evt-' + e.id + '-' + k.id, name: k.text, event: e, late: due < t });
+        if (k.station === st && due === t) out.push({ key: 'evt-' + e.id + '-' + k.id, name: k.text, event: e });
       });
     });
     return out;
@@ -4998,7 +4974,6 @@ window.KOMAT_PART_ART = [
     K.vibrate(15);
     K.toast('Done: ' + it.name, { tone: 'good', undo: () => {
       if (!before) { K.setPrep(st, it, ''); return; }
-      if (id !== K.prepId(it.key)) K.removePrep(K.prepId(it.key));
       K.restorePrep(id, before);
     } });
   }
@@ -5053,11 +5028,6 @@ window.KOMAT_PART_ART = [
     const f = nkey ? noteForm(nkey, o.note, o.onNote) : null;
     return f ? h('div', { class: 'todo-wrap' }, row, f) : row;
   }
-  function carryLabel(d) {
-    const who = K.nameOf(d.leftBy || d.by);
-    if (d._from === K.day(-1) && d.leftAt) { const hr = new Date(d.leftAt).getHours(); if (hr >= 18 || hr < 4) return 'Left last night' + (who ? ' by ' + who : ''); }
-    return 'Still open from ' + (d._from === K.day(-1) ? 'yesterday' : K.prettyDate(d._from, { weekday: 'long' }));
-  }
 
   /* ---------- the Today page ---------- */
   K.V.today = function () {
@@ -5103,13 +5073,13 @@ window.KOMAT_PART_ART = [
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
-    evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: [(k.late ? 'Overdue · ' : '') + 'Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
+    evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
       onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + k.name, { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
     todoTasks.forEach((d) => {
-      const it = { key: d.key, name: d.name, note: d.note || '', origId: d._orig };
+      const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
         name: d.name, note: d.note, urgent: !!d.urgent, noteKey: 'p:' + d._id,
-        meta: [d._from ? carryLabel(d) : d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
+        meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
         onUrgent: () => K.setPrep(st, it, 'need', !d.urgent),
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
@@ -5120,7 +5090,7 @@ window.KOMAT_PART_ART = [
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        meta: [it.group, m.from ? 'Still open from ' + (m.from === K.day(-1) ? 'yesterday' : K.prettyDate(m.from, { weekday: 'long' })) : '', u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
+        meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
@@ -5243,7 +5213,6 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
-          m.from ? h('span', { class: 'xtag' }, 'not finished today') : null,
           note ? h('span', { class: 'tnote' }, note) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));

@@ -149,7 +149,6 @@
     K.vibrate(15);
     K.toast('Done: ' + it.name, { tone: 'good', undo: () => {
       if (!before) { K.setPrep(st, it, ''); return; }
-      if (id !== K.prepId(it.key)) K.removePrep(K.prepId(it.key));
       K.restorePrep(id, before);
     } });
   }
@@ -204,11 +203,6 @@
     const f = nkey ? noteForm(nkey, o.note, o.onNote) : null;
     return f ? h('div', { class: 'todo-wrap' }, row, f) : row;
   }
-  function carryLabel(d) {
-    const who = K.nameOf(d.leftBy || d.by);
-    if (d._from === K.day(-1) && d.leftAt) { const hr = new Date(d.leftAt).getHours(); if (hr >= 18 || hr < 4) return 'Left last night' + (who ? ' by ' + who : ''); }
-    return 'Still open from ' + (d._from === K.day(-1) ? 'yesterday' : K.prettyDate(d._from, { weekday: 'long' }));
-  }
 
   /* ---------- the Today page ---------- */
   K.V.today = function () {
@@ -254,13 +248,13 @@
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
-    evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: [(k.late ? 'Overdue · ' : '') + 'Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
+    evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
       onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + k.name, { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
     todoTasks.forEach((d) => {
-      const it = { key: d.key, name: d.name, note: d.note || '', origId: d._orig };
+      const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
         name: d.name, note: d.note, urgent: !!d.urgent, noteKey: 'p:' + d._id,
-        meta: [d._from ? carryLabel(d) : d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
+        meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
         onUrgent: () => K.setPrep(st, it, 'need', !d.urgent),
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
@@ -271,7 +265,7 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        meta: [it.group, m.from ? 'Still open from ' + (m.from === K.day(-1) ? 'yesterday' : K.prettyDate(m.from, { weekday: 'long' })) : '', u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
+        meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
@@ -394,7 +388,6 @@
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
-          m.from ? h('span', { class: 'xtag' }, 'not finished today') : null,
           note ? h('span', { class: 'tnote' }, note) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));

@@ -18,12 +18,12 @@
       if (e.status === 'cancelled' || e.status === 'pending' || e.date < day) return;
       K.evTasks(e).forEach((k) => {
         const key = 'evt-' + e.id + '-' + k.id;
-        if (k.station === st && K.dueDate(e, k) <= day && K.evTaskStatus(key) !== 'done') tasks.push({ name: k.text, meta: 'Event: ' + (e.title || '') + ' · ' + short(e.date) });
+        if (k.station === st && K.dueDate(e, k) === day && K.evTaskStatus(key) !== 'done') tasks.push({ name: k.text, meta: 'Event: ' + (e.title || '') + ' · ' + short(e.date) });
       });
     });
-    /* free tasks still open today; from tomorrow's side they carry over, with the notes left for it */
-    K.dayTasks(st).filter((d) => d.status === 'need' && !/^(evt|auto)-/.test(String(d.key)))
-      .forEach((d) => tasks.push({ name: d.name, note: d.note, urgent: !!d.urgent, meta: n ? 'Still open today' : d._from ? 'Still open from ' + short(d._from) : '' }));
+    /* today's open tasks, or for tomorrow only the notes left for it: nothing carries over */
+    if (!n) K.dayTasks(st).filter((d) => d.status === 'need' && !/^(evt|auto)-/.test(String(d.key)))
+      .forEach((d) => tasks.push({ name: d.name, note: d.note, urgent: !!d.urgent }));
     if (n) K.tomorrowTasks(st).forEach((x) => tasks.push({ name: x.d.name, note: x.d.note, urgent: !!x.d.urgent, meta: 'Left for tomorrow' + (K.nameOf(x.d.leftBy) ? ' by ' + K.nameOf(x.d.leftBy) : '') }));
     tasks.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
     const date = n ? day : undefined;
