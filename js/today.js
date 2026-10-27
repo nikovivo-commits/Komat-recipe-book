@@ -15,23 +15,85 @@
         h('div', null, h('h1', { class: 'ptitle' }, title), sub ? h('p', { class: 'psub' }, sub) : null),
         extra || null));
   };
-  /* a little encouragement that follows the station's progress */
-  function cheer(ready, total) {
-    if (!total) return 'No mise en place list yet';
-    if (ready === total) return 'Ready for service';
-    const p = ready / total;
-    return p === 0 ? 'Let’s get set up' : p < 0.34 ? 'Good start' : p < 0.67 ? 'Halfway there' : p < 0.9 ? 'Looking good' : 'Nearly there';
-  }
-  /* the whole station ticked off: celebrate it */
+  /* the whole station ticked off: a moment for it (Ready for service) */
   function maybeCelebrate(st) {
     const items = K.checkItems(st);
-    if (items.length && items.every((it) => K.markState(st, it.id) === 'ok')) { K.celebrate(K.ST[st] + ' is ready for service. Beautiful work!'); return true; }
-    return false;
+    if (!items.length || !items.every((it) => K.markState(st, it.id) === 'ok')) return false;
+    K.vibrate([20, 40, 20]);
+    ui.sheet = { type: 'ready', st: st, n: items.length, at: Date.now() };
+    K.render();
+    return true;
   }
+  const firstName = () => String(K.me.name || '').trim().split(/\s+/)[0];
+  K.SHEETS.ready = function (S) {
+    const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
+    const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
+    burst.innerHTML = K.burstSvg();
+    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
+    return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
+      h('div', { class: 'ready-in' }, burst,
+        h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
+        h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
+        h('p', { class: 'ready-line' }, 'Every line on ' + K.ST[S.st] + ' is set. Beautiful work' + (name ? ', ' + name : '') + '.'),
+        h('div', { class: 'ready-btns' },
+          h('button', { class: 'btn primary wide', type: 'button', id: 'ready-ok', onclick: close }, 'Back to Today'),
+          print ? h('button', { class: 'btn wide ready-print', type: 'button', onclick: () => { ui.sheet = { type: 'print', n: 1, st: S.st }; K.render(); } }, K.icon('print'), 'Print tomorrow’s list') : null)));
+  };
   function markReady(st, it) {
     ui.pop = it.id;
     K.setMark(st, it, { d: 'ok' });
     return maybeCelebrate(st);
+  }
+  /* the time words of an event: "19:30 арт тур · 20:00 вечеря" -> 19:30 арт тур, 20:00 вечеря */
+  function eventTimes(e) {
+    const out = [], re = /(\d{1,2})[:.](\d{2})\s*([^·,;|\d]*)/g;
+    let m;
+    while ((m = re.exec(e.time || ''))) out.push({ t: m[1].padStart(2, '0') + ':' + m[2], what: m[3].trim() });
+    return out;
+  }
+  const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const evWhen = (e, ts) => (K.daysUntil(e.date) === 0 ? (ts.length && ts[0].t >= '17:00' ? 'tonight' : 'today') : 'tomorrow');
+  const openEvent = (e) => () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); };
+  function hello() {
+    const m = K.kitchenMinutes();
+    return m < 12 * 60 ? 'Good morning' : m < 17 * 60 ? 'Good afternoon' : m < 23 * 60 ? 'Good evening' : 'Late shift';
+  }
+  /* the top of Today: a greeting under the Komat rays (they draw in once per visit) and the station picker */
+  function welcome(st, feat) {
+    const name = firstName(), draw = !ui.raysDrawn, urg = K.openUrgents().length;
+    ui.raysDrawn = true;
+    let line;
+    if (feat) {
+      const ts = eventTimes(feat);
+      line = (feat.title || 'An event') + ' is ' + evWhen(feat, ts) + (feat.guests ? ': ' + feat.guests + ' guests' : '') + (ts.length ? ', from ' + ts[0].t : '') + '.';
+    } else line = urg ? urg + ' urgent ' + (urg === 1 ? 'item' : 'items') + ' across the kitchen.' : 'Nothing urgent so far.';
+    const rays = h('span', { class: 'w-rays', 'aria-hidden': 'true' });
+    rays.innerHTML = K.welcomeRaysSvg();
+    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') }, rays,
+      h('div', { class: 'wrap welcome-in' },
+        h('div', { class: 'wtext' },
+          h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
+          h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
+          h('h1', { class: 'whello' }, hello() + (name ? ',' : ''), name ? h('span', { class: 'wname' }, name) : null),
+          h('p', { class: 'wline' }, line)),
+        stationPicker()));
+  }
+  /* the next event, today or tomorrow: when, how many, the run of the evening and a taste of the menu */
+  function tonightCard(e) {
+    const ts = eventTimes(e), d = K.parseYmd(e.date);
+    const dishes = K.evDishes(e).map((x) => x.name || (K.linkTarget(x.link) || {}).name).filter(Boolean).map((n) => n.replace(/\s*\([^)]*\)\s*$/, ''));
+    return h('section', { class: 'tonight card' },
+      h('button', { type: 'button', class: 'tn-head', onclick: openEvent(e) },
+        h('span', { class: 'tn-date' }, h('span', { class: 'mono' }, d.toLocaleDateString('en-GB', { month: 'short' })), h('b', null, String(d.getDate()))),
+        h('span', { class: 'tn-txt' },
+          h('span', { class: 'tn-kick' }, cap(evWhen(e, ts))),
+          h('span', { class: 'tn-title' }, e.title || 'Event'),
+          h('span', { class: 'muted' }, [e.guests ? e.guests + ' guests' : '', e.kind || ''].filter(Boolean).join(' · '))),
+        K.icon('next')),
+      ts.length ? h('ol', { class: 'tn-line' + (ts.length === 1 ? ' one' : '') }, ts.map((x, i) => h('li', { class: ts.length > 1 && i === ts.length - 1 ? 'tn-main' : null },
+        h('span', { class: 'tn-dot', 'aria-hidden': 'true' }), h('b', { class: 'mono' }, x.t), x.what ? h('span', null, cap(x.what)) : null))) : null,
+      dishes.length ? h('div', { class: 'tn-dishes' }, dishes.slice(0, 5).map((n) => h('span', { class: 'tn-dish' }, n)),
+        dishes.length > 5 ? h('span', { class: 'tn-dish more' }, '+' + (dishes.length - 5) + ' more') : null) : null);
   }
   function greeting() {
     const m = K.kitchenMinutes();
@@ -55,9 +117,9 @@
   };
 
   /* ---------- the daily brief ---------- */
-  function brief() {
+  function brief(feat) {
     const urg = K.openUrgents(), os = K.onToday();
-    const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e));
+    const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e) && e !== feat);
     const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
     box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
       urg.length ? h('div', { class: 'urglist' }, urg.map((d) => h('div', { class: 'urgrow' },
@@ -151,8 +213,8 @@
   /* ---------- the Today page ---------- */
   K.V.today = function () {
     const st = K.getStation(), body = h('div', { class: 'page' });
-    body.append(K.pageHead('Today', null, h('div', { class: 'phead-side' },
-      h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker()), 'today'));
+    const feat = K.upcomingEvents().find((e) => K.isLive(e) && K.daysUntil(e.date) <= 1);
+    body.append(welcome(st, feat));
     const w = h('div', { class: 'wrap today' });
     body.append(w);
     const items = K.checkItems(st);
@@ -167,6 +229,15 @@
 
     /* phones: a sticky bar to jump between the parts of the page */
     const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
+    /* three tiles under the greeting: the list, the to-do, and the evening (or what is urgent) */
+    const urgN = K.openUrgents().length, fts = feat ? eventTimes(feat) : [];
+    const tile = (cls, big, label, onclick) => h('button', { type: 'button', class: 'tile' + (cls ? ' ' + cls : ''), onclick: onclick }, h('span', { class: 'tile-n mono' }, big), h('span', { class: 'tile-l' }, label));
+    w.append(h('div', { class: 'tiles' },
+      tile('tile-mep' + (items.length && ready === items.length ? ' done' : ''), [String(ready), h('span', { class: 'of' }, '/' + items.length)], items.length && ready === items.length ? 'Ready for service' : 'Mise en place', () => jumpTo('t-mep')),
+      tile('', String(todoN), 'To do', () => jumpTo('t-todo')),
+      feat ? tile('accent', fts.length ? fts[0].t : K.countdown(feat), fts.length && fts[0].what ? cap(fts[0].what) : feat.title || 'Event', openEvent(feat))
+        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief'))));
+    if (feat) w.append(tonightCard(feat));
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
       h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
       h('button', { type: 'button', onclick: () => jumpTo('t-mep') }, 'Mise en place', h('b', { class: 'mono' }, ready + '/' + items.length)),
@@ -175,16 +246,8 @@
     w.append(grid);
     const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
     grid.append(left, right);
-    left.append(h('div', { class: 'only-narrow' }, brief()));
-    right.append(h('div', { class: 'only-wide' }, brief()));
-
-    /* progress */
-    const pct = items.length ? Math.round((ready / items.length) * 100) : 0;
-    left.append(h('section', { class: 'progress card' + (items.length && ready === items.length ? ' all' : '') },
-      ring(pct),
-      h('div', { class: 'prog-txt' },
-        h('b', null, cheer(ready, items.length)),
-        h('span', { class: 'muted' }, items.length ? ready + ' of ' + items.length + ' ready' + (todoN ? ' · ' + todoN + ' on the to-do list' : '') : 'The head chef can add one with Edit list'))));
+    left.append(h('div', { class: 'only-narrow', id: 't-brief' }, brief(feat)));
+    right.append(h('div', { class: 'only-wide' }, brief(feat)));
 
     /* to do */
     const todo = h('section', { class: 'block', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
@@ -251,15 +314,6 @@
         h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     return { body: body };
   };
-
-  function ring(pct) {
-    const r = 22, c = 2 * Math.PI * r;
-    const svg = '<svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true"><circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--line)" stroke-width="6"/>' +
-      '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--ready)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(1) + '" transform="rotate(-90 28 28)"/></svg>';
-    const el = h('div', { class: 'ring' }, h('span', { class: 'ring-n mono' }, pct + '%'));
-    el.insertAdjacentHTML('afterbegin', svg);
-    return el;
-  }
 
   function addTaskForm(id, placeholder, label, onAdd) {
     const S = (ui.taskForms = ui.taskForms || {})[id] || (ui.taskForms[id] = { text: '', note: '', urgent: false, showNote: false });

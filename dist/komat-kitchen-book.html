@@ -585,13 +585,6 @@ select.input { appearance: auto; }
 .codechip.big { min-height: 50px; min-width: 60px; justify-content: center; font-size: 1rem; }
 .codechip.on { box-shadow: 0 0 0 3px var(--apron); }
 .quick { display: flex; flex-wrap: wrap; gap: 8px; }
-.progress { display: flex; align-items: center; gap: 16px; padding: 14px 16px; }
-.progress.all { border-color: var(--ready); background: var(--ready-soft); }
-.ring { position: relative; flex: none; width: 56px; height: 56px; }
-.ring svg { display: block; }
-.ring-n { position: absolute; inset: 0; display: grid; place-items: center; font-size: .72rem; font-weight: 700; }
-.prog-txt { display: grid; gap: 2px; }
-.prog-txt b { font: 700 1.35rem/1.1 var(--display); }
 .block { display: grid; gap: 10px; min-width: 0; }
 .block.card { padding: 16px; }
 .block-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
@@ -1078,6 +1071,92 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
   #printsheet { display: block; }
   .pr-page + .pr-page { break-before: page; }
 }
+
+/* ---------- Today: a greeting under the Komat rays, three tiles, the evening's event ---------- */
+.welcome-in { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 18px 24px; align-items: flex-end; justify-content: space-between; padding-block: 30px 46px; }
+.w-rays { position: absolute; z-index: 0; right: 0; bottom: 0; width: min(100%, 560px); height: 100%; color: var(--apron-on-steel); opacity: .42; pointer-events: none; }
+.w-rays svg { display: block; width: 100%; height: 100%; }
+.welcome.draw .w-ray { stroke-dasharray: 420; animation: ray-rise 1.6s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes ray-rise { from { stroke-dashoffset: 420; } to { stroke-dashoffset: 0; } }
+.wtext { display: grid; gap: 8px; justify-items: start; }
+.wdate { padding: 6px 10px; border-radius: 999px; background: var(--steel-2); color: var(--on-steel); font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; }
+.wkick { font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--apron-on-steel); }
+.whello { font: 700 clamp(2.9rem, 13vw, 4.2rem)/.95 var(--display); letter-spacing: -.01em; }
+.wname { display: block; }
+.wline { max-width: 34ch; color: rgba(242, 242, 238, .8); font-size: .95rem; line-height: 1.45; }
+.tiles { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: -42px; }
+.tile { display: grid; gap: 2px; align-content: start; justify-items: start; min-height: 74px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); color: var(--ink); text-align: left; }
+.tile-n { font-size: 1.35rem; font-weight: 700; line-height: 1.1; }
+.tile-n .of { color: var(--muted); font-weight: 500; }
+.tile-l { color: var(--muted); font-size: .78rem; font-weight: 600; }
+.tile.accent { border-color: var(--apron); background: var(--apron); color: var(--apron-ink); }
+.tile.accent .tile-l { color: var(--apron-ink); opacity: .85; }
+.tile.bad { border-color: var(--urgent); background: var(--urgent-soft); }
+.tile.bad .tile-n { color: var(--urgent); }
+.tile.done { border-color: var(--ready); background: var(--ready-soft); }
+.tile.done .tile-n, .tile.done .tile-n .of, .tile.done .tile-l { color: var(--ready); }
+.tonight { display: grid; gap: 14px; margin-top: 12px; padding: 16px; border-radius: 18px; }
+.tn-head { display: grid; grid-template-columns: auto minmax(0, 1fr) 20px; gap: 14px; align-items: center; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
+.tn-head > .ico { color: var(--muted); }
+.tn-date { display: grid; place-items: center; align-content: center; width: 58px; height: 62px; border-radius: 12px; background: var(--steel); color: var(--on-steel); }
+.tn-date .mono { color: var(--apron-on-steel); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+.tn-date b { font: 700 1.9rem/1 var(--display); }
+.tn-txt { display: grid; gap: 2px; min-width: 0; }
+.tn-kick { color: var(--apron); font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.tn-title { font: 700 1.7rem/1 var(--display); overflow-wrap: anywhere; }
+.tn-txt .muted { font-size: .85rem; }
+.tn-line { position: relative; display: flex; justify-content: space-between; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tn-line::before { content: ""; position: absolute; left: 8px; right: 8px; top: 7px; height: 2px; background: var(--line); }
+.tn-line.one::before { display: none; }
+.tn-line li { position: relative; display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
+.tn-line li:last-child:not(:first-child) { align-items: flex-end; text-align: right; }
+.tn-line li:not(:first-child):not(:last-child) { align-items: center; text-align: center; }
+.tn-dot { width: 16px; height: 16px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); }
+.tn-line li.tn-main .tn-dot { border-color: var(--apron); background: var(--apron); }
+.tn-line b { font-size: .85rem; }
+.tn-line li > span:not(.tn-dot) { color: var(--muted); font-size: .8rem; }
+.tn-dishes { display: flex; flex-wrap: wrap; gap: 6px; }
+.tn-dish { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); font-size: .82rem; font-weight: 600; }
+.tn-dish.more { color: var(--muted); }
+
+/* ---------- a station ready for service: rays burst around a big tick (the steel is dark in both themes) ---------- */
+.ready-back { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; overflow-y: auto; padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter-r) calc(24px + env(safe-area-inset-bottom, 0px)) var(--gutter-l); background: var(--steel); color: var(--on-steel); animation: ready-in .25s ease both; }
+.ready-back.still { animation: none; }
+@keyframes ready-in { from { opacity: 0; } to { opacity: 1; } }
+.ready-in { display: grid; justify-items: center; gap: 10px; width: 100%; max-width: 420px; text-align: center; }
+.ready-burst { display: block; width: min(100%, 340px); margin-bottom: -48px; color: var(--apron-on-steel); }
+.ready-burst svg { display: block; width: 100%; height: auto; }
+.b-ray.short { opacity: .6; }
+.b-tick circle { fill: #5DB583; }
+.b-tick path { stroke: #0B1F13; }
+.ready-back:not(.still) .b-ray { stroke-dasharray: 80; animation: ray-burst .9s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes ray-burst { from { stroke-dashoffset: 80; } to { stroke-dashoffset: 0; } }
+.ready-back:not(.still) .b-tick { transform-box: fill-box; transform-origin: center; animation: tick-pop .6s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes tick-pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.ready-kick { color: var(--apron-on-steel); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
+.ready-title { font: 700 clamp(3.4rem, 15vw, 4.4rem)/.92 var(--display); letter-spacing: -.01em; }
+.ready-line { max-width: 30ch; color: rgba(242, 242, 238, .8); line-height: 1.5; }
+.ready-btns { display: grid; gap: 10px; width: 100%; margin-top: 18px; }
+.ready-print { border-color: rgba(242, 242, 238, .25); background: transparent; color: var(--on-steel); }
+
+/* ---------- Recipes: the dish of the day ---------- */
+.dotd-wrap { display: grid; gap: 10px; margin: 6px 0 22px; }
+.dotd-kick { display: flex; align-items: baseline; justify-content: space-between; color: var(--apron); font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.dotd-kick .mono { color: var(--muted); font-weight: 500; letter-spacing: .04em; }
+.dotd { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; max-height: 470px; overflow: hidden; border-radius: 22px; background: var(--steel); color: var(--on-steel); box-shadow: 0 18px 40px -22px rgba(28, 27, 26, .6); }
+@media (min-width: 760px) { .dotd { aspect-ratio: 16 / 7; max-height: 420px; } }
+.dotd-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.dotd-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10, 10, 10, 0) 38%, rgba(10, 10, 10, .86) 100%); }
+.dotd-rays { position: absolute; z-index: -1; right: -24px; top: 40%; width: 120px; height: 120px; color: var(--apron-on-steel); opacity: .5; }
+.dotd .dotd-tag { top: 12px; bottom: auto; left: 12px; }
+.dotd-in { display: grid; gap: 12px; width: 100%; padding: 20px; }
+.dotd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dotd-chips span { padding: 5px 10px; border: 1px solid rgba(242, 242, 238, .35); border-radius: 999px; background: rgba(242, 242, 238, .16); font-size: .76rem; font-weight: 700; }
+.dotd-title { font: 700 clamp(2rem, 9vw, 2.6rem)/.98 var(--display); letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
+.dotd-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 760px) { .dotd-btns { grid-template-columns: repeat(2, max-content); } }
+.dotd .btn.dotd-open { border-color: var(--on-steel); background: var(--on-steel); color: #1C1B1A; }
+@media (prefers-reduced-motion: reduce) { .welcome.draw .w-ray, .ready-back, .ready-back .b-ray, .ready-back .b-tick { animation: none !important; } }
 
 </style>
 <div id="app"></div>
@@ -3492,7 +3571,7 @@ window.KOMAT_PART_ART = [
     try { if (fid && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { /* not a text field */ }
     const y = window.scrollY, sb = document.querySelector('.sheet-body'), sy = sb ? sb.scrollTop : 0, hadSheet = !!sb;
     /* an overlay that is only being redrawn should not slide in again */
-    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox');
+    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox, .ready-back');
     app.textContent = '';
     const out = view();
     app.append(out.top || header());
@@ -3733,6 +3812,24 @@ window.KOMAT_PART_ART = [
     return span;
   };
 
+  /* the big K-ray fan behind the greeting on Today: the K's upright and seven rays rising to the right */
+  K.welcomeRaysSvg = function () {
+    const ends = [[390, 52], [390, 118], [390, 178], [390, 236], [390, 300], [352, 336], [300, 336]];
+    return '<svg viewBox="0 0 390 336" preserveAspectRatio="xMaxYMax meet" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">' +
+      '<line class="w-up" x1="250" y1="120" x2="250" y2="336"/>' +
+      ends.map((e, i) => '<line class="w-ray" style="animation-delay:' + (0.05 + i * 0.1).toFixed(2) + 's" x1="250" y1="250" x2="' + e[0] + '" y2="' + e[1] + '"/>').join('') + '</svg>';
+  };
+  /* rays bursting around a big tick, for a station that is ready for service */
+  K.burstSvg = function () {
+    const lines = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6, long = i % 2 === 0, r1 = 82, r2 = long ? 150 : 124;
+      lines.push('<line class="b-ray' + (long ? '' : ' short') + '" style="animation-delay:' + (0.3 + i * 0.04).toFixed(2) + 's" x1="' + (195 + r1 * Math.cos(a)).toFixed(1) + '" y1="' + (235 + r1 * Math.sin(a)).toFixed(1) + '" x2="' + (195 + r2 * Math.cos(a)).toFixed(1) + '" y2="' + (235 + r2 * Math.sin(a)).toFixed(1) + '"/>');
+    }
+    return '<svg viewBox="0 0 390 470" width="390" height="470"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' + lines.join('') + '</g>' +
+      '<g class="b-tick"><circle cx="195" cy="235" r="58"/><path d="M170 236l17 17 34-36" fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>';
+  };
+
   /* quiet states: the courtyard cat asleep on the steps */
   K.catRest = function (title, text, extra) {
     return h('div', { class: 'rest' },
@@ -3952,6 +4049,8 @@ window.KOMAT_PART_ART = [
       return;
     }
     if (!ui.cat && !ui.type && !ui.onMenu) {
+      const dd = dishOfDay();
+      if (dd) box.append(dd);
       const rec = K.recent().map(K.find).filter(Boolean).slice(0, 6);
       if (rec.length) box.append(h('section', { class: 'group recent' }, h('h2', { class: 'group-title' }, 'Opened lately'),
         h('div', { class: 'strip' }, rec.map((r) => h('button', { type: 'button', class: 'mini', onclick: () => K.go('recipe', { id: r.id }) }, thumb(r, r.name), h('span', null, r.name))))));
@@ -3961,6 +4060,29 @@ window.KOMAT_PART_ART = [
     Object.keys(groups).sort((a, b) => (a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b))).forEach((k) => {
       box.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, k, h('span', { class: 'n' }, String(groups[k].length))), h('div', { class: 'grid' }, groups[k].map((en) => card(en, '')))));
     });
+  }
+
+  /* one dish a day at the top of the book: a dish on the menu, one with a real plating photo first */
+  function dishOfDay() {
+    const menu = D.recipes.filter((r) => r.type === 'dish' && r.onMenu !== false), real = menu.filter((r) => r.photo);
+    const pool = real.length ? real : menu.filter((r) => K.artFor(r));
+    if (!pool.length) return null;
+    const r = pool[Math.floor(K.parseYmd(K.day(0)).getTime() / 864e5) % pool.length], P = parts(r);
+    const cookable = P.comps.some((c) => c.steps.length) || P.main.steps.length;
+    const src = r.photo ? K.media(r.photo) : K.artFor(r);
+    const chips = [K.ST[r.station], r.yieldQty ? K.yieldText(r.yieldQty, r.yieldUnit) : '', r.components.length > 1 ? r.components.length + ' parts' : ''].filter(Boolean);
+    return h('section', { class: 'dotd-wrap', 'aria-label': 'Dish of the day' },
+      h('div', { class: 'dotd-kick' }, h('span', null, 'Dish of the day'), h('span', { class: 'mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))),
+      h('article', { class: 'dotd' },
+        K.photoWithFallback(src, r.photo ? K.artFor(r) : '', (im) => im.remove(), { class: 'dotd-img', alt: (r.photo ? 'Plated ' : 'Illustration of ') + r.name }),
+        h('div', { class: 'dotd-shade', 'aria-hidden': 'true' }), K.rays('dotd-rays'),
+        r.photo ? null : h('span', { class: 'art-tag dotd-tag' }, 'Illustration, not our plating'),
+        h('div', { class: 'dotd-in' },
+          chips.length ? h('div', { class: 'dotd-chips' }, chips.map((c) => h('span', null, c))) : null,
+          h('h2', { class: 'dotd-title' }, r.name),
+          h('div', { class: 'dotd-btns' },
+            h('button', { class: 'btn dotd-open', type: 'button', onclick: () => K.go('recipe', { id: r.id }) }, 'Open recipe'),
+            cookable ? h('button', { class: 'btn primary', type: 'button', onclick: () => { K.go('recipe', { id: r.id }); K.openCook(r.id); } }, K.icon('cook'), 'Cook') : null))));
   }
 
   /* ---------- scaling ---------- */
@@ -4742,23 +4864,85 @@ window.KOMAT_PART_ART = [
         h('div', null, h('h1', { class: 'ptitle' }, title), sub ? h('p', { class: 'psub' }, sub) : null),
         extra || null));
   };
-  /* a little encouragement that follows the station's progress */
-  function cheer(ready, total) {
-    if (!total) return 'No mise en place list yet';
-    if (ready === total) return 'Ready for service';
-    const p = ready / total;
-    return p === 0 ? 'Let’s get set up' : p < 0.34 ? 'Good start' : p < 0.67 ? 'Halfway there' : p < 0.9 ? 'Looking good' : 'Nearly there';
-  }
-  /* the whole station ticked off: celebrate it */
+  /* the whole station ticked off: a moment for it (Ready for service) */
   function maybeCelebrate(st) {
     const items = K.checkItems(st);
-    if (items.length && items.every((it) => K.markState(st, it.id) === 'ok')) { K.celebrate(K.ST[st] + ' is ready for service. Beautiful work!'); return true; }
-    return false;
+    if (!items.length || !items.every((it) => K.markState(st, it.id) === 'ok')) return false;
+    K.vibrate([20, 40, 20]);
+    ui.sheet = { type: 'ready', st: st, n: items.length, at: Date.now() };
+    K.render();
+    return true;
   }
+  const firstName = () => String(K.me.name || '').trim().split(/\s+/)[0];
+  K.SHEETS.ready = function (S) {
+    const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
+    const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
+    burst.innerHTML = K.burstSvg();
+    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
+    return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
+      h('div', { class: 'ready-in' }, burst,
+        h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
+        h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
+        h('p', { class: 'ready-line' }, 'Every line on ' + K.ST[S.st] + ' is set. Beautiful work' + (name ? ', ' + name : '') + '.'),
+        h('div', { class: 'ready-btns' },
+          h('button', { class: 'btn primary wide', type: 'button', id: 'ready-ok', onclick: close }, 'Back to Today'),
+          print ? h('button', { class: 'btn wide ready-print', type: 'button', onclick: () => { ui.sheet = { type: 'print', n: 1, st: S.st }; K.render(); } }, K.icon('print'), 'Print tomorrow’s list') : null)));
+  };
   function markReady(st, it) {
     ui.pop = it.id;
     K.setMark(st, it, { d: 'ok' });
     return maybeCelebrate(st);
+  }
+  /* the time words of an event: "19:30 арт тур · 20:00 вечеря" -> 19:30 арт тур, 20:00 вечеря */
+  function eventTimes(e) {
+    const out = [], re = /(\d{1,2})[:.](\d{2})\s*([^·,;|\d]*)/g;
+    let m;
+    while ((m = re.exec(e.time || ''))) out.push({ t: m[1].padStart(2, '0') + ':' + m[2], what: m[3].trim() });
+    return out;
+  }
+  const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const evWhen = (e, ts) => (K.daysUntil(e.date) === 0 ? (ts.length && ts[0].t >= '17:00' ? 'tonight' : 'today') : 'tomorrow');
+  const openEvent = (e) => () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); };
+  function hello() {
+    const m = K.kitchenMinutes();
+    return m < 12 * 60 ? 'Good morning' : m < 17 * 60 ? 'Good afternoon' : m < 23 * 60 ? 'Good evening' : 'Late shift';
+  }
+  /* the top of Today: a greeting under the Komat rays (they draw in once per visit) and the station picker */
+  function welcome(st, feat) {
+    const name = firstName(), draw = !ui.raysDrawn, urg = K.openUrgents().length;
+    ui.raysDrawn = true;
+    let line;
+    if (feat) {
+      const ts = eventTimes(feat);
+      line = (feat.title || 'An event') + ' is ' + evWhen(feat, ts) + (feat.guests ? ': ' + feat.guests + ' guests' : '') + (ts.length ? ', from ' + ts[0].t : '') + '.';
+    } else line = urg ? urg + ' urgent ' + (urg === 1 ? 'item' : 'items') + ' across the kitchen.' : 'Nothing urgent so far.';
+    const rays = h('span', { class: 'w-rays', 'aria-hidden': 'true' });
+    rays.innerHTML = K.welcomeRaysSvg();
+    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') }, rays,
+      h('div', { class: 'wrap welcome-in' },
+        h('div', { class: 'wtext' },
+          h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
+          h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
+          h('h1', { class: 'whello' }, hello() + (name ? ',' : ''), name ? h('span', { class: 'wname' }, name) : null),
+          h('p', { class: 'wline' }, line)),
+        stationPicker()));
+  }
+  /* the next event, today or tomorrow: when, how many, the run of the evening and a taste of the menu */
+  function tonightCard(e) {
+    const ts = eventTimes(e), d = K.parseYmd(e.date);
+    const dishes = K.evDishes(e).map((x) => x.name || (K.linkTarget(x.link) || {}).name).filter(Boolean).map((n) => n.replace(/\s*\([^)]*\)\s*$/, ''));
+    return h('section', { class: 'tonight card' },
+      h('button', { type: 'button', class: 'tn-head', onclick: openEvent(e) },
+        h('span', { class: 'tn-date' }, h('span', { class: 'mono' }, d.toLocaleDateString('en-GB', { month: 'short' })), h('b', null, String(d.getDate()))),
+        h('span', { class: 'tn-txt' },
+          h('span', { class: 'tn-kick' }, cap(evWhen(e, ts))),
+          h('span', { class: 'tn-title' }, e.title || 'Event'),
+          h('span', { class: 'muted' }, [e.guests ? e.guests + ' guests' : '', e.kind || ''].filter(Boolean).join(' · '))),
+        K.icon('next')),
+      ts.length ? h('ol', { class: 'tn-line' + (ts.length === 1 ? ' one' : '') }, ts.map((x, i) => h('li', { class: ts.length > 1 && i === ts.length - 1 ? 'tn-main' : null },
+        h('span', { class: 'tn-dot', 'aria-hidden': 'true' }), h('b', { class: 'mono' }, x.t), x.what ? h('span', null, cap(x.what)) : null))) : null,
+      dishes.length ? h('div', { class: 'tn-dishes' }, dishes.slice(0, 5).map((n) => h('span', { class: 'tn-dish' }, n)),
+        dishes.length > 5 ? h('span', { class: 'tn-dish more' }, '+' + (dishes.length - 5) + ' more') : null) : null);
   }
   function greeting() {
     const m = K.kitchenMinutes();
@@ -4782,9 +4966,9 @@ window.KOMAT_PART_ART = [
   };
 
   /* ---------- the daily brief ---------- */
-  function brief() {
+  function brief(feat) {
     const urg = K.openUrgents(), os = K.onToday();
-    const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e));
+    const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e) && e !== feat);
     const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
     box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
       urg.length ? h('div', { class: 'urglist' }, urg.map((d) => h('div', { class: 'urgrow' },
@@ -4878,8 +5062,8 @@ window.KOMAT_PART_ART = [
   /* ---------- the Today page ---------- */
   K.V.today = function () {
     const st = K.getStation(), body = h('div', { class: 'page' });
-    body.append(K.pageHead('Today', null, h('div', { class: 'phead-side' },
-      h('p', { class: 'psub' }, K.dayDot(K.day(0)), K.prettyDate(K.day(0))), stationPicker()), 'today'));
+    const feat = K.upcomingEvents().find((e) => K.isLive(e) && K.daysUntil(e.date) <= 1);
+    body.append(welcome(st, feat));
     const w = h('div', { class: 'wrap today' });
     body.append(w);
     const items = K.checkItems(st);
@@ -4894,6 +5078,15 @@ window.KOMAT_PART_ART = [
 
     /* phones: a sticky bar to jump between the parts of the page */
     const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
+    /* three tiles under the greeting: the list, the to-do, and the evening (or what is urgent) */
+    const urgN = K.openUrgents().length, fts = feat ? eventTimes(feat) : [];
+    const tile = (cls, big, label, onclick) => h('button', { type: 'button', class: 'tile' + (cls ? ' ' + cls : ''), onclick: onclick }, h('span', { class: 'tile-n mono' }, big), h('span', { class: 'tile-l' }, label));
+    w.append(h('div', { class: 'tiles' },
+      tile('tile-mep' + (items.length && ready === items.length ? ' done' : ''), [String(ready), h('span', { class: 'of' }, '/' + items.length)], items.length && ready === items.length ? 'Ready for service' : 'Mise en place', () => jumpTo('t-mep')),
+      tile('', String(todoN), 'To do', () => jumpTo('t-todo')),
+      feat ? tile('accent', fts.length ? fts[0].t : K.countdown(feat), fts.length && fts[0].what ? cap(fts[0].what) : feat.title || 'Event', openEvent(feat))
+        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief'))));
+    if (feat) w.append(tonightCard(feat));
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
       h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
       h('button', { type: 'button', onclick: () => jumpTo('t-mep') }, 'Mise en place', h('b', { class: 'mono' }, ready + '/' + items.length)),
@@ -4902,16 +5095,8 @@ window.KOMAT_PART_ART = [
     w.append(grid);
     const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
     grid.append(left, right);
-    left.append(h('div', { class: 'only-narrow' }, brief()));
-    right.append(h('div', { class: 'only-wide' }, brief()));
-
-    /* progress */
-    const pct = items.length ? Math.round((ready / items.length) * 100) : 0;
-    left.append(h('section', { class: 'progress card' + (items.length && ready === items.length ? ' all' : '') },
-      ring(pct),
-      h('div', { class: 'prog-txt' },
-        h('b', null, cheer(ready, items.length)),
-        h('span', { class: 'muted' }, items.length ? ready + ' of ' + items.length + ' ready' + (todoN ? ' · ' + todoN + ' on the to-do list' : '') : 'The head chef can add one with Edit list'))));
+    left.append(h('div', { class: 'only-narrow', id: 't-brief' }, brief(feat)));
+    right.append(h('div', { class: 'only-wide' }, brief(feat)));
 
     /* to do */
     const todo = h('section', { class: 'block', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
@@ -4978,15 +5163,6 @@ window.KOMAT_PART_ART = [
         h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     return { body: body };
   };
-
-  function ring(pct) {
-    const r = 22, c = 2 * Math.PI * r;
-    const svg = '<svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true"><circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--line)" stroke-width="6"/>' +
-      '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--ready)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct / 100)).toFixed(1) + '" transform="rotate(-90 28 28)"/></svg>';
-    const el = h('div', { class: 'ring' }, h('span', { class: 'ring-n mono' }, pct + '%'));
-    el.insertAdjacentHTML('afterbegin', svg);
-    return el;
-  }
 
   function addTaskForm(id, placeholder, label, onAdd) {
     const S = (ui.taskForms = ui.taskForms || {})[id] || (ui.taskForms[id] = { text: '', note: '', urgent: false, showNote: false });

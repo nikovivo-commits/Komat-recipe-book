@@ -49,6 +49,24 @@
     return span;
   };
 
+  /* the big K-ray fan behind the greeting on Today: the K's upright and seven rays rising to the right */
+  K.welcomeRaysSvg = function () {
+    const ends = [[390, 52], [390, 118], [390, 178], [390, 236], [390, 300], [352, 336], [300, 336]];
+    return '<svg viewBox="0 0 390 336" preserveAspectRatio="xMaxYMax meet" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">' +
+      '<line class="w-up" x1="250" y1="120" x2="250" y2="336"/>' +
+      ends.map((e, i) => '<line class="w-ray" style="animation-delay:' + (0.05 + i * 0.1).toFixed(2) + 's" x1="250" y1="250" x2="' + e[0] + '" y2="' + e[1] + '"/>').join('') + '</svg>';
+  };
+  /* rays bursting around a big tick, for a station that is ready for service */
+  K.burstSvg = function () {
+    const lines = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6, long = i % 2 === 0, r1 = 82, r2 = long ? 150 : 124;
+      lines.push('<line class="b-ray' + (long ? '' : ' short') + '" style="animation-delay:' + (0.3 + i * 0.04).toFixed(2) + 's" x1="' + (195 + r1 * Math.cos(a)).toFixed(1) + '" y1="' + (235 + r1 * Math.sin(a)).toFixed(1) + '" x2="' + (195 + r2 * Math.cos(a)).toFixed(1) + '" y2="' + (235 + r2 * Math.sin(a)).toFixed(1) + '"/>');
+    }
+    return '<svg viewBox="0 0 390 470" width="390" height="470"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' + lines.join('') + '</g>' +
+      '<g class="b-tick"><circle cx="195" cy="235" r="58"/><path d="M170 236l17 17 34-36" fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>';
+  };
+
   /* quiet states: the courtyard cat asleep on the steps */
   K.catRest = function (title, text, extra) {
     return h('div', { class: 'rest' },

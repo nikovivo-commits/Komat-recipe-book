@@ -86,7 +86,7 @@
     try { if (fid && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { /* not a text field */ }
     const y = window.scrollY, sb = document.querySelector('.sheet-body'), sy = sb ? sb.scrollTop : 0, hadSheet = !!sb;
     /* an overlay that is only being redrawn should not slide in again */
-    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox');
+    const hadOverlay = !!document.querySelector('.sheet-back, .lightbox, .ready-back');
     app.textContent = '';
     const out = view();
     app.append(out.top || header());
