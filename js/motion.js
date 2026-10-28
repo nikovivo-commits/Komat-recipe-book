@@ -74,6 +74,24 @@
     lastY = y;
   }, { passive: true });
 
+  /* a short film clip behind a screen. One element per clip is kept, so a redraw does not restart
+     it; it plays once, fades down and stays still. Nothing loads when motion or data is saved. */
+  const clips = {};
+  K.clip = function (name, cls) {
+    const sd = navigator.connection && navigator.connection.saveData;
+    if (reduced() || sd) return null;
+    let v = clips[name];
+    if (!v) {
+      v = clips[name] = K.h('video', { muted: '', playsinline: '', preload: 'auto', 'aria-hidden': 'true', tabindex: '-1' });
+      v.muted = true; v.setAttribute('playsinline', '');
+      ['webm', 'mp4'].forEach((x) => { const s = document.createElement('source'); s.src = 'assets/motion/' + name + '.' + x; s.type = 'video/' + x; v.append(s); });
+      v.addEventListener('ended', () => v.classList.add('rested'));
+    }
+    v.className = 'clip ' + (cls || '') + (v.ended ? ' rested' : '');
+    if (!v.ended) { const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+    return v;
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;

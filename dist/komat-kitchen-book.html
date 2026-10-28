@@ -1258,6 +1258,14 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 @keyframes roll-in { from { transform: translateY(105%); opacity: 0; } }
 @keyframes roll-out { to { transform: translateY(-105%); opacity: 0; } }
 
+/* film clips behind a screen: they play once, then fade down */
+.clip { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: .5; transition: opacity 1.2s ease; }
+.clip.rested { opacity: .18; }
+.w-clip { mix-blend-mode: screen; opacity: .55; }
+.ready-clip { position: fixed; mix-blend-mode: screen; opacity: .8; }
+.ready-in { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .clip { display: none; } }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -3669,6 +3677,24 @@ window.KOMAT_PART_ART = [
     lastY = y;
   }, { passive: true });
 
+  /* a short film clip behind a screen. One element per clip is kept, so a redraw does not restart
+     it; it plays once, fades down and stays still. Nothing loads when motion or data is saved. */
+  const clips = {};
+  K.clip = function (name, cls) {
+    const sd = navigator.connection && navigator.connection.saveData;
+    if (reduced() || sd) return null;
+    let v = clips[name];
+    if (!v) {
+      v = clips[name] = K.h('video', { muted: '', playsinline: '', preload: 'auto', 'aria-hidden': 'true', tabindex: '-1' });
+      v.muted = true; v.setAttribute('playsinline', '');
+      ['webm', 'mp4'].forEach((x) => { const s = document.createElement('source'); s.src = 'assets/motion/' + name + '.' + x; s.type = 'video/' + x; v.append(s); });
+      v.addEventListener('ended', () => v.classList.add('rested'));
+    }
+    v.className = 'clip ' + (cls || '') + (v.ended ? ' rested' : '');
+    if (!v.ended) { const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+    return v;
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;
@@ -5095,6 +5121,7 @@ window.KOMAT_PART_ART = [
     burst.innerHTML = K.burstSvg();
     if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
     return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
+      K.clip('flambe', 'ready-clip'),
       h('div', { class: 'ready-in' }, burst,
         h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
         h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
@@ -5136,7 +5163,10 @@ window.KOMAT_PART_ART = [
     /* each station has its own glow (warm, frosty, gold); switching cross-fades it */
     const from = ui.stFrom && ui.stFrom !== st ? ui.stFrom : null;
     const fx = h('span', { class: 'w-fx fx-' + st, 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(() => h('i')));
+    const film = draw || ui.filmOn ? K.clip(st === 'hot' ? 'flame' : 'sunrise', 'w-clip') : null;
+    if (draw) ui.filmOn = true;
     return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : '') },
+      film,
       from ? h('span', { class: 'w-tint t-' + from + ' out', 'aria-hidden': 'true' }) : null,
       h('span', { class: 'w-tint t-' + st + (from ? ' in' : ''), 'aria-hidden': 'true' }), fx, rays,
       h('div', { class: 'wrap welcome-in' },

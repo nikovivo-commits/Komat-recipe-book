@@ -1,7 +1,7 @@
 /* Offline support for the stand-alone site. The app itself comes from the network when it can,
    so updates arrive straight away, and from the cache when the kitchen Wi-Fi drops.
    Photos and fonts come from the cache first, so pages open fast. */
-const CACHE = 'komat-v4';
+const CACHE = 'komat-v5';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'data/translations.js', 'data/produce.js', 'data/art.js', 'data/recipes.js', 'data/settings.js', 'vendor/firebase.js', 'firebase-config.js',
@@ -24,6 +24,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const font = url.hostname === 'fonts.gstatic.com' || url.hostname === 'fonts.googleapis.com';
   if (url.origin !== location.origin && !font) return;
+  if (req.destination === 'video') return;
   if (req.destination === 'image' || font) {
     e.respondWith(caches.open(CACHE).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => {
       if (res.ok || res.type === 'opaque') c.put(req, res.clone());

@@ -31,6 +31,7 @@
     burst.innerHTML = K.burstSvg();
     if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
     return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
+      K.clip('flambe', 'ready-clip'),
       h('div', { class: 'ready-in' }, burst,
         h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
         h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
@@ -72,7 +73,10 @@
     /* each station has its own glow (warm, frosty, gold); switching cross-fades it */
     const from = ui.stFrom && ui.stFrom !== st ? ui.stFrom : null;
     const fx = h('span', { class: 'w-fx fx-' + st, 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(() => h('i')));
+    const film = draw || ui.filmOn ? K.clip(st === 'hot' ? 'flame' : 'sunrise', 'w-clip') : null;
+    if (draw) ui.filmOn = true;
     return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : '') },
+      film,
       from ? h('span', { class: 'w-tint t-' + from + ' out', 'aria-hidden': 'true' }) : null,
       h('span', { class: 'w-tint t-' + st + (from ? ' in' : ''), 'aria-hidden': 'true' }), fx, rays,
       h('div', { class: 'wrap welcome-in' },

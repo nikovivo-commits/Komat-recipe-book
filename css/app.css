@@ -1250,3 +1250,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .amt.roll::before { content: attr(data-old); position: absolute; inset: 0; text-align: right; animation: roll-out .42s cubic-bezier(.34, 1.4, .64, 1) var(--d, 0ms) both; }
 @keyframes roll-in { from { transform: translateY(105%); opacity: 0; } }
 @keyframes roll-out { to { transform: translateY(-105%); opacity: 0; } }
+
+/* film clips behind a screen: they play once, then fade down */
+.clip { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: .5; transition: opacity 1.2s ease; }
+.clip.rested { opacity: .18; }
+.w-clip { mix-blend-mode: screen; opacity: .55; }
+.ready-clip { position: fixed; mix-blend-mode: screen; opacity: .8; }
+.ready-in { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .clip { display: none; } }
