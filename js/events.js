@@ -77,6 +77,33 @@
   }
   function blankEvent(ds) { return { id: '', date: ds || K.day(0), time: '', title: '', kind: 'Group', guests: '', contact: '', menu: '', notes: '', status: 'confirmed', dishes: [], tasks: [] }; }
 
+  /* this week as seven buttons: today ringed, a dot under days with an event */
+  function weekStrip() {
+    const mon = K.mondayOf(K.kitchenNow()), today = K.day(0), sel = ui.calSel || '';
+    return h('div', { class: 'wkstrip', role: 'group', 'aria-label': 'This week' }, Array.from({ length: 7 }, (_, i) => {
+      const d = K.addDays(mon, i), ds = K.ymd(d), n = K.eventsOn(ds).filter(K.isLive).length;
+      return h('button', { type: 'button', class: 'wk' + (ds === today ? ' today' : '') + (ds === sel ? ' sel' : ''), 'aria-pressed': ds === sel ? 'true' : 'false',
+        'aria-label': K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' }) + (n ? ', ' + n + (n === 1 ? ' event' : ' events') : ''),
+        onclick: () => { ui.calSel = ds === sel ? '' : ds; ui.calMonth = ds.slice(0, 7); K.render(); } },
+        h('span', { class: 'wk-d' }, d.toLocaleDateString('en-GB', { weekday: 'short' })), h('b', { class: 'mono' }, String(d.getDate())), h('i', { class: n ? 'on' : '' }));
+    }));
+  }
+  /* tonight's event first: when, how many, the run of the evening, and what has to be done for it */
+  function tonightHero(e) {
+    const dishes = K.evDishes(e), tasks = K.evTasks(e), times = [], re = /(\d{1,2})[:.](\d{2})\s*([^·,;|\d]*)/g;
+    let m;
+    while ((m = re.exec(e.time || ''))) times.push({ t: m[1].padStart(2, '0') + ':' + m[2], what: m[3].trim() });
+    const done = tasks.filter((k) => K.evTaskStatus('evt-' + e.id + '-' + k.id) === 'done').length;
+    return h('section', { class: 'tnhero' },
+      h('p', { class: 'tnh-kick mono' }, 'Tonight'),
+      h('h2', { class: 'tnh-title' }, e.title || 'Event'),
+      h('p', { class: 'tnh-meta' }, [e.guests ? e.guests + ' guests' : '', e.kind || '', e.status === 'confirmed' ? 'confirmed' : e.status || ''].filter(Boolean).join(' · ')),
+      times.length ? h('ol', { class: 'tnh-line' }, times.map((x) => h('li', null, h('b', { class: 'mono' }, x.t), x.what ? ' ' + x.what : ''))) : null,
+      h('div', { class: 'tnh-stats' },
+        h('span', null, h('b', { class: 'mono' }, String(dishes.length)), 'dishes'),
+        h('span', null, h('b', { class: 'mono' }, tasks.length ? done + '/' + tasks.length : '0'), 'prep tasks')),
+      h('button', { class: 'btn light wide', type: 'button', onclick: () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.render(); } }, 'Open the event', K.icon('next')));
+  }
   K.V.events = function () {
     const up = K.upcomingEvents().filter(K.isLive), sel = ui.calSel;
     const body = h('div', { class: 'page' });
@@ -84,6 +111,9 @@
       K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'event', e: blankEvent(sel) }; K.render(); } }, K.icon('plus'), 'Add event') : null, 'events'));
     const w = h('div', { class: 'wrap events' });
     body.append(w);
+    w.append(weekStrip());
+    const tonight = K.eventsOn(K.day(0)).filter(K.isLive)[0];
+    if (tonight && !sel) w.append(tonightHero(tonight));
     const grid = h('div', { class: 'events-grid' });
     w.append(grid);
     grid.append(h('div', null, calendar()));

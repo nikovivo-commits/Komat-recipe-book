@@ -33,7 +33,8 @@
     w.append(h('div', { class: 'ostations' }, K.STATIONS.map((s) => {
       const d = K.orderFor(s[0], date);
       return h('div', { class: 'ost card' + (d ? ' in' : '') }, h('span', { class: 'ost-name' }, K.icon(K.ST_ICON[s[0]]), s[1]),
-        h('span', { class: 'muted' }, d ? 'Sent ' + K.hm(d.at) + (K.nameOf(d.by) ? ' by ' + K.nameOf(d.by) : '') + ' · ' + d.items.length + (d.items.length === 1 ? ' item' : ' items') : 'Nothing sent'));
+        h('span', { class: 'muted' }, d ? 'Sent ' + K.hm(d.at) + (K.nameOf(d.by) ? ' by ' + K.nameOf(d.by) : '') + ' · ' + d.items.length + (d.items.length === 1 ? ' item' : ' items') : isToday ? 'Not checked yet' : 'Nothing sent'),
+        isToday ? h('button', { class: 'btn small' + (d ? '' : ' primary'), type: 'button', onclick: () => K.startStock(s[0], false) }, d ? 'Change' : 'Check') : null);
     })));
     const grid = h('div', { class: 'orders-grid' });
     w.append(grid);

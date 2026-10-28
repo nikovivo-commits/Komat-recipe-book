@@ -1267,3 +1267,32 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .timer > :not(.t-clip) { position: relative; z-index: 1; }
 .cook-clip { opacity: .3; mix-blend-mode: screen; }
 .cook > :not(.clip) { position: relative; z-index: 1; }
+
+/* Events: this week as a strip, and tonight's event as the first thing you see */
+.wkstrip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 16px 0 14px; }
+.wk { display: grid; justify-items: center; gap: 2px; padding: 8px 0 6px; border: 1.5px solid transparent; border-radius: 14px; background: var(--surface); color: var(--ink); font: inherit; }
+.wk-d { color: var(--muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.wk b { font-size: 1.05rem; }
+.wk i { width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.wk i.on { background: var(--apron); }
+.wk.today { border-color: var(--apron); }
+.wk.sel, .wk[aria-pressed="true"] { background: var(--apron); color: #fff; border-color: var(--apron); }
+.wk.sel .wk-d, .wk[aria-pressed="true"] .wk-d { color: rgba(255, 255, 255, .8); }
+.wk.sel i.on, .wk[aria-pressed="true"] i.on { background: #fff; }
+.tnhero { display: grid; gap: 8px; margin-bottom: 18px; padding: 20px; border-radius: 20px; background: var(--steel); color: var(--on-steel); }
+.tnh-kick { color: var(--apron-on-steel); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+.tnh-title { font: 700 1.9rem/1.05 var(--display); }
+.tnh-meta { color: var(--steel-muted); }
+.tnh-line { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0; padding: 0; list-style: none; }
+.tnh-line b { color: var(--apron-on-steel); }
+.tnh-stats { display: flex; gap: 22px; margin: 6px 0 8px; }
+.tnh-stats span { display: grid; color: var(--steel-muted); font-size: .8rem; }
+.tnh-stats b { color: var(--on-steel); font-size: 1.5rem; }
+.ost { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.ost .btn { margin-left: auto; }
+
+/* the kit: the active tab sits in a soft pill, sheets have 22px corners */
+.mtab .ico { transition: background-color .2s ease; }
+.mtab[aria-current="page"]::before { display: none; }
+.mtab[aria-current="page"] .ico { width: 52px; height: 30px; padding: 3px 14px; box-sizing: border-box; border-radius: 15px; background: rgba(224, 175, 163, .2); color: var(--apron-on-steel); }
+.sheet { border-radius: 22px 22px 0 0; }
