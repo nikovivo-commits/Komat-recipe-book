@@ -469,6 +469,7 @@
     const go = (d) => { const n = C.idx + d; if (n < 0 || n >= list.length) return; C.idx = n; K.render(); };
     const box = h('div', { class: 'cook', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Cook mode: ' + r.name, tabindex: '-1',
       onkeydown: (e) => { if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'Escape') close(); } },
+      K.clip('butter', 'cook-clip'),
       h('div', { class: 'cook-top' },
         h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Close cook mode', onclick: close }, K.icon('close')),
         h('div', { class: 'cook-title' }, h('span', null, r.name), h('b', null, s.label)),
@@ -481,7 +482,7 @@
         h('p', { class: 'cook-text' }, K.stepNodes(s.text, s.part.name))),
       h('div', { class: 'cook-nav' },
         h('button', { type: 'button', class: 'btn big ghost-light', disabled: C.idx === 0, onclick: () => go(-1) }, K.icon('back'), 'Back'),
-        last ? h('button', { type: 'button', class: 'btn big light', onclick: () => { close(); K.toast('All steps done. Nice work.'); } }, K.icon('check'), 'Finish')
+        last ? h('button', { type: 'button', class: 'btn big light', onclick: () => { close(); K.flash('steam-plate', 3200); K.toast('All steps done. Nice work.'); } }, K.icon('check'), 'Finish')
           : h('button', { type: 'button', class: 'btn big light', onclick: () => go(1) }, 'Next', K.icon('next'))));
     let x0 = null;
     box.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });

@@ -1258,3 +1258,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .ready-clip { position: fixed; mix-blend-mode: screen; opacity: .8; }
 .ready-in { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .clip { display: none; } }
+
+/* a few seconds of film over the page, never in the way of a tap */
+.flash { position: fixed; inset: 0; z-index: 70; width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0; background: #0E0E0D; transition: opacity .5s ease; }
+.flash.on { opacity: .92; }
+.t-clip { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; mix-blend-mode: screen; opacity: .35; pointer-events: none; }
+.timer { position: relative; overflow: hidden; }
+.timer > :not(.t-clip) { position: relative; z-index: 1; }
+.cook-clip { opacity: .3; mix-blend-mode: screen; }
+.cook > :not(.clip) { position: relative; z-index: 1; }

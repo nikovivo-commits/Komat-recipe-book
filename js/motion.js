@@ -92,6 +92,21 @@
     return v;
   };
 
+  /* a full-screen moment: the clip plays over the page for a few seconds, then fades away */
+  K.flash = function (name, ms) {
+    const sd = navigator.connection && navigator.connection.saveData;
+    if (reduced() || sd) return;
+    const v = document.createElement('video');
+    v.className = 'flash'; v.muted = true; v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
+    ['webm', 'mp4'].forEach((x) => { const s = document.createElement('source'); s.src = 'assets/motion/' + name + '.' + x; s.type = 'video/' + x; v.append(s); });
+    const gone = () => { v.classList.remove('on'); setTimeout(() => v.remove(), 600); };
+    v.addEventListener('ended', gone); v.addEventListener('error', () => v.remove(), true);
+    document.body.append(v);
+    const p = v.play(); if (p && p.catch) p.catch(() => v.remove());
+    requestAnimationFrame(() => v.classList.add('on'));
+    setTimeout(gone, ms || 3500);
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;

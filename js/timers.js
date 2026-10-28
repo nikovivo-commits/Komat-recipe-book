@@ -107,6 +107,7 @@
     tray.classList.toggle('ring', anyDone);
     tray.append(h('div', { class: 'timers-in' },
       shown.map((t) => h('div', { class: 'timer' + (t.done ? ' done' : '') + (t.paused ? ' paused' : '') },
+        t.done && K.clip ? K.clip('steam-lid', 't-clip') : null,
         h('div', { class: 'timer-txt' },
           h('b', { class: 'mono' }, t.done ? 'Time!' : clock(rem(t))),
           h('span', null, t.name)),
