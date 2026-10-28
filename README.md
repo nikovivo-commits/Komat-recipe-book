@@ -18,6 +18,7 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
   - **All ready**: a mise en place dish with more than one row left has an All ready button; its boxes tick one after another and the whole dish is saved in one go, with Undo.
   - **A clean list every day**: nothing left unticked comes back the next day, so tomorrow's prep list starts empty and each morning starts with a fresh to-do. Only what was planned for that day comes through: the DO marks made for it, the notes left for it, its repeating tasks and the event prep that falls due that day.
 - **Film clips**: short Higgsfield clips play at the right moments: a gas flame (Hot) or morning light (other stations) behind Today's greeting, a flambé flare behind Ready for service, steam from a lid inside a finished timer, butter foaming behind cook mode, steam off a plate when you finish cooking, vegetables dropping into a crate after you send an order, and the kitchen lights going off when you finish mise en place. They live in `assets/motion/` as small WebM and MP4 files and are skipped on reduced motion or data saver.
+- **Moments**: a timer that finishes pulses the screen green, sends out rings and drops a banner with a swinging bell (running timers show a draining ring); a sent order drops its products into a crate and stamps SENT; the first look at Today on a new kitchen day plays a short sunrise and says "A fresh list"; the greeting slides in word by word, the tile numbers flip, a ticked circle bursts, and Ready for service counts up.
 - **Motion**: done rows fold away and the list closes the gap, a dish photo grows into its recipe page (Chrome and Safari 18; other pages fade in), scaled amounts roll into place, and the station and scale highlights slide to your choice, with each station's own glow (embers, frost, gold) behind the greeting. Phones set to reduce motion get none of it.
 - **Order check**: it asks only about the ingredients for what is marked DO on tomorrow's prep list (mark Benedict, and it asks about butter, eggs, lemons and the rest of that dish, with the amounts). Sauces and other house-made parts open up into their own ingredients. One product card at a time, with a photo. Swipe right = have it, left = out, up = running low (or use the buttons, or the classic list). Spellings of the same product are merged, salt, pepper and water are never asked, and the head chef can retire any other basic with "Stop asking" (listed in Kitchen rules).
 - **Orders**: the Orders tab combines every station's Low / Out into one copyable list next to the whiteboard photo.
@@ -97,6 +98,7 @@ js/cloud.js         the kitchen's own database (Firebase): same API, sign-in, ph
 js/timers.js        timers found in method text
 js/gestures.js      swipeable rows, drag-to-close sheets, confetti
 js/motion.js        page fades, the photo morph, folding rows, rolling numbers, sliding pills
+js/moments.js       timer, order-sent and new-day scenes, tick sparks, count-up
 js/app.js           boot, routing, header, tab bar
 js/photos.js        page photos, galleries, photo viewer, quiet-state cat
 js/recipes.js       list, recipe pages, scaling, cook mode

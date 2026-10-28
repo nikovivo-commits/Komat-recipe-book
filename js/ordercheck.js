@@ -258,7 +258,8 @@
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      K.flash(S.close ? 'lights-off' : 'crate-fill', S.close ? 4200 : 3800);
+      if (S.close) K.flash('lights-off', 4200);
+      else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
     }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });

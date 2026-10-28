@@ -1304,6 +1304,73 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mtab[aria-current="page"] .ico { width: 52px; height: 30px; padding: 3px 14px; box-sizing: border-box; border-radius: 15px; background: rgba(224, 175, 163, .2); color: var(--apron-on-steel); }
 .sheet { border-radius: 22px 22px 0 0; }
 
+/* moments: a timer going off, an order leaving, a fresh day, the greeting, a tick */
+.t-veil { position: fixed; inset: 0; z-index: 90; pointer-events: none; background: radial-gradient(circle at 50% 30%, rgba(46, 122, 78, .5), rgba(46, 122, 78, 0) 70%); animation: veil-pulse 1.4s ease-out both; }
+.t-veil i { position: absolute; left: 50%; top: 30%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .7); opacity: 0; animation: ring-go 1.3s ease-out both; }
+.t-veil i:nth-child(2) { animation-delay: .25s; }
+.t-veil i:nth-child(3) { animation-delay: .5s; }
+@keyframes veil-pulse { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ring-go { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(4.2); opacity: 0; } }
+.t-banner { position: fixed; z-index: 91; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 0; border-radius: 18px; background: var(--urgent); color: #fff; text-align: left; font: inherit; box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .6); animation: banner-in .55s cubic-bezier(.2, .9, .25, 1.15) both; }
+.t-banner.out { animation: banner-out .3s ease-in both; }
+@keyframes banner-in { from { transform: translateY(-140%); } }
+@keyframes banner-out { to { transform: translateY(-140%); opacity: 0; } }
+.t-bell { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .2); transform-origin: 50% 12%; animation: bell-swing 1.1s ease-in-out .5s 3; }
+.t-bell .ico { width: 26px; height: 26px; }
+@keyframes bell-swing { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(18deg); } 45% { transform: rotate(-16deg); } 70% { transform: rotate(9deg); } }
+.t-bt { display: grid; line-height: 1.15; }
+.t-bt b { font: 700 1.5rem/1 var(--display); }
+.timers.shake .timers-in { animation: tray-shake .6s cubic-bezier(.36, .07, .19, .97) both; }
+@keyframes tray-shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-7px); } 40%, 60% { transform: translateX(7px); } }
+.t-ring { flex: none; width: 28px; height: 28px; color: var(--ready); }
+.t-ring circle:last-child { transition: stroke-dashoffset 1s linear; }
+
+.sent-moment { position: fixed; inset: 0; z-index: 80; display: grid; align-content: center; justify-items: center; gap: 18px; background: rgba(20, 20, 19, .94); color: #fff; animation: fadein .25s ease both; }
+.sent-moment.out { animation: fadeout .38s ease both; }
+.sm-stage { position: relative; width: min(78vw, 340px); aspect-ratio: 1.3; }
+.sm-crate { position: absolute; inset: auto 0 0; width: 100%; animation: crate-thump .5s ease-out 2.1s both; }
+.sm-card { position: absolute; left: 50%; top: 34%; display: flex; align-items: center; gap: 8px; width: 150px; margin-left: -75px; padding: 6px 12px 6px 6px; border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: 0 10px 22px -8px rgba(0, 0, 0, .6); opacity: 0; animation: card-drop .75s cubic-bezier(.5, 0, .3, 1) calc(.5s + var(--i) * .33s) both; }
+.sm-card b { font-size: .85rem; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-th { flex: none; width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+.sm-card .ph { display: grid; place-items: center; font-weight: 800; background: var(--apron-soft); }
+@keyframes card-drop { 0% { transform: translate(var(--x), -46vh) rotate(-6deg) scale(1); opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translate(0, 24%) rotate(0) scale(.3); opacity: 0; } }
+@keyframes crate-thump { 0% { transform: scale(1); } 40% { transform: scale(1.05, .94); } 100% { transform: scale(1); } }
+.sm-stamp { position: absolute; left: 50%; bottom: 22%; padding: 4px 18px; border: 4px solid #7BD3A0; border-radius: 10px; color: #7BD3A0; font: 700 2.6rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; transform: translateX(-50%) rotate(-9deg); opacity: 0; animation: stamp-in .4s cubic-bezier(.3, 1.4, .5, 1) 2.2s both; }
+@keyframes stamp-in { from { transform: translateX(-50%) rotate(-9deg) scale(2.2); opacity: 0; } to { transform: translateX(-50%) rotate(-9deg) scale(1); opacity: 1; } }
+.sm-msg { font-weight: 700; animation: rise-in .4s ease 2.3s both; }
+
+.fresh-moment { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; overflow: hidden; background: linear-gradient(#0E1420, #1B2433); animation: dawn 3.4s ease-in-out both; color: #fff; }
+.fresh-moment.out { animation: fadeout .5s ease both; }
+@keyframes dawn { 0% { background: linear-gradient(#0E1420, #1B2433); } 55% { background: linear-gradient(#2E3A55, #C98F74); } 100% { background: linear-gradient(#6C7FA0, #F2C57C); } }
+.fm-clip { mix-blend-mode: screen; opacity: .0; animation: fadein 1.6s ease 1.2s both; }
+.fm-sun { position: absolute; left: 50%; bottom: -80px; width: 180px; height: 180px; margin-left: -90px; border-radius: 50%; background: radial-gradient(circle, #FFE7A8, #F2B35A 60%, rgba(242, 179, 90, 0) 72%); animation: sun-up 3s cubic-bezier(.3, .7, .3, 1) .2s both; }
+@keyframes sun-up { to { transform: translateY(-28vh); } }
+.fm-in { position: relative; display: grid; justify-items: center; gap: 10px; text-align: center; padding: 24px; }
+.fm-clock { position: relative; height: 1.2em; font-size: 3.4rem; line-height: 1.2; font-weight: 700; overflow: hidden; }
+.fm-clock span { display: block; }
+.fm-clock .a { animation: clock-out .45s ease 1.3s both; }
+.fm-clock .b { position: absolute; inset: 0; animation: clock-in .5s cubic-bezier(.3, 1.4, .5, 1) 1.3s both; }
+@keyframes clock-out { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes clock-in { from { transform: translateY(100%); opacity: 0; } }
+.fm-title { font: 700 2.2rem/1 var(--display); animation: rise-in .5s ease 1.9s both; }
+.fm-line { opacity: .9; animation: rise-in .5s ease 2.2s both; }
+
+.welcome.draw .wword { display: inline-block; animation: rise-in .6s cubic-bezier(.2, .8, .2, 1) calc(.3s + var(--i, 0) * .12s) both; }
+.logo-in .brand img { animation: logo-sharpen 1.2s ease both; }
+@keyframes logo-sharpen { from { filter: blur(6px); opacity: .3; } to { filter: blur(0); opacity: 1; } }
+.spark { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px; border-radius: 50%; background: var(--ready); pointer-events: none; animation: spark-out .6s ease-out both; }
+.spark:nth-child(odd) { background: #EDBE45; }
+@keyframes spark-out { from { transform: rotate(var(--a)) translateY(0); opacity: 1; } to { transform: rotate(var(--a)) translateY(-30px); opacity: 0; } }
+.tile-n.roll { position: relative; display: block; overflow: hidden; }
+.tile-n.roll > span { display: inline-block; animation: roll-in .42s cubic-bezier(.34, 1.4, .64, 1) both; }
+.tile-n.roll::before { content: attr(data-old); position: absolute; inset: 0; animation: roll-out .42s cubic-bezier(.34, 1.4, .64, 1) both; }
+@media (prefers-reduced-motion: reduce) { .t-veil, .t-banner, .sent-moment, .fresh-moment { display: none; } }
+
+.welcome.draw .w-ray { animation-delay: calc(0ms - var(--el, 0ms)); }
+.welcome.draw .wword { animation-delay: calc(.3s + var(--i, 0) * .12s - var(--el, 0ms)); }
+.welcome .wword { margin-right: .26em; }
+.welcome .wname { margin-left: 0; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -3474,6 +3541,14 @@ window.KOMAT_PART_ART = [
       });
     } catch (e) { /* no sound on this device */ }
   }
+  /* a small ring that drains as the time runs out */
+  function ring(t) {
+    const C = 62.8, left = t.total ? Math.max(0, Math.min(1, rem(t) / t.total)) : 1;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 't-ring'); svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * (1 - left)).toFixed(1) + '" transform="rotate(-90 12 12)"/>';
+    return svg;
+  }
   let open = false;
   function paint() {
     let tray = document.getElementById('timers');
@@ -3483,7 +3558,7 @@ window.KOMAT_PART_ART = [
     if (!timers.length) { tray.hidden = true; clearInterval(tick); tick = null; return; }
     tray.hidden = false;
     let anyDone = false;
-    timers.forEach((t) => { if (!t.paused && !t.done && t.end <= Date.now()) { t.done = true; save(); } if (t.done) anyDone = true; });
+    timers.forEach((t) => { if (!t.paused && !t.done && t.end <= Date.now()) { t.done = true; save(); if (K.timerDone) K.timerDone(t); } if (t.done) anyDone = true; });
     if (anyDone && !ringing) { ringing = true; K.vibrate([300, 150, 300, 150, 300]); }
     if (!anyDone) ringing = false;
     if (anyDone && Math.floor(Date.now() / 1000) % 2 === 0) beep();
@@ -3493,6 +3568,7 @@ window.KOMAT_PART_ART = [
     tray.append(h('div', { class: 'timers-in' },
       shown.map((t) => h('div', { class: 'timer' + (t.done ? ' done' : '') + (t.paused ? ' paused' : '') },
         t.done && K.clip ? K.clip('steam-lid', 't-clip') : null,
+        t.done ? null : ring(t),
         h('div', { class: 'timer-txt' },
           h('b', { class: 'mono' }, t.done ? 'Time!' : clock(rem(t))),
           h('span', null, t.name)),
@@ -3759,6 +3835,89 @@ window.KOMAT_PART_ART = [
     pill.style.height = btn.offsetHeight + 'px';
     pill.style.transform = 'translate(' + btn.offsetLeft + 'px,' + btn.offsetTop + 'px)';
     if (!animate || reduced()) { void pill.offsetWidth; pill.style.transition = ''; }
+  };
+})();
+
+</script>
+<script>
+/* js/moments.js */
+/* Moments: the few short scenes that mark something happening in the kitchen: a timer going
+   off, an order leaving in its crate, a new kitchen day starting fresh, a station getting
+   ready. Each one lasts a few seconds, never blocks a tap for long, and is skipped when the
+   phone asks for reduced motion. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, ui = K.ui;
+  const reduced = () => K.reducedMotion && K.reducedMotion();
+  const later = (fn, ms) => setTimeout(fn, ms);
+
+  /* a timer reaching zero: the screen pulses green, rings go out, a banner drops in with a swinging bell */
+  K.timerDone = function (t) {
+    if (reduced()) return;
+    const veil = h('div', { class: 't-veil', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
+    const banner = h('button', { type: 'button', class: 't-banner', 'aria-label': 'Dismiss the timer message', onclick: () => gone() },
+      h('span', { class: 't-bell' }, K.icon('bell')),
+      h('span', { class: 't-bt' }, h('b', null, 'Time!'), h('span', null, t.name || 'Timer')));
+    const tray = document.getElementById('timers');
+    if (tray) { tray.classList.remove('shake'); void tray.offsetWidth; tray.classList.add('shake'); later(() => tray.classList.remove('shake'), 900); }
+    document.body.append(veil, banner);
+    const gone = () => { banner.classList.add('out'); later(() => { banner.remove(); }, 320); };
+    later(() => veil.remove(), 1500);
+    later(gone, 4200);
+  };
+
+  /* the order leaves: its products drop into a crate, SENT lands on it */
+  K.sentMoment = function (items, label) {
+    if (reduced() || !items.length) return false;
+    const names = items.slice(0, 4);
+    const crate = h('img', { class: 'sm-crate', src: 'assets/motion/crate-b.webp', alt: '', draggable: 'false' });
+    const cards = names.map((x, i) => h('span', { class: 'sm-card', style: { '--i': i, '--x': (i - (names.length - 1) / 2) * 56 + 'px' } },
+      K.produceThumb ? K.produceThumb(x.n, 'sm-th') : null, h('b', null, x.n)));
+    const back = h('div', { class: 'sent-moment', role: 'status', onclick: () => end() },
+      h('div', { class: 'sm-stage' }, crate, cards, h('span', { class: 'sm-stamp' }, 'Sent')),
+      h('p', { class: 'sm-msg' }, label || 'Order sent'));
+    document.body.append(back);
+    const end = () => { back.classList.add('out'); later(() => back.remove(), 380); };
+    later(end, 700 + names.length * 330 + 1500);
+    return true;
+  };
+
+  /* the first look at Today on a new kitchen day: night turns to sunrise and the list starts clean */
+  K.freshDay = function () {
+    const seen = K.store.get('seenDay', ''), today = K.day(0);
+    if (seen === today) return;
+    K.store.set('seenDay', today);
+    if (!seen || reduced()) return;
+    const back = h('div', { class: 'fresh-moment', role: 'status', onclick: () => end() },
+      K.clip ? K.clip('sunrise', 'fm-clip') : null,
+      h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
+      h('div', { class: 'fm-in' },
+        h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '03:59'), h('span', { class: 'b' }, '04:00')),
+        h('h2', { class: 'fm-title' }, 'A fresh list'),
+        h('p', { class: 'fm-line' }, 'Nothing carries over from yesterday.')));
+    document.body.append(back);
+    const end = () => { back.classList.add('out'); later(() => back.remove(), 500); };
+    later(end, 3600);
+  };
+
+  /* a tiny burst around a button that was just ticked */
+  K.sparks = function (el) {
+    if (reduced() || !el) return;
+    for (let i = 0; i < 8; i++) el.append(h('i', { class: 'spark', 'aria-hidden': 'true', style: { '--a': i * 45 + 'deg' } }));
+    later(() => el.querySelectorAll('.spark').forEach((s) => s.remove()), 700);
+  };
+
+  /* a number counting up to its value */
+  K.countUp = function (el, to, ms) {
+    if (!el || reduced()) return;
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / (ms || 900));
+      el.textContent = String(Math.round(to * (1 - Math.pow(1 - k, 3))));
+      if (k < 1 && el.isConnected) requestAnimationFrame(step);
+      else if (el.isConnected) el.textContent = String(to);
+    };
+    requestAnimationFrame(step);
   };
 })();
 
@@ -5174,11 +5333,11 @@ window.KOMAT_PART_ART = [
     const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
     const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
     burst.innerHTML = K.burstSvg();
-    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
+    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); K.countUp(document.getElementById('ready-n'), S.n, 1100); }, 60); }
     return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
       K.clip('flambe', 'ready-clip'),
       h('div', { class: 'ready-in' }, burst,
-        h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
+        h('p', { class: 'ready-kick mono' }, h('span', { id: 'ready-n' }, String(S.n)), ' of ' + S.n + ' ready · ' + K.hm(S.at)),
         h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
         h('p', { class: 'ready-line' }, 'Every line on ' + K.ST[S.st] + ' is set. Beautiful work' + (name ? ', ' + name : '') + '.'),
         h('div', { class: 'ready-btns' },
@@ -5206,8 +5365,14 @@ window.KOMAT_PART_ART = [
   }
   /* the top of Today: a greeting under the Komat rays (they draw in once per visit) and the station picker */
   function welcome(st, feat) {
-    const name = firstName(), draw = !ui.raysDrawn, urg = K.openUrgents().length;
+    const name = firstName(), urg = K.openUrgents().length;
+    /* the greeting plays for the first 2 seconds of a visit; a redraw inside that picks up where it was */
+    if (!ui.drawAt) ui.drawAt = Date.now();
+    const el = Date.now() - ui.drawAt, draw = el < 2000;
     ui.raysDrawn = true;
+    if (K.freshDay) K.freshDay();
+    if (draw && !ui.logoIn) { ui.logoIn = true; document.body.classList.add('logo-in'); setTimeout(() => document.body.classList.remove('logo-in'), 1700); }
+    const words = (s) => (draw ? s.split(' ').map((w, i) => h('span', { class: 'wword', style: { '--i': i } }, w)) : s);
     let line;
     if (feat) {
       const ts = eventTimes(feat);
@@ -5220,7 +5385,7 @@ window.KOMAT_PART_ART = [
     const fx = h('span', { class: 'w-fx fx-' + st, 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(() => h('i')));
     const film = draw || ui.filmOn ? K.clip(st === 'hot' ? 'flame' : 'sunrise', 'w-clip') : null;
     if (draw) ui.filmOn = true;
-    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : '') },
+    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : ''), style: draw ? { '--el': el + 'ms' } : null },
       film,
       from ? h('span', { class: 'w-tint t-' + from + ' out', 'aria-hidden': 'true' }) : null,
       h('span', { class: 'w-tint t-' + st + (from ? ' in' : ''), 'aria-hidden': 'true' }), fx, rays,
@@ -5228,7 +5393,7 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'wtext' },
           h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
           h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
-          h('h1', { class: 'whello' }, hello() + (name ? ',' : ''), name ? h('span', { class: 'wname' }, name) : null),
+          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname' + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
           h('p', { class: 'wline' }, line)),
         stationPicker()));
   }
@@ -5363,6 +5528,7 @@ window.KOMAT_PART_ART = [
       K.vibrate(12);
       if (!btn) { o.onDone(); return; }
       btn.classList.add('ticked');
+      if (K.sparks) K.sparks(btn);
       K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
     };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
@@ -5403,11 +5569,16 @@ window.KOMAT_PART_ART = [
     /* three tiles under the greeting: the list, the to-do, and the evening (or what is urgent) */
     const urgN = K.openUrgents().length, fts = feat ? eventTimes(feat) : [];
     const tile = (cls, big, label, onclick) => h('button', { type: 'button', class: 'tile' + (cls ? ' ' + cls : ''), onclick: onclick }, h('span', { class: 'tile-n mono' }, big), h('span', { class: 'tile-l' }, label));
-    w.append(h('div', { class: 'tiles' },
+    const tiles = h('div', { class: 'tiles' },
       tile('tile-mep' + (items.length && ready === items.length ? ' done' : ''), [String(ready), h('span', { class: 'of' }, '/' + items.length)], items.length && ready === items.length ? 'Ready for service' : 'Mise en place', () => jumpTo('t-mep')),
       tile('', String(todoN), 'To do', () => jumpTo('t-todo')),
       feat ? tile('accent', fts.length ? fts[0].t : K.countdown(feat), fts.length && fts[0].what ? cap(fts[0].what) : feat.title || 'Event', openEvent(feat))
-        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief'))));
+        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief')));
+    w.append(tiles);
+    /* the numbers on the tiles flip to their new value when something changed */
+    const tileN = Array.from(tiles.querySelectorAll('.tile-n')), nowN = tileN.map((e) => e.textContent);
+    if (ui.tileOld && ui.tileOld.length === nowN.length && K.rollNumbers) K.rollNumbers(ui.tileOld, tileN);
+    ui.tileOld = nowN;
     if (feat) w.append(tonightCard(feat));
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
       h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
@@ -5959,7 +6130,8 @@ window.KOMAT_PART_ART = [
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      K.flash(S.close ? 'lights-off' : 'crate-fill', S.close ? 4200 : 3800);
+      if (S.close) K.flash('lights-off', 4200);
+      else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
     }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });

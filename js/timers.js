@@ -89,6 +89,14 @@
       });
     } catch (e) { /* no sound on this device */ }
   }
+  /* a small ring that drains as the time runs out */
+  function ring(t) {
+    const C = 62.8, left = t.total ? Math.max(0, Math.min(1, rem(t) / t.total)) : 1;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('class', 't-ring'); svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = '<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * (1 - left)).toFixed(1) + '" transform="rotate(-90 12 12)"/>';
+    return svg;
+  }
   let open = false;
   function paint() {
     let tray = document.getElementById('timers');
@@ -98,7 +106,7 @@
     if (!timers.length) { tray.hidden = true; clearInterval(tick); tick = null; return; }
     tray.hidden = false;
     let anyDone = false;
-    timers.forEach((t) => { if (!t.paused && !t.done && t.end <= Date.now()) { t.done = true; save(); } if (t.done) anyDone = true; });
+    timers.forEach((t) => { if (!t.paused && !t.done && t.end <= Date.now()) { t.done = true; save(); if (K.timerDone) K.timerDone(t); } if (t.done) anyDone = true; });
     if (anyDone && !ringing) { ringing = true; K.vibrate([300, 150, 300, 150, 300]); }
     if (!anyDone) ringing = false;
     if (anyDone && Math.floor(Date.now() / 1000) % 2 === 0) beep();
@@ -108,6 +116,7 @@
     tray.append(h('div', { class: 'timers-in' },
       shown.map((t) => h('div', { class: 'timer' + (t.done ? ' done' : '') + (t.paused ? ' paused' : '') },
         t.done && K.clip ? K.clip('steam-lid', 't-clip') : null,
+        t.done ? null : ring(t),
         h('div', { class: 'timer-txt' },
           h('b', { class: 'mono' }, t.done ? 'Time!' : clock(rem(t))),
           h('span', null, t.name)),

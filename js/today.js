@@ -29,11 +29,11 @@
     const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
     const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
     burst.innerHTML = K.burstSvg();
-    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); }, 60); }
+    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); K.countUp(document.getElementById('ready-n'), S.n, 1100); }, 60); }
     return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
       K.clip('flambe', 'ready-clip'),
       h('div', { class: 'ready-in' }, burst,
-        h('p', { class: 'ready-kick mono' }, S.n + ' of ' + S.n + ' ready · ' + K.hm(S.at)),
+        h('p', { class: 'ready-kick mono' }, h('span', { id: 'ready-n' }, String(S.n)), ' of ' + S.n + ' ready · ' + K.hm(S.at)),
         h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
         h('p', { class: 'ready-line' }, 'Every line on ' + K.ST[S.st] + ' is set. Beautiful work' + (name ? ', ' + name : '') + '.'),
         h('div', { class: 'ready-btns' },
@@ -61,8 +61,14 @@
   }
   /* the top of Today: a greeting under the Komat rays (they draw in once per visit) and the station picker */
   function welcome(st, feat) {
-    const name = firstName(), draw = !ui.raysDrawn, urg = K.openUrgents().length;
+    const name = firstName(), urg = K.openUrgents().length;
+    /* the greeting plays for the first 2 seconds of a visit; a redraw inside that picks up where it was */
+    if (!ui.drawAt) ui.drawAt = Date.now();
+    const el = Date.now() - ui.drawAt, draw = el < 2000;
     ui.raysDrawn = true;
+    if (K.freshDay) K.freshDay();
+    if (draw && !ui.logoIn) { ui.logoIn = true; document.body.classList.add('logo-in'); setTimeout(() => document.body.classList.remove('logo-in'), 1700); }
+    const words = (s) => (draw ? s.split(' ').map((w, i) => h('span', { class: 'wword', style: { '--i': i } }, w)) : s);
     let line;
     if (feat) {
       const ts = eventTimes(feat);
@@ -75,7 +81,7 @@
     const fx = h('span', { class: 'w-fx fx-' + st, 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(() => h('i')));
     const film = draw || ui.filmOn ? K.clip(st === 'hot' ? 'flame' : 'sunrise', 'w-clip') : null;
     if (draw) ui.filmOn = true;
-    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : '') },
+    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : ''), style: draw ? { '--el': el + 'ms' } : null },
       film,
       from ? h('span', { class: 'w-tint t-' + from + ' out', 'aria-hidden': 'true' }) : null,
       h('span', { class: 'w-tint t-' + st + (from ? ' in' : ''), 'aria-hidden': 'true' }), fx, rays,
@@ -83,7 +89,7 @@
         h('div', { class: 'wtext' },
           h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
           h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
-          h('h1', { class: 'whello' }, hello() + (name ? ',' : ''), name ? h('span', { class: 'wname' }, name) : null),
+          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname' + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
           h('p', { class: 'wline' }, line)),
         stationPicker()));
   }
@@ -218,6 +224,7 @@
       K.vibrate(12);
       if (!btn) { o.onDone(); return; }
       btn.classList.add('ticked');
+      if (K.sparks) K.sparks(btn);
       K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
     };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
@@ -258,11 +265,16 @@
     /* three tiles under the greeting: the list, the to-do, and the evening (or what is urgent) */
     const urgN = K.openUrgents().length, fts = feat ? eventTimes(feat) : [];
     const tile = (cls, big, label, onclick) => h('button', { type: 'button', class: 'tile' + (cls ? ' ' + cls : ''), onclick: onclick }, h('span', { class: 'tile-n mono' }, big), h('span', { class: 'tile-l' }, label));
-    w.append(h('div', { class: 'tiles' },
+    const tiles = h('div', { class: 'tiles' },
       tile('tile-mep' + (items.length && ready === items.length ? ' done' : ''), [String(ready), h('span', { class: 'of' }, '/' + items.length)], items.length && ready === items.length ? 'Ready for service' : 'Mise en place', () => jumpTo('t-mep')),
       tile('', String(todoN), 'To do', () => jumpTo('t-todo')),
       feat ? tile('accent', fts.length ? fts[0].t : K.countdown(feat), fts.length && fts[0].what ? cap(fts[0].what) : feat.title || 'Event', openEvent(feat))
-        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief'))));
+        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief')));
+    w.append(tiles);
+    /* the numbers on the tiles flip to their new value when something changed */
+    const tileN = Array.from(tiles.querySelectorAll('.tile-n')), nowN = tileN.map((e) => e.textContent);
+    if (ui.tileOld && ui.tileOld.length === nowN.length && K.rollNumbers) K.rollNumbers(ui.tileOld, tileN);
+    ui.tileOld = nowN;
     if (feat) w.append(tonightCard(feat));
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
       h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
