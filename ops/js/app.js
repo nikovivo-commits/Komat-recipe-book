@@ -1047,7 +1047,7 @@
       r.onload = function () {
         let text = String(r.result || '');
         // Excel on Windows often writes CSV as Windows-1252; retry when UTF-8 decoding produced replacement characters.
-        if (text.indexOf('�') > -1 && typeof TextDecoder !== 'undefined') {
+        if (text.indexOf('\ufffd') > -1 && typeof TextDecoder !== 'undefined') {
           const r2 = new FileReader();
           r2.onload = function () { try { resolve(new TextDecoder('windows-1252').decode(r2.result)); } catch (e) { resolve(text); } };
           r2.onerror = function () { resolve(text); };
