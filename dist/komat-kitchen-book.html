@@ -1568,6 +1568,23 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-sent summary { cursor: pointer; color: #8A8D88; font: 600 .82rem var(--sans); padding: 4px 0; }
 .wb-sent-list { opacity: .55; }
 
+/* first sign-in: pick your name from the rota */
+.whoami { display: grid; gap: 14px; }
+.who-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.who-opt { display: grid; gap: 2px; justify-items: start; min-height: 56px; padding: 10px 14px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); text-align: left; font: 700 1rem var(--sans); }
+.who-opt[aria-checked="true"] { border-color: var(--apron); box-shadow: 0 0 0 2px var(--apron) inset; }
+.who-opt:disabled { opacity: .45; }
+.who-opt small { color: var(--muted); font-weight: 500; font-size: .75rem; }
+
+/* your name, always in your own handwriting and marker */
+.wb-who { display: inline-flex; align-items: baseline; gap: 5px; margin-right: 10px; }
+.wb-sig { color: var(--pen); font: var(--hand-w) calc(var(--hand-s) * .95)/1 var(--hand); }
+.tnote-by { color: var(--pen); font-family: var(--hand); font-weight: var(--hand-w); }
+.welcome .wname { color: var(--pen); font-family: var(--hand); font-weight: var(--hand-w); font-size: 1.12em; }
+/* the greeting sits on dark steel: light inks there */
+.welcome .wname.ink-black { --pen: #ECEAE4; } .welcome .wname.ink-blue { --pen: #93B4FF; } .welcome .wname.ink-red { --pen: #FF8F86; } .welcome .wname.ink-green { --pen: #7BD3A0; }
+.welcome .wname.ink-purple { --pen: #C9A8F2; } .welcome .wname.ink-orange { --pen: #FFB27A; } .welcome .wname.ink-teal { --pen: #6FD6DE; } .welcome .wname.ink-pink { --pen: #F59AC9; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -4278,8 +4295,36 @@ window.KOMAT_PART_ART = [
       h('button', { class: 'btn primary wide', type: 'button', onclick: done }, 'Done'));
     return K.sheet(S.first ? 'Pick your marker' : 'Your marker', body);
   };
+  /* who you are on the rota: your week, your shifts and your name on the sheet come from it */
+  const rotaPeople = () => ((K.D.staff && K.D.staff.people) || []).filter((x) => x && x.name);
+  const myRota = () => (K.mode === 'firebase' ? K.rotaIdFor(K.me.name || '') : K.store.get('me', ''));
+  K.SHEETS.whoami = function (S) {
+    const ppl = rotaPeople(), mine = myRota();
+    const taken = {};
+    if (K.mode === 'firebase') Object.keys(K.D.members || {}).forEach((id) => { if (id !== K.me.id) { const r = K.rotaIdFor((K.D.members[id] || {}).name || ''); if (r) taken[r] = true; } });
+    const pick = (x) => {
+      const done = () => { K.ui.sheet = null; K.ui.whoAsked = true; K.render(); K.toast('Hi ' + x.name.split(' ')[0] + '. Your shifts are on Schedule.', { tone: 'good' }); };
+      if (K.mode === 'firebase') K.Fire.rename(x.name).then(done, K.writeFailed); else { K.store.set('me', x.id); done(); }
+    };
+    return K.sheet('Who are you on the rota?', h('div', { class: 'whoami' },
+      h('p', { class: 'muted' }, 'Pick your name as it is on the schedule. Your week, your shifts and the name on what you write come from it.'),
+      h('div', { class: 'who-grid', role: 'radiogroup', 'aria-label': 'Your name on the rota' }, ppl.map((x) => h('button', {
+        type: 'button', role: 'radio', class: 'who-opt', 'aria-checked': mine === x.id ? 'true' : 'false', disabled: taken[x.id] && mine !== x.id ? true : null, onclick: () => pick(x),
+      }, h('b', null, x.name), taken[x.id] && mine !== x.id ? h('small', null, 'already taken') : null))),
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { K.ui.sheet = null; K.ui.whoAsked = true; K.store.set('notOnRota', true); K.render(); } }, 'I’m not on the rota')));
+  };
+  K.whoPrompt = function () {
+    if (K.ui.sheet || K.ui.cook || K.ui.whoAsked || K.ui.auth || K.store.get('notOnRota', false)) return false;
+    if (K.mode === 'firebase' && !(K.me && K.me.id)) return false;
+    if (!rotaPeople().length || myRota()) return false;
+    K.ui.whoAsked = true;
+    K.ui.sheet = { type: 'whoami' };
+    return true;
+  };
+
   /* the first time someone is in the app, ask once */
   K.inkPrompt = function () {
+    if (K.whoPrompt && K.whoPrompt()) return true;
     if (K.ui.sheet || K.ui.cook || K.ui.inkAsked || (K.myInk() && K.myHand())) return false;
     if (K.mode === 'firebase' && !(K.me && K.me.id)) return false;
     if (K.ui.auth) return false;
@@ -5789,7 +5834,7 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'wtext' },
           h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
           h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
-          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname' + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
+          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()) + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
           h('p', { class: 'wline' }, line)),
         stationPicker()));
   }
@@ -6593,7 +6638,7 @@ window.KOMAT_PART_ART = [
     return h('div', { class: 'oline wb-line ' + x.s + ' ' + K.inkClass(r0.ink) + ' ' + K.handClass(r0.hand) },
       h('span', { class: 'wb-name' }, x.n),
       x.rows.map((r) => h('span', { class: 'wb-amt ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, r.note || '…')),
-      h('span', { class: 'wb-by' }, x.rows.map((r) => who(r) + (x.late ? ' · ' + K.hm(r.at) : '')).join(' · ')),
+      h('span', { class: 'wb-by' }, x.rows.map((r) => h('span', { class: 'wb-who' }, shortSt(r.st), K.nameOf(r.by) ? h('span', { class: 'wb-sig ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, K.nameOf(r.by).split(' ')[0]) : null, x.late ? ' · ' + K.hm(r.at) : ''))),
       canWipe ? h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Wipe ' + x.n + ' off the board', onclick: () => wipe(x) }, K.icon('close')) : null);
   }
   /* write a line on the board: it goes on your station's order, in your hand */

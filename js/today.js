@@ -120,7 +120,7 @@
         h('div', { class: 'wtext' },
           h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
           h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
-          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname' + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
+          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()) + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
           h('p', { class: 'wline' }, line)),
         stationPicker()));
   }

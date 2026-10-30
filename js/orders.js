@@ -35,7 +35,7 @@
     return h('div', { class: 'oline wb-line ' + x.s + ' ' + K.inkClass(r0.ink) + ' ' + K.handClass(r0.hand) },
       h('span', { class: 'wb-name' }, x.n),
       x.rows.map((r) => h('span', { class: 'wb-amt ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, r.note || '…')),
-      h('span', { class: 'wb-by' }, x.rows.map((r) => who(r) + (x.late ? ' · ' + K.hm(r.at) : '')).join(' · ')),
+      h('span', { class: 'wb-by' }, x.rows.map((r) => h('span', { class: 'wb-who' }, shortSt(r.st), K.nameOf(r.by) ? h('span', { class: 'wb-sig ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, K.nameOf(r.by).split(' ')[0]) : null, x.late ? ' · ' + K.hm(r.at) : ''))),
       canWipe ? h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Wipe ' + x.n + ' off the board', onclick: () => wipe(x) }, K.icon('close')) : null);
   }
   /* write a line on the board: it goes on your station's order, in your hand */
