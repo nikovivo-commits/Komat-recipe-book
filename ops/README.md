@@ -18,7 +18,7 @@ It sits next to the tools Komat already uses and reads from them instead of repl
 | **Stock** | **Update from Hype** (stock report, CSV or Excel), stock counts location by location, − / + adjustments, items from the Kitchen Book. |
 | **Orders** | Suggested orders per supplier, rounded to whole cases, sacks or trays, including everything the kitchen asked for. Send with Gmail, save a Gmail draft, open in the email app or copy the text. Check deliveries in. |
 | **Bar** | **Wine list** for the floor: style, vintage, bottle and glass price, bottles and glasses left, gross profit after VAT. **Sales** per wine and drink from Hype's sales report. **Quick sell** buttons for drinks that don't go through Hype. |
-| **Bookings** | Covers per day for 14 days from reservation.tools exports, hand entries and Kitchen Book events. |
+| **Bookings** | **Calendar**: covers per day for 14 days from reservation.tools exports, hand entries and Kitchen Book events. **Guests**: the guest book (below). |
 | **Office** | **Cash**: the daily cash report: cash left, cash out and in per day, where the cash went this month. **Invoices**: invoice emails from your suppliers. **Mail**: supplier replies, orders and booking emails. |
 | **Setup** | Restaurant details, order email wording, copy-to address, VAT for margins, busy-week settings, backups. |
 
@@ -33,6 +33,14 @@ It sits next to the tools Komat already uses and reads from them instead of repl
 - A **wine** is counted in bottles and sold by the bottle and, if it has a glass size, by the glass: a 15 cl glass from a 75 cl bottle is 0.2 of a bottle. The wine list shows the open bottle too ("4 btl + 3 gl").
 - A **drink sold per piece** (soft drinks, water, juice) is one bottle or can per sale.
 - Hype's sales report is matched article by article to wines (bottle or glass) and drinks, and the choices are remembered. Food lines are marked as not tracked once. By default the import does not take stock off again, because Hype's stock report already did.
+
+### The guest book
+
+- Guests are recognised by **phone number**, however it was typed: 0888 123 456, +359 888 123 456 and 00359888123456 are the same guest (Setup sets the country code for numbers written without one).
+- Each **visit** records the date, covers, what they had (dishes from the Kitchen Book menu, wines by bottle or glass, drinks, or anything typed in), the bill total and a note.
+- A booking from a known number shows **"4th visit · last time 24 Oct: beef tartare, Rioja Reserva"** and the guest's notes (allergies, favourite table). **Today** lists the guests to know about tonight.
+- **What they had** on a booking records that visit. **From bookings** builds guests and past visits from every booking that has a phone number.
+- Guest details are personal data: the page keeps them readable only for people the page is shared with as Contributor or Editor, records whether the guest agreed, and deleting a guest deletes all their visits.
 
 ### How stock is kept
 

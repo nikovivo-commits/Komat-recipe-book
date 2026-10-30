@@ -940,6 +940,12 @@ legend { font-size: var(--step--1); font-weight: 650; color: var(--muted); paddi
 .kp b { display: block; font-weight: 650; overflow-wrap: anywhere; }
 .kp small { display: block; color: var(--muted); font-size: 0.75rem; overflow-wrap: anywhere; }
 
+/* ---------- guests ---------- */
+.pill.guest { background: var(--accent); color: var(--accent-ink); border: 0; cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill.guest-new { background: transparent; border: 1px dashed var(--accent); color: var(--accent-text); cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.guest-note { margin-top: 4px; padding: 4px 10px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: var(--step--1); font-weight: 600; overflow-wrap: anywhere; }
+.linkish { appearance: none; border: 0; background: none; padding: 0; color: var(--accent-text); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
 /* ---------- office ---------- */
 .payees { display: grid; gap: 12px; }
 .payee { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }

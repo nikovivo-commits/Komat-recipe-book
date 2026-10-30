@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
 
-  const COLLECTIONS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen'];
+  const COLLECTIONS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen', 'guests', 'visits'];
   const CORE = ['items', 'suppliers', 'orders', 'reservations'];
   const LS_KEY = 'komat-backoffice-v1';
   const MAX_PARALLEL_WRITES = 4;
@@ -65,7 +65,7 @@
     readOnly: false,
     persistent: true, // false when even localStorage is unavailable
     error: null,
-    data: { items: {}, suppliers: {}, orders: {}, reservations: {}, moves: {}, kitchen: {} },
+    data: { items: {}, suppliers: {}, orders: {}, reservations: {}, moves: {}, kitchen: {}, guests: {}, visits: {} },
     settings: Object.assign({}, DEFAULT_SETTINGS),
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     COLLECTIONS: COLLECTIONS,

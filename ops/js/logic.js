@@ -890,6 +890,88 @@
     return /^[A-Za-z0-9_-]{20,}$/.test(s) ? s : '';
   }
 
+  /* ---------- guests: who came, when, and what they had ---------- */
+
+  /**
+   * One comparable form for a phone number: +359888123456. Numbers written the Bulgarian way
+   * (0888 123 456) get the country code; foreign numbers need their + or 00 prefix.
+   */
+  function normalizePhone(raw, countryCode) {
+    const s = String(raw || '').trim();
+    const digits = s.replace(/\D/g, '');
+    if (digits.length < 6) return '';
+    if (s.charAt(0) === '+') return '+' + digits;
+    if (digits.indexOf('00') === 0) return '+' + digits.slice(2);
+    const cc = String(countryCode || '359').replace(/\D/g, '');
+    if (digits.charAt(0) === '0') return '+' + cc + digits.slice(1);
+    if (digits.indexOf(cc) === 0 && digits.length > 10) return '+' + digits;
+    return '+' + cc + digits;
+  }
+
+  /** The guest record id for a phone number ("g359888123456"), or '' when there is no usable number. */
+  function guestIdFor(phone, countryCode) {
+    const p = normalizePhone(phone, countryCode);
+    return p ? 'g' + p.slice(1) : '';
+  }
+
+  /** A guest's visits, newest first, with what they order most. */
+  function guestStats(guestId, visits) {
+    const list = (visits || []).filter(function (v) { return v.guestId === guestId; })
+      .sort(function (a, b) { return String(b.date + (b.time || '')).localeCompare(String(a.date + (a.time || ''))); });
+    const fav = {};
+    list.forEach(function (v) {
+      (v.items || []).forEach(function (it) {
+        const k = normName(it.name);
+        if (!k) return;
+        const f = fav[k] || (fav[k] = { name: it.name, qty: 0, visits: 0, kind: it.kind || '' });
+        // Show the capitalised spelling when the same thing was typed both ways.
+        if (f.name === f.name.toLowerCase() && it.name !== it.name.toLowerCase()) f.name = it.name;
+        f.qty += Math.max(1, num(it.qty, 1));
+        f.visits += 1;
+      });
+    });
+    return {
+      visits: list,
+      count: list.length,
+      first: list.length ? list[list.length - 1].date : null,
+      last: list.length ? list[0].date : null,
+      lastItems: list.length ? (list[0].items || []) : [],
+      spent: round(list.reduce(function (t, v) { return t + num(v.total, 0); }, 0), 2),
+      favourites: Object.keys(fav).map(function (k) { return fav[k]; })
+        .sort(function (a, b) { return b.visits - a.visits || b.qty - a.qty || a.name.localeCompare(b.name); })
+    };
+  }
+
+  /** "1st", "2nd", "3rd", "4th"… */
+  function ordinal(n) {
+    const v = n % 100;
+    return n + (v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  }
+
+  /**
+   * Guest records and past visits that the bookings imply: every booking with a phone number is a
+   * guest, and every past booking (not cancelled) is a visit. Already known guests and visits are skipped.
+   */
+  function guestsFromBookings(reservations, guests, visits, todayIso, countryCode) {
+    const known = {};
+    (guests || []).forEach(function (g) { known[g.id] = true; });
+    const seen = {};
+    (visits || []).forEach(function (v) { if (v.bookingId) seen[v.bookingId] = true; });
+    const newGuests = {};
+    const newVisits = [];
+    (reservations || []).forEach(function (r) {
+      if (r.source === 'kitchen' || r.status === 'cancelled') return;
+      const id = guestIdFor(r.phone, countryCode);
+      if (!id) return;
+      if (!known[id] && !newGuests[id]) newGuests[id] = { id: id, phone: normalizePhone(r.phone, countryCode), name: r.name || '' };
+      if (r.date < todayIso && r.id && !seen[r.id]) {
+        newVisits.push({ guestId: id, bookingId: r.id, date: r.date, time: r.time || '', covers: num(r.covers, 0), items: [], source: 'booking' });
+        seen[r.id] = true;
+      }
+    });
+    return { guests: Object.keys(newGuests).map(function (k) { return newGuests[k]; }), visits: newVisits };
+  }
+
   const api = {
     DAY_MS: DAY_MS,
     WEEKDAYS: WEEKDAYS,
@@ -950,6 +1032,11 @@
     cashMonth: cashMonth,
     payeeKey: payeeKey,
     sheetId: sheetId,
+    normalizePhone: normalizePhone,
+    guestIdFor: guestIdFor,
+    guestStats: guestStats,
+    ordinal: ordinal,
+    guestsFromBookings: guestsFromBookings,
     FIELD_SYNONYMS: FIELD_SYNONYMS
   };
 

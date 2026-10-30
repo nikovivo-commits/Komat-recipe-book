@@ -112,6 +112,17 @@
       }
     }
 
+    // A regular, booked again tonight, with three earlier visits.
+    const regularPhone = '+359 000 000 101';
+    reservations.push({ id: 'ex-res-regular', date: day(0), time: '20:00', name: 'Example: Maria P.', covers: 2, phone: regularPhone, note: '', source: 'example' });
+    const guestId = L.guestIdFor(regularPhone);
+    const guests = [{ id: guestId, phone: L.normalizePhone(regularPhone), name: 'Example: Maria P.', notes: 'No shellfish. Likes table 7 by the window.', consent: true }];
+    const visits = [
+      { id: 'ex-visit-1', guestId: guestId, date: day(-40), time: '19:30', covers: 2, total: 148, items: [{ name: 'Beef tartare', kind: 'dish', qty: 2 }, { name: 'Rioja Reserva 2018', kind: 'wine', qty: 1 }] },
+      { id: 'ex-visit-2', guestId: guestId, date: day(-21), time: '20:00', covers: 4, total: 212.5, items: [{ name: 'Beluga lentils', kind: 'dish', qty: 2 }, { name: 'House red 2022 (glass)', kind: 'wine', qty: 4 }], note: 'Birthday of her husband' },
+      { id: 'ex-visit-3', guestId: guestId, date: day(-6), time: '20:15', covers: 2, total: 131, items: [{ name: 'Beef tartare', kind: 'dish', qty: 1 }, { name: 'Rioja Reserva 2018', kind: 'wine', qty: 1 }, { name: 'Lemon sorbet', kind: 'dish', qty: 2 }] }
+    ];
+
     const orders = [{
       id: 'ex-order-1',
       number: 'K-EXAMPLE-01',
@@ -159,13 +170,14 @@
         { name: 'Celeriac', units: ['g'], usedIn: ['Beluga lentils'], stations: ['hot'], onMenu: true },
         { name: 'King oyster mushrooms', units: ['g'], usedIn: ['Mushroom jus'], stations: ['hot'], onMenu: false }
       ] },
-      { id: 'meta', syncedAt: t.getTime() - 3600 * 1000, source: 'example' }
+      { id: 'meta', syncedAt: t.getTime() - 3600 * 1000, source: 'example' },
+      { id: 'menu', items: [{ name: 'Beef tartare' }, { name: 'Beluga lentils' }, { name: 'Pumpkin terrine with lamb' }, { name: 'Scrambled eggs' }, { name: 'Lemon sorbet' }] }
     ];
 
-    [suppliers, items, reservations, orders, moves, kitchen].forEach(function (list) {
+    [suppliers, items, reservations, orders, moves, kitchen, guests, visits].forEach(function (list) {
       list.forEach(function (x) { x.example = true; });
     });
-    return { suppliers: suppliers, items: items, reservations: reservations, orders: orders, moves: moves, kitchen: kitchen };
+    return { suppliers: suppliers, items: items, reservations: reservations, orders: orders, moves: moves, kitchen: kitchen, guests: guests, visits: visits };
   }
 
   const api = { build: build };

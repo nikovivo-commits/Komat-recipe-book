@@ -398,3 +398,50 @@ test('sheetId takes a Google Sheets link or a bare id', () => {
   assert.equal(L.sheetId('1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM'), '1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM');
   assert.equal(L.sheetId('not a link'), '');
 });
+
+/* ---------- guests ---------- */
+
+test('phone numbers are compared in one form', () => {
+  assert.equal(L.normalizePhone('0888 123 456'), '+359888123456');
+  assert.equal(L.normalizePhone('+359 888 123 456'), '+359888123456');
+  assert.equal(L.normalizePhone('00359888123456'), '+359888123456');
+  assert.equal(L.normalizePhone('359888123456'), '+359888123456');
+  assert.equal(L.normalizePhone('888-123-456'), '+359888123456');
+  assert.equal(L.normalizePhone('+44 7700 900123'), '+447700900123');
+  assert.equal(L.normalizePhone('12'), '');
+  assert.equal(L.guestIdFor('0888 123 456'), 'g359888123456');
+  assert.equal(L.guestIdFor(''), '');
+});
+
+test('guestStats: visits newest first and what they order most', () => {
+  const visits = [
+    { guestId: 'g1', date: '2026-09-02', items: [{ name: 'Rioja Reserva', qty: 1, kind: 'wine' }, { name: 'Beluga lentils', qty: 2 }], total: 120 },
+    { guestId: 'g1', date: '2026-10-20', time: '20:00', items: [{ name: 'rioja reserva', qty: 1 }, { name: 'Tartare', qty: 1 }], total: 95.5 },
+    { guestId: 'g2', date: '2026-10-21', items: [{ name: 'Tartare', qty: 1 }] }
+  ];
+  const s = L.guestStats('g1', visits);
+  assert.equal(s.count, 2);
+  assert.equal(s.last, '2026-10-20');
+  assert.equal(s.first, '2026-09-02');
+  assert.equal(s.spent, 215.5);
+  assert.deepEqual(s.lastItems.map(i => i.name), ['rioja reserva', 'Tartare']);
+  assert.deepEqual(s.favourites.map(f => [f.name, f.visits]), [['Rioja Reserva', 2], ['Beluga lentils', 1], ['Tartare', 1]]);
+  assert.equal(L.guestStats('nobody', visits).count, 0);
+  assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22].map(L.ordinal), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd']);
+});
+
+test('guestsFromBookings turns bookings with phone numbers into guests and past visits', () => {
+  const res = [
+    { id: 'b1', date: '2026-10-01', time: '19:00', name: 'Иванов', phone: '0888 123 456', covers: 4 },
+    { id: 'b2', date: '2026-10-20', name: 'Иванов', phone: '+359888123456', covers: 2 },
+    { id: 'b3', date: '2026-11-02', name: 'Иванов', phone: '0888123456', covers: 2 }, // future: not a visit yet
+    { id: 'b4', date: '2026-10-05', name: 'No phone', covers: 2 },
+    { id: 'b5', date: '2026-10-06', name: 'Cancelled', phone: '0877 000 111', covers: 2, status: 'cancelled' },
+    { id: 'kev-1', date: '2026-10-07', name: 'Event', phone: '0899 000 000', source: 'kitchen' }
+  ];
+  const out = L.guestsFromBookings(res, [], [{ bookingId: 'b2', guestId: 'g359888123456' }], '2026-10-30');
+  assert.deepEqual(out.guests, [{ id: 'g359888123456', phone: '+359888123456', name: 'Иванов' }]);
+  assert.deepEqual(out.visits.map(v => [v.bookingId, v.guestId, v.covers]), [['b1', 'g359888123456', 4]]);
+  // Known guests are not created again.
+  assert.equal(L.guestsFromBookings(res, [{ id: 'g359888123456' }], [], '2026-10-30').guests.length, 0);
+});

@@ -8,9 +8,9 @@
   const store = window.KomatStore;
   const net = window.KomatConnect;
 
-  const VIEWS = ['today', 'stock', 'orders', 'bar', 'bookings', 'cash', 'invoices', 'inbox', 'setup'];
+  const VIEWS = ['today', 'stock', 'orders', 'bar', 'bookings', 'guests', 'cash', 'invoices', 'inbox', 'setup'];
   const OFFICE = ['cash', 'invoices', 'inbox'];
-  const COLS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen'];
+  const COLS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen', 'guests', 'visits'];
   const PREFS_KEY = 'komat-backoffice-prefs';
   const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
   const UNITS = ['kg', 'g', 'l', 'ml', 'pcs', 'bunch', 'bottle', 'can', 'keg', 'pack', 'box', 'case', 'tray', 'portion'];
@@ -35,6 +35,7 @@
     bookings: { day: L.isoDate(new Date()) },
     bar: { tab: 'wines', q: '', range: 'today', last: null },
     cash: { state: 'idle' },
+    guests: { q: '' },
     mail: {},
     watches: {},
     gmailOn: !!prefs().gmailOn,
@@ -159,7 +160,19 @@
     drafts.forEach(function (o) { toOrder[o.supplierId] = true; });
     const todays = reservations.filter(function (r) { return r.date === todayIso && r.status !== 'cancelled' && r.status !== 'pending'; });
     const sellable = items.filter(function (i) { return L.servesOf(i).length; });
+    const guests = store.list('guests');
+    const visits = store.list('visits');
+    const guestById = {};
+    guests.forEach(function (g) { guestById[g.id] = g; });
+    const visitsByGuest = {};
+    visits.forEach(function (v) { (visitsByGuest[v.guestId] = visitsByGuest[v.guestId] || []).push(v); });
+    const statsMemo = {};
     return {
+      guests: guests,
+      visits: visits,
+      guestById: guestById,
+      statsFor: function (id) { return statsMemo[id] || (statsMemo[id] = L.guestStats(id, visitsByGuest[id] || [])); },
+      kitchenMenu: ((store.get('kitchen', 'menu') || {}).items) || [],
       now: now,
       todayIso: todayIso,
       items: items,
@@ -187,7 +200,7 @@
       kitchenEvents: kitchenEvents,
       kitchenMeta: store.get('kitchen', 'meta'),
       kitchenProducts: ((store.get('kitchen', 'products') || {}).items) || [],
-      hasExamples: [items, suppliers, orders, ownBookings, moves, kdocs].some(function (list) { return list.some(function (x) { return x.example; }); }),
+      hasExamples: [items, suppliers, orders, ownBookings, moves, kdocs, guests].some(function (list) { return list.some(function (x) { return x.example; }); }),
       empty: !items.length && !suppliers.length && !ownBookings.length && !orders.length
     };
   }
@@ -439,7 +452,7 @@
     return head + banners(d) + strip +
       '<div class="grid-2"><div class="stack"><section class="panel"><div class="section-head"><h2>Orders to send</h2>' +
       (d.boost.active ? '<span class="pill today">Busy week ×' + d.boost.factor.toFixed(2) + '</span>' : '') + '</div>' + orderCards + '</section>' + kitchenPanel(d) + lowPanel + '</div>' +
-      '<div class="stack">' + bookPanel + barPanel + delPanel + mailPanel + '</div></div>';
+      '<div class="stack">' + guestsTodayPanel(d) + bookPanel + barPanel + delPanel + mailPanel + '</div></div>';
   }
 
   function viewStock(d) {
@@ -578,16 +591,22 @@
     const list = d.reservations.filter(function (r) { return r.date === day; }).sort(function (a, b) { return String(a.time || '').localeCompare(String(b.time || '')); });
     const covers = list.filter(function (r) { return r.status !== 'cancelled' && r.status !== 'pending'; }).reduce(function (a, r) { return a + L.num(r.covers, 0); }, 0);
     const fortnight = L.bookingsByDay(d.reservations, d.now, 14).reduce(function (a, x) { return a + x.covers; }, 0);
-    const head = '<div class="page-head"><div><p class="eyebrow">Front of house</p><h1>Bookings</h1>' +
-      '<p class="muted small" style="margin:4px 0 0">' + fortnight + ' covers booked over the next 14 days</p></div>' +
-      '<div class="actions"><button type="button" class="btn" data-act="import-bookings">Import CSV</button><button type="button" class="btn primary" data-act="new-booking">' + ICON.plus + 'Booking</button></div></div>';
+    const head = frontHead('bookings', 'Bookings', fortnight + ' covers booked over the next 14 days',
+      '<button type="button" class="btn" data-act="import-bookings">Import CSV</button><button type="button" class="btn primary" data-act="new-booking">' + ICON.plus + 'Booking</button>');
     const chart = '<section class="panel"><div class="section-head"><h2>Next 14 days</h2><span class="muted small">Tap a day to see its bookings</span></div>' +
       '<div class="table-wrap">' + bookingBars(d, 14, true) + '</div>' + boostLine(d) + '</section>';
     const dayPanel = '<section class="panel flush"><div class="section-head"><h2>' + esc(relDay(day) === 'today' ? 'Today' : fmtDay(day)) + '</h2><span class="muted small num">' + plural(covers, 'cover') + ' · ' + plural(list.length, 'booking') + '</span></div>' +
       (list.length ? '<div class="booking-list">' + list.map(function (r) {
         return '<div class="booking"><span class="time">' + esc(r.time || '––:––') + '</span>' +
-          '<div class="row-main"><div class="row-title"><span class="name">' + esc(r.name || 'Guest') + '</span>' + (r.status === 'cancelled' ? '<span class="pill cancelled">Cancelled</span>' : '') + (r.status === 'pending' ? '<span class="pill low">Not confirmed</span>' : '') + examplePill(r) + '</div>' +
-          (r.note || r.phone ? '<div class="row-meta">' + esc([r.note, r.phone].filter(Boolean).join(' · ')) + '</div>' : '') + '</div>' +
+          '<div class="row-main"><div class="row-title"><span class="name">' + esc(r.name || 'Guest') + '</span>' + (r.status === 'cancelled' ? '<span class="pill cancelled">Cancelled</span>' : '') + (r.status === 'pending' ? '<span class="pill low">Not confirmed</span>' : '') + guestBadge(d, r) + examplePill(r) + '</div>' +
+          (r.note || r.phone ? '<div class="row-meta">' + esc([r.note, r.phone].filter(Boolean).join(' · ')) + '</div>' : '') +
+          (function () {
+            const x = bookingGuest(d, r);
+            if (!x) return '';
+            return '<div class="row-meta">' + esc(bookingGuestLine(x)) +
+              (r.date <= d.todayIso && r.status !== 'cancelled' ? ' · <button type="button" class="linkish" data-act="booking-visit" data-id="' + esc(r.id) + '">' + (x.recorded ? 'Edit what they had' : 'What they had') + '</button>' : '') + '</div>' +
+              (x.g.notes ? '<div class="guest-note">' + esc(x.g.notes) + '</div>' : '');
+          })() + '</div>' +
           '<span class="covers">' + esc(L.num(r.covers, 0)) + ' pax</span>' +
           (r.source === 'kitchen' ? '<span class="pill" title="An event from the Kitchen Book. Change it there.">Kitchen Book</span>'
             : '<button type="button" class="btn ghost sm" data-act="edit-booking" data-id="' + esc(r.id) + '">Edit</button>') + '</div>';
@@ -651,6 +670,7 @@
       field('set-restaurant', 'Restaurant name', s.restaurant) +
       field('set-sender', 'Your name (orders are signed with it)', s.sender) +
       field('set-address', 'Delivery address', s.address, 'wide') +
+      field('set-phoneCountry', 'Country code for phone numbers', s.phoneCountry || '359', 'inputmode="numeric" maxlength="4"', 'Numbers written like 0888 123 456 get this code, so guests are recognised however the number was typed.') +
       '<label class="field wide" for="set-signature"><span>Email signature</span><textarea id="set-signature" name="signature" placeholder="' + esc([s.sender || 'Your name', s.restaurant || 'Komat', 'phone'].join('\n')) + '">' + esc(s.signature) + '</textarea></label>' +
       '</div></section>' +
       '<section class="panel stack"><h2>Orders</h2><div class="form-grid">' +
@@ -1079,14 +1099,194 @@
       '<p class="small muted">Searching Gmail for: <code>' + esc(invoiceQuery()) + '</code>. Change it under <a href="#setup">Setup → Email searches</a>.</p>';
   }
 
+  /* ---------- guests ---------- */
+
+  function cc() { return store.settings.phoneCountry || '359'; }
+
+  function frontHead(tab, title, sub, actions) {
+    const link = function (v, label) { return '<a href="#' + v + '"' + (tab === v ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
+    return '<div class="page-head"><div><p class="eyebrow">Front of house</p><h1>' + esc(title) + '</h1>' +
+      (sub ? '<p class="muted small" style="margin:4px 0 0">' + sub + '</p>' : '') + '</div>' +
+      (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div>' +
+      '<div><nav class="seg" aria-label="Front of house">' + link('bookings', 'Calendar') + link('guests', 'Guests') + '</nav></div>';
+  }
+
+  function itemsText(items, max) {
+    const list = (items || []).map(function (i) { return (L.num(i.qty, 1) > 1 ? qtyText(i.qty) + '× ' : '') + i.name; });
+    const m = max || 4;
+    return list.slice(0, m).join(', ') + (list.length > m ? ' +' + (list.length - m) : '');
+  }
+
+  /** The line under a known guest's name: "4th visit · last time 20 Oct: Rioja, tartare". */
+  function guestLine(st, upcoming) {
+    if (!st || !st.count) return upcoming ? 'First visit' : 'No visits recorded yet';
+    const n = upcoming ? L.ordinal(st.count + 1) + ' visit' : plural(st.count, 'visit');
+    return n + ' · last time ' + fmtDay(st.last) + (st.lastItems.length ? ': ' + itemsText(st.lastItems, 3) : '');
+  }
+
+  /** For a booking of a known guest: which visit this is, and the visit before it (not counting this booking's own visit). */
+  function bookingGuest(d, r) {
+    const gid = L.guestIdFor(r.phone, cc());
+    const g = gid && r.source !== 'kitchen' ? d.guestById[gid] : null;
+    if (!g) return null;
+    const st = d.statsFor(gid);
+    const own = st.visits.some(function (v) { return v.bookingId === r.id; });
+    const before = st.visits.filter(function (v) { return v.bookingId !== r.id && v.date <= r.date; });
+    return { g: g, st: st, nth: before.length + 1, prev: before[0] || null, recorded: own };
+  }
+
+  function bookingGuestLine(x) {
+    if (x.nth === 1) return 'First visit';
+    return L.ordinal(x.nth) + ' visit · last time ' + fmtDay(x.prev.date) + (x.prev.items && x.prev.items.length ? ': ' + itemsText(x.prev.items, 3) : '');
+  }
+
+  function guestBadge(d, r) {
+    const gid = L.guestIdFor(r.phone, cc());
+    if (!gid || r.source === 'kitchen') return '';
+    const g = d.guestById[gid];
+    if (!g) return '<button type="button" class="pill guest-new" data-act="booking-guest" data-id="' + esc(r.id) + '" title="Save this guest to recognise them next time">Save guest</button>';
+    const x = bookingGuest(d, r);
+    return '<button type="button" class="pill guest" data-act="open-guest" data-id="' + esc(gid) + '">' +
+      esc(L.ordinal(x.nth)) + ' visit' + (g.notes ? ' · note' : '') + '</button>';
+  }
+
+  function guestsTodayPanel(d) {
+    const rows = d.todays.map(function (r) {
+      const x = bookingGuest(d, r);
+      if (!x || (x.nth === 1 && !x.g.notes)) return null;
+      return Object.assign({ r: r }, x);
+    }).filter(Boolean);
+    if (!rows.length) return '';
+    return '<section class="panel flush"><div class="section-head"><h2>Guests to know today</h2><a class="small" href="#guests">Guests</a></div><div class="rows">' +
+      rows.map(function (x) {
+        const fav = x.st.favourites.slice(0, 3).map(function (f) { return f.name; }).join(', ');
+        return '<div class="row"><div class="row-main"><div class="row-title"><span class="name">' + esc(x.r.time || '') + ' ' + esc(x.g.name || x.r.name || 'Guest') + '</span>' +
+          '<span class="pill guest">' + esc(L.ordinal(x.nth)) + ' visit</span></div>' +
+          '<div class="row-meta">' + esc(plural(L.num(x.r.covers, 0), 'cover')) + (fav ? ' · likes ' + esc(fav) : '') + '</div>' +
+          (x.g.notes ? '<div class="guest-note">' + esc(x.g.notes) + '</div>' : '') + '</div><span></span>' +
+          '<button type="button" class="btn sm" data-act="open-guest" data-id="' + esc(x.g.id) + '">Open</button></div>';
+      }).join('') + '</div></section>';
+  }
+
+  function viewGuests(d) {
+    const q = ui.guests.q.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    const list = d.guests.filter(function (g) {
+      if (!q) return true;
+      if (qDigits.length >= 3 && String(g.phone || '').replace(/\D/g, '').indexOf(qDigits.replace(/^0/, '')) > -1) return true;
+      return [g.name, g.notes].join(' ').toLowerCase().indexOf(q) > -1;
+    }).map(function (g) { return { g: g, st: d.statsFor(g.id) }; })
+      .sort(function (a, b) { return String(b.st.last || '').localeCompare(String(a.st.last || '')) || String(a.g.name || '').localeCompare(String(b.g.name || '')); });
+    const visits = d.visits.length;
+    const head = frontHead('guests', 'Guests', plural(d.guests.length, 'guest') + ' · ' + plural(visits, 'visit') + ' recorded',
+      '<button type="button" class="btn" data-act="guests-from-bookings">From bookings</button><button type="button" class="btn primary" data-act="new-guest">' + ICON.plus + 'Guest</button>');
+    const search = '<label class="search" for="guest-q">' + ICON.search + '<input type="search" id="guest-q" data-bind="guest-q" inputmode="search" placeholder="Phone number or name" value="' + esc(ui.guests.q) + '" autocomplete="off"></label>';
+    let body;
+    if (!d.guests.length) {
+      body = '<section class="panel"><div class="empty"><strong>No guests yet</strong>' +
+        '<span>Guests are recognised by their phone number. Add them by hand, save them from a booking, or build the list from all bookings that have a phone number.</span>' +
+        '<div class="actions"><button type="button" class="btn primary" data-act="guests-from-bookings">Build from bookings</button><button type="button" class="btn" data-act="new-guest">Add a guest</button></div></div></section>';
+    } else if (!list.length) {
+      body = '<section class="panel"><div class="empty"><span>No guest matches “' + esc(ui.guests.q) + '”.</span>' +
+        '<button type="button" class="btn sm" data-act="new-guest" data-phone="' + esc(qDigits.length >= 6 ? ui.guests.q : '') + '">Add as a new guest</button></div></section>';
+    } else {
+      body = '<section class="panel flush"><div class="rows">' + list.slice(0, 200).map(function (x) {
+        const fav = x.st.favourites.slice(0, 3).map(function (f) { return f.name; }).join(', ');
+        return '<div class="row"><div class="row-main"><div class="row-title"><span class="name">' + esc(x.g.name || 'No name') + '</span>' +
+          (x.g.notes ? '<span class="pill low" title="' + esc(x.g.notes) + '">Note</span>' : '') + examplePill(x.g) + '</div>' +
+          '<div class="row-meta"><span class="num">' + esc(x.g.phone || '') + '</span> · ' + esc(guestLine(x.st, false)) + (fav ? ' · likes ' + esc(fav) : '') + '</div></div><span></span>' +
+          '<button type="button" class="btn sm" data-act="open-guest" data-id="' + esc(x.g.id) + '">Open</button></div>';
+      }).join('') + '</div></section>' + (list.length > 200 ? '<p class="small muted">Showing the 200 most recent. Search to find others.</p>' : '');
+    }
+    return head + banners(d) + search + body +
+      '<p class="small muted">Guest details are personal data. Keep only what helps you look after them, tell guests you keep it, and delete a guest’s record when they ask.</p>';
+  }
+
+  function guestSheet(s) {
+    const g = s.id ? store.get('guests', s.id) || {} : (s.preset || {});
+    const st = s.id ? L.guestStats(s.id, store.list('visits')) : null;
+    let history = '';
+    if (st) {
+      history = '<section class="stack"><div class="section-head"><h3>Visits</h3><button type="button" class="btn sm primary" data-act="add-visit" data-guest="' + esc(s.id) + '">' + ICON.plus + 'Visit</button></div>' +
+        (st.count ? '<p class="small muted" style="margin:0">' + plural(st.count, 'visit') + ' · first ' + esc(fmtDay(st.first)) + ' · last ' + esc(fmtDay(st.last)) + (st.spent ? ' · spent ' + esc(money(st.spent)) : '') + '</p>' : '') +
+        (st.favourites.length ? '<div class="chips-inline">' + st.favourites.slice(0, 8).map(function (f) { return '<span class="pill">' + esc(f.name) + (f.visits > 1 ? ' ×' + f.visits : '') + '</span>'; }).join('') + '</div>' : '') +
+        (st.count ? '<div class="rows panel flush">' + st.visits.map(function (v) {
+          return '<div class="row"><div class="row-main"><div class="row-title"><span class="name">' + esc(fmtDay(v.date)) + (v.time ? ' ' + esc(v.time) : '') + '</span>' +
+            '<span class="muted small">' + esc(plural(L.num(v.covers, 0), 'cover')) + (L.num(v.total, 0) ? ' · ' + esc(money(v.total)) : '') + '</span></div>' +
+            '<div class="row-meta">' + (v.items && v.items.length ? esc(itemsText(v.items, 12)) : 'Nothing recorded yet') + (v.note ? ' · “' + esc(v.note) + '”' : '') + '</div></div><span></span>' +
+            '<button type="button" class="btn ghost sm" data-act="edit-visit" data-id="' + esc(v.id) + '">Edit</button></div>';
+        }).join('') + '</div>' : '<p class="muted small" style="margin:0">No visits recorded yet.</p>') + '</section>';
+    }
+    return {
+      title: s.id ? (g.name || 'Guest') : 'New guest',
+      body: '<form data-form="guest" id="guest-form" class="form-grid">' +
+        inputField('phone', 'Phone number', g.phone, { type: 'tel', mode: 'tel', required: true, autofocus: !s.id, hint: 'How the guest is recognised. Foreign numbers start with + or 00.' }) +
+        inputField('name', 'Name', g.name) +
+        '<label class="field wide" for="f-notes"><span>Notes</span><textarea id="f-notes" name="notes" style="min-height:64px" placeholder="Allergies, favourite table, birthday, how they like their steak…">' + esc(g.notes) + '</textarea></label>' +
+        '<label class="check wide" for="f-consent"><input type="checkbox" id="f-consent" name="consent"' + (g.consent ? ' checked' : '') + '><span>The guest knows we keep their visits and is fine with it</span></label>' +
+        '</form>' + history,
+      foot: deleteFoot(s, 'guest and all their visits', 'guest-form')
+    };
+  }
+
+  function visitSheet(s) {
+    const v = s.draft;
+    const g = store.get('guests', v.guestId) || {};
+    const menu = (derive().kitchenMenu || []);
+    const sellable = store.list('items').filter(function (i) { return L.servesOf(i).length; }).sort(byName);
+    const wines = sellable.filter(function (i) { return i.kind === 'wine'; });
+    const drinks = sellable.filter(function (i) { return i.kind === 'drink'; });
+    const opt = function (value, label) { return '<option value="' + esc(value) + '">' + esc(label) + '</option>'; };
+    const lines = v.items || [];
+    return {
+      title: (s.id ? 'Visit' : 'New visit') + ' · ' + (g.name || g.phone || 'Guest'),
+      body: '<div class="form-grid">' +
+        '<label class="field" for="v-date"><span>Date</span><input type="date" id="v-date" data-vbind="date" value="' + esc(v.date || '') + '"></label>' +
+        '<label class="field" for="v-time"><span>Time</span><input type="time" id="v-time" data-vbind="time" value="' + esc(v.time || '') + '"></label>' +
+        '<label class="field" for="v-covers"><span>Covers</span><input type="text" inputmode="numeric" id="v-covers" data-vbind="covers" value="' + esc(v.covers || '') + '"></label>' +
+        '<label class="field" for="v-total"><span>Bill total (optional)</span><input type="text" inputmode="decimal" id="v-total" data-vbind="total" value="' + esc(v.total === undefined ? '' : v.total) + '"></label></div>' +
+        '<section class="stack"><h3>What they had</h3>' +
+        (lines.length ? '<div class="table-wrap"><table class="line-table"><tbody>' + lines.map(function (l, idx) {
+          return '<tr><td>' + esc(l.name) + (l.kind ? ' <span class="muted small">' + esc(l.kind) + '</span>' : '') + '</td>' +
+            '<td class="r"><label class="sr-only" for="vl-' + idx + '">How many ' + esc(l.name) + '</label><input type="text" inputmode="decimal" class="count-input" style="width:70px!important" id="vl-' + idx + '" data-vline="' + idx + '" value="' + esc(qtyText(l.qty || 1)) + '"></td>' +
+            '<td><button type="button" class="btn ghost sm" data-act="vline-remove" data-i="' + idx + '" aria-label="Remove ' + esc(l.name) + '">Remove</button></td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="muted small" style="margin:0">Nothing added yet.</p>') +
+        '<label class="field" for="v-add"><span>Add from the menu or the wine list</span><select id="v-add" data-bind="vline-add"><option value="">Choose…</option>' +
+        (menu.length ? '<optgroup label="Menu (Kitchen Book)">' + menu.map(function (m) { return opt('dish|' + m.name, m.name); }).join('') + '</optgroup>' : '') +
+        (wines.length ? '<optgroup label="Wine">' + wines.map(function (w) {
+          return L.servesOf(w).map(function (sv) { return opt('wine|' + w.name + (w.vintage ? ' ' + w.vintage : '') + (sv.id === 'glass' ? ' (glass)' : ''), w.name + (w.vintage ? ' ' + w.vintage : '') + ' · ' + sv.label); }).join('');
+        }).join('') + '</optgroup>' : '') +
+        (drinks.length ? '<optgroup label="Drinks">' + drinks.map(function (i) { return opt('drink|' + i.name, i.name); }).join('') + '</optgroup>' : '') +
+        '</select></label>' +
+        '<div class="toolbar"><label class="sr-only" for="v-free">Something else</label><input type="text" id="v-free" placeholder="Something else, e.g. tasting menu" style="flex:1 1 220px"><button type="button" class="btn" data-act="vline-free">Add</button></div></section>' +
+        '<label class="field" for="v-note"><span>Note about this visit</span><textarea id="v-note" data-vbind="note" style="min-height:64px" placeholder="Anniversary, sat at table 7, loved the pairing…">' + esc(v.note || '') + '</textarea></label>' +
+        (s.message ? '<div class="note bad"><p>' + esc(s.message) + '</p></div>' : ''),
+      foot: (s.confirmDelete
+        ? '<span class="small" style="margin-right:auto">Delete this visit?</span><button type="button" class="btn" data-act="visit-undelete">Keep</button><button type="button" class="btn danger solid" data-act="visit-delete">Delete</button>'
+        : (s.id ? '<button type="button" class="btn danger" data-act="visit-ask-delete">Delete</button>' : '') + '<span class="spacer"></span>' +
+          '<button type="button" class="btn" data-act="open-guest" data-id="' + esc(v.guestId) + '">Back to guest</button><button type="button" class="btn primary" data-act="visit-save">Save visit</button>')
+    };
+  }
+
+  function openVisit(draft, id) {
+    openSheet({ type: 'visit', id: id || null, draft: clone(draft) });
+  }
+
   /* ---------- sheets (side panels) ---------- */
 
   let lastFocus = null;
 
   function openSheet(state) {
-    lastFocus = document.activeElement;
+    const wasOpen = !!(ui.sheet && sheetRoot.querySelector('.sheet'));
+    if (!wasOpen) lastFocus = document.activeElement;
     ui.sheet = state;
-    renderSheet(true);
+    if (!wasOpen) { renderSheet(true); return; }
+    // Going from one panel to the next (visit -> guest): swap the contents, no new slide-in.
+    renderSheet(false);
+    const body = document.getElementById('sheet-body');
+    if (body) body.scrollTop = 0;
+    const first = sheetRoot.querySelector('[autofocus]') || sheetRoot.querySelector('.sheet-body input, .sheet-body select, .sheet-body textarea');
+    if (first) first.focus();
   }
 
   function closeSheet() {
@@ -1276,6 +1476,8 @@
 
     order: function (s) { return orderSheet(s); },
     linkAsk: function (s) { return linkAskSheet(s); },
+    guest: function (s) { return guestSheet(s); },
+    visit: function (s) { return visitSheet(s); },
     importKitchen: function (s) { return importKitchenSheet(s); },
     importSales: function (s) { return importSalesSheet(s); },
     importItems: function (s) { return importItemsSheet(s); },
@@ -1621,7 +1823,7 @@
     inc: 1, dec: 1, 'count-save': 1, 'new-item': 1, 'new-supplier': 1, 'new-booking': 1, 'new-order': 1, 'start-order': 1,
     'load-examples': 1, 'remove-examples': 1, 'erase-all': 1, 'confirm-erase': 1, 'import-items': 1, 'import-bookings': 1, 'import-backup': 1,
     'receive-order': 1, 'count-start': 1, sell: 1, 'undo-sale': 1, 'new-wine': 1, 'new-drink': 1, 'import-sales': 1,
-    'import-kitchen': 1, 'link-ask': 1
+    'import-kitchen': 1, 'link-ask': 1, 'new-guest': 1, 'booking-guest': 1, 'guests-from-bookings': 1, 'add-visit': 1, 'booking-visit': 1, 'visit-save': 1
   };
 
   function bump(id, dir) {
@@ -1689,7 +1891,10 @@
     'sheet-undelete': function () { ui.sheet.confirmDelete = false; renderSheetFoot(); },
     'sheet-delete': function () {
       const s = ui.sheet;
-      const col = { item: 'items', supplier: 'suppliers', booking: 'reservations' }[s.type];
+      const col = { item: 'items', supplier: 'suppliers', booking: 'reservations', guest: 'guests' }[s.type];
+      if (s.type === 'guest') {
+        store.list('visits').filter(function (v) { return v.guestId === s.id; }).forEach(function (v) { store.remove('visits', v.id); });
+      }
       if (s.type === 'supplier') {
         store.list('items').filter(function (i) { return i.supplierId === s.id; }).forEach(function (i) { store.patch('items', i.id, { supplierId: '' }); });
       }
@@ -1825,6 +2030,73 @@
     'cash-refresh': function () { loadCash(true); },
     'cash-unlink': function () { store.saveSettings({ cashSheet: '' }); ui.cash = { state: 'idle' }; render(); },
     'cash-day': function (el) { ui.cash.sel = Number(el.dataset.day); render(); },
+    /* guests */
+    'new-guest': function (el) { openSheet({ type: 'guest', preset: { phone: (el && el.dataset.phone) || '' } }); },
+    'open-guest': function (el) {
+      if (!store.get('guests', el.dataset.id)) { toast('That guest is no longer in the list.', 'bad'); return; }
+      openSheet({ type: 'guest', id: el.dataset.id });
+    },
+    'booking-guest': function (el) {
+      const r = store.get('reservations', el.dataset.id);
+      const id = r && L.guestIdFor(r.phone, cc());
+      if (!id) return;
+      if (!store.get('guests', id)) store.put('guests', { id: id, phone: L.normalizePhone(r.phone, cc()), name: r.name || '' });
+      openSheet({ type: 'guest', id: id });
+    },
+    'booking-visit': function (el) {
+      const r = store.get('reservations', el.dataset.id);
+      const id = r && L.guestIdFor(r.phone, cc());
+      if (!id) return;
+      const existing = store.list('visits').find(function (v) { return v.bookingId === r.id; });
+      if (existing) openVisit(existing, existing.id);
+      else openVisit({ guestId: id, bookingId: r.id, date: r.date, time: r.time || '', covers: L.num(r.covers, 0), items: [], source: 'booking' });
+    },
+    'guests-from-bookings': function () {
+      const out = L.guestsFromBookings(store.list('reservations'), store.list('guests'), store.list('visits'), L.isoDate(new Date()), cc());
+      out.guests.forEach(function (g) { store.put('guests', g); });
+      out.visits.forEach(function (v) { store.put('visits', v); });
+      toast(out.guests.length || out.visits.length ? plural(out.guests.length, 'guest') + ' and ' + plural(out.visits.length, 'past visit') + ' added from bookings' : 'Every booking with a phone number is already in the guest list');
+      if (ui.view !== 'guests') location.hash = '#guests';
+    },
+    'add-visit': function (el) {
+      const t = new Date();
+      openVisit({ guestId: el.dataset.guest, date: L.isoDate(t), time: '', covers: 2, items: [], source: 'manual' });
+    },
+    'edit-visit': function (el) {
+      const v = store.get('visits', el.dataset.id);
+      if (v) openVisit(v, v.id);
+    },
+    'vline-remove': function (el) { ui.sheet.draft.items.splice(Number(el.dataset.i), 1); renderSheet(); },
+    'vline-free': function () {
+      const input = document.getElementById('v-free');
+      const name = input.value.trim();
+      if (!name) return;
+      ui.sheet.draft.items = (ui.sheet.draft.items || []).concat([{ name: name, qty: 1 }]);
+      renderSheet();
+      const again = document.getElementById('v-free');
+      if (again) again.focus();
+    },
+    'visit-save': function () {
+      const s = ui.sheet;
+      const v = s.draft;
+      if (!L.fromIso(v.date)) { s.message = 'Pick the date of the visit.'; renderSheet(); return; }
+      v.covers = Math.max(0, Math.round(L.parseNum(v.covers) || 0));
+      const total = L.parseNum(v.total);
+      if (Number.isFinite(total)) v.total = L.round(total, 2); else delete v.total;
+      v.items = (v.items || []).filter(function (i) { return i.name; });
+      store.put('visits', Object.assign({}, v, { id: s.id || undefined }));
+      toast('Visit saved');
+      openSheet({ type: 'guest', id: v.guestId });
+    },
+    'visit-ask-delete': function () { ui.sheet.confirmDelete = true; renderSheetFoot(); },
+    'visit-undelete': function () { ui.sheet.confirmDelete = false; renderSheetFoot(); },
+    'visit-delete': function () {
+      const s = ui.sheet;
+      store.remove('visits', s.id);
+      toast('Visit deleted');
+      openSheet({ type: 'guest', id: s.draft.guestId });
+    },
+
     /* bar */
     'bar-tab': function (el) { ui.bar.tab = el.dataset.tab; render(); },
     'bar-range': function (el) { ui.bar.range = el.dataset.range; render(); },
@@ -2065,6 +2337,8 @@
       addRecords('reservations', sample.reservations);
       addRecords('orders', sample.orders);
       addRecords('moves', sample.moves);
+      addRecords('guests', sample.guests.filter(function (g) { return !store.get('guests', g.id); }));
+      addRecords('visits', sample.visits);
       // Never replace real Kitchen Book data with the example versions.
       addRecords('kitchen', sample.kitchen.filter(function (k) { const cur = store.get('kitchen', k.id); return !cur || cur.example; }));
       if (!L.num(store.settings.normalCoversWeek, 0)) store.saveSettings({ normalCoversWeek: 150 });
@@ -2179,6 +2453,27 @@
       store.put('suppliers', sup);
       toast(s.id ? 'Supplier saved' : sup.name + ' added');
     },
+    guest: function (o, s) {
+      const phone = L.normalizePhone(o.phone, cc());
+      if (!phone) return 'Add the phone number: it is how the guest is recognised.';
+      const id = 'g' + phone.slice(1);
+      const current = s.id ? store.get('guests', s.id) || {} : {};
+      const other = store.get('guests', id);
+      if (other && id !== s.id) return 'That number already belongs to ' + (other.name || 'another guest') + '.';
+      if (s.id && s.id !== id) {
+        // The number changed: move the visits to the new record.
+        store.list('visits').filter(function (v) { return v.guestId === s.id; }).forEach(function (v) { store.patch('visits', v.id, { guestId: id }); });
+        store.remove('guests', s.id);
+      }
+      store.put('guests', Object.assign({}, current, {
+        id: id,
+        phone: phone,
+        name: String(o.name || '').trim(),
+        notes: String(o.notes || '').trim(),
+        consent: !!o.consent
+      }));
+      toast(s.id ? 'Guest saved' : 'Guest added');
+    },
     booking: function (o, s) {
       const current = s.id ? store.get('reservations', s.id) || {} : {};
       const r = Object.assign({}, current, {
@@ -2215,6 +2510,7 @@
         inboxQuery: String(o.inboxQuery || '').trim(),
         invoiceQuery: String(o.invoiceQuery || '').trim(),
         cashSheet: String(o.cashSheet || '').trim(),
+        phoneCountry: String(o.phoneCountry || '').replace(/\D/g, '') || '359',
         cashCurrency: String(o.cashCurrency || '').trim().toUpperCase().slice(0, 3),
         bookingsQuery: String(o.bookingsQuery || '').trim()
       });
@@ -2247,6 +2543,15 @@
       ui.stock.q = t.value;
       clearTimeout(searchTimer);
       searchTimer = setTimeout(render, 120);
+    } else if (t.dataset.bind === 'guest-q') {
+      ui.guests.q = t.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(render, 120);
+    } else if (t.dataset.vbind && ui.sheet && ui.sheet.type === 'visit') {
+      ui.sheet.draft[t.dataset.vbind] = t.value;
+    } else if (t.dataset.vline !== undefined && ui.sheet && ui.sheet.type === 'visit') {
+      const q = L.parseNum(t.value);
+      ui.sheet.draft.items[Number(t.dataset.vline)].qty = Number.isFinite(q) && q > 0 ? q : 1;
     } else if (t.dataset.bind === 'bar-q') {
       ui.bar.q = t.value;
       clearTimeout(searchTimer);
@@ -2281,6 +2586,12 @@
       document.getElementById('wine-fields').hidden = t.value !== 'wine';
       const unit = document.getElementById('f-unit');
       if (t.value === 'wine' || (t.value === 'drink' && /^(pcs|)$/.test(unit.value))) unit.value = 'bottle';
+      return;
+    }
+    if (s.type === 'visit' && t.dataset.bind === 'vline-add' && t.value) {
+      const parts = t.value.split('|');
+      s.draft.items = (s.draft.items || []).concat([{ name: parts.slice(1).join('|'), kind: parts[0], qty: 1 }]);
+      renderSheet();
       return;
     }
     if (s.type === 'importSales') {
@@ -2390,7 +2701,7 @@
 
   function renderChrome(d) {
     const counts = { orders: d.toOrderIds.length, stock: d.out.length, bar: d.sellable.filter(function (i) { return d.status[i.id] === 'out'; }).length };
-    const navView = OFFICE.indexOf(ui.view) > -1 ? 'office' : ui.view;
+    const navView = OFFICE.indexOf(ui.view) > -1 ? 'office' : ui.view === 'guests' ? 'bookings' : ui.view;
     document.querySelectorAll('[data-nav]').forEach(function (a) {
       const v = a.dataset.nav;
       if (v === navView) a.setAttribute('aria-current', 'page');
@@ -2431,7 +2742,7 @@
     const d = derive();
     renderChrome(d);
     const html = {
-      today: viewToday, stock: viewStock, orders: viewOrders, bar: viewBar, bookings: viewBookings, cash: viewCash, invoices: viewInvoices, inbox: viewInbox, setup: viewSetup
+      today: viewToday, stock: viewStock, orders: viewOrders, bar: viewBar, bookings: viewBookings, guests: viewGuests, cash: viewCash, invoices: viewInvoices, inbox: viewInbox, setup: viewSetup
     }[ui.view](d);
     // Setup is a form: don't wipe what someone is typing when another person's change arrives.
     const a = document.activeElement;
