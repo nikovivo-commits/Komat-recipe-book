@@ -107,6 +107,22 @@
     setTimeout(gone, ms || 3500);
   };
 
+  /* DO, written by hand in Sharpie. Fresh marks are drawn stroke by stroke, like on the paper sheet */
+  const DO_PATHS = [
+    'M9.5 6.5c-.3 6.8-.1 13.6.2 20.6',
+    'M8.6 7.4c6.4-2.3 13.2.1 14.4 7.3 1.1 6.6-4.1 11.6-13.9 12.6',
+    'M35.6 6.8c-6.3.3-9.1 6.7-8.4 12 .7 5.3 4.4 8.6 9.1 7.9 5.2-.8 7.9-6.3 7.1-11.7-.7-4.8-4-8.6-9-7.6-1.6.4-2.8 1.3-3.6 2.4',
+    'M4.5 31.2c11.4-1.9 25.5-2.3 41.3-.6',
+  ];
+  K.doMark = function (draw) {
+    const s = document.createElement('span');
+    s.className = 'domark' + (draw && !reduced() ? ' draw' : '');
+    s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = '<svg viewBox="0 0 50 34" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' +
+      DO_PATHS.map((d, i) => '<path pathLength="1" style="--i:' + i + '" d="' + d + '"/>').join('') + '</svg>';
+    return s;
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;

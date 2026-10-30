@@ -40,7 +40,9 @@ service cloud.firestore {
           || (request.resource.data.role == 'admin' && owner()));
       // you can change your own name; anyone with the full rights can also change roles, but the owner keeps the full rights
       allow update: if goodName(request.resource.data) && (
-          (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']))
+          (signedIn() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'ink', 'hand'])
+            && (!('ink' in request.resource.data) || (request.resource.data.ink is string && request.resource.data.ink.size() <= 12))
+            && (!('hand' in request.resource.data) || (request.resource.data.hand is string && request.resource.data.hand.size() <= 20)))
           || (admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'role'])
             && request.resource.data.role in ['cook', 'sous', 'admin', 'dev'] && (fullRole(request.resource.data.role) || !isOwnerDoc(uid))));
       allow delete: if signedIn() && (request.auth.uid == uid || (admin() && !isOwnerDoc(uid)));

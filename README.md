@@ -15,6 +15,7 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
   - **Print**: the small printer icon next to To do prints a black-and-white sheet with tick boxes and lines to write on, for today or tomorrow, one station or all three (one page each). On the stand-alone site; the Claude version cannot print.
   - **Tomorrow's prep list**: from the closing hour (21:00 by default, set in Kitchen rules) the mise en place list switches to tomorrow. Whoever closes marks DO on what the next shift must make, and the morning shift finds it on its list and to-do. A Today / Tomorrow switch is always there. The kitchen day runs until 4 am.
   - **Three tabs**: on a phone Today shows one list at a time: To do (with the count), Mise en place (ready / total) and Tomorrow. Done tasks fold into one "N done" row under the list. On a wide screen everything sits side by side.
+  - **Your marker**: the first time you open the app you pick your handwriting (12 styles, all with Cyrillic) and your Sharpie colour (8). DO is drawn on in Sharpie when you tap, done lines get a marker stroke through them, and comments are written in the writer's own hand and colour with their name, so the next shift knows who wrote what. Change it in Settings → Your marker.
   - **The + button**: the round + at the bottom right opens Add a task (it grows out of the button): type it, pick Today or Tomorrow, flip Urgent, pick the station. It steps aside while you scroll down the list.
   - **All ready**: a mise en place dish with more than one row left has an All ready button; its boxes tick one after another and the whole dish is saved in one go, with Undo.
   - **A clean list every day**: nothing left unticked comes back the next day, so tomorrow's prep list starts empty and each morning starts with a fresh to-do. Only what was planned for that day comes through: the DO marks made for it, the notes left for it, its repeating tasks and the event prep that falls due that day.
@@ -102,6 +103,7 @@ js/timers.js        timers found in method text
 js/gestures.js      swipeable rows, drag-to-close sheets, confetti
 js/motion.js        page fades, the photo morph, folding rows, rolling numbers, sliding pills
 js/moments.js       timer, order-sent and new-day scenes, tick sparks, count-up
+js/ink.js           each person's marker: handwriting and colour
 js/app.js           boot, routing, header, tab bar
 js/photos.js        page photos, galleries, photo viewer, quiet-state cat
 js/recipes.js       list, recipe pages, scaling, cook mode

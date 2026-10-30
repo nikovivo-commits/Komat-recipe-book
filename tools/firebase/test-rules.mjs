@@ -61,6 +61,9 @@ await expect('cook cannot read the kitchen code', false, () => getDoc(cook.d('pr
 await expect('cook cannot change the kitchen code', false, () => setDoc(cook.d('private/join'), { code: 'mine-123', at: 4 }));
 await expect('cook cannot make themselves head chef', false, () => updateDoc(cook.d('members/' + C), { role: 'admin' }));
 await expect('cook renames themselves', true, () => updateDoc(cook.d('members/' + C), { name: 'Sam K' }));
+await expect('cook picks their marker and handwriting', true, () => updateDoc(cook.d('members/' + C), { ink: 'green', hand: 'marck' }));
+await expect('...but not with a long made-up value', false, () => updateDoc(cook.d('members/' + C), { ink: 'x'.repeat(40) }));
+await expect('...and not someone else\'s', false, () => updateDoc(cook.d('members/' + A), { ink: 'red' }));
 await expect('cook cannot remove the head chef', false, () => deleteDoc(cook.d('members/' + A)));
 await expect('cook cannot write to unknown places', false, () => setDoc(cook.d('secrets/x'), { a: 1 }));
 

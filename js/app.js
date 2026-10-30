@@ -112,6 +112,7 @@
       }
     }
     if (out.after) out.after();
+    if (K.inkPrompt && K.inkPrompt()) setTimeout(() => render(), 0);
   }
   K.render = render;
   const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 24);

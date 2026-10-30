@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Neucha&family=Marck+Script&family=Amatic+SC:wght@700&family=Pangolin&family=Bad+Script&family=Shantell+Sans:wght@600&family=Pacifico&family=Comforter+Brush&family=Underdog&family=Lobster&family=Rubik+Wet+Paint&family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: a steel "pass" band (header, page heads) over pale board-formed concrete; stoneware-white
    cards hold the work. Phones get one column and a thumb-reach tab bar; wide screens split work | brief. */
@@ -26,6 +26,8 @@
   --ready-ink: #FFFFFF;
   --ready-soft: #DFEEE4;
   --todo: #EDBE45;
+  --pen: #1F48B8;
+  --pen-soft: #E3EAFB;
   --todo-ink: #3D2C00;
   --todo-soft: #FBF0D2;
   --urgent: #C42F1C;
@@ -52,7 +54,7 @@
     --steel: #0C0C0C; --steel-2: #1A1A1A; --on-steel: #F2F2EE; --steel-muted: #9B9E9A;
     --apron: #D09B90; --apron-ink: #1E1210; --apron-soft: #3A2723; --apron-on-steel: #E0AFA3;
     --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
-    --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
+    --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
     --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
     --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
@@ -64,7 +66,7 @@
   --steel: #0C0C0C; --steel-2: #1A1A1A; --on-steel: #F2F2EE; --steel-muted: #9B9E9A;
   --apron: #D09B90; --apron-ink: #1E1210; --apron-soft: #3A2723; --apron-on-steel: #E0AFA3;
   --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
-  --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
+  --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
   --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
   --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
@@ -674,7 +676,7 @@ button.todo-main { cursor: pointer; }
 .mrow.dragging .sw-in { box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .4); }
 .mbox { display: grid; place-items: center; width: 50px; height: 38px; border-radius: 8px; border: 2px dashed var(--line); background: transparent; color: var(--ink); font: 800 .82rem/1 var(--mono); letter-spacing: .04em; }
 .mbox:hover { border-color: var(--muted); }
-.mbox.do { border: 0; background: var(--todo); color: var(--todo-ink); clip-path: polygon(0 0, 100% 0, 94% 25%, 100% 50%, 94% 75%, 100% 100%, 0 100%, 6% 75%, 0 50%, 6% 25%); transform: rotate(-2deg); }
+.mbox.do { border-color: transparent; background: transparent; color: var(--pen); }
 .mbox.ok { border: 0; background: var(--ready); color: var(--ready-ink); }
 .mbox.ok .ico { width: 22px; height: 22px; }
 .mbox.pop { animation: pop .42s cubic-bezier(.3, 1.6, .5, 1); }
@@ -1414,6 +1416,85 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rb-val { min-width: 48px; text-align: center; font-size: 1.05rem; font-weight: 700; }
 .rb-cook { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border: 0; border-radius: 14px; background: var(--apron); color: #fff; font: 700 1.05rem var(--sans); }
 .rb-cook .ico { width: 22px; height: 22px; }
+
+/* DO in blue pen: the swipe and the counts follow the pen instead of the old yellow */
+.domark { display: block; width: 44px; height: 30px; transform: rotate(-4deg); }
+.domark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.domark.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .2s cubic-bezier(.4, 0, .6, 1) forwards; animation-delay: calc(var(--i) * .17s); }
+.domark.draw path:nth-child(3) { animation-duration: .32s; }
+.domark.draw path:nth-child(4) { animation-duration: .18s; animation-delay: .66s; }
+@keyframes pen-write { to { stroke-dashoffset: 0; } }
+.mbox.sample.do .domark { width: 30px; height: 21px; }
+.mrow.sw-l .sw-bg { background: var(--pen-soft); color: var(--pen); }
+.mrow .sw-do { font-family: var(--display); font-size: 1.4rem; transform: rotate(-4deg); }
+.gcount.tomake { color: var(--pen); background: var(--pen-soft); }
+@media (prefers-reduced-motion: reduce) { .domark.draw path { animation: none; stroke-dashoffset: 0; } }
+
+/* the sheet in Sharpie: comments are handwritten, done lines get a marker stroke through them */
+:root { --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive; }
+.tnote { padding-left: 0; border-left: 0; color: var(--pen); font: 700 1.28rem/1.05 var(--hand); font-style: normal; transform: rotate(-.6deg); transform-origin: left center; }
+.tnote.draw { animation: hand-write .9s steps(18, end) both; }
+@keyframes hand-write { from { clip-path: inset(-10% 100% -10% 0); } to { clip-path: inset(-10% 0 -10% 0); } }
+.urgrow .tnote { color: inherit; }
+.input.hand { font: 700 1.3rem/1.2 var(--hand); color: var(--pen); }
+.mrow.ok .mname > :first-child { text-decoration: none; background: linear-gradient(var(--pen), var(--pen)) no-repeat 0 58% / 100% 3px; }
+.mrow.ok.struck .mname > :first-child { animation: sharpie-strike .35s cubic-bezier(.5, 0, .3, 1) both; }
+@keyframes sharpie-strike { from { background-size: 0 3px; } }
+@media (prefers-reduced-motion: reduce) { .tnote.draw, .mrow.ok.struck .mname > :first-child { animation: none; } }
+
+.fm-paper { position: absolute; left: 50%; top: 50%; display: grid; gap: 14px; align-content: start; width: 220px; height: 290px; margin: -145px 0 0 -110px; padding: 20px 18px; box-sizing: border-box; border-radius: 4px; background: #FBFAF4; box-shadow: 0 16px 30px -12px rgba(0, 0, 0, .6); animation: paper-toss 1.2s cubic-bezier(.5, 0, .7, .4) .25s both; }
+.fm-paper b { color: #1F48B8; font: 700 1.5rem/1 var(--hand); }
+.fm-paper i { display: block; height: 4px; border-radius: 2px; background: #1F48B8; opacity: .8; transform: rotate(var(--r)); }
+@keyframes paper-toss { 0% { transform: none; border-radius: 4px; } 35% { transform: scale(.55) rotate(-14deg); border-radius: 40%; filter: brightness(.95); } 55% { transform: scale(.32) rotate(30deg); border-radius: 50%; } 100% { transform: translate(140px, 70vh) scale(.26) rotate(260deg); border-radius: 50%; opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .fm-paper { display: none; } }
+
+/* each person's marker colour: DO, strike and comments take the writer's ink */
+.ink-black { --pen: #1C1B1A; }
+.ink-blue { --pen: #1F48B8; }
+.ink-red { --pen: #B3261E; }
+.ink-green { --pen: #1E7A44; }
+.ink-purple { --pen: #6B3FA0; }
+.ink-orange { --pen: #C2570C; }
+.ink-teal { --pen: #0E7C86; }
+.ink-pink { --pen: #B83280; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ink-black { --pen: #ECEAE4; } :root:not([data-theme="light"]) .ink-blue { --pen: #93B4FF; } :root:not([data-theme="light"]) .ink-red { --pen: #FF8F86; } :root:not([data-theme="light"]) .ink-green { --pen: #7BD3A0; } :root:not([data-theme="light"]) .ink-purple { --pen: #C9A8F2; } :root:not([data-theme="light"]) .ink-orange { --pen: #FFB27A; } :root:not([data-theme="light"]) .ink-teal { --pen: #6FD6DE; } :root:not([data-theme="light"]) .ink-pink { --pen: #F59AC9; } }
+:root[data-theme="dark"] .ink-black { --pen: #ECEAE4; } :root[data-theme="dark"] .ink-blue { --pen: #93B4FF; } :root[data-theme="dark"] .ink-red { --pen: #FF8F86; } :root[data-theme="dark"] .ink-green { --pen: #7BD3A0; } :root[data-theme="dark"] .ink-purple { --pen: #C9A8F2; } :root[data-theme="dark"] .ink-orange { --pen: #FFB27A; } :root[data-theme="dark"] .ink-teal { --pen: #6FD6DE; } :root[data-theme="dark"] .ink-pink { --pen: #F59AC9; }
+.tnote-by { margin-left: 6px; font: 600 .95rem var(--hand); opacity: .85; white-space: nowrap; }
+.inkpick { display: grid; gap: 14px; }
+.ink-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ink-opt { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 12px; min-height: 64px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; font: inherit; }
+.ink-opt[aria-checked="true"] { border-color: var(--pen); box-shadow: 0 0 0 2px var(--pen) inset; }
+.ink-cap { grid-row: 1 / span 2; width: 18px; height: 40px; border-radius: 6px 6px 9px 9px; background: var(--pen); box-shadow: inset -3px 0 0 rgba(255, 255, 255, .18); }
+.ink-do { grid-column: 2; color: var(--pen); }
+.ink-do .domark { width: 40px; height: 27px; }
+.ink-opt b { grid-column: 2; font-weight: 700; }
+.ink-opt small { grid-column: 2; color: var(--muted); font-size: .75rem; }
+
+/* each person's handwriting */
+.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
+.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
+.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
+.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
+.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
+.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
+.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.tnote { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.1 var(--hand); }
+.input.hand { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.2 var(--hand); }
+.ink-h { margin: 6px 0 0; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hand-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.hand-opt { min-height: 60px; padding: 8px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--pen); text-align: left; font: var(--hand-w) var(--hand-s)/1.1 var(--hand); overflow: hidden; }
+.hand-opt[aria-checked="true"] { border-color: var(--pen); box-shadow: 0 0 0 2px var(--pen) inset; }
+.ink-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ink-opt { grid-template-columns: 1fr; justify-items: center; text-align: center; row-gap: 4px; min-height: 84px; }
+.ink-opt .ink-cap { grid-row: auto; }
+.ink-opt b, .ink-opt small { grid-column: auto; }
+.set-ink { flex: none; width: 14px; height: 30px; border-radius: 5px 5px 7px 7px; background: var(--pen); }
+.set-hand { font-family: var(--hand); font-weight: var(--hand-w); font-size: calc(var(--hand-s) * .9); color: var(--pen); }
 
 </style>
 <div id="app"></div>
@@ -3159,6 +3240,8 @@ window.KOMAT_PART_ART = [
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
     if (!('c' in patch) || Object.keys(patch).length > 1) { m.t = Date.now(); m.by = K.me.id || ''; }
+    if ('d' in patch && K.myInk) m.ink = K.myInk() || 'blue';
+    if ('c' in patch && K.myInk) { m.cink = K.myInk() || 'blue'; m.chand = (K.myHand && K.myHand()) || 'caveat'; m.cby = K.me.id || ''; }
     doc.marks[it.id] = m;
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
@@ -3180,6 +3263,7 @@ window.KOMAT_PART_ART = [
       const prev = doc.marks[x.it.id] ? K.clone(doc.marks[x.it.id]) : undefined;
       prevs[x.it.id] = prev;
       const m = Object.assign({}, prev || {}, x.patch, { n: x.it.name, t: Date.now(), by: K.me.id || '' });
+      if ('d' in x.patch && K.myInk) m.ink = K.myInk() || 'blue';
       if ('d' in x.patch && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
       doc.marks[x.it.id] = m;
       body.marks[x.it.id] = m;
@@ -3240,7 +3324,7 @@ window.KOMAT_PART_ART = [
     const body = { date: K.day(0), station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
     if (old && old.leftBy) { body.leftBy = old.leftBy; body.leftAt = old.leftAt || 0; }
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
-    if (nt) body.note = nt;
+    if (nt) { body.note = nt; if (old && old.noteInk && it.note === undefined) { body.noteInk = old.noteInk; if (old.noteHand) body.noteHand = old.noteHand; if (old.noteBy) body.noteBy = old.noteBy; } else if (it.note) { body.noteInk = (K.myInk && K.myInk()) || 'blue'; body.noteHand = (K.myHand && K.myHand()) || 'caveat'; body.noteBy = K.me.id || ''; } }
     if (u) body.urgentAt = (old && old.urgent && old.urgentAt) || Date.now();
     if (status === '') delete D.prep[id]; else D.prep[id] = body;
     K.refresh(true);
@@ -3252,7 +3336,7 @@ window.KOMAT_PART_ART = [
     const d = D.prep[id];
     if (!d) return;
     const b = K.clone(d);
-    if (text) b.note = text; else delete b.note;
+    if (text) { b.note = text; b.noteInk = (K.myInk && K.myInk()) || 'blue'; b.noteHand = (K.myHand && K.myHand()) || 'caveat'; b.noteBy = K.me.id || ''; } else { delete b.note; delete b.noteInk; delete b.noteHand; delete b.noteBy; }
     D.prep[id] = b;
     K.refresh(true);
     return K.db.doc('prep/' + id).set(b).catch((e) => { D.prep[id] = d; K.refresh(true); writeFailed(e); });
@@ -3870,6 +3954,22 @@ window.KOMAT_PART_ART = [
     setTimeout(gone, ms || 3500);
   };
 
+  /* DO, written by hand in Sharpie. Fresh marks are drawn stroke by stroke, like on the paper sheet */
+  const DO_PATHS = [
+    'M9.5 6.5c-.3 6.8-.1 13.6.2 20.6',
+    'M8.6 7.4c6.4-2.3 13.2.1 14.4 7.3 1.1 6.6-4.1 11.6-13.9 12.6',
+    'M35.6 6.8c-6.3.3-9.1 6.7-8.4 12 .7 5.3 4.4 8.6 9.1 7.9 5.2-.8 7.9-6.3 7.1-11.7-.7-4.8-4-8.6-9-7.6-1.6.4-2.8 1.3-3.6 2.4',
+    'M4.5 31.2c11.4-1.9 25.5-2.3 41.3-.6',
+  ];
+  K.doMark = function (draw) {
+    const s = document.createElement('span');
+    s.className = 'domark' + (draw && !reduced() ? ' draw' : '');
+    s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = '<svg viewBox="0 0 50 34" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' +
+      DO_PATHS.map((d, i) => '<path pathLength="1" style="--i:' + i + '" d="' + d + '"/>').join('') + '</svg>';
+    return s;
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;
@@ -3936,6 +4036,8 @@ window.KOMAT_PART_ART = [
     const back = h('div', { class: 'fresh-moment', role: 'status', onclick: () => end() },
       K.clip ? K.clip('sunrise', 'fm-clip') : null,
       h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
+      /* yesterday's sheet, scribbled in Sharpie, gets screwed up and thrown away */
+      h('div', { class: 'fm-paper', 'aria-hidden': 'true' }, h('b', null, 'Yesterday'), [72, 54, 80, 46, 66, 58].map((wd, i) => h('i', { style: { width: wd + '%', '--r': (i % 2 ? 1 : -1) * 1.5 + 'deg' } }))),
       h('div', { class: 'fm-in' },
         h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '03:59'), h('span', { class: 'b' }, '04:00')),
         h('h2', { class: 'fm-title' }, 'A fresh list'),
@@ -3963,6 +4065,93 @@ window.KOMAT_PART_ART = [
       else if (el.isConnected) el.textContent = String(to);
     };
     requestAnimationFrame(step);
+  };
+})();
+
+</script>
+<script>
+/* js/ink.js */
+/* Markers: everyone writes on the sheet in their own Sharpie colour, picked the first time they
+   open the app, so the kitchen can see who wrote a DO, crossed a line out or left a comment.
+   Each mark keeps the colour it was written in. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h;
+  K.SHEETS = K.SHEETS || {};
+  K.INKS = [
+    { k: 'black', name: 'Black', light: '#1C1B1A', dark: '#ECEAE4' },
+    { k: 'blue', name: 'Blue', light: '#1F48B8', dark: '#93B4FF' },
+    { k: 'red', name: 'Red', light: '#B3261E', dark: '#FF8F86' },
+    { k: 'green', name: 'Green', light: '#1E7A44', dark: '#7BD3A0' },
+    { k: 'purple', name: 'Purple', light: '#6B3FA0', dark: '#C9A8F2' },
+    { k: 'orange', name: 'Orange', light: '#C2570C', dark: '#FFB27A' },
+    { k: 'teal', name: 'Teal', light: '#0E7C86', dark: '#6FD6DE' },
+    { k: 'pink', name: 'Pink', light: '#B83280', dark: '#F59AC9' },
+  ];
+  K.HANDS = [
+    { k: 'caveat', name: 'Caveat' },
+    { k: 'neucha', name: 'Neucha' },
+    { k: 'marck', name: 'Marck Script' },
+    { k: 'amatic', name: 'Amatic SC' },
+    { k: 'pangolin', name: 'Pangolin' },
+    { k: 'badscript', name: 'Bad Script' },
+    { k: 'shantell', name: 'Shantell Sans' },
+    { k: 'pacifico', name: 'Pacifico' },
+    { k: 'comforter', name: 'Comforter Brush' },
+    { k: 'underdog', name: 'Underdog' },
+    { k: 'lobster', name: 'Lobster' },
+    { k: 'wetpaint', name: 'Rubik Wet Paint' },
+  ];
+  const known = (k) => K.INKS.some((x) => x.k === k), knownHand = (k) => K.HANDS.some((x) => x.k === k);
+  K.myHand = () => { const k = (K.me && K.me.hand) || K.store.get('hand', ''); return knownHand(k) ? k : ''; };
+  K.handClass = (k) => 'hand-' + (knownHand(k) ? k : 'caveat');
+  K.setHand = function (k) {
+    if (!knownHand(k)) return;
+    K.store.set('hand', k);
+    if (K.me) K.me.hand = k;
+    if (K.Fire && K.Fire.setHand && K.mode === 'firebase') K.Fire.setHand(k).catch(() => {});
+    K.render();
+  };
+  K.myInk = () => { const k = (K.me && K.me.ink) || K.store.get('ink', ''); return known(k) ? k : ''; };
+  K.inkClass = (k) => 'ink-' + (known(k) ? k : 'blue');
+
+  K.setInk = function (k) {
+    if (!known(k)) return;
+    K.store.set('ink', k);
+    if (K.me) K.me.ink = k;
+    if (K.Fire && K.Fire.setInk && K.mode === 'firebase') K.Fire.setInk(k).catch(() => {});
+    K.render();
+  };
+
+  /* who already writes in which colour (the kitchen's own database knows everyone) */
+  function takenBy() {
+    const out = {};
+    Object.keys(K.D.members || {}).forEach((id) => { const m = K.D.members[id]; if (m && m.ink && id !== (K.me && K.me.id)) (out[m.ink] = out[m.ink] || []).push(m.name || ''); });
+    return out;
+  }
+  K.SHEETS.ink = function (S) {
+    const ink = K.myInk() || 'blue', hand = K.myHand() || 'caveat', taken = takenBy();
+    const done = () => { if (!K.myInk()) K.setInk(ink); if (!K.myHand()) K.setHand(hand); K.ui.sheet = null; K.render(); K.toast('Your marker is ready', { tone: 'good' }); };
+    const sample = (K.me && K.me.name ? K.me.name.split(' ')[0] + ': ' : '') + 'Defrost 4 lamb · дефростирай';
+    const body = h('div', { class: 'inkpick ' + K.inkClass(ink) },
+      h('p', { class: 'muted' }, S.first ? 'Pick your handwriting and your Sharpie colour. Every DO, crossed-out line and comment you write shows in them, so the next shift knows who wrote what.' : 'How your writing looks on the sheet.'),
+      h('h3', { class: 'ink-h' }, 'Handwriting'),
+      h('div', { class: 'hand-grid', role: 'radiogroup', 'aria-label': 'Handwriting' }, K.HANDS.map((x) => h('button', { type: 'button', role: 'radio', 'aria-checked': hand === x.k ? 'true' : 'false', 'aria-label': x.name, class: 'hand-opt ' + K.handClass(x.k), onclick: () => K.setHand(x.k) },
+        h('span', { class: 'hand-sample' }, sample)))),
+      h('h3', { class: 'ink-h' }, 'Colour'),
+      h('div', { class: 'ink-grid', role: 'radiogroup', 'aria-label': 'Marker colour' }, K.INKS.map((x) => h('button', { type: 'button', role: 'radio', 'aria-checked': ink === x.k ? 'true' : 'false', class: 'ink-opt ' + K.inkClass(x.k), onclick: () => K.setInk(x.k) },
+        h('span', { class: 'ink-cap', 'aria-hidden': 'true' }), h('b', null, x.name), taken[x.k] ? h('small', null, taken[x.k].filter(Boolean).join(', ')) : null))),
+      h('button', { class: 'btn primary wide', type: 'button', onclick: done }, 'Done'));
+    return K.sheet(S.first ? 'Pick your marker' : 'Your marker', body);
+  };
+  /* the first time someone is in the app, ask once */
+  K.inkPrompt = function () {
+    if (K.ui.sheet || K.ui.cook || K.ui.inkAsked || (K.myInk() && K.myHand())) return false;
+    if (K.mode === 'firebase' && !(K.me && K.me.id)) return false;
+    if (K.ui.auth) return false;
+    K.ui.inkAsked = true;
+    K.ui.sheet = { type: 'ink', first: true };
+    return true;
   };
 })();
 
@@ -4083,6 +4272,7 @@ window.KOMAT_PART_ART = [
       }
     }
     if (out.after) out.after();
+    if (K.inkPrompt && K.inkPrompt()) setTimeout(() => render(), 0);
   }
   K.render = render;
   const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 24);
@@ -5557,10 +5747,16 @@ window.KOMAT_PART_ART = [
   }
 
   /* inline comment editor under a row */
+  /* a comment, written on the sheet in Sharpie; a fresh one is written on as you watch */
+  function noteEl(text, key, ink, by, hand) {
+    const d = key && ui.noteNew === key, who = by ? K.nameOf(by) : '';
+    if (d) setTimeout(() => { if (ui.noteNew === key) ui.noteNew = null; }, 0);
+    return h('span', { class: 'tnote ' + K.inkClass(ink) + ' ' + K.handClass(hand) + (d ? ' draw' : '') }, text, who ? h('small', { class: 'tnote-by' }, '– ' + who.split(' ')[0]) : null);
+  }
   function noteForm(key, cur, save) {
     if (ui.noteFor !== key) return null;
-    return h('form', { class: 'noteform', onsubmit: (e) => { e.preventDefault(); ui.noteFor = null; save((document.getElementById('noteedit').value || '').trim()); } },
-      h('input', { class: 'input', id: 'noteedit', value: cur || '', placeholder: 'Comment, e.g. use the old batch first', 'aria-label': 'Comment', autofocus: true }),
+    return h('form', { class: 'noteform', onsubmit: (e) => { e.preventDefault(); ui.noteFor = null; ui.noteNew = key; save((document.getElementById('noteedit').value || '').trim()); } },
+      h('input', { class: 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()), id: 'noteedit', value: cur || '', placeholder: 'Comment, e.g. use the old batch first', 'aria-label': 'Comment', autofocus: true }),
       h('button', { class: 'btn primary small', type: 'submit' }, 'Save'),
       cur ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; save(''); } }, 'Clear')
         : h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; K.render(); } }, 'Cancel'));
@@ -5603,7 +5799,7 @@ window.KOMAT_PART_ART = [
         h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
-          o.note ? h('span', { class: 'tnote' }, o.note) : null,
+          o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
             nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
@@ -5659,7 +5855,7 @@ window.KOMAT_PART_ART = [
     todoTasks.forEach((d) => {
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
-        name: d.name, note: d.note, urgent: !!d.urgent, noteKey: 'p:' + d._id,
+        name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, noteKey: 'p:' + d._id,
         meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
         onUrgent: () => K.setPrep(st, it, 'need', !d.urgent),
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
@@ -5670,7 +5866,7 @@ window.KOMAT_PART_ART = [
     doItems.forEach((it) => {
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
-        name: it.name, note: m.c, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
+        name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
         meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
@@ -5709,7 +5905,7 @@ window.KOMAT_PART_ART = [
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
       h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
       tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
-        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
     const cklist = checklist(st, tmr ? listDay : null); cklist.classList.add('tt-mep'); left.append(cklist);
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish tt-mep' + (cl ? ' done' : '') },
@@ -5815,22 +6011,24 @@ window.KOMAT_PART_ART = [
     const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
     const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
     const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
-    const pop = ui.pop === it.id;
+    const pop = ui.pop === it.id, wrote = ui.wrote === it.id;
     if (pop) setTimeout(() => { if (ui.pop === it.id) ui.pop = null; }, 0);
-    const row = h('div', { class: 'mrow' + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const ink = K.inkClass((K.mark(st, it.id) || {}).ink);
+    const row = h('div', { class: 'mrow ' + ink + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') + (pop ? ' struck' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
       h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
-        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else K.setMark(st, it, { d: next }); } }, s === 'do' ? 'DO' : s === 'ok' ? K.icon('check') : ''),
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; K.vibrate(8); } K.setMark(st, it, { d: next }); } } }, s === 'do' ? K.doMark(wrote) : s === 'ok' ? K.icon('check') : ''),
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
-        note ? h('span', { class: 'tnote' }, note) : null),
+        note ? noteEl(note, 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     return K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
-      left: s === 'do' ? null : { run: () => K.setMark(st, it, { d: 'do' }) },
+      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
     });
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
@@ -5851,11 +6049,13 @@ window.KOMAT_PART_ART = [
   /* a row on tomorrow's prep list: DO = make it tomorrow, empty = we have enough */
   function planRow(st, it, day) {
     const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
-    const set = (v) => { K.vibrate(v ? 10 : 6); K.setMark(st, it, { d: v }, day); };
-    const row = h('div', { class: 'mrow' + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+    const wrote = ui.wrote === it.id;
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, { d: v }, day); };
+    const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
-        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? 'DO' : ''),
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote) : ''),
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
@@ -6661,6 +6861,8 @@ window.KOMAT_PART_ART = [
   K.SHEETS.settings = function () {
     const rows = [];
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Recipe language'), h('span', { class: 'muted' }, 'The book is written in Bulgarian. English uses the translation list.')), K.langSwitch()));
+    rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'ink' }; K.render(); } }, h('span', { class: 'set-ink ' + K.inkClass(K.myInk()), 'aria-hidden': 'true' }),
+      h('span', null, h('b', null, 'Your marker'), h('span', { class: 'muted ' + K.handClass(K.myHand()) + ' set-hand ' + K.inkClass(K.myInk()) }, (K.HANDS.find((x) => x.k === (K.myHand() || 'caveat')) || {}).name + ' · ' + (K.INKS.find((x) => x.k === (K.myInk() || 'blue')) || {}).name))));
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Where your changes go'),
       h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.'
         : K.mode === 'firebase' ? 'Shared live with the whole kitchen. A copy stays on this phone, so it keeps working when the Wi-Fi drops.'

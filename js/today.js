@@ -187,10 +187,16 @@
   }
 
   /* inline comment editor under a row */
+  /* a comment, written on the sheet in Sharpie; a fresh one is written on as you watch */
+  function noteEl(text, key, ink, by, hand) {
+    const d = key && ui.noteNew === key, who = by ? K.nameOf(by) : '';
+    if (d) setTimeout(() => { if (ui.noteNew === key) ui.noteNew = null; }, 0);
+    return h('span', { class: 'tnote ' + K.inkClass(ink) + ' ' + K.handClass(hand) + (d ? ' draw' : '') }, text, who ? h('small', { class: 'tnote-by' }, '– ' + who.split(' ')[0]) : null);
+  }
   function noteForm(key, cur, save) {
     if (ui.noteFor !== key) return null;
-    return h('form', { class: 'noteform', onsubmit: (e) => { e.preventDefault(); ui.noteFor = null; save((document.getElementById('noteedit').value || '').trim()); } },
-      h('input', { class: 'input', id: 'noteedit', value: cur || '', placeholder: 'Comment, e.g. use the old batch first', 'aria-label': 'Comment', autofocus: true }),
+    return h('form', { class: 'noteform', onsubmit: (e) => { e.preventDefault(); ui.noteFor = null; ui.noteNew = key; save((document.getElementById('noteedit').value || '').trim()); } },
+      h('input', { class: 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()), id: 'noteedit', value: cur || '', placeholder: 'Comment, e.g. use the old batch first', 'aria-label': 'Comment', autofocus: true }),
       h('button', { class: 'btn primary small', type: 'submit' }, 'Save'),
       cur ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; save(''); } }, 'Clear')
         : h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; K.render(); } }, 'Cancel'));
@@ -233,7 +239,7 @@
         h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
-          o.note ? h('span', { class: 'tnote' }, o.note) : null,
+          o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
             nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
@@ -289,7 +295,7 @@
     todoTasks.forEach((d) => {
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
-        name: d.name, note: d.note, urgent: !!d.urgent, noteKey: 'p:' + d._id,
+        name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, noteKey: 'p:' + d._id,
         meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
         onUrgent: () => K.setPrep(st, it, 'need', !d.urgent),
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
@@ -300,7 +306,7 @@
     doItems.forEach((it) => {
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
-        name: it.name, note: m.c, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
+        name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
         meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
@@ -339,7 +345,7 @@
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
       h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
       tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
-        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
     const cklist = checklist(st, tmr ? listDay : null); cklist.classList.add('tt-mep'); left.append(cklist);
     const cl = K.closedInfo(st);
     left.append(h('div', { class: 'finish tt-mep' + (cl ? ' done' : '') },
@@ -445,22 +451,24 @@
     const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
     const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
     const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
-    const pop = ui.pop === it.id;
+    const pop = ui.pop === it.id, wrote = ui.wrote === it.id;
     if (pop) setTimeout(() => { if (ui.pop === it.id) ui.pop = null; }, 0);
-    const row = h('div', { class: 'mrow' + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const ink = K.inkClass((K.mark(st, it.id) || {}).ink);
+    const row = h('div', { class: 'mrow ' + ink + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') + (pop ? ' struck' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
       h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
-        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else K.setMark(st, it, { d: next }); } }, s === 'do' ? 'DO' : s === 'ok' ? K.icon('check') : ''),
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; K.vibrate(8); } K.setMark(st, it, { d: next }); } } }, s === 'do' ? K.doMark(wrote) : s === 'ok' ? K.icon('check') : ''),
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
-        note ? h('span', { class: 'tnote' }, note) : null),
+        note ? noteEl(note, 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     return K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
-      left: s === 'do' ? null : { run: () => K.setMark(st, it, { d: 'do' }) },
+      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
     });
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
@@ -481,11 +489,13 @@
   /* a row on tomorrow's prep list: DO = make it tomorrow, empty = we have enough */
   function planRow(st, it, day) {
     const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
-    const set = (v) => { K.vibrate(v ? 10 : 6); K.setMark(st, it, { d: v }, day); };
-    const row = h('div', { class: 'mrow' + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+    const wrote = ui.wrote === it.id;
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, { d: v }, day); };
+    const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
-        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? 'DO' : ''),
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote) : ''),
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,

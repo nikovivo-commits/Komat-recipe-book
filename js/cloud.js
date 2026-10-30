@@ -221,7 +221,7 @@
       if (s.metadata.hasPendingWrites) return;
       if (s.exists()) {
         const m = s.data();
-        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', canWrite: true, name: m.name || '', email: u.email || '', guest: !!u.isAnonymous };
+        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', canWrite: true, name: m.name || '', ink: m.ink || '', hand: m.hand || '', email: u.email || '', guest: !!u.isAnonymous };
         K.ui.auth = null;
         enter();
         K.subscribeBugs();
@@ -283,6 +283,8 @@
   S.roleName = (role) => (S.ROLES.find((r) => r[0] === role) || S.ROLES[0])[1];
   S.setRole = (uid, role) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { role: role }));
   S.rename = (name) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { name: name }));
+  S.setInk = (ink) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { ink: ink }));
+  S.setHand = (hand) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { hand: hand }));
   S.remove = (uid) => write(F.deleteDoc(F.doc(fs, 'members/' + uid)));
   /* head chef: give someone their name as it is on the rota, so their week finds them */
   S.renameMember = (uid, name) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { name: name }));

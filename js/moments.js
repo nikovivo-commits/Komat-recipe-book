@@ -48,6 +48,8 @@
     const back = h('div', { class: 'fresh-moment', role: 'status', onclick: () => end() },
       K.clip ? K.clip('sunrise', 'fm-clip') : null,
       h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
+      /* yesterday's sheet, scribbled in Sharpie, gets screwed up and thrown away */
+      h('div', { class: 'fm-paper', 'aria-hidden': 'true' }, h('b', null, 'Yesterday'), [72, 54, 80, 46, 66, 58].map((wd, i) => h('i', { style: { width: wd + '%', '--r': (i % 2 ? 1 : -1) * 1.5 + 'deg' } }))),
       h('div', { class: 'fm-in' },
         h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '03:59'), h('span', { class: 'b' }, '04:00')),
         h('h2', { class: 'fm-title' }, 'A fresh list'),

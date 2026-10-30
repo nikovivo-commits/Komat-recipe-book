@@ -269,6 +269,8 @@
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
     if (!('c' in patch) || Object.keys(patch).length > 1) { m.t = Date.now(); m.by = K.me.id || ''; }
+    if ('d' in patch && K.myInk) m.ink = K.myInk() || 'blue';
+    if ('c' in patch && K.myInk) { m.cink = K.myInk() || 'blue'; m.chand = (K.myHand && K.myHand()) || 'caveat'; m.cby = K.me.id || ''; }
     doc.marks[it.id] = m;
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
@@ -290,6 +292,7 @@
       const prev = doc.marks[x.it.id] ? K.clone(doc.marks[x.it.id]) : undefined;
       prevs[x.it.id] = prev;
       const m = Object.assign({}, prev || {}, x.patch, { n: x.it.name, t: Date.now(), by: K.me.id || '' });
+      if ('d' in x.patch && K.myInk) m.ink = K.myInk() || 'blue';
       if ('d' in x.patch && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
       doc.marks[x.it.id] = m;
       body.marks[x.it.id] = m;
@@ -350,7 +353,7 @@
     const body = { date: K.day(0), station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
     if (old && old.leftBy) { body.leftBy = old.leftBy; body.leftAt = old.leftAt || 0; }
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
-    if (nt) body.note = nt;
+    if (nt) { body.note = nt; if (old && old.noteInk && it.note === undefined) { body.noteInk = old.noteInk; if (old.noteHand) body.noteHand = old.noteHand; if (old.noteBy) body.noteBy = old.noteBy; } else if (it.note) { body.noteInk = (K.myInk && K.myInk()) || 'blue'; body.noteHand = (K.myHand && K.myHand()) || 'caveat'; body.noteBy = K.me.id || ''; } }
     if (u) body.urgentAt = (old && old.urgent && old.urgentAt) || Date.now();
     if (status === '') delete D.prep[id]; else D.prep[id] = body;
     K.refresh(true);
@@ -362,7 +365,7 @@
     const d = D.prep[id];
     if (!d) return;
     const b = K.clone(d);
-    if (text) b.note = text; else delete b.note;
+    if (text) { b.note = text; b.noteInk = (K.myInk && K.myInk()) || 'blue'; b.noteHand = (K.myHand && K.myHand()) || 'caveat'; b.noteBy = K.me.id || ''; } else { delete b.note; delete b.noteInk; delete b.noteHand; delete b.noteBy; }
     D.prep[id] = b;
     K.refresh(true);
     return K.db.doc('prep/' + id).set(b).catch((e) => { D.prep[id] = d; K.refresh(true); writeFailed(e); });

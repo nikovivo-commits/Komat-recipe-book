@@ -19,6 +19,8 @@
   --ready-ink: #FFFFFF;
   --ready-soft: #DFEEE4;
   --todo: #EDBE45;
+  --pen: #1F48B8;
+  --pen-soft: #E3EAFB;
   --todo-ink: #3D2C00;
   --todo-soft: #FBF0D2;
   --urgent: #C42F1C;
@@ -45,7 +47,7 @@
     --steel: #0C0C0C; --steel-2: #1A1A1A; --on-steel: #F2F2EE; --steel-muted: #9B9E9A;
     --apron: #D09B90; --apron-ink: #1E1210; --apron-soft: #3A2723; --apron-on-steel: #E0AFA3;
     --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
-    --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
+    --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
     --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
     --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
@@ -57,7 +59,7 @@
   --steel: #0C0C0C; --steel-2: #1A1A1A; --on-steel: #F2F2EE; --steel-muted: #9B9E9A;
   --apron: #D09B90; --apron-ink: #1E1210; --apron-soft: #3A2723; --apron-on-steel: #E0AFA3;
   --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
-  --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014;
+  --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
   --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
   --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
@@ -667,7 +669,7 @@ button.todo-main { cursor: pointer; }
 .mrow.dragging .sw-in { box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .4); }
 .mbox { display: grid; place-items: center; width: 50px; height: 38px; border-radius: 8px; border: 2px dashed var(--line); background: transparent; color: var(--ink); font: 800 .82rem/1 var(--mono); letter-spacing: .04em; }
 .mbox:hover { border-color: var(--muted); }
-.mbox.do { border: 0; background: var(--todo); color: var(--todo-ink); clip-path: polygon(0 0, 100% 0, 94% 25%, 100% 50%, 94% 75%, 100% 100%, 0 100%, 6% 75%, 0 50%, 6% 25%); transform: rotate(-2deg); }
+.mbox.do { border-color: transparent; background: transparent; color: var(--pen); }
 .mbox.ok { border: 0; background: var(--ready); color: var(--ready-ink); }
 .mbox.ok .ico { width: 22px; height: 22px; }
 .mbox.pop { animation: pop .42s cubic-bezier(.3, 1.6, .5, 1); }
@@ -1407,3 +1409,82 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rb-val { min-width: 48px; text-align: center; font-size: 1.05rem; font-weight: 700; }
 .rb-cook { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border: 0; border-radius: 14px; background: var(--apron); color: #fff; font: 700 1.05rem var(--sans); }
 .rb-cook .ico { width: 22px; height: 22px; }
+
+/* DO in blue pen: the swipe and the counts follow the pen instead of the old yellow */
+.domark { display: block; width: 44px; height: 30px; transform: rotate(-4deg); }
+.domark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.domark.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .2s cubic-bezier(.4, 0, .6, 1) forwards; animation-delay: calc(var(--i) * .17s); }
+.domark.draw path:nth-child(3) { animation-duration: .32s; }
+.domark.draw path:nth-child(4) { animation-duration: .18s; animation-delay: .66s; }
+@keyframes pen-write { to { stroke-dashoffset: 0; } }
+.mbox.sample.do .domark { width: 30px; height: 21px; }
+.mrow.sw-l .sw-bg { background: var(--pen-soft); color: var(--pen); }
+.mrow .sw-do { font-family: var(--display); font-size: 1.4rem; transform: rotate(-4deg); }
+.gcount.tomake { color: var(--pen); background: var(--pen-soft); }
+@media (prefers-reduced-motion: reduce) { .domark.draw path { animation: none; stroke-dashoffset: 0; } }
+
+/* the sheet in Sharpie: comments are handwritten, done lines get a marker stroke through them */
+:root { --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive; }
+.tnote { padding-left: 0; border-left: 0; color: var(--pen); font: 700 1.28rem/1.05 var(--hand); font-style: normal; transform: rotate(-.6deg); transform-origin: left center; }
+.tnote.draw { animation: hand-write .9s steps(18, end) both; }
+@keyframes hand-write { from { clip-path: inset(-10% 100% -10% 0); } to { clip-path: inset(-10% 0 -10% 0); } }
+.urgrow .tnote { color: inherit; }
+.input.hand { font: 700 1.3rem/1.2 var(--hand); color: var(--pen); }
+.mrow.ok .mname > :first-child { text-decoration: none; background: linear-gradient(var(--pen), var(--pen)) no-repeat 0 58% / 100% 3px; }
+.mrow.ok.struck .mname > :first-child { animation: sharpie-strike .35s cubic-bezier(.5, 0, .3, 1) both; }
+@keyframes sharpie-strike { from { background-size: 0 3px; } }
+@media (prefers-reduced-motion: reduce) { .tnote.draw, .mrow.ok.struck .mname > :first-child { animation: none; } }
+
+.fm-paper { position: absolute; left: 50%; top: 50%; display: grid; gap: 14px; align-content: start; width: 220px; height: 290px; margin: -145px 0 0 -110px; padding: 20px 18px; box-sizing: border-box; border-radius: 4px; background: #FBFAF4; box-shadow: 0 16px 30px -12px rgba(0, 0, 0, .6); animation: paper-toss 1.2s cubic-bezier(.5, 0, .7, .4) .25s both; }
+.fm-paper b { color: #1F48B8; font: 700 1.5rem/1 var(--hand); }
+.fm-paper i { display: block; height: 4px; border-radius: 2px; background: #1F48B8; opacity: .8; transform: rotate(var(--r)); }
+@keyframes paper-toss { 0% { transform: none; border-radius: 4px; } 35% { transform: scale(.55) rotate(-14deg); border-radius: 40%; filter: brightness(.95); } 55% { transform: scale(.32) rotate(30deg); border-radius: 50%; } 100% { transform: translate(140px, 70vh) scale(.26) rotate(260deg); border-radius: 50%; opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .fm-paper { display: none; } }
+
+/* each person's marker colour: DO, strike and comments take the writer's ink */
+.ink-black { --pen: #1C1B1A; }
+.ink-blue { --pen: #1F48B8; }
+.ink-red { --pen: #B3261E; }
+.ink-green { --pen: #1E7A44; }
+.ink-purple { --pen: #6B3FA0; }
+.ink-orange { --pen: #C2570C; }
+.ink-teal { --pen: #0E7C86; }
+.ink-pink { --pen: #B83280; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ink-black { --pen: #ECEAE4; } :root:not([data-theme="light"]) .ink-blue { --pen: #93B4FF; } :root:not([data-theme="light"]) .ink-red { --pen: #FF8F86; } :root:not([data-theme="light"]) .ink-green { --pen: #7BD3A0; } :root:not([data-theme="light"]) .ink-purple { --pen: #C9A8F2; } :root:not([data-theme="light"]) .ink-orange { --pen: #FFB27A; } :root:not([data-theme="light"]) .ink-teal { --pen: #6FD6DE; } :root:not([data-theme="light"]) .ink-pink { --pen: #F59AC9; } }
+:root[data-theme="dark"] .ink-black { --pen: #ECEAE4; } :root[data-theme="dark"] .ink-blue { --pen: #93B4FF; } :root[data-theme="dark"] .ink-red { --pen: #FF8F86; } :root[data-theme="dark"] .ink-green { --pen: #7BD3A0; } :root[data-theme="dark"] .ink-purple { --pen: #C9A8F2; } :root[data-theme="dark"] .ink-orange { --pen: #FFB27A; } :root[data-theme="dark"] .ink-teal { --pen: #6FD6DE; } :root[data-theme="dark"] .ink-pink { --pen: #F59AC9; }
+.tnote-by { margin-left: 6px; font: 600 .95rem var(--hand); opacity: .85; white-space: nowrap; }
+.inkpick { display: grid; gap: 14px; }
+.ink-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ink-opt { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 12px; min-height: 64px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; font: inherit; }
+.ink-opt[aria-checked="true"] { border-color: var(--pen); box-shadow: 0 0 0 2px var(--pen) inset; }
+.ink-cap { grid-row: 1 / span 2; width: 18px; height: 40px; border-radius: 6px 6px 9px 9px; background: var(--pen); box-shadow: inset -3px 0 0 rgba(255, 255, 255, .18); }
+.ink-do { grid-column: 2; color: var(--pen); }
+.ink-do .domark { width: 40px; height: 27px; }
+.ink-opt b { grid-column: 2; font-weight: 700; }
+.ink-opt small { grid-column: 2; color: var(--muted); font-size: .75rem; }
+
+/* each person's handwriting */
+.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
+.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
+.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
+.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
+.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
+.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
+.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.tnote { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.1 var(--hand); }
+.input.hand { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.2 var(--hand); }
+.ink-h { margin: 6px 0 0; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hand-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.hand-opt { min-height: 60px; padding: 8px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--pen); text-align: left; font: var(--hand-w) var(--hand-s)/1.1 var(--hand); overflow: hidden; }
+.hand-opt[aria-checked="true"] { border-color: var(--pen); box-shadow: 0 0 0 2px var(--pen) inset; }
+.ink-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ink-opt { grid-template-columns: 1fr; justify-items: center; text-align: center; row-gap: 4px; min-height: 84px; }
+.ink-opt .ink-cap { grid-row: auto; }
+.ink-opt b, .ink-opt small { grid-column: auto; }
+.set-ink { flex: none; width: 14px; height: 30px; border-radius: 5px 5px 7px 7px; background: var(--pen); }
+.set-hand { font-family: var(--hand); font-weight: var(--hand-w); font-size: calc(var(--hand-s) * .9); color: var(--pen); }

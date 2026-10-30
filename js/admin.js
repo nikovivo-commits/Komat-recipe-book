@@ -8,6 +8,8 @@
   K.SHEETS.settings = function () {
     const rows = [];
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Recipe language'), h('span', { class: 'muted' }, 'The book is written in Bulgarian. English uses the translation list.')), K.langSwitch()));
+    rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'ink' }; K.render(); } }, h('span', { class: 'set-ink ' + K.inkClass(K.myInk()), 'aria-hidden': 'true' }),
+      h('span', null, h('b', null, 'Your marker'), h('span', { class: 'muted ' + K.handClass(K.myHand()) + ' set-hand ' + K.inkClass(K.myInk()) }, (K.HANDS.find((x) => x.k === (K.myHand() || 'caveat')) || {}).name + ' · ' + (K.INKS.find((x) => x.k === (K.myInk() || 'blue')) || {}).name))));
     rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Where your changes go'),
       h('span', { class: 'muted' }, K.mode === 'cloud' ? 'Shared live in Claude. Everyone with access sees ticks, tasks and orders as they happen.'
         : K.mode === 'firebase' ? 'Shared live with the whole kitchen. A copy stays on this phone, so it keeps working when the Wi-Fi drops.'
