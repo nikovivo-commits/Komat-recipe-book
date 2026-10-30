@@ -42,8 +42,34 @@
       ['House white', 'Wine', R, 'bottle', 14, 24, null, 6, 'case', B, 5.9, 32],
       ['Lager keg 30 l', 'Beer', 'Cellar', 'keg', 1, 3, null, 1, '', B, 89],
       ['Sparkling water 0.75 l', 'Soft drinks', R, 'bottle', 30, 48, null, 12, 'case', B, 0.6, 5.5],
-      ['Espresso beans', 'Coffee', S, 'kg', 1, 4, null, 1, '', B, 22]
+      ['Espresso beans', 'Coffee', S, 'kg', 1, 4, null, 1, '', B, 22],
+      ['Prosecco Extra Dry', 'Wine', R, 'bottle', 7, 18, null, 6, 'case', B, 7.4, 38],
+      ['Rosé, Côtes de Provence', 'Wine', R, 'bottle', 5, 12, null, 6, 'case', B, 9.1, 42],
+      ['Rioja Reserva', 'Wine', 'Cellar', 'bottle', 4, 6, null, 6, 'case', B, 14.5, 68],
+      ['Chablis', 'Wine', 'Cellar', 'bottle', 2, 6, null, 6, 'case', B, 16, 72],
+      ['Cola 0.33 l', 'Soft drinks', R, 'bottle', 26, 48, null, 24, 'case', B, 0.75, 4.5],
+      ['Lemonade 0.33 l', 'Soft drinks', R, 'bottle', 9, 24, null, 24, 'case', B, 0.8, 4.5],
+      ['Apple juice 0.2 l', 'Soft drinks', R, 'bottle', 18, 24, null, 24, 'case', B, 0.7, 4],
+      ['Ginger beer 0.2 l', 'Soft drinks', R, 'bottle', 0, 12, null, 24, 'case', B, 0.95, 5],
+      ['Still water 0.75 l', 'Soft drinks', R, 'bottle', 20, 36, null, 12, 'case', B, 0.5, 5]
     ];
+    // How the bar sells them: wines by bottle (and glass), soft drinks per piece.
+    const SOLD = {
+      'House red': { kind: 'wine', colour: 'red', producer: 'Cantina Example', grape: 'Montepulciano', region: 'Abruzzo', vintage: '2022', glassCl: 15, glassPrice: 8.5 },
+      'House white': { kind: 'wine', colour: 'white', producer: 'Weingut Beispiel', grape: 'Grüner Veltliner', region: 'Niederösterreich', vintage: '2023', glassCl: 15, glassPrice: 8 },
+      'Prosecco Extra Dry': { kind: 'wine', colour: 'sparkling', producer: 'Example Spumanti', grape: 'Glera', region: 'Veneto', vintage: 'NV', glassCl: 12.5, glassPrice: 9 },
+      'Rosé, Côtes de Provence': { kind: 'wine', colour: 'rose', producer: 'Domaine Exemple', grape: 'Grenache, Cinsault', region: 'Provence', vintage: '2023', glassCl: 15, glassPrice: 10 },
+      'Rioja Reserva': { kind: 'wine', colour: 'red', producer: 'Bodega Ejemplo', grape: 'Tempranillo', region: 'Rioja', vintage: '2018' },
+      'Chablis': { kind: 'wine', colour: 'white', producer: 'Domaine Exemple', grape: 'Chardonnay', region: 'Burgundy', vintage: '2022' },
+      'Sparkling water 0.75 l': { kind: 'drink' },
+      'Cola 0.33 l': { kind: 'drink' },
+      'Lemonade 0.33 l': { kind: 'drink' },
+      'Apple juice 0.2 l': { kind: 'drink' },
+      'Ginger beer 0.2 l': { kind: 'drink' },
+      'Still water 0.75 l': { kind: 'drink' }
+    };
+    // Counted half an hour ago; the example sales below happened before that, so they show in reports only.
+    const countedAt = t.getTime() - 30 * 60 * 1000;
     const items = rows.map(function (r, i) {
       const item = {
         id: 'ex-item-' + String(i + 1).padStart(2, '0'),
@@ -52,8 +78,17 @@
       };
       if (r[6] !== null) item.reorderAt = r[6];
       if (r[11] !== undefined) item.price = r[11];
+      item.baseAt = countedAt;
+      item.countedAt = countedAt;
+      const sold = SOLD[item.name];
+      if (sold) {
+        Object.assign(item, sold);
+        if (sold.kind === 'wine') item.bottleCl = 75;
+      }
       return item;
     });
+    const byName = {};
+    items.forEach(function (i) { byName[i.name] = i; });
 
     // Deterministic bookings for the next two weeks: busier towards the weekend.
     const reservations = [];
@@ -90,10 +125,47 @@
       lines: [L.lineFor(items[20], 2), L.lineFor(items[23], 2)]
     }];
 
-    [suppliers, items, reservations, orders].forEach(function (list) {
+    // Two evenings of bar sales: [item, serve, how many]
+    const evening = [
+      ['House red', 'glass', 14], ['House red', 'bottle', 3], ['House white', 'glass', 9], ['House white', 'bottle', 2],
+      ['Prosecco Extra Dry', 'glass', 11], ['Prosecco Extra Dry', 'bottle', 1], ['Rosé, Côtes de Provence', 'glass', 6],
+      ['Rioja Reserva', 'bottle', 1], ['Cola 0.33 l', 'piece', 12], ['Lemonade 0.33 l', 'piece', 7], ['Apple juice 0.2 l', 'piece', 5],
+      ['Ginger beer 0.2 l', 'piece', 4], ['Sparkling water 0.75 l', 'piece', 9], ['Still water 0.75 l', 'piece', 6]
+    ];
+    const moves = [-1, -2].map(function (offset) {
+      const date = L.addDays(t, offset);
+      const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 21, 0).getTime();
+      return {
+        id: L.isoDate(date) + '~example',
+        date: L.isoDate(date),
+        tab: 'example',
+        entries: evening.map(function (s, k) {
+          const item = byName[s[0]];
+          const serve = L.serveOf(item, s[1]);
+          const n = offset === -2 ? Math.max(1, Math.round(s[2] * 0.8)) : s[2];
+          return { t: at + k * 60000, i: item.id, k: 'sale', s: s[1], n: n, p: serve.price, q: -L.round(serve.portion * n, 4), src: 'bar' };
+        })
+      };
+    });
+
+    // What the Komat Kitchen Book would send over: a station's order check and an upcoming event.
+    const kitchen = [
+      { id: 'req-example-hot', date: day(0), station: 'hot', at: t.getTime() - 3 * 3600 * 1000, items: [{ n: 'Eggs, free range', s: 'out', note: '' }, { n: 'Microgreens', s: 'low', note: 'For brunch plates' }] },
+      { id: 'ev-example', title: 'Example: birthday dinner', date: day(2), time: '19:00', guests: '24', status: 'confirmed', kind: 'Birthday', menu: 'Set menu, 3 courses' },
+      { id: 'products', items: [
+        { name: 'Microgreens', units: ['g'], usedIn: ['Scrambled eggs', 'Beluga lentils'], stations: ['pass'], onMenu: true },
+        { name: 'Beluga lentils', units: ['g'], usedIn: ['Beluga lentils'], stations: ['hot'], onMenu: true },
+        { name: 'Cashew cheese', units: ['g'], usedIn: ['Beluga lentils'], stations: ['hot'], onMenu: true },
+        { name: 'Celeriac', units: ['g'], usedIn: ['Beluga lentils'], stations: ['hot'], onMenu: true },
+        { name: 'King oyster mushrooms', units: ['g'], usedIn: ['Mushroom jus'], stations: ['hot'], onMenu: false }
+      ] },
+      { id: 'meta', syncedAt: t.getTime() - 3600 * 1000, source: 'example' }
+    ];
+
+    [suppliers, items, reservations, orders, moves, kitchen].forEach(function (list) {
       list.forEach(function (x) { x.example = true; });
     });
-    return { suppliers: suppliers, items: items, reservations: reservations, orders: orders };
+    return { suppliers: suppliers, items: items, reservations: reservations, orders: orders, moves: moves, kitchen: kitchen };
   }
 
   const api = { build: build };

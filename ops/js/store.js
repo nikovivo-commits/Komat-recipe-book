@@ -6,9 +6,13 @@
 (function (root) {
   'use strict';
 
-  const COLLECTIONS = ['items', 'suppliers', 'orders', 'reservations'];
+  const COLLECTIONS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen'];
+  const CORE = ['items', 'suppliers', 'orders', 'reservations'];
   const LS_KEY = 'komat-backoffice-v1';
   const MAX_PARALLEL_WRITES = 4;
+  // Stock movements older than this are folded into the counted figures, so only recent ones are loaded.
+  const MOVES_WINDOW_DAYS = 60;
+  const LOCAL_MOVES_KEEP_DAYS = 120;
 
   const DEFAULT_SETTINGS = {
     restaurant: 'Komat',
@@ -21,8 +25,8 @@
     normalCoversWeek: 0,
     boost: true,
     boostCap: 1.5,
-    bookingsQuery: '(reservation OR booking OR reservierung OR buchung OR varaus) newer_than:14d',
-    inboxQuery: '(order OR invoice OR delivery OR bestellung OR rechnung OR lieferung OR tilaus OR lasku) newer_than:14d'
+    bookingsQuery: '(резервация OR резервации OR reservation OR booking OR reservation.tools) newer_than:14d',
+    inboxQuery: '(фактура OR поръчка OR доставка OR проформа OR invoice OR order OR delivery) newer_than:14d'
   };
 
   function newId(prefix) {
@@ -38,16 +42,35 @@
 
   function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
+  function dayIso(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + (offsetDays || 0));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  /** One id per browser tab: each tab writes only its own movement documents. */
+  function tabId() {
+    try {
+      let id = root.sessionStorage.getItem('komat-tab');
+      if (!id) { id = 't' + Math.random().toString(36).slice(2, 10); root.sessionStorage.setItem('komat-tab', id); }
+      return id;
+    } catch (e) {
+      return 't' + Math.random().toString(36).slice(2, 10);
+    }
+  }
+
   const store = {
     mode: 'starting', // 'starting' | 'shared' | 'local'
     ready: false,
     readOnly: false,
     persistent: true, // false when even localStorage is unavailable
     error: null,
-    data: { items: {}, suppliers: {}, orders: {}, reservations: {} },
+    data: { items: {}, suppliers: {}, orders: {}, reservations: {}, moves: {}, kitchen: {} },
     settings: Object.assign({}, DEFAULT_SETTINGS),
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
+    COLLECTIONS: COLLECTIONS,
     newId: newId,
+    tabId: tabId(),
 
     _db: null,
     _listeners: [],
@@ -91,6 +114,9 @@
           const saved = JSON.parse(raw);
           COLLECTIONS.forEach(function (c) { store.data[c] = (saved.data && saved.data[c]) || {}; });
           this.settings = Object.assign({}, DEFAULT_SETTINGS, saved.settings || {});
+          // Browser storage is small: drop movement documents nobody needs any more.
+          const keep = dayIso(-LOCAL_MOVES_KEEP_DAYS);
+          Object.keys(this.data.moves).forEach(function (id) { if ((store.data.moves[id].date || '') < keep) delete store.data.moves[id]; });
         }
       } catch (e) {
         this.persistent = false;
@@ -132,7 +158,8 @@
         if (!self.ready && COLLECTIONS.concat(['settings']).every(function (k) { return self._loaded[k]; })) self.ready = true;
       };
       COLLECTIONS.forEach(function (col) {
-        db.collection(col).onSnapshot(function (snap) {
+        const source = col === 'moves' ? db.collection(col).where('date', '>=', dayIso(-MOVES_WINDOW_DAYS)) : db.collection(col);
+        source.onSnapshot(function (snap) {
           const next = {};
           snap.docs.forEach(function (d) {
             if (d.exists) next[d.id] = Object.assign({}, d.data(), { id: d.id });
@@ -163,7 +190,30 @@
     get: function (col, id) { return (this.data[col] || {})[id] || null; },
     isEmpty: function () {
       const self = this;
-      return COLLECTIONS.every(function (c) { return Object.keys(self.data[c]).length === 0; });
+      return CORE.every(function (c) { return Object.keys(self.data[c]).length === 0; });
+    },
+
+    /** Records a stock movement in this tab's own document for the day. */
+    addMove: function (entry, date) {
+      const day = date || dayIso(0);
+      const id = day + '~' + this.tabId;
+      const doc = this.get('moves', id);
+      this.put('moves', { id: id, date: day, tab: this.tabId, entries: ((doc && doc.entries) || []).concat([entry]) });
+    },
+
+    /** Removes this tab's latest movement of today that matches; returns it, or null. */
+    undoMove: function (match) {
+      const id = dayIso(0) + '~' + this.tabId;
+      const doc = this.get('moves', id);
+      const entries = ((doc && doc.entries) || []).slice();
+      for (let i = entries.length - 1; i >= 0; i--) {
+        if (match(entries[i])) {
+          const gone = entries.splice(i, 1)[0];
+          this.put('moves', { id: id, date: doc.date, tab: this.tabId, entries: entries });
+          return gone;
+        }
+      }
+      return null;
     },
 
     /* ----- writes ----- */

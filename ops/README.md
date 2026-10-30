@@ -1,53 +1,65 @@
 # Komat Back Office
 
-One place for the restaurant's daily admin: what is on the shelves, what needs ordering, sending orders to suppliers by email, and how busy the coming week is.
+One place for the restaurant's daily admin: what is on the shelves, what the kitchen needs, what to order and from whom, the wine list for the floor, how busy the coming days are, and the business email.
 
-## What it does
+It sits next to the tools Komat already uses and reads from them instead of replacing them:
+
+- **Hype** (hype-software.com): deliveries and sales are entered there, so Hype is the record of stock. Its stock report updates the counts here, and its sales report fills in wine and drink sales.
+- **reservation.tools**: its booking export and booking emails fill the covers calendar.
+- **Komat Kitchen Book**: the stations' Out / Low order checks become order lines, its events count as covers, and its recipe products can be added to the stock list.
+- **Gmail**: orders go out from the business address; supplier replies, invoices and booking emails show in the Inbox.
+
+## Screens
 
 | Screen | What you do there |
 | --- | --- |
-| **Today** | See what is out (86'd) or low, which suppliers to order from today, deliveries due, covers booked, and recent supplier mail. |
-| **Stock** | Tap − / + to adjust, or run a **stock count** location by location (Enter jumps to the next box). Add items, import from Hypersoft, export to CSV. |
-| **Orders** | Suggested orders per supplier, rounded to whole packs (cases, sacks, trays). Edit lines, then **Send with Gmail**, save a Gmail draft, open in your email app or copy the text. When the delivery arrives, **Check in** to add what arrived to stock. |
-| **Bookings** | Covers per day for the next 14 days. Add bookings by hand or import a CSV from the reservation system. |
-| **Inbox** | Supplier replies, order confirmations, invoices and booking emails from your Gmail. |
-| **Setup** | Restaurant details, order email wording, a copy-to address for every order, busy-week settings, backups. |
+| **Today** | What is out (86'd) or low, which suppliers to order from today, what the kitchen asked for, deliveries due, covers booked, bar takings and supplier mail. |
+| **Stock** | **Update from Hype** (stock report, CSV or Excel), stock counts location by location, − / + adjustments, items from the Kitchen Book. |
+| **Orders** | Suggested orders per supplier, rounded to whole cases, sacks or trays, including everything the kitchen asked for. Send with Gmail, save a Gmail draft, open in the email app or copy the text. Check deliveries in. |
+| **Bar** | **Wine list** for the floor: style, vintage, bottle and glass price, bottles and glasses left, gross profit after VAT. **Sales** per wine and drink from Hype's sales report. **Quick sell** buttons for drinks that don't go through Hype. |
+| **Bookings** | Covers per day for 14 days from reservation.tools exports, hand entries and Kitchen Book events. |
+| **Inbox** | Supplier mail, orders and invoices, booking emails. |
+| **Setup** | Restaurant details, order email wording, copy-to address, VAT for margins, busy-week settings, backups. |
 
-### How an order is worked out
+### How orders are worked out
 
-- Every item has a **par level**: how much you want on the shelf after a delivery.
-- When **on hand + already on order** drops to the **reorder point**, the item is suggested. The reorder point is 40% of par unless you set one.
-- The suggestion tops the item up to par and rounds up to whole packs: 9 bottles on hand with par 24 in cases of 6 gives 3 cases.
-- **Busy weeks:** set how many covers a normal week has. When more are booked for the next 7 days, par levels are raised to match, capped at ×1.5 by default. Quiet weeks never lower an order below par.
-- Suppliers have order days, an order cut-off time, days until delivery and a minimum order value. The app tells you who to order from today and warns when an order is under the minimum.
+- Every item has a **par level**: how much you want after a delivery. When **stock + already on order** drops to the **reorder point** (40% of par unless you set one), the item is suggested, topped up to par and rounded up to whole packs.
+- When a Kitchen Book station marks a product **Out** or **Low**, it goes on that product's supplier order even if the count says otherwise, until an order with it has been sent.
+- **Busy weeks:** when more covers are booked for the next 7 days than in a normal week, par levels are raised to match (×1.5 at most by default). Quiet weeks never lower an order below par.
+
+### Wines and drinks
+
+- A **wine** is counted in bottles and sold by the bottle and, if it has a glass size, by the glass: a 15 cl glass from a 75 cl bottle is 0.2 of a bottle. The wine list shows the open bottle too ("4 btl + 3 gl").
+- A **drink sold per piece** (soft drinks, water, juice) is one bottle or can per sale.
+- Hype's sales report is matched article by article to wines (bottle or glass) and drinks, and the choices are remembered. Food lines are marked as not tracked once. By default the import does not take stock off again, because Hype's stock report already did.
+
+### How stock is kept
+
+A count (a stock count, an update from Hype, or a figure typed on an item) sets an item's stock outright. Everything after that (− / + taps, quick sales, deliveries checked in) is a movement saved by the device that made it, so two phones changing stock at the same moment never overwrite each other. Stock shown = last count + movements since. Movements older than a month are folded into the count automatically.
 
 ## Two ways to run it
 
-1. **On claude.ai (recommended for the team).** The published page keeps stock, orders and bookings in a shared database, so everyone the page is shared with sees the same numbers, live. Orders go out from your own Gmail through the claude.ai Gmail connector. Each person connects their own Gmail, and nobody sees anyone else's inbox.
-2. **As a plain web page** (GitHub Pages, or any static file host): open `ops/index.html` through a web server. Everything works except Gmail. Data is saved in that browser only, so use Setup → Export backup to move it. Orders open in your email app instead.
+1. **On claude.ai (for the team).** The published page keeps everything in a shared database, live for everyone the page is shared with. Gmail works through each person's own claude.ai Gmail connector.
+2. **As a plain web page** (GitHub Pages or any static host): open `ops/index.html` through a web server. Everything except Gmail works, and data stays in that browser (Setup → Export backup to move it).
 
-## Connecting your existing tools
+## The Kitchen Book link
 
-**Hypersoft (stock, prices).** In Hypersoft, export the article list or stock list (Artikelliste / Lagerbestand) to CSV. If it comes out as Excel, use *Save as → CSV*. Then go to Stock → Import. Columns are recognised by name in English, German or Finnish: `Artikel`/`Bezeichnung`, `Art.-Nr.`, `Warengruppe`, `Lagerort`, `Einheit`, `Bestand`/`Istbestand`, `Sollbestand`, `Mindestbestand`, `EK-Preis`, `VK-Preis`, `Lieferant`. You can change the column matching before importing. Re-importing updates items with the same name, and suppliers named in the file are created automatically.
-
-**Reservation system.** Export bookings as CSV (date, time, name, number of guests) and import them under Bookings. Tick *Replace earlier imported bookings* when re-importing the same export, so bookings are not counted twice. Booking confirmation emails also show up in the Inbox. Under Setup → Email searches you can narrow that list to your booking tool's sender address.
-
-**Business email.** On claude.ai, add Gmail under Settings → Connectors with the business account, then press *Connect Gmail* in the Inbox. Put your business address in Setup → *Send a copy of every order to* so every order also lands in the shared inbox.
+A claude.ai page cannot read another page's database, so the Kitchen Book data is copied into this app's `kitchen` collection by Claude (on request or on a schedule): `kitchen/products` (products used in the recipes), `kitchen/req-<date>_<station>` (station order checks), `kitchen/ev-<id>` (events) and `kitchen/meta` (when it was copied).
 
 ## Data and privacy
 
-- No restaurant data is stored in this repository. It is public, so keep it that way: back up through *Export backup*, not by committing files.
-- The example kitchen (Setup → Load example data) is clearly marked and uses `example.com` supplier addresses, so nothing can be emailed by accident. *Remove examples* deletes all of it at once.
+No restaurant data is stored in this repository; it is public. The example kitchen (Setup → Load example data) is marked as such and uses `example.com` supplier addresses, so nothing can be emailed by accident.
 
 ## Development
 
-No build step and no dependencies: plain HTML, CSS and JavaScript.
+No build step and no dependencies. Excel files are read with SheetJS, loaded from cdnjs only when an Excel file is picked.
 
 ```
 ops/
   index.html        app shell
   styles.css        design tokens (light + dark) and components
-  js/logic.js       pure business rules: stock status, order suggestions, CSV import, order email text
+  js/logic.js       business rules: stock status, movements, order suggestions, wines and drinks,
+                    imports (Hype stock and sales, bookings), Kitchen Book data, order email text
   js/store.js       storage: claude.ai shared database, or browser localStorage
   js/connect.js     Gmail connector and file downloads
   js/sample.js      the example kitchen

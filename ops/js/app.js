@@ -8,7 +8,8 @@
   const store = window.KomatStore;
   const net = window.KomatConnect;
 
-  const VIEWS = ['today', 'stock', 'orders', 'bookings', 'inbox', 'setup'];
+  const VIEWS = ['today', 'stock', 'orders', 'bar', 'bookings', 'inbox', 'setup'];
+  const COLS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen'];
   const PREFS_KEY = 'komat-backoffice-prefs';
   const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
   const UNITS = ['kg', 'g', 'l', 'ml', 'pcs', 'bunch', 'bottle', 'can', 'keg', 'pack', 'box', 'case', 'tray', 'portion'];
@@ -31,6 +32,7 @@
     stock: { q: '', status: 'all', location: 'all', counting: false, draft: {} },
     orders: { tab: 'suggested' },
     bookings: { day: L.isoDate(new Date()) },
+    bar: { tab: 'wines', q: '', range: 'today', last: null },
     mail: {},
     watches: {},
     gmailOn: !!prefs().gmailOn,
@@ -128,16 +130,24 @@
   function derive() {
     const now = new Date();
     const todayIso = L.isoDate(now);
-    const items = store.list('items').sort(byName);
+    const yesterdayIso = L.isoDate(L.addDays(now, -1));
+    const moves = store.list('moves');
+    const items = L.applyMoves(store.list('items'), moves).sort(byName);
     const suppliers = store.list('suppliers').sort(byName);
     const orders = store.list('orders').sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    const reservations = store.list('reservations');
+    // Kitchen Book data copied into the "kitchen" collection: station order checks, events, products.
+    const kdocs = store.list('kitchen');
+    const kitchenRequests = kdocs.filter(function (k) { return /^req-/.test(k.id) && k.date >= yesterdayIso; });
+    const kitchenEvents = L.eventBookings(kdocs.filter(function (k) { return /^ev-/.test(k.id); }).map(function (k) { return Object.assign({}, k, { id: k.id.slice(3) }); }));
+    const ownBookings = store.list('reservations');
+    const reservations = ownBookings.concat(kitchenEvents);
     const supplierById = {};
     suppliers.forEach(function (s) { supplierById[s.id] = s; });
     const status = {};
     items.forEach(function (i) { status[i.id] = L.stockStatus(i); });
+    const asks = L.kitchenAsks(kitchenRequests, items, store.settings.kitchenMap);
     const boost = L.demandBoost(reservations, store.settings, now);
-    const suggestions = L.suggestOrders(items, suppliers, orders, boost.factor);
+    const suggestions = L.suggestOrders(items, suppliers, orders, boost.factor, asks);
     const drafts = orders.filter(function (o) { return o.status === 'draft'; });
     const sent = orders.filter(function (o) { return o.status === 'sent'; });
     const draftBySupplier = {};
@@ -145,7 +155,8 @@
     const toOrder = {};
     suggestions.forEach(function (s) { toOrder[s.supplier.id] = true; });
     drafts.forEach(function (o) { toOrder[o.supplierId] = true; });
-    const todays = reservations.filter(function (r) { return r.date === todayIso && r.status !== 'cancelled'; });
+    const todays = reservations.filter(function (r) { return r.date === todayIso && r.status !== 'cancelled' && r.status !== 'pending'; });
+    const sellable = items.filter(function (i) { return L.servesOf(i).length; });
     return {
       now: now,
       todayIso: todayIso,
@@ -153,6 +164,7 @@
       suppliers: suppliers,
       orders: orders,
       reservations: reservations,
+      moves: moves,
       supplierById: supplierById,
       status: status,
       out: items.filter(function (i) { return status[i.id] === 'out'; }),
@@ -167,9 +179,21 @@
       deliveriesDue: sent.filter(function (o) { return o.deliveryDate && o.deliveryDate <= todayIso; }),
       todays: todays,
       coversToday: todays.reduce(function (a, r) { return a + L.num(r.covers, 0); }, 0),
-      hasExamples: [items, suppliers, orders, reservations].some(function (list) { return list.some(function (x) { return x.example; }); }),
-      empty: !items.length && !suppliers.length && !reservations.length && !orders.length
+      sellable: sellable,
+      salesToday: L.salesSummary(moves, items, todayIso, todayIso),
+      asks: asks,
+      kitchenEvents: kitchenEvents,
+      kitchenMeta: store.get('kitchen', 'meta'),
+      kitchenProducts: ((store.get('kitchen', 'products') || {}).items) || [],
+      hasExamples: [items, suppliers, orders, ownBookings, moves, kdocs].some(function (list) { return list.some(function (x) { return x.example; }); }),
+      empty: !items.length && !suppliers.length && !ownBookings.length && !orders.length
     };
+  }
+
+  /** One item with its live stock figure. */
+  function effItem(id) {
+    const raw = store.get('items', id);
+    return raw ? L.applyMoves([raw], store.list('moves'))[0] : null;
   }
 
   /* ---------- shared fragments ---------- */
@@ -177,6 +201,7 @@
   function statusPill(status) {
     if (status === 'out') return '<span class="pill out" title="Out of stock">86’d</span>';
     if (status === 'low') return '<span class="pill low">Low</span>';
+    if (status === 'new') return '<span class="pill" title="Not counted yet and no par level">Not counted</span>';
     return '<span class="pill ok">OK</span>';
   }
   function orderPill(status) {
@@ -206,10 +231,15 @@
     if (sup) meta.push(esc(sup.name));
     else meta.push('no supplier');
     if (L.num(item.cost, 0) > 0) meta.push(esc(money(item.cost)) + '/' + esc(item.unit || 'unit'));
-    if (L.num(item.price, 0) > 0) {
+    const serves = L.servesOf(item);
+    if (serves.length) {
+      meta.push(serves.map(function (sv) { return esc(sv.id === 'piece' ? 'sells' : sv.label.toLowerCase()) + ' ' + esc(money(sv.price)); }).join(', '));
+      if (item.kind === 'wine' && L.serveOf(item, 'glass')) meta.push('<b>' + esc(L.wineStock(item).text) + '</b>');
+    } else if (L.num(item.price, 0) > 0) {
       const margin = L.num(item.cost, 0) > 0 ? Math.round((1 - item.cost / item.price) * 100) : null;
       meta.push('sells ' + esc(money(item.price)) + (margin !== null ? ' (' + margin + '% margin)' : ''));
     }
+    if (st === 'new') meta.push('count it and set a par level');
     let qty;
     if (opts && opts.counting) {
       const draft = ui.stock.draft[item.id];
@@ -294,8 +324,8 @@
       out.push('<div class="banner"><p><b>Saved in this browser only.</b> Open Komat Back Office on claude.ai to share live stock with the team, or export a backup from Setup.</p><a class="btn sm" href="#setup">Setup</a></div>');
     }
     if (d.hasExamples) {
-      out.push('<div class="banner"><p><b>You are looking at example data.</b> Try things out, then remove the examples and import your own items from Hypersoft.</p>' +
-        '<div class="actions"><button type="button" class="btn sm" data-act="import-items">Import from Hypersoft</button><button type="button" class="btn sm danger" data-act="remove-examples">Remove examples</button></div></div>');
+      out.push('<div class="banner"><p><b>You are looking at example data.</b> Try things out, then remove the examples and import your own items from Hype.</p>' +
+        '<div class="actions"><button type="button" class="btn sm" data-act="import-items">Import from Hype</button><button type="button" class="btn sm danger" data-act="remove-examples">Remove examples</button></div></div>');
     }
     return out.join('');
   }
@@ -308,9 +338,9 @@
       '<h1>Stock, orders and bookings in one place.</h1>' +
       '<p>Count what is on the shelves, get supplier orders written for you, send them by email and see how busy the week is.</p>' +
       '<div class="actions" style="margin-top:20px"><button type="button" class="btn primary" data-act="load-examples">Load an example kitchen</button>' +
-      '<button type="button" class="btn" data-act="import-items">Import items from Hypersoft</button></div></div>' +
+      '<button type="button" class="btn" data-act="import-items">Import items from Hype</button></div></div>' +
       '<ol class="steps">' +
-      '<li><div><b>Bring in your items</b>Export the article or stock list from Hypersoft as CSV and import it, or add items by hand.</div></li>' +
+      '<li><div><b>Bring in your stock from Hype</b>Export the stock list from Hype (Excel or CSV) and import it. Do it again whenever you want fresh numbers.</div></li>' +
       '<li><div><b>Add your suppliers</b>Their order email, order days and delivery time. Link each item to its supplier.</div></li>' +
       '<li><div><b>Count and order</b>Count stock after service. Anything at or below its reorder point lands in a ready-to-send order.</div></li>' +
       '</ol></section>' +
@@ -395,10 +425,19 @@
           : 'Order confirmations and invoices show up here when Komat Back Office is opened on claude.ai with Gmail connected.') + '</p></section>';
     }
 
+    const sold = d.salesToday;
+    const shortDrinks = d.sellable.filter(function (i) { return d.status[i.id] === 'out' || d.status[i.id] === 'low'; });
+    const barPanel = d.sellable.length ? '<section class="panel stack"><div class="section-head"><h2>Bar today</h2><a class="small" href="#bar">Bar</a></div>' +
+      '<p style="margin:0"><b class="num">' + esc(qtyText(sold.qty)) + '</b> sold · <b class="num">' + esc(money(sold.revenue)) + '</b>' +
+      (sold.rows.length ? '<span class="muted small"> · best: ' + esc(sold.rows.slice(0, 3).map(function (r) { return r.name + ' ' + r.label.toLowerCase(); }).join(', ')) + '</span>' : '') + '</p>' +
+      (shortDrinks.length ? '<p class="small" style="margin:0"><b>Tell the floor:</b> ' + shortDrinks.map(function (i) {
+        return esc(i.name) + (d.status[i.id] === 'out' ? ' is 86’d' : ' (' + esc(i.kind === 'wine' ? L.wineStock(i).text : qtyText(i.onHand) + ' left') + ')');
+      }).join(' · ') + '</p>' : '') + '</section>' : '';
+
     return head + banners(d) + strip +
       '<div class="grid-2"><div class="stack"><section class="panel"><div class="section-head"><h2>Orders to send</h2>' +
-      (d.boost.active ? '<span class="pill today">Busy week ×' + d.boost.factor.toFixed(2) + '</span>' : '') + '</div>' + orderCards + '</section>' + lowPanel + '</div>' +
-      '<div class="stack">' + bookPanel + delPanel + mailPanel + '</div></div>';
+      (d.boost.active ? '<span class="pill today">Busy week ×' + d.boost.factor.toFixed(2) + '</span>' : '') + '</div>' + orderCards + '</section>' + kitchenPanel(d) + lowPanel + '</div>' +
+      '<div class="stack">' + bookPanel + barPanel + delPanel + mailPanel + '</div></div>';
   }
 
   function viewStock(d) {
@@ -424,7 +463,8 @@
       '<p class="muted small" style="margin:4px 0 0">' + plural(d.items.length, 'item') + ' · ' + esc(money(value)) + ' on the shelves · ' + d.out.length + ' out · ' + d.low.length + ' low</p></div>' +
       '<div class="actions">' + (counting ? '' :
         '<button type="button" class="btn" data-act="count-start">Count stock</button>' +
-        '<button type="button" class="btn" data-act="import-items">Import</button>' +
+        '<button type="button" class="btn" data-act="import-items">Update from Hype</button>' +
+        (d.kitchenProducts.length ? '<button type="button" class="btn" data-act="import-kitchen">From Kitchen Book</button>' : '') +
         '<button type="button" class="btn" data-act="export-items">Export</button>' +
         '<button type="button" class="btn primary" data-act="new-item">' + ICON.plus + 'Item</button>') + '</div></div>';
 
@@ -441,7 +481,7 @@
 
     let body;
     if (!d.items.length) {
-      body = '<div class="empty"><strong>No items yet</strong><span>Import your article list from Hypersoft or add the first item.</span>' +
+      body = '<div class="empty"><strong>No items yet</strong><span>Import your article list from Hype or add the first item.</span>' +
         '<div class="actions"><button type="button" class="btn primary" data-act="import-items">Import CSV</button><button type="button" class="btn" data-act="new-item">Add item</button><button type="button" class="btn" data-act="load-examples">Load examples</button></div></div>';
     } else if (!list.length) {
       body = '<div class="empty"><span>No items match. <button type="button" class="btn ghost sm" data-act="stock-reset">Clear filters</button></span></div>';
@@ -487,7 +527,7 @@
             '<span class="num">≈ ' + esc(money(g.total)) + '</span></header>' +
             '<div class="table-wrap"><table class="line-table sug"><thead><tr><th>Item</th><th class="r">On hand</th><th class="r">Par</th><th class="r">Order</th></tr></thead><tbody>' +
             g.lines.map(function (l) {
-              return '<tr><td>' + esc(l.name) + ' ' + (l.status === 'out' ? statusPill('out') : '') + '</td>' +
+              return '<tr><td>' + esc(l.name) + ' ' + (l.asked ? '<span class="pill ' + (l.asked === 'out' ? 'out' : 'low') + '" title="Asked for in the Kitchen Book">Kitchen: ' + (l.asked === 'out' ? 'out' : 'low') + '</span>' : l.status === 'out' ? statusPill('out') : '') + '</td>' +
                 '<td class="r num">' + esc(qtyText(l.onHand)) + ' ' + esc(l.unit) + '</td><td class="r num">' + esc(qtyText(l.par)) + '</td>' +
                 '<td class="r num"><b>' + esc(L.describeLine(l)) + '</b></td></tr>';
             }).join('') + '</tbody></table></div>' +
@@ -495,7 +535,11 @@
             '<div class="actions"><button type="button" class="btn primary sm" data-act="start-order" data-supplier="' + esc(sup.id) + '">' + (draft ? 'Add to draft' : 'Create order') + '</button></div></article>';
         }).join('') + '</div>'
           : '<section class="panel"><div class="empty"><strong>Nothing to order</strong><span>Suggestions appear when an item with a supplier drops to its reorder point. Keep counts fresh and set par levels on your items.</span></div></section>') +
-        (unassigned.length ? '<div class="note"><p><b>' + plural(unassigned.length, 'low item') + ' without a supplier:</b> ' + esc(namesOf(unassigned, 6)) + '. Give them a supplier so they get ordered.</p></div>' : '');
+        (unassigned.length ? '<div class="note"><p><b>' + plural(unassigned.length, 'low item') + ' without a supplier:</b> ' + esc(namesOf(unassigned, 6)) + '. Give them a supplier so they get ordered.</p></div>' : '') +
+        (function () {
+          const stuck = d.asks.filter(function (a) { const it = a.itemId && d.items.find(function (i) { return i.id === a.itemId; }); return !it || !it.supplierId; });
+          return stuck.length ? '<section class="panel flush"><div class="section-head"><h2>Kitchen asked for, but it can’t be ordered yet</h2><span class="muted small">' + esc(kitchenSynced(d)) + '</span></div>' + askRows(d, stuck) + '</section>' : '';
+        })();
     } else if (tab === 'open' || tab === 'history') {
       const list = tab === 'open' ? open : history.slice(0, 60);
       body = list.length ? '<section class="panel flush"><div class="rows">' + list.map(function (o) {
@@ -530,7 +574,7 @@
   function viewBookings(d) {
     const day = ui.bookings.day;
     const list = d.reservations.filter(function (r) { return r.date === day; }).sort(function (a, b) { return String(a.time || '').localeCompare(String(b.time || '')); });
-    const covers = list.filter(function (r) { return r.status !== 'cancelled'; }).reduce(function (a, r) { return a + L.num(r.covers, 0); }, 0);
+    const covers = list.filter(function (r) { return r.status !== 'cancelled' && r.status !== 'pending'; }).reduce(function (a, r) { return a + L.num(r.covers, 0); }, 0);
     const fortnight = L.bookingsByDay(d.reservations, d.now, 14).reduce(function (a, x) { return a + x.covers; }, 0);
     const head = '<div class="page-head"><div><p class="eyebrow">Front of house</p><h1>Bookings</h1>' +
       '<p class="muted small" style="margin:4px 0 0">' + fortnight + ' covers booked over the next 14 days</p></div>' +
@@ -540,10 +584,11 @@
     const dayPanel = '<section class="panel flush"><div class="section-head"><h2>' + esc(relDay(day) === 'today' ? 'Today' : fmtDay(day)) + '</h2><span class="muted small num">' + plural(covers, 'cover') + ' · ' + plural(list.length, 'booking') + '</span></div>' +
       (list.length ? '<div class="booking-list">' + list.map(function (r) {
         return '<div class="booking"><span class="time">' + esc(r.time || '––:––') + '</span>' +
-          '<div class="row-main"><div class="row-title"><span class="name">' + esc(r.name || 'Guest') + '</span>' + (r.status === 'cancelled' ? '<span class="pill cancelled">Cancelled</span>' : '') + examplePill(r) + '</div>' +
+          '<div class="row-main"><div class="row-title"><span class="name">' + esc(r.name || 'Guest') + '</span>' + (r.status === 'cancelled' ? '<span class="pill cancelled">Cancelled</span>' : '') + (r.status === 'pending' ? '<span class="pill low">Not confirmed</span>' : '') + examplePill(r) + '</div>' +
           (r.note || r.phone ? '<div class="row-meta">' + esc([r.note, r.phone].filter(Boolean).join(' · ')) + '</div>' : '') + '</div>' +
           '<span class="covers">' + esc(L.num(r.covers, 0)) + ' pax</span>' +
-          '<button type="button" class="btn ghost sm" data-act="edit-booking" data-id="' + esc(r.id) + '">Edit</button></div>';
+          (r.source === 'kitchen' ? '<span class="pill" title="An event from the Kitchen Book. Change it there.">Kitchen Book</span>'
+            : '<button type="button" class="btn ghost sm" data-act="edit-booking" data-id="' + esc(r.id) + '">Edit</button>') + '</div>';
       }).join('') + '</div>' : '<div class="empty"><span>No bookings on ' + esc(fmtDay(day)) + '.</span><button type="button" class="btn sm" data-act="new-booking" data-date="' + esc(day) + '">Add booking</button></div>') + '</section>';
 
     let inbox;
@@ -611,6 +656,7 @@
       field('set-emailIntro', 'Order email opening', s.emailIntro, 'wide', 'Shown as: “Hello Produce team, ' + esc(s.emailIntro || 'please send us the following') + ' for delivery on …”') +
       field('set-copyTo', 'Send a copy of every order to', s.copyTo, 'inputmode="email" placeholder="orders@komat…"', 'Your business address, so every order is in your inbox too.') +
       field('set-currency', 'Currency', s.currency, 'maxlength="3" style="text-transform:uppercase"', 'Three letters, e.g. EUR') +
+      field('set-vat', 'Menu prices include VAT (%)', s.vat || '', 'inputmode="decimal" placeholder="e.g. 20"', 'Used to show wine and drink margins without VAT.') +
       '</div></section>' +
       '<section class="panel stack"><h2>Busy weeks</h2><div class="form-grid">' +
       field('set-normalCoversWeek', 'Covers in a normal week', s.normalCoversWeek || '', 'inputmode="numeric" placeholder="e.g. 180"', 'Booked covers in an ordinary week.') +
@@ -625,8 +671,9 @@
       '<div class="actions"><button type="submit" class="btn primary"' + (store.readOnly ? ' disabled' : '') + '>Save setup</button></div>' +
       '<section class="panel stack"><h2>Connections</h2><dl class="kv">' +
       '<dt>Storage</dt><dd>' + modeText + '</dd>' +
-      '<dt>Hypersoft</dt><dd>Import the article or stock list as CSV under Stock → Import. Columns like Artikel, Bestand, Einheit, EK, VK and Lieferant are recognised.</dd>' +
-      '<dt>Reservations</dt><dd>Import a CSV export under Bookings, and see booking emails in the Inbox.</dd>' +
+      '<dt>Hype</dt><dd>Deliveries and sales are entered in Hype. Bring its stock report in under Stock → Update from Hype, and its sales report under Bar → Import till sales.</dd>' +
+      '<dt>reservation.tools</dt><dd>Import its booking export under Bookings, and see its booking emails in the Inbox.</dd>' +
+      '<dt>Kitchen Book</dt><dd>' + (d.kitchenMeta ? esc(kitchenSynced(d)) + '. Station order checks and events show up here; recipe products can be added under Stock.' : 'Not copied yet. Station order checks, events and recipe products from the Komat Kitchen Book show up here once they are.') + '</dd>' +
       '<dt>Gmail</dt><dd>' + (net.gmail() ? (ui.gmailOn ? 'Connected for you. Orders send from your Gmail.' : 'Available. <a href="#inbox">Connect Gmail</a>') : 'Available when the page is opened on claude.ai.') + '</dd></dl></section>' +
       '<section class="panel stack"><h2>Data</h2><div class="actions">' +
       '<button type="button" class="btn" data-act="export-items">Export stock (CSV)</button>' +
@@ -635,6 +682,268 @@
       '<div class="actions">' + (d.hasExamples ? '<button type="button" class="btn danger" data-act="remove-examples">Remove example data</button>' : '<button type="button" class="btn" data-act="load-examples">Load example data</button>') +
       '<button type="button" class="btn danger" data-act="confirm-erase">Erase everything</button></div>' + confirmErase + '</section>' +
       '</div></form>';
+  }
+
+  /* ---------- bar (front of house) ---------- */
+
+  const COLOUR_ORDER = L.WINE_COLOURS.map(function (c) { return c[0]; });
+  function byColour(a, b) {
+    const ai = COLOUR_ORDER.indexOf(a.colour), bi = COLOUR_ORDER.indexOf(b.colour);
+    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi) || byName(a, b);
+  }
+  function colourName(c) { const x = L.WINE_COLOURS.find(function (w) { return w[0] === c; }); return x ? x[1] : 'Other wines'; }
+  function swatch(item) { return item.kind === 'wine' ? '<span class="swatch" data-colour="' + esc(item.colour || '') + '" aria-hidden="true"></span>' : ''; }
+
+  function soldToday(d, itemId, serveId) {
+    const row = d.salesToday.rows.find(function (r) { return r.itemId === itemId && r.serveId === serveId; });
+    return row ? row.qty : 0;
+  }
+
+  function tile(d, item, serve) {
+    const st = d.status[item.id];
+    const sold = soldToday(d, item.id, serve.id);
+    const left = serve.id === 'glass' ? plural(L.wineStock(item).totalGlasses, 'glass', 'glasses') + ' left'
+      : serve.id === 'bottle' ? qtyText(item.onHand) + ' btl left' : qtyText(item.onHand) + ' left';
+    const title = item.name + (item.vintage ? ' ' + item.vintage : '');
+    return '<button type="button" class="tile ' + esc(st) + '" id="sell-' + esc(item.id) + '-' + serve.id + '" data-act="sell" data-id="' + esc(item.id) + '" data-serve="' + serve.id + '" aria-label="Sell ' + esc(serve.label + ', ' + title + ', ' + money(serve.price)) + '">' +
+      '<span class="tile-top"><span class="tile-name">' + swatch(item) + esc(title) + '</span>' + (sold ? '<span class="tile-count" title="Sold today">' + esc(qtyText(sold)) + '</span>' : '') + '</span>' +
+      '<span class="tile-sub">' + esc(serve.id === 'piece' ? (item.category || 'Drink') : serve.label) + '</span>' +
+      '<span class="tile-price">' + esc(money(serve.price)) + '</span>' +
+      '<span class="tile-stock">' + (st === 'out' ? '86’d · ' : '') + esc(left) + '</span></button>';
+  }
+
+  function viewBar(d) {
+    const tab = ui.bar.tab;
+    const s = d.salesToday;
+    const seg = function (val, label) { return '<button type="button" data-act="bar-tab" data-tab="' + val + '" aria-pressed="' + (tab === val) + '">' + label + '</button>'; };
+    const head = '<div class="page-head"><div><p class="eyebrow">Front of house</p><h1>Bar</h1>' +
+      '<p class="muted small" style="margin:4px 0 0">Today: <b class="num">' + esc(qtyText(s.qty)) + '</b> sold · <b class="num">' + esc(money(s.revenue)) + '</b></p></div>' +
+      '<div class="actions"><button type="button" class="btn" data-act="import-sales">Import till sales</button>' +
+      '<button type="button" class="btn" data-act="new-drink">' + ICON.plus + 'Drink</button>' +
+      '<button type="button" class="btn primary" data-act="new-wine">' + ICON.plus + 'Wine</button></div></div>' +
+      '<div><div class="seg" role="group" aria-label="Bar">' + seg('wines', 'Wine list') + seg('sales', 'Sales') + seg('sell', 'Quick sell') + '</div></div>';
+
+    if (!d.sellable.length) {
+      return head + banners(d) + '<section class="panel"><div class="empty"><strong>Nothing on the bar yet</strong>' +
+        '<span>Add your wines (sold by the bottle and the glass) and soft drinks (sold per piece). Each sale tapped here comes off stock.</span>' +
+        '<div class="actions"><button type="button" class="btn primary" data-act="new-wine">Add a wine</button><button type="button" class="btn" data-act="new-drink">Add a drink</button></div>' +
+        '<span class="small">Already in Stock? Open the item and choose how it is sold to guests.</span></div></section>';
+    }
+    let body = '';
+    if (tab === 'sell') body = barSell(d);
+    else if (tab === 'wines') body = barWines(d);
+    else body = barSales(d);
+    return head + banners(d) + body;
+  }
+
+  function barSell(d) {
+    const q = ui.bar.q.trim().toLowerCase();
+    const match = function (i) { return !q || [i.name, i.producer, i.grape, i.region, i.vintage, i.category].join(' ').toLowerCase().indexOf(q) > -1; };
+    const wines = d.sellable.filter(function (i) { return i.kind === 'wine' && match(i); }).sort(byColour);
+    const drinks = d.sellable.filter(function (i) { return i.kind === 'drink' && match(i); });
+    const sections = [
+      ['Wine by the glass', wines.filter(function (i) { return L.serveOf(i, 'glass'); }).map(function (i) { return [i, L.serveOf(i, 'glass')]; })],
+      ['Wine by the bottle', wines.map(function (i) { return [i, L.serveOf(i, 'bottle')]; })],
+      ['Soft drinks & water', drinks.map(function (i) { return [i, L.serveOf(i, 'piece')]; })]
+    ].filter(function (x) { return x[1].length; });
+    const short = d.sellable.filter(function (i) { return d.status[i.id] === 'out' || d.status[i.id] === 'low'; });
+    const last = ui.bar.last && Date.now() - ui.bar.last.t < 10 * 60 * 1000 ? ui.bar.last : null;
+    return '<p class="small muted" style="margin:0">Sales rung up in Hype come in with <b>Import till sales</b>. Tap here only for drinks that don’t go through Hype; each tap comes off stock.</p>' +
+      '<label class="search" for="bar-q">' + ICON.search + '<input type="search" id="bar-q" data-bind="bar-q" placeholder="Find a wine or drink" value="' + esc(ui.bar.q) + '" autocomplete="off"></label>' +
+      (short.length ? '<div class="note"><p><b>Tell the floor:</b> ' + short.map(function (i) {
+        return esc(i.name) + (d.status[i.id] === 'out' ? ' is 86’d' : ' (' + esc(i.kind === 'wine' ? L.wineStock(i).text : qtyText(i.onHand) + ' left') + ')');
+      }).join(' · ') + '</p></div>' : '') +
+      (last ? '<div class="lastsale" role="status"><span>Sold <b>' + esc(last.label) + '</b> · ' + esc(money(last.price)) + '</span><button type="button" class="btn sm" data-act="undo-sale">Undo</button></div>' : '') +
+      (sections.length ? sections.map(function (sec) {
+        return '<section class="stack"><div class="section-head"><h2>' + esc(sec[0]) + '</h2><span class="muted small">' + plural(sec[1].length, 'item') + '</span></div>' +
+          '<div class="tiles">' + sec[1].map(function (t) { return tile(d, t[0], t[1]); }).join('') + '</div></section>';
+      }).join('') : '<div class="empty"><span>Nothing matches “' + esc(ui.bar.q) + '”.</span></div>');
+  }
+
+  function barWines(d) {
+    const vat = store.settings.vat;
+    const wines = d.sellable.filter(function (i) { return i.kind === 'wine'; }).sort(byColour);
+    const drinks = d.sellable.filter(function (i) { return i.kind === 'drink'; });
+    const groups = {};
+    wines.forEach(function (w) { const k = COLOUR_ORDER.indexOf(w.colour) > -1 ? w.colour : ''; (groups[k] = groups[k] || []).push(w); });
+    const gp = function (item, serveId) {
+      const sv = L.serveOf(item, serveId);
+      const m = sv ? L.serveMargin(item, sv, vat) : null;
+      return m === null ? '–' : m + '%';
+    };
+    const stockCell = function (item, text) {
+      const st = d.status[item.id];
+      return '<td class="r" data-l="In stock"><span class="num">' + esc(text) + '</span>' + (st === 'out' || st === 'low' ? ' ' + statusPill(st) : '') + '</td>';
+    };
+    const wineTables = COLOUR_ORDER.concat(['']).filter(function (k) { return groups[k]; }).map(function (k) {
+      return '<section class="panel flush"><div class="section-head"><h2>' + esc(colourName(k)) + '</h2><span class="muted small">' + plural(groups[k].length, 'wine') + '</span></div>' +
+        '<div class="table-wrap"><table class="line-table winelist wines"><thead><tr><th>Wine</th><th>Vintage</th><th class="r">Bottle</th><th class="r">Glass</th><th class="r">In stock</th><th class="r">GP bottle / glass</th><th></th></tr></thead><tbody>' +
+        groups[k].map(function (w) {
+          const glass = L.serveOf(w, 'glass');
+          const sub = [w.producer, w.region, w.grape].filter(Boolean).join(' · ');
+          return '<tr><td>' + swatch(w) + '<b>' + esc(w.name) + '</b>' + (sub ? '<div class="small muted">' + esc(sub) + '</div>' : '') + '</td>' +
+            '<td class="num" data-l="Vintage">' + esc(w.vintage || '–') + '</td>' +
+            '<td class="r num" data-l="Bottle">' + esc(money(w.price)) + '</td>' +
+            '<td class="r num" data-l="Glass">' + (glass ? esc(money(glass.price)) + '<div class="small muted">' + esc(qtyText(w.glassCl)) + ' cl</div>' : '–') + '</td>' +
+            stockCell(w, L.wineStock(w).text) +
+            '<td class="r num" data-l="GP">' + gp(w, 'bottle') + ' / ' + (glass ? gp(w, 'glass') : '–') + '</td>' +
+            '<td class="r"><button type="button" class="btn ghost sm" data-act="edit-item" data-id="' + esc(w.id) + '">Edit</button></td></tr>';
+        }).join('') + '</tbody></table></div></section>';
+    }).join('');
+    const drinkTable = drinks.length ? '<section class="panel flush"><div class="section-head"><h2>Soft drinks &amp; water</h2><span class="muted small">sold per piece</span></div>' +
+      '<div class="table-wrap"><table class="line-table winelist"><thead><tr><th>Drink</th><th class="r">Price</th><th class="r">In stock</th><th class="r">GP</th><th></th></tr></thead><tbody>' +
+      drinks.map(function (i) {
+        return '<tr><td><b>' + esc(i.name) + '</b></td><td class="r num" data-l="Price">' + esc(money(i.price)) + '</td>' + stockCell(i, qtyText(i.onHand) + ' ' + (i.unit || '')) +
+          '<td class="r num" data-l="GP">' + gp(i, 'piece') + '</td><td class="r"><button type="button" class="btn ghost sm" data-act="edit-item" data-id="' + esc(i.id) + '">Edit</button></td></tr>';
+      }).join('') + '</tbody></table></div></section>' : '';
+    return wineTables + drinkTable +
+      '<p class="small muted">GP is the gross profit on the menu price' + (L.num(vat, 0) > 0 ? ' without ' + esc(qtyText(vat)) + '% VAT' : '; set your VAT rate in Setup to take it out') + '. Glass stock counts the open bottle too.</p>';
+  }
+
+  function salesRange() {
+    const now = new Date();
+    if (ui.bar.range === 'yesterday') { const y = L.isoDate(L.addDays(now, -1)); return [y, y, 'yesterday']; }
+    if (ui.bar.range === 'week') return [L.isoDate(L.addDays(now, -6)), L.isoDate(now), 'the last 7 days'];
+    const t = L.isoDate(now);
+    return [t, t, 'today'];
+  }
+
+  function barSales(d) {
+    const r = salesRange();
+    const sum = L.salesSummary(d.moves, d.items, r[0], r[1]);
+    const chip = function (val, label) { return '<button type="button" data-act="bar-range" data-range="' + val + '" aria-pressed="' + (ui.bar.range === val) + '">' + label + '</button>'; };
+    return '<div class="toolbar"><div class="seg" role="group" aria-label="Period">' + chip('today', 'Today') + chip('yesterday', 'Yesterday') + chip('week', 'Last 7 days') + '</div></div>' +
+      '<div class="strip">' +
+      stat({ label: 'Sold', value: qtyText(sum.qty), hint: 'glasses, bottles and drinks' }) +
+      stat({ label: 'Takings', value: money(sum.revenue), hint: 'menu prices' }) +
+      stat({ label: 'From the bar screen', value: qtyText(sum.sources.bar), hint: 'tapped by staff' }) +
+      stat({ label: 'From Hype', value: qtyText(sum.sources.pos), hint: 'imported till reports' }) + '</div>' +
+      '<section class="panel flush"><div class="section-head"><h2>Sales ' + esc(r[2]) + '</h2></div>' +
+      (sum.rows.length ? '<div class="table-wrap"><table class="line-table winelist"><thead><tr><th>Item</th><th>Sold as</th><th class="r">Qty</th><th class="r">Takings</th></tr></thead><tbody>' +
+        sum.rows.map(function (x) { return '<tr><td>' + esc(x.name) + '</td><td data-l="Sold as">' + esc(x.label) + '</td><td class="r num" data-l="Qty">' + esc(qtyText(x.qty)) + '</td><td class="r num" data-l="Takings">' + esc(money(x.revenue)) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<div class="empty"><span>No sales recorded ' + esc(r[2]) + '.</span><button type="button" class="btn sm" data-act="import-sales">Import till sales</button></div>') + '</section>';
+  }
+
+  /* ---------- kitchen (Komat Kitchen Book) ---------- */
+
+  function stationNames(list) { return (list || []).map(function (s) { return L.STATIONS[s] || s; }).join(', '); }
+
+  function kitchenSynced(d) {
+    const m = d.kitchenMeta;
+    return m && m.syncedAt ? 'From the Kitchen Book, copied ' + ago(m.syncedAt) : '';
+  }
+
+  function askRows(d, list) {
+    return '<div class="rows">' + list.map(function (a) {
+      const item = a.itemId && d.items.find(function (i) { return i.id === a.itemId; });
+      const sup = item && d.supplierById[item.supplierId];
+      const where = item ? (sup ? 'goes on the ' + esc(sup.name) + ' order' : '<span style="color:var(--warn)">' + esc(item.name) + ' has no supplier</span>')
+        : '<span style="color:var(--warn)">not in the stock list</span>';
+      return '<div class="row"><div class="row-main"><div class="row-title"><span class="name">' + esc(a.name) + '</span>' +
+        '<span class="pill ' + (a.status === 'out' ? 'out' : 'low') + '">' + (a.status === 'out' ? 'Out' : 'Low') + '</span></div>' +
+        '<div class="row-meta">' + esc(stationNames(a.stations)) + (a.note ? ' · “' + esc(a.note) + '”' : '') + ' · ' + where + '</div></div><span></span>' +
+        (item ? (sup ? '' : '<button type="button" class="btn sm" data-act="edit-item" data-id="' + esc(item.id) + '">Set supplier</button>')
+          : '<button type="button" class="btn sm" data-act="link-ask" data-key="' + esc(a.key) + '">Link</button>') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  function kitchenPanel(d) {
+    if (!d.asks.length && !d.kitchenMeta) return '';
+    return '<section class="panel flush"><div class="section-head"><h2>Kitchen asked for</h2><span class="muted small">' + esc(kitchenSynced(d)) + '</span></div>' +
+      (d.asks.length ? askRows(d, d.asks) : '<div class="empty"><span>No order checks from the stations since yesterday.</span></div>') + '</section>';
+  }
+
+  function linkAskSheet(s) {
+    const items = store.list('items').sort(byName);
+    return {
+      title: 'Link a kitchen product',
+      body: '<p style="margin:0">The kitchen calls it <b>' + esc(s.name) + '</b>. Which stock item is that?</p>' +
+        '<label class="field" for="link-item"><span>Stock item</span><select id="link-item"><option value="">Choose…</option>' +
+        items.map(function (i) { return '<option value="' + esc(i.id) + '">' + esc(i.name) + '</option>'; }).join('') + '</select>' +
+        '<span class="hint">Remembered: next time the kitchen asks for it, it goes straight onto the right order.</span></label>',
+      foot: '<button type="button" class="btn" data-act="ask-new-item">Add as a new item</button><span class="spacer"></span>' +
+        '<button type="button" class="btn" data-act="close-sheet">Cancel</button><button type="button" class="btn primary" data-act="ask-link">Link</button>'
+    };
+  }
+
+  function importKitchenSheet(s) {
+    const d = derive();
+    const have = {};
+    d.items.forEach(function (i) { have[L.normName(i.name)] = true; });
+    const linked = {};
+    Object.keys(store.settings.kitchenMap || {}).forEach(function (k) { linked[k] = true; });
+    const list = d.kitchenProducts.filter(function (p) { const k = L.normName(p.name); return !have[k] && !linked[k]; });
+    s.list = list;
+    s.sel = s.sel || {};
+    const n = list.filter(function (p, idx) { return s.sel[idx]; }).length;
+    return {
+      title: 'Products from the Kitchen Book',
+      body: (list.length ? '<p style="margin:0">' + plural(list.length, 'product') + ' used in the Kitchen Book recipes ' + (list.length === 1 ? 'is' : 'are') + ' not in your stock list yet. Tick the ones you buy; preparations and salt, pepper and water are already left out.</p>' +
+        '<div class="actions"><button type="button" class="btn sm" data-act="kp-menu">Tick everything on the menu</button><button type="button" class="btn sm ghost" data-act="kp-none">Clear</button></div>' +
+        '<div class="form-grid"><label class="field" for="kp-sup"><span>Supplier for the ticked items</span><select id="kp-sup">' + supplierOptions(s.sup || '') + '</select></label>' +
+        '<label class="field" for="kp-loc"><span>Storage location</span><input type="text" id="kp-loc" list="dl-loc" value="' + esc(s.loc || '') + '" placeholder="Walk-in fridge"></label>' + datalists() + '</div>' +
+        '<div class="kp-list">' + list.map(function (p, idx) {
+          const used = p.usedIn.slice(0, 2).join(', ') + (p.usedIn.length > 2 ? ' +' + (p.usedIn.length - 2) : '');
+          return '<label class="kp" for="kp-' + idx + '"><input type="checkbox" id="kp-' + idx + '" data-kp="' + idx + '"' + (s.sel[idx] ? ' checked' : '') + '>' +
+            '<span><b>' + esc(p.name) + '</b><small>' + esc(used) + (p.stations.length ? ' · ' + esc(stationNames(p.stations)) : '') + (p.onMenu ? '' : ' · not on the menu') + '</small></span>' +
+            '<span class="muted small">' + esc(L.stockUnitFor(p.units)) + '</span></label>';
+        }).join('') + '</div>'
+        : '<div class="empty"><span>' + (d.kitchenProducts.length ? 'Every product from the Kitchen Book recipes is already in your stock list.' : 'No recipes have been copied from the Kitchen Book yet.') + '</span></div>'),
+      foot: '<span class="spacer"></span><button type="button" class="btn" data-act="close-sheet">Cancel</button>' +
+        (list.length ? '<button type="button" class="btn primary" data-act="kp-run"' + (n ? '' : ' disabled') + '>Add ' + plural(n, 'item') + '</button>' : '')
+    };
+  }
+
+  /* ---------- till sales import (Hype daily report) ---------- */
+
+  function importSalesSheet(s) {
+    if (!s.rows) {
+      return {
+        title: 'Import till sales',
+        body: '<label class="field" for="pos-date"><span>Sales from</span><input type="date" id="pos-date" data-bind="pos-date" value="' + esc(s.date) + '"></label>' +
+          fileOrPaste('pos', '.csv,.txt,.tsv,.xlsx,.xls,text/csv', 'In Hype, export the sales by article report for the day (CSV or Excel). It needs the article name and the quantity sold; takings are picked up when present. Wines and drinks are matched to the wine list; mark food lines as not tracked once and they are remembered.') +
+          (s.error ? '<div class="note bad"><p>' + esc(s.error) + '</p></div>' : ''),
+        foot: '<span class="spacer"></span><button type="button" class="btn" data-act="close-sheet">Cancel</button><button type="button" class="btn primary" data-act="pos-read">Read report</button>'
+      };
+    }
+    const d = derive();
+    const sales = L.rowsToSales(s.rows, s.mapping);
+    const options = [];
+    d.sellable.slice().sort(byColour).forEach(function (i) {
+      L.servesOf(i).forEach(function (sv) { options.push([i.id + '|' + sv.id, i.name + (i.vintage ? ' ' + i.vintage : '') + ' · ' + sv.label]); });
+    });
+    sales.forEach(function (r) {
+      if (s.choice[r.key] !== undefined) return;
+      const m = L.matchSale(r, d.items, store.settings.posMap);
+      s.choice[r.key] = !m ? '' : m.ignore ? 'ignore' : m.itemId + '|' + m.serveId;
+    });
+    const barSold = d.moves.filter(function (m) { return m.date === s.date && m.tab !== 'pos'; })
+      .reduce(function (a, m) { return a + (m.entries || []).filter(function (e) { return e.k === 'sale'; }).length; }, 0);
+    const headers = s.rows[0];
+    const mapSel = function (f, label) {
+      return '<label class="field" for="smap-' + f + '"><span>' + label + '</span><select id="smap-' + f + '" data-smap="' + f + '"><option value="">Not in file</option>' +
+        headers.map(function (h, idx) { return '<option value="' + idx + '"' + (s.mapping[f] === idx ? ' selected' : '') + '>' + esc(h || 'Column ' + (idx + 1)) + '</option>'; }).join('') + '</select></label>';
+    };
+    const tracked = sales.filter(function (r) { return s.choice[r.key] && s.choice[r.key] !== 'ignore'; });
+    const open = sales.filter(function (r) { return !s.choice[r.key]; }).length;
+    return {
+      title: 'Import till sales',
+      body: '<p style="margin:0">Sales from <b>' + esc(fmtDay(s.date)) + '</b>: ' + plural(sales.length, 'article') + ' in the report.</p>' +
+        '<div class="form-grid">' + mapSel('name', 'Article name') + mapSel('qty', 'Quantity sold') + mapSel('revenue', 'Takings (optional)') + mapSel('sku', 'Article number (optional)') + '</div>' +
+        (barSold ? '<div class="note bad"><p>The bar screen already recorded ' + plural(barSold, 'sale') + ' on this day. Importing the till report as well counts those drinks twice. Use one or the other for a day.</p></div>' : '') +
+        '<div class="table-wrap"><table class="line-table"><thead><tr><th>Till article</th><th class="r">Qty</th><th>Comes off stock as</th></tr></thead><tbody>' +
+        sales.map(function (r) {
+          const c = s.choice[r.key];
+          return '<tr' + (c ? '' : ' class="unmatched"') + '><td>' + esc(r.name) + '</td><td class="r num">' + esc(qtyText(r.qty)) + '</td>' +
+            '<td><label class="sr-only" for="pos-' + esc(L.hash(r.key)) + '">Stock item for ' + esc(r.name) + '</label><select id="pos-' + esc(L.hash(r.key)) + '" data-pos="' + esc(r.key) + '">' +
+            '<option value="">Choose…</option><option value="ignore"' + (c === 'ignore' ? ' selected' : '') + '>Not tracked (food, other)</option>' +
+            options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (c === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></td></tr>';
+        }).join('') + '</tbody></table></div>' +
+        (open ? '<div class="actions"><span class="small muted">' + plural(open, 'article') + ' not matched yet.</span><button type="button" class="btn sm" data-act="pos-ignore-rest">Mark the rest as not tracked</button></div>' : '') +
+        '<label class="check" for="pos-deduct"><input type="checkbox" id="pos-deduct" data-bind="pos-deduct"' + (s.deduct ? ' checked' : '') + '><span>Also take these sales off stock. Leave this off when you update stock from Hype’s stock report, or the drinks come off twice.</span></label>' +
+        '<p class="small muted" style="margin:0">Your choices are remembered for the next report. Importing the same report again replaces it instead of counting it twice.</p>',
+      foot: '<button type="button" class="btn" data-act="pos-back">Back</button><span class="spacer"></span><button type="button" class="btn primary" data-act="pos-run"' + (tracked.length ? '' : ' disabled') + '>Take ' + plural(tracked.length, 'article') + ' off stock</button>'
+    };
   }
 
   /* ---------- sheets (side panels) ---------- */
@@ -740,12 +1049,29 @@
 
   const SHEETS = {
     item: function (s) {
-      const i = s.id ? store.get('items', s.id) || {} : (s.preset || {});
+      const i = s.id ? effItem(s.id) || {} : (s.preset || {});
       const rp = L.num(i.reorderAt, NaN);
+      const kind = i.kind || '';
+      const colourOpts = L.WINE_COLOURS.map(function (c) { return '<option value="' + c[0] + '"' + (i.colour === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('');
       return {
         title: s.id ? 'Edit item' : 'New item',
         body: '<form data-form="item" id="item-form" class="form-grid">' + datalists() +
-          inputField('name', 'Name', i.name, { required: true, wide: true, autofocus: !s.id, placeholder: 'e.g. Tomatoes' }) +
+          inputField('name', 'Name', i.name, { required: true, wide: true, autofocus: !s.id, placeholder: kind === 'wine' ? 'e.g. Rioja Reserva' : 'e.g. Tomatoes' }) +
+          '<label class="field wide" for="f-kind"><span>Sold to guests</span><select id="f-kind" name="kind" data-bind="item-kind">' +
+          '<option value="">Not sold directly (kitchen or bar supply)</option>' +
+          '<option value="wine"' + (kind === 'wine' ? ' selected' : '') + '>Wine, by the bottle and the glass</option>' +
+          '<option value="drink"' + (kind === 'drink' ? ' selected' : '') + '>Drink sold per piece (soft drinks, water, juice)</option>' +
+          '</select><span class="hint">Wines and drinks show up on the Bar screen, and every sale comes off stock.</span></label>' +
+          '<fieldset class="wide form-grid" id="wine-fields"' + (kind === 'wine' ? '' : ' hidden') + '><legend>Wine</legend>' +
+          inputField('producer', 'Producer', i.producer) +
+          inputField('vintage', 'Vintage', i.vintage, { placeholder: '2022 or NV' }) +
+          inputField('region', 'Region', i.region) +
+          inputField('grape', 'Grape', i.grape) +
+          '<label class="field" for="f-colour"><span>Style</span><select id="f-colour" name="colour"><option value="">Choose…</option>' + colourOpts + '</select></label>' +
+          inputField('bottleCl', 'Bottle size (cl)', i.bottleCl || 75, { mode: 'decimal' }) +
+          inputField('glassCl', 'Glass size (cl)', i.glassCl || '', { mode: 'decimal', placeholder: 'e.g. 15', hint: 'Leave empty if it is only sold by the bottle.' }) +
+          inputField('glassPrice', 'Price per glass', i.glassPrice, { mode: 'decimal' }) +
+          '</fieldset>' +
           inputField('location', 'Storage location', i.location, { list: 'dl-loc', placeholder: 'Walk-in fridge' }) +
           inputField('category', 'Category', i.category, { list: 'dl-cat', placeholder: 'Produce' }) +
           inputField('unit', 'Counted in', i.unit || 'pcs', { list: 'dl-unit', hint: 'The unit you count: kg, l, pcs, bottle…' }) +
@@ -756,8 +1082,8 @@
           inputField('packLabel', 'Pack name', i.packLabel, { list: 'dl-pack', placeholder: 'case' }) +
           '<label class="field wide" for="f-supplierId"><span>Supplier</span><select id="f-supplierId" name="supplierId">' + supplierOptions(i.supplierId) + '</select></label>' +
           inputField('cost', 'Cost per unit', i.cost, { mode: 'decimal', hint: 'Purchase price (EK) per counted unit.' }) +
-          inputField('price', 'Selling price', i.price, { mode: 'decimal', hint: 'Optional (VK), for items sold as they are.' }) +
-          inputField('sku', 'Article number', i.sku, { placeholder: 'Supplier or Hypersoft number' }) +
+          inputField('price', 'Selling price', i.price, { mode: 'decimal', hint: 'Menu price (VK): per bottle for wines, per piece for drinks.' }) +
+          inputField('sku', 'Article number', i.sku, { placeholder: 'Supplier or Hype number' }) +
           '<label class="field wide" for="f-notes"><span>Notes</span><textarea id="f-notes" name="notes" style="min-height:64px">' + esc(i.notes) + '</textarea></label>' +
           '</form>',
         foot: deleteFoot(s, 'item', 'item-form')
@@ -816,6 +1142,9 @@
     },
 
     order: function (s) { return orderSheet(s); },
+    linkAsk: function (s) { return linkAskSheet(s); },
+    importKitchen: function (s) { return importKitchenSheet(s); },
+    importSales: function (s) { return importSalesSheet(s); },
     importItems: function (s) { return importItemsSheet(s); },
     importBookings: function (s) { return importBookingsSheet(s); },
     importBackup: function (s) { return importBackupSheet(s); }
@@ -854,8 +1183,8 @@
       body += '<section class="stack"><h3>Lines</h3>' +
         ((o.lines || []).length ? '<div class="table-wrap"><table class="line-table"><thead><tr><th>Item</th><th class="r">Qty</th><th></th><th></th></tr></thead><tbody>' +
           o.lines.map(function (l, idx) {
-            const item = store.get('items', l.itemId);
-            return '<tr><td>' + esc(l.name) + (item ? '<div class="small muted">on hand ' + esc(qtyText(item.onHand)) + ' ' + esc(item.unit || '') + ' · par ' + esc(qtyText(item.par)) + '</div>' : '') + '</td>' +
+            const item = effItem(l.itemId);
+            return '<tr><td>' + esc(l.name) + (l.asked ? ' <span class="pill ' + (l.asked === 'out' ? 'out' : 'low') + '">Kitchen</span>' : '') + (item ? '<div class="small muted">on hand ' + esc(qtyText(item.onHand)) + ' ' + esc(item.unit || '') + ' · par ' + esc(qtyText(item.par)) + '</div>' : '') + '</td>' +
               '<td class="r"><label class="sr-only" for="ol-' + idx + '">Quantity of ' + esc(l.name) + '</label><input type="text" inputmode="decimal" class="count-input" id="ol-' + idx + '" data-line="' + idx + '" value="' + esc(qtyText(l.qty)) + '"></td>' +
               '<td class="small muted">' + esc(l.unitsPerPack > 1 ? l.orderUnit + ' of ' + qtyText(l.unitsPerPack) : l.unit) + '</td>' +
               '<td><button type="button" class="btn ghost sm" data-act="line-remove" data-i="' + idx + '" aria-label="Remove ' + esc(l.name) + '">Remove</button></td></tr>';
@@ -936,7 +1265,7 @@
     if (!sup) return;
     const sug = blank ? null : d.suggestions.find(function (g) { return g.supplier.id === supplierId; });
     const lines = sug ? sug.lines.map(function (l) {
-      return { itemId: l.itemId, name: l.name, sku: l.sku, qty: l.qty, orderUnit: l.orderUnit, unitsPerPack: l.unitsPerPack, unit: l.unit, cost: l.cost };
+      return { itemId: l.itemId, name: l.name, sku: l.sku, qty: l.qty, orderUnit: l.orderUnit, unitsPerPack: l.unitsPerPack, unit: l.unit, cost: l.cost, asked: l.asked };
     }) : [];
     const existing = d.draftBySupplier[supplierId];
     if (existing) {
@@ -964,6 +1293,9 @@
 
   /* ---------- import sheets ---------- */
 
+  /** Identifies an export layout by its header row, to remember how its columns were matched. */
+  function headerKey(headers) { return L.hash(headers.map(function (h) { return L.normName(h); }).join('|')); }
+
   const FIELD_LABELS = {
     name: 'Name', sku: 'Article number', category: 'Category', location: 'Storage location', unit: 'Unit',
     onHand: 'On hand', par: 'Par level', reorderAt: 'Reorder at', packSize: 'Units per pack', packLabel: 'Pack name',
@@ -972,15 +1304,15 @@
 
   function fileOrPaste(prefix, accept, help) {
     return '<p class="muted" style="margin:0">' + help + '</p>' +
-      '<label class="field" for="' + prefix + '-file"><span>Choose a file</span><input type="file" id="' + prefix + '-file" data-file="' + prefix + '" accept="' + accept + '"></label>' +
+      '<label class="field" for="' + prefix + '-file"><span>Choose a file (CSV or Excel)</span><input type="file" id="' + prefix + '-file" data-file="' + prefix + '" accept="' + accept + '"></label>' +
       '<label class="field" for="' + prefix + '-paste"><span>…or paste the contents</span><textarea id="' + prefix + '-paste" style="min-height:120px;font-family:var(--font-mono);font-size:.78rem" placeholder="name;on hand;unit;par;supplier"></textarea></label>';
   }
 
   function importItemsSheet(s) {
     if (!s.rows) {
       return {
-        title: 'Import items',
-        body: fileOrPaste('imp', '.csv,.txt,.tsv,text/csv', 'In Hypersoft, export your article list or stock list (Artikelliste / Lagerbestand) to CSV. From Excel, use <b>Save as → CSV</b>. Column names in English or German are recognised: Artikel, Bestand, Einheit, Sollbestand, Mindestbestand, EK, VK, Lieferant, Lagerort, Warengruppe.') +
+        title: 'Update stock from Hype',
+        body: fileOrPaste('imp', '.csv,.txt,.tsv,.xlsx,.xls,text/csv', 'In Hype, export the stock list (наличности) as Excel or CSV and choose it here. Columns in Bulgarian or English are recognised, such as Наименование, Код, Мярка, Количество, Доставна цена, Продажна цена, Доставчик, Склад, Група. Stock figures from Hype replace the counts here; your par levels and suppliers stay.') +
           (s.error ? '<div class="note bad"><p>' + esc(s.error) + '</p></div>' : ''),
         foot: '<span class="spacer"></span><button type="button" class="btn" data-act="close-sheet">Cancel</button><button type="button" class="btn primary" data-act="imp-read">Read data</button>'
       };
@@ -991,20 +1323,22 @@
     store.list('items').forEach(function (i) { existing[String(i.name).toLowerCase()] = true; });
     const updates = preview.filter(function (p) { return existing[p.name.toLowerCase()]; }).length;
     return {
-      title: 'Import items',
+      title: 'Update stock from Hype',
       body: '<p style="margin:0"><b class="num">' + (s.rows.length - 1) + '</b> rows found. Check which column holds what.</p>' +
         '<div class="form-grid">' + Object.keys(FIELD_LABELS).map(function (f) {
           return '<label class="field" for="map-' + f + '"><span>' + FIELD_LABELS[f] + (f === 'name' ? ' (required)' : '') + '</span><select id="map-' + f + '" data-map="' + f + '"><option value="">Not in file</option>' +
             headers.map(function (h, idx) { return '<option value="' + idx + '"' + (s.mapping[f] === idx ? ' selected' : '') + '>' + esc(h || 'Column ' + (idx + 1)) + '</option>'; }).join('') + '</select></label>';
         }).join('') + '</div>' +
-        '<label class="check" for="imp-update"><input type="checkbox" id="imp-update" data-bind="imp-update"' + (s.update ? ' checked' : '') + '><span>Update items that already exist (matched by name): ' + plural(updates, 'match', 'matches') + '</span></label>' +
+        (s.remembered ? '<p class="small muted" style="margin:0">Using the columns you matched last time for this export.</p>' : '') +
+        '<label class="check" for="imp-update"><input type="checkbox" id="imp-update" data-bind="imp-update"' + (s.update ? ' checked' : '') + '><span>Update stock and prices of items already in the list (matched by name): ' + plural(updates, 'match', 'matches') + '</span></label>' +
+        '<label class="check" for="imp-addnew"><input type="checkbox" id="imp-addnew" data-bind="imp-addnew"' + (s.addNew ? ' checked' : '') + '><span>Add the ' + plural(preview.length - updates, 'item') + ' that ' + (preview.length - updates === 1 ? 'is' : 'are') + ' not in the list yet</span></label>' +
         '<h3>Preview</h3><div class="table-wrap"><table class="line-table"><thead><tr><th>Name</th><th class="r">On hand</th><th>Unit</th><th class="r">Par</th><th class="r">Cost</th><th>Supplier</th></tr></thead><tbody>' +
         preview.slice(0, 8).map(function (p) {
           return '<tr><td>' + esc(p.name) + '</td><td class="r num">' + esc(p.onHand === undefined ? '' : qtyText(p.onHand)) + '</td><td>' + esc(p.unit || '') + '</td><td class="r num">' + esc(p.par === undefined ? '' : qtyText(p.par)) + '</td><td class="r num">' + esc(p.cost === undefined ? '' : money(p.cost)) + '</td><td>' + esc(p.supplier || '') + '</td></tr>';
         }).join('') + '</tbody></table></div>' +
         (preview.length > 8 ? '<p class="small muted" style="margin:0">…and ' + (preview.length - 8) + ' more.</p>' : '') +
         (s.mapping.name === undefined ? '<div class="note bad"><p>Pick the column that holds the item name.</p></div>' : ''),
-      foot: '<button type="button" class="btn" data-act="imp-back">Back</button><span class="spacer"></span><button type="button" class="btn primary" data-act="imp-run"' + (s.mapping.name === undefined || !preview.length ? ' disabled' : '') + '>Import ' + plural(preview.length, 'item') + '</button>'
+      foot: '<button type="button" class="btn" data-act="imp-back">Back</button><span class="spacer"></span><button type="button" class="btn primary" data-act="imp-run"' + (s.mapping.name === undefined || !preview.length ? ' disabled' : '') + '>Import</button>'
     };
   }
 
@@ -1012,7 +1346,7 @@
     if (!s.list) {
       return {
         title: 'Import bookings',
-        body: fileOrPaste('impb', '.csv,.txt,text/csv', 'Export bookings from your reservation system as CSV. It needs a date and number of guests per row; time, name, phone and notes are picked up when present.') +
+        body: fileOrPaste('impb', '.csv,.txt,.xlsx,.xls,text/csv', 'Export the bookings from reservation.tools (CSV or Excel). It needs a date and the number of guests per row; time, name, phone and notes are picked up when present. Bulgarian column names such as Дата, Час, Име, Брой гости and Телефон are recognised.') +
           (s.error ? '<div class="note bad"><p>' + esc(s.error) + '</p></div>' : ''),
         foot: '<span class="spacer"></span><button type="button" class="btn" data-act="close-sheet">Cancel</button><button type="button" class="btn primary" data-act="impb-read">Read data</button>'
       };
@@ -1039,25 +1373,50 @@
     };
   }
 
+  let xlsxLoading = null;
+  /** SheetJS, loaded only when someone picks an Excel file. */
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!xlsxLoading) {
+      xlsxLoading = new Promise(function (resolve, reject) {
+        const sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        sc.onload = function () { resolve(window.XLSX); };
+        sc.onerror = function () { xlsxLoading = null; reject(new Error('Excel reader did not load')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return xlsxLoading;
+  }
+
+  function decodeText(buf) {
+    const text = new TextDecoder('utf-8').decode(buf);
+    if (text.indexOf('\ufffd') < 0) return text;
+    // Not UTF-8. Bulgarian Windows exports are usually Windows-1251, Western European ones Windows-1252.
+    try {
+      const cyrillic = new TextDecoder('windows-1251').decode(buf);
+      if (/[\u0400-\u04FF]{3}/.test(cyrillic)) return cyrillic;
+      return new TextDecoder('windows-1252').decode(buf);
+    } catch (e) {
+      return text;
+    }
+  }
+
+  /** A chosen file as text; Excel files become semicolon-separated rows of their first sheet. */
   function readFileText(input) {
+    const f = input.files && input.files[0];
+    if (!f) return Promise.resolve(null);
     return new Promise(function (resolve, reject) {
-      const f = input.files && input.files[0];
-      if (!f) { resolve(null); return; }
       const r = new FileReader();
-      r.onload = function () {
-        let text = String(r.result || '');
-        // Excel on Windows often writes CSV as Windows-1252; retry when UTF-8 decoding produced replacement characters.
-        if (text.indexOf('\ufffd') > -1 && typeof TextDecoder !== 'undefined') {
-          const r2 = new FileReader();
-          r2.onload = function () { try { resolve(new TextDecoder('windows-1252').decode(r2.result)); } catch (e) { resolve(text); } };
-          r2.onerror = function () { resolve(text); };
-          r2.readAsArrayBuffer(f);
-          return;
-        }
-        resolve(text);
-      };
+      r.onload = function () { resolve(r.result); };
       r.onerror = function () { reject(r.error); };
-      r.readAsText(f);
+      r.readAsArrayBuffer(f);
+    }).then(function (buf) {
+      if (!/\.(xlsx|xlsm|xls|ods)$/i.test(f.name)) return decodeText(buf);
+      return loadXlsx().then(function (X) {
+        const wb = X.read(new Uint8Array(buf), { type: 'array' });
+        return X.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]], { FS: ';', blankrows: false });
+      });
     });
   }
 
@@ -1127,14 +1486,17 @@
   const WRITE_ACTS = {
     inc: 1, dec: 1, 'count-save': 1, 'new-item': 1, 'new-supplier': 1, 'new-booking': 1, 'new-order': 1, 'start-order': 1,
     'load-examples': 1, 'remove-examples': 1, 'erase-all': 1, 'confirm-erase': 1, 'import-items': 1, 'import-bookings': 1, 'import-backup': 1,
-    'receive-order': 1, 'count-start': 1
+    'receive-order': 1, 'count-start': 1, sell: 1, 'undo-sale': 1, 'new-wine': 1, 'new-drink': 1, 'import-sales': 1,
+    'import-kitchen': 1, 'link-ask': 1
   };
 
   function bump(id, dir) {
-    const item = store.get('items', id);
+    const item = effItem(id);
     if (!item) return;
-    const next = Math.max(0, L.round(L.num(item.onHand, 0) + dir * stepFor(item), 2));
-    store.patch('items', id, { onHand: next, countedAt: Date.now() });
+    // Never below zero: a minus on an empty item does nothing.
+    const step = dir < 0 ? -Math.min(stepFor(item), L.num(item.onHand, 0)) : stepFor(item);
+    if (!step) return;
+    store.addMove({ t: Date.now(), i: id, q: L.round(step, 3), k: 'adjust' }, L.isoDate(new Date()));
   }
 
   function addRecords(col, list) {
@@ -1171,7 +1533,8 @@
         if (raw === '' || raw === undefined) return;
         const v = L.parseNum(raw);
         if (!Number.isFinite(v) || v < 0) return;
-        store.patch('items', id, { onHand: L.round(v, 3), countedAt: Date.now() });
+        const now = Date.now();
+        store.patch('items', id, { onHand: L.round(v, 3), baseAt: now, countedAt: now });
         n++;
       });
       ui.stock.counting = false;
@@ -1307,7 +1670,7 @@
         l.receivedQty = Number.isFinite(got) && got >= 0 ? got : 0;
         const item = l.itemId && store.get('items', l.itemId);
         if (item && l.receivedQty > 0) {
-          store.patch('items', item.id, { onHand: L.round(L.num(item.onHand, 0) + l.receivedQty * Math.max(1, L.num(l.unitsPerPack, 1)), 3) });
+          store.addMove({ t: Date.now(), i: item.id, q: L.round(l.receivedQty * Math.max(1, L.num(l.unitsPerPack, 1)), 3), k: 'receive', o: s.id }, L.isoDate(new Date()));
           added++;
         }
       });
@@ -1318,7 +1681,127 @@
       toast('Delivery checked in: ' + plural(added, 'item') + ' added to stock');
     },
 
-    'import-items': function () { openSheet({ type: 'importItems', update: true }); },
+    /* bar */
+    'bar-tab': function (el) { ui.bar.tab = el.dataset.tab; render(); },
+    'bar-range': function (el) { ui.bar.range = el.dataset.range; render(); },
+    'new-wine': function () { openSheet({ type: 'item', preset: { kind: 'wine', unit: 'bottle', bottleCl: 75, glassCl: 15, category: 'Wine', packSize: 6, packLabel: 'case' } }); },
+    'new-drink': function () { openSheet({ type: 'item', preset: { kind: 'drink', unit: 'bottle', category: 'Soft drinks', packSize: 24, packLabel: 'case' } }); },
+    sell: function (el) {
+      const item = effItem(el.dataset.id);
+      const serve = L.serveOf(item, el.dataset.serve);
+      if (!item || !serve) return;
+      const t = Date.now();
+      store.addMove({ t: t, i: item.id, k: 'sale', s: serve.id, n: 1, p: serve.price, q: -serve.portion, src: 'bar' }, L.isoDate(new Date()));
+      ui.bar.last = { t: t, label: (serve.id === 'piece' ? '' : serve.label + ' ') + item.name, price: serve.price };
+    },
+    'undo-sale': function () {
+      const last = ui.bar.last;
+      if (!last) return;
+      const gone = store.undoMove(function (e) { return e.k === 'sale' && e.t === last.t; });
+      ui.bar.last = null;
+      if (gone) toast('Sale removed: ' + last.label);
+      else toast('That sale was made on another device or day and can’t be undone here.', 'bad');
+      render();
+    },
+    'import-sales': function () {
+      openSheet({ type: 'importSales', date: L.isoDate(new Date()), choice: {}, deduct: !!store.settings.salesDeduct });
+    },
+    'pos-read': async function () {
+      const s = ui.sheet;
+      try {
+        const rows = L.parseCSV(await sourceText('pos'));
+        if (rows.length < 2) { s.error = 'No rows found. The report needs a header row and at least one article.'; renderSheet(); return; }
+        s.rows = rows;
+        s.mapping = L.mapSalesHeaders(rows[0]);
+        s.error = null;
+      } catch (e) {
+        s.error = 'The file could not be read. Save it as CSV or Excel and try again.';
+      }
+      renderSheet();
+    },
+    'pos-back': function () { const s = ui.sheet; s.rows = null; s.choice = {}; renderSheet(); },
+    'pos-ignore-rest': function () {
+      const s = ui.sheet;
+      L.rowsToSales(s.rows, s.mapping).forEach(function (r) { if (!s.choice[r.key]) s.choice[r.key] = 'ignore'; });
+      renderSheet();
+    },
+    'pos-run': function () {
+      const s = ui.sheet;
+      const sales = L.rowsToSales(s.rows, s.mapping);
+      const posMap = Object.assign({}, store.settings.posMap || {});
+      const t = Date.now();
+      const entries = [];
+      let n = 0;
+      sales.forEach(function (r) {
+        const c = s.choice[r.key];
+        if (c === 'ignore') { posMap[r.key] = { ignore: true }; return; }
+        if (!c) return;
+        const parts = c.split('|');
+        const item = store.get('items', parts[0]);
+        const serve = L.serveOf(item, parts[1]);
+        if (!item || !serve) return;
+        posMap[r.key] = { itemId: item.id, serveId: serve.id };
+        entries.push({ t: t, i: item.id, k: 'sale', s: serve.id, n: r.qty, p: r.hasRevenue && r.qty ? L.round(r.revenue / r.qty, 2) : serve.price, q: s.deduct ? -L.round(serve.portion * r.qty, 4) : 0, src: 'pos', name: r.name });
+        n += r.qty;
+      });
+      // A fixed id per report: importing the same report again replaces it.
+      const id = s.date + '~pos-' + L.hash(s.date + '|' + sales.map(function (r) { return r.key + ':' + r.qty; }).join(','));
+      store.put('moves', { id: id, date: s.date, tab: 'pos', source: 'Hype', entries: entries });
+      store.saveSettings({ posMap: posMap, salesDeduct: !!s.deduct });
+      closeSheet();
+      ui.bar.tab = 'sales';
+      ui.bar.range = s.date === L.isoDate(new Date()) ? 'today' : s.date === L.isoDate(L.addDays(new Date(), -1)) ? 'yesterday' : 'week';
+      toast(qtyText(n) + ' wines and drinks imported from Hype' + (s.deduct ? ' and taken off stock' : ''));
+      if (ui.view !== 'bar') location.hash = '#bar'; else render();
+    },
+
+    /* kitchen */
+    'link-ask': function (el) {
+      const d = derive();
+      const a = d.asks.find(function (x) { return x.key === el.dataset.key; });
+      if (a) openSheet({ type: 'linkAsk', key: a.key, name: a.name });
+    },
+    'ask-link': function () {
+      const s = ui.sheet;
+      const id = document.getElementById('link-item').value;
+      if (!id) { toast('Choose the stock item first.', 'bad'); return; }
+      const map = Object.assign({}, store.settings.kitchenMap || {});
+      map[s.key] = id;
+      store.saveSettings({ kitchenMap: map });
+      closeSheet();
+      toast('Linked. The kitchen’s “' + s.name + '” now goes on that item’s order.');
+    },
+    'ask-new-item': function () {
+      const s = ui.sheet;
+      const id = store.put('items', { name: s.name.charAt(0).toUpperCase() + s.name.slice(1), unit: 'pcs', onHand: 0, category: 'Kitchen' });
+      const map = Object.assign({}, store.settings.kitchenMap || {});
+      map[s.key] = id;
+      store.saveSettings({ kitchenMap: map });
+      openSheet({ type: 'item', id: id });
+      toast('Added. Set its supplier and par level.');
+    },
+    'import-kitchen': function () { openSheet({ type: 'importKitchen', sel: {} }); },
+    'kp-menu': function () {
+      const s = ui.sheet;
+      (s.list || []).forEach(function (p, idx) { if (p.onMenu) s.sel[idx] = true; });
+      renderSheet();
+    },
+    'kp-none': function () { ui.sheet.sel = {}; renderSheet(); },
+    'kp-run': function () {
+      const s = ui.sheet;
+      const sup = document.getElementById('kp-sup').value;
+      const loc = document.getElementById('kp-loc').value.trim();
+      let n = 0;
+      (s.list || []).forEach(function (p, idx) {
+        if (!s.sel[idx]) return;
+        store.put('items', { name: p.name, unit: L.stockUnitFor(p.units), category: 'Kitchen', location: loc, supplierId: sup, onHand: 0, stations: p.stations, source: 'kitchen-book' });
+        n++;
+      });
+      closeSheet();
+      toast(plural(n, 'item') + ' added. Count them and set par levels to get order suggestions.');
+    },
+
+    'import-items': function () { openSheet({ type: 'importItems', update: true, addNew: true }); },
     'imp-read': async function () {
       const s = ui.sheet;
       try {
@@ -1326,10 +1809,12 @@
         const rows = L.parseCSV(text);
         if (rows.length < 2) { s.error = 'No rows found. The file needs a header row and at least one item.'; renderSheet(); return; }
         s.rows = rows;
-        s.mapping = L.mapHeaders(rows[0]);
+        const remembered = (store.settings.importMaps || {})[headerKey(rows[0])];
+        s.mapping = remembered ? Object.assign({}, remembered) : L.mapHeaders(rows[0]);
+        s.remembered = !!remembered;
         s.error = null;
       } catch (e) {
-        s.error = 'The file could not be read. Save it as CSV and try again.';
+        s.error = 'The file could not be read. Save it as CSV or Excel and try again.';
       }
       renderSheet();
     },
@@ -1337,6 +1822,9 @@
     'imp-run': function () {
       const s = ui.sheet;
       const list = L.rowsToItems(s.rows, s.mapping);
+      const maps = Object.assign({}, store.settings.importMaps || {});
+      maps[headerKey(s.rows[0])] = s.mapping;
+      store.saveSettings({ importMaps: maps });
       const byName = {};
       store.list('items').forEach(function (i) { byName[String(i.name).toLowerCase()] = i; });
       const supByName = {};
@@ -1351,12 +1839,14 @@
         }
         delete p.supplier;
         if (supplierId) p.supplierId = supplierId;
+        if (p.onHand !== undefined) { p.baseAt = Date.now(); p.countedAt = p.baseAt; }
         const existing = byName[p.name.toLowerCase()];
         if (existing) {
           if (!s.update) return;
           store.patch('items', existing.id, p);
           updated++;
         } else {
+          if (!s.addNew) return;
           if (!p.unit) p.unit = 'pcs';
           if (p.onHand === undefined) p.onHand = 0;
           byName[p.name.toLowerCase()] = { id: store.put('items', p) };
@@ -1395,7 +1885,7 @@
     'bk-run': function () {
       const s = ui.sheet;
       let n = 0;
-      ['items', 'suppliers', 'orders', 'reservations'].forEach(function (col) {
+      COLS.forEach(function (col) {
         (s.data.data[col] || []).forEach(function (x) { store.put(col, x); n++; });
       });
       if (s.data.settings) store.saveSettings(s.data.settings);
@@ -1415,7 +1905,7 @@
     },
     'export-backup': async function () {
       const data = {};
-      ['items', 'suppliers', 'orders', 'reservations'].forEach(function (c) { data[c] = store.list(c); });
+      COLS.forEach(function (c) { data[c] = store.list(c); });
       const text = JSON.stringify({ app: 'komat-backoffice', version: 1, exportedAt: new Date().toISOString(), settings: store.settings, data: data }, null, 2);
       try {
         const ok = await net.saveFile('komat-backup-' + L.isoDate(new Date()) + '.json', text, 'application/json');
@@ -1430,13 +1920,15 @@
       addRecords('items', sample.items);
       addRecords('reservations', sample.reservations);
       addRecords('orders', sample.orders);
+      addRecords('moves', sample.moves);
+      addRecords('kitchen', sample.kitchen);
       if (!L.num(store.settings.normalCoversWeek, 0)) store.saveSettings({ normalCoversWeek: 150 });
       toast('Example kitchen loaded');
       if (ui.view === 'setup') location.hash = '#today';
     },
     'remove-examples': function () {
       let n = 0;
-      ['items', 'suppliers', 'orders', 'reservations'].forEach(function (col) {
+      COLS.forEach(function (col) {
         store.list(col).filter(function (x) { return x.example; }).forEach(function (x) { store.remove(col, x.id); n++; });
       });
       toast(plural(n, 'example record') + ' removed');
@@ -1444,7 +1936,7 @@
     'confirm-erase': function () { ui.confirm = 'erase'; render(); },
     'confirm-cancel': function () { ui.confirm = null; render(); },
     'erase-all': function () {
-      ['items', 'suppliers', 'orders', 'reservations'].forEach(function (col) {
+      COLS.forEach(function (col) {
         store.list(col).forEach(function (x) { store.remove(col, x.id); });
       });
       ui.confirm = null;
@@ -1482,13 +1974,26 @@
   const FORMS = {
     item: function (o, s) {
       const current = s.id ? store.get('items', s.id) || {} : {};
+      const live = s.id ? effItem(s.id) || {} : {};
+      const kind = o.kind === 'wine' || o.kind === 'drink' ? o.kind : undefined;
+      const wine = kind === 'wine';
+      const text = function (v) { return String(v || '').trim() || undefined; };
+      const typed = numOrUndef(o.onHand);
       const item = Object.assign({}, current, {
         id: s.id,
         name: String(o.name || '').trim(),
         location: String(o.location || '').trim(),
-        category: String(o.category || '').trim(),
-        unit: String(o.unit || '').trim() || 'pcs',
-        onHand: numOrUndef(o.onHand) === undefined ? 0 : Math.max(0, numOrUndef(o.onHand)),
+        category: String(o.category || '').trim() || (wine ? 'Wine' : kind === 'drink' ? 'Soft drinks' : ''),
+        unit: wine ? 'bottle' : String(o.unit || '').trim() || (kind === 'drink' ? 'bottle' : 'pcs'),
+        kind: kind,
+        producer: wine ? text(o.producer) : undefined,
+        vintage: wine ? text(o.vintage) : undefined,
+        region: wine ? text(o.region) : undefined,
+        grape: wine ? text(o.grape) : undefined,
+        colour: wine ? text(o.colour) : undefined,
+        bottleCl: wine ? numOrUndef(o.bottleCl) || 75 : undefined,
+        glassCl: wine ? numOrUndef(o.glassCl) : undefined,
+        glassPrice: wine ? numOrUndef(o.glassPrice) : undefined,
         par: numOrUndef(o.par),
         reorderAt: numOrUndef(o.reorderAt),
         packSize: numOrUndef(o.packSize),
@@ -1500,7 +2005,12 @@
         notes: String(o.notes || '').trim()
       });
       if (!item.name) return 'Give the item a name.';
-      if (current.onHand !== item.onHand) item.countedAt = Date.now();
+      delete item.rawOnHand;
+      // A stock figure typed here is a count: it replaces the live figure from now on.
+      if (!s.id || (typed !== undefined && L.round(typed, 3) !== L.round(L.num(live.onHand, 0), 3))) {
+        item.onHand = typed === undefined ? 0 : Math.max(0, typed);
+        if (typed !== undefined) { item.baseAt = Date.now(); item.countedAt = item.baseAt; }
+      }
       store.put('items', item);
       toast(s.id ? 'Item saved' : item.name + ' added');
     },
@@ -1556,6 +2066,7 @@
         normalCoversWeek: Math.max(0, Math.round(numOrUndef(o.normalCoversWeek) || 0)),
         boostCap: cap && cap >= 1 ? Math.min(3, cap) : 1.5,
         boost: !!o.boost,
+        vat: Math.max(0, numOrUndef(o.vat) || 0),
         inboxQuery: String(o.inboxQuery || '').trim(),
         bookingsQuery: String(o.bookingsQuery || '').trim()
       });
@@ -1588,6 +2099,10 @@
       ui.stock.q = t.value;
       clearTimeout(searchTimer);
       searchTimer = setTimeout(render, 120);
+    } else if (t.dataset.bind === 'bar-q') {
+      ui.bar.q = t.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(render, 120);
     } else if (t.dataset.count) {
       ui.stock.draft[t.dataset.count] = t.value;
       t.classList.toggle('changed', t.value !== '');
@@ -1614,6 +2129,32 @@
     const s = ui.sheet;
     if (t.dataset.bind === 'stock-loc') { ui.stock.location = t.value; render(); return; }
     if (!s) return;
+    if (s.type === 'item' && t.dataset.bind === 'item-kind') {
+      document.getElementById('wine-fields').hidden = t.value !== 'wine';
+      const unit = document.getElementById('f-unit');
+      if (t.value === 'wine' || (t.value === 'drink' && /^(pcs|)$/.test(unit.value))) unit.value = 'bottle';
+      return;
+    }
+    if (s.type === 'importSales') {
+      if (t.dataset.bind === 'pos-date') s.date = t.value || s.date;
+      else if (t.dataset.file === 'pos') ACTIONS['pos-read']();
+      else if (t.dataset.smap) {
+        if (t.value === '') delete s.mapping[t.dataset.smap]; else s.mapping[t.dataset.smap] = Number(t.value);
+        s.choice = {};
+        renderSheet();
+      } else if (t.dataset.pos !== undefined) {
+        s.choice[t.dataset.pos] = t.value;
+        t.closest('tr').classList.toggle('unmatched', !t.value);
+        renderSheetFoot();
+      } else if (t.dataset.bind === 'pos-deduct') s.deduct = t.checked;
+      return;
+    }
+    if (s.type === 'importKitchen') {
+      if (t.dataset.kp !== undefined) { s.sel[Number(t.dataset.kp)] = t.checked; renderSheetFoot(); }
+      else if (t.id === 'kp-sup') s.sup = t.value;
+      else if (t.id === 'kp-loc') s.loc = t.value;
+      return;
+    }
     if (s.type === 'order') {
       if (t.dataset.line !== undefined || t.dataset.bind === 'order-note') { saveOrderDraft(); return; }
       if (t.dataset.bind === 'order-date') { s.draft.deliveryDate = t.value; saveOrderDraft(); refreshTicket(); return; }
@@ -1636,6 +2177,7 @@
         else s.mapping[t.dataset.map] = Number(t.value);
         renderSheet();
       } else if (t.dataset.bind === 'imp-update') { s.update = t.checked; }
+      else if (t.dataset.bind === 'imp-addnew') { s.addNew = t.checked; }
       else if (t.dataset.file === 'imp') { ACTIONS['imp-read'](); }
       return;
     }
@@ -1699,7 +2241,7 @@
   }
 
   function renderChrome(d) {
-    const counts = { orders: d.toOrderIds.length, stock: d.out.length };
+    const counts = { orders: d.toOrderIds.length, stock: d.out.length, bar: d.sellable.filter(function (i) { return d.status[i.id] === 'out'; }).length };
     document.querySelectorAll('[data-nav]').forEach(function (a) {
       const v = a.dataset.nav;
       if (v === ui.view) a.setAttribute('aria-current', 'page');
@@ -1721,16 +2263,26 @@
     document.getElementById('brand-word').textContent = name.toUpperCase();
   }
 
+  // Once per visit: fold month-old stock movements into the counted figures (see L.consolidation).
+  let consolidated = false;
+  function consolidate() {
+    if (store.readOnly) return;
+    L.consolidation(store.list('items'), store.list('moves'), new Date()).forEach(function (f) {
+      store.patch('items', f.id, { onHand: f.onHand, baseAt: f.baseAt });
+    });
+  }
+
   function render() {
     renderPending = false;
     if (!store.ready) {
       viewEl.innerHTML = '<div class="loading"><div class="spinner"></div><span>Opening the back office…</span></div>';
       return;
     }
+    if (!consolidated) { consolidated = true; setTimeout(consolidate, 1500); }
     const d = derive();
     renderChrome(d);
     const html = {
-      today: viewToday, stock: viewStock, orders: viewOrders, bookings: viewBookings, inbox: viewInbox, setup: viewSetup
+      today: viewToday, stock: viewStock, orders: viewOrders, bar: viewBar, bookings: viewBookings, inbox: viewInbox, setup: viewSetup
     }[ui.view](d);
     // Setup is a form: don't wipe what someone is typing when another person's change arrives.
     const a = document.activeElement;
