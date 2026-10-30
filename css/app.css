@@ -1135,22 +1135,6 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 .ready-print { border-color: rgba(242, 242, 238, .25); background: transparent; color: var(--on-steel); }
 
 /* ---------- Recipes: the dish of the day ---------- */
-.dotd-wrap { display: grid; gap: 10px; margin: 6px 0 22px; }
-.dotd-kick { display: flex; align-items: baseline; justify-content: space-between; color: var(--apron); font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.dotd-kick .mono { color: var(--muted); font-weight: 500; letter-spacing: .04em; }
-.dotd { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; max-height: 470px; overflow: hidden; border-radius: 22px; background: var(--steel); color: var(--on-steel); box-shadow: 0 18px 40px -22px rgba(28, 27, 26, .6); }
-@media (min-width: 760px) { .dotd { aspect-ratio: 16 / 7; max-height: 420px; } }
-.dotd-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
-.dotd-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10, 10, 10, 0) 38%, rgba(10, 10, 10, .86) 100%); }
-.dotd-rays { position: absolute; z-index: -1; right: -24px; top: 40%; width: 120px; height: 120px; color: var(--apron-on-steel); opacity: .5; }
-.dotd .dotd-tag { top: 12px; bottom: auto; left: 12px; }
-.dotd-in { display: grid; gap: 12px; width: 100%; padding: 20px; }
-.dotd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.dotd-chips span { padding: 5px 10px; border: 1px solid rgba(242, 242, 238, .35); border-radius: 999px; background: rgba(242, 242, 238, .16); font-size: .76rem; font-weight: 700; }
-.dotd-title { font: 700 clamp(2rem, 9vw, 2.6rem)/.98 var(--display); letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
-.dotd-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-@media (min-width: 760px) { .dotd-btns { grid-template-columns: repeat(2, max-content); } }
-.dotd .btn.dotd-open { border-color: var(--on-steel); background: var(--on-steel); color: #1C1B1A; }
 @media (prefers-reduced-motion: reduce) { .welcome.draw .w-ray, .ready-back, .ready-back .b-ray, .ready-back .b-tick { animation: none !important; } }
 
 /* ---------- motion: page changes, station glow, the + button, folding rows, rolling numbers ---------- */

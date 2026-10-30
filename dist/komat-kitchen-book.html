@@ -1142,22 +1142,6 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 .ready-print { border-color: rgba(242, 242, 238, .25); background: transparent; color: var(--on-steel); }
 
 /* ---------- Recipes: the dish of the day ---------- */
-.dotd-wrap { display: grid; gap: 10px; margin: 6px 0 22px; }
-.dotd-kick { display: flex; align-items: baseline; justify-content: space-between; color: var(--apron); font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.dotd-kick .mono { color: var(--muted); font-weight: 500; letter-spacing: .04em; }
-.dotd { position: relative; isolation: isolate; display: flex; align-items: flex-end; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; max-height: 470px; overflow: hidden; border-radius: 22px; background: var(--steel); color: var(--on-steel); box-shadow: 0 18px 40px -22px rgba(28, 27, 26, .6); }
-@media (min-width: 760px) { .dotd { aspect-ratio: 16 / 7; max-height: 420px; } }
-.dotd-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
-.dotd-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10, 10, 10, 0) 38%, rgba(10, 10, 10, .86) 100%); }
-.dotd-rays { position: absolute; z-index: -1; right: -24px; top: 40%; width: 120px; height: 120px; color: var(--apron-on-steel); opacity: .5; }
-.dotd .dotd-tag { top: 12px; bottom: auto; left: 12px; }
-.dotd-in { display: grid; gap: 12px; width: 100%; padding: 20px; }
-.dotd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.dotd-chips span { padding: 5px 10px; border: 1px solid rgba(242, 242, 238, .35); border-radius: 999px; background: rgba(242, 242, 238, .16); font-size: .76rem; font-weight: 700; }
-.dotd-title { font: 700 clamp(2rem, 9vw, 2.6rem)/.98 var(--display); letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0, 0, 0, .35); }
-.dotd-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-@media (min-width: 760px) { .dotd-btns { grid-template-columns: repeat(2, max-content); } }
-.dotd .btn.dotd-open { border-color: var(--on-steel); background: var(--on-steel); color: #1C1B1A; }
 @media (prefers-reduced-motion: reduce) { .welcome.draw .w-ray, .ready-back, .ready-back .b-ray, .ready-back .b-tick { animation: none !important; } }
 
 /* ---------- motion: page changes, station glow, the + button, folding rows, rolling numbers ---------- */
@@ -4872,8 +4856,6 @@ window.KOMAT_PART_ART = [
       return;
     }
     if (!ui.cat && !ui.type && !ui.onMenu) {
-      const dd = dishOfDay();
-      if (dd) box.append(dd);
       const rec = K.recent().map(K.find).filter(Boolean).slice(0, 6);
       if (rec.length) box.append(h('section', { class: 'group recent' }, h('h2', { class: 'group-title' }, 'Opened lately'),
         h('div', { class: 'strip' }, rec.map((r) => h('button', { type: 'button', class: 'mini', onclick: () => K.go('recipe', { id: r.id }) }, thumb(r, r.name), h('span', null, r.name))))));
@@ -4883,29 +4865,6 @@ window.KOMAT_PART_ART = [
     Object.keys(groups).sort((a, b) => (a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b))).forEach((k) => {
       box.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, k, h('span', { class: 'n' }, String(groups[k].length))), h('div', { class: 'grid' }, groups[k].map((en) => card(en, '')))));
     });
-  }
-
-  /* one dish a day at the top of the book: a dish on the menu, one with a real plating photo first */
-  function dishOfDay() {
-    const menu = D.recipes.filter((r) => r.type === 'dish' && r.onMenu !== false), real = menu.filter((r) => r.photo);
-    const pool = real.length ? real : menu.filter((r) => K.artFor(r));
-    if (!pool.length) return null;
-    const r = pool[Math.floor(K.parseYmd(K.day(0)).getTime() / 864e5) % pool.length], P = parts(r);
-    const cookable = P.comps.some((c) => c.steps.length) || P.main.steps.length;
-    const src = r.photo ? K.media(r.photo) : K.artFor(r);
-    const chips = [K.ST[r.station], r.yieldQty ? K.yieldText(r.yieldQty, r.yieldUnit) : '', r.components.length > 1 ? r.components.length + ' parts' : ''].filter(Boolean);
-    return h('section', { class: 'dotd-wrap', 'aria-label': 'Dish of the day' },
-      h('div', { class: 'dotd-kick' }, h('span', null, 'Dish of the day'), h('span', { class: 'mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))),
-      h('article', { class: 'dotd' },
-        K.photoWithFallback(src, r.photo ? K.artFor(r) : '', (im) => im.remove(), { class: 'dotd-img', alt: (r.photo ? 'Plated ' : 'Illustration of ') + r.name }),
-        h('div', { class: 'dotd-shade', 'aria-hidden': 'true' }), K.rays('dotd-rays'),
-        r.photo ? null : h('span', { class: 'art-tag dotd-tag' }, 'Illustration, not our plating'),
-        h('div', { class: 'dotd-in' },
-          chips.length ? h('div', { class: 'dotd-chips' }, chips.map((c) => h('span', null, c))) : null,
-          h('h2', { class: 'dotd-title' }, r.name),
-          h('div', { class: 'dotd-btns' },
-            h('button', { class: 'btn dotd-open', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget.closest('.dotd')); K.go('recipe', { id: r.id }); } }, 'Open recipe'),
-            cookable ? h('button', { class: 'btn primary', type: 'button', onclick: () => { K.go('recipe', { id: r.id }); K.openCook(r.id); } }, K.icon('cook'), 'Cook') : null))));
   }
 
   /* ---------- scaling ---------- */

@@ -4,7 +4,7 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
 
 ## What's in it
 
-- **Recipes**: the search sits at the top and stays under the header as you scroll (tap Recipes again to jump into it). Search in Bulgarian or Latin letters (`gyozi` finds Гьози), or by ingredient. Filter by folder, dish/recipe and "on the menu now". Dishes are broken into their parts, each with its own yield. Plating photos open full screen and swipe; recipes without a photo, and every part of a dish, show an illustration marked as such. A dish of the day (a dish on the menu, with a real plating photo first) sits at the top of the list.
+- **Recipes**: the search sits at the top and stays under the header as you scroll (tap Recipes again to jump into it). Search in Bulgarian or Latin letters (`gyozi` finds Гьози), or by ingredient. Filter by folder, dish/recipe and "on the menu now". Dishes are broken into their parts, each with its own yield. Plating photos open full screen and swipe; recipes without a photo, and every part of a dish, show an illustration marked as such.
   - Scale by yield, ×½ to ×4, a custom factor, or from what you have ("I have 750 g celeriac"). Grams switch to kilos at 1000.
   - Tap ingredients and steps to cross them off. Times in a method ("20 минути") become tap-to-start **timers**. They keep running across pages and ring when done. Temperatures are highlighted.
   - **Cook mode**: one big step at a time, swipe or tap Next. The screen stays on.

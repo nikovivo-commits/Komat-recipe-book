@@ -165,8 +165,6 @@
       return;
     }
     if (!ui.cat && !ui.type && !ui.onMenu) {
-      const dd = dishOfDay();
-      if (dd) box.append(dd);
       const rec = K.recent().map(K.find).filter(Boolean).slice(0, 6);
       if (rec.length) box.append(h('section', { class: 'group recent' }, h('h2', { class: 'group-title' }, 'Opened lately'),
         h('div', { class: 'strip' }, rec.map((r) => h('button', { type: 'button', class: 'mini', onclick: () => K.go('recipe', { id: r.id }) }, thumb(r, r.name), h('span', null, r.name))))));
@@ -176,29 +174,6 @@
     Object.keys(groups).sort((a, b) => (a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b))).forEach((k) => {
       box.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, k, h('span', { class: 'n' }, String(groups[k].length))), h('div', { class: 'grid' }, groups[k].map((en) => card(en, '')))));
     });
-  }
-
-  /* one dish a day at the top of the book: a dish on the menu, one with a real plating photo first */
-  function dishOfDay() {
-    const menu = D.recipes.filter((r) => r.type === 'dish' && r.onMenu !== false), real = menu.filter((r) => r.photo);
-    const pool = real.length ? real : menu.filter((r) => K.artFor(r));
-    if (!pool.length) return null;
-    const r = pool[Math.floor(K.parseYmd(K.day(0)).getTime() / 864e5) % pool.length], P = parts(r);
-    const cookable = P.comps.some((c) => c.steps.length) || P.main.steps.length;
-    const src = r.photo ? K.media(r.photo) : K.artFor(r);
-    const chips = [K.ST[r.station], r.yieldQty ? K.yieldText(r.yieldQty, r.yieldUnit) : '', r.components.length > 1 ? r.components.length + ' parts' : ''].filter(Boolean);
-    return h('section', { class: 'dotd-wrap', 'aria-label': 'Dish of the day' },
-      h('div', { class: 'dotd-kick' }, h('span', null, 'Dish of the day'), h('span', { class: 'mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))),
-      h('article', { class: 'dotd' },
-        K.photoWithFallback(src, r.photo ? K.artFor(r) : '', (im) => im.remove(), { class: 'dotd-img', alt: (r.photo ? 'Plated ' : 'Illustration of ') + r.name }),
-        h('div', { class: 'dotd-shade', 'aria-hidden': 'true' }), K.rays('dotd-rays'),
-        r.photo ? null : h('span', { class: 'art-tag dotd-tag' }, 'Illustration, not our plating'),
-        h('div', { class: 'dotd-in' },
-          chips.length ? h('div', { class: 'dotd-chips' }, chips.map((c) => h('span', null, c))) : null,
-          h('h2', { class: 'dotd-title' }, r.name),
-          h('div', { class: 'dotd-btns' },
-            h('button', { class: 'btn dotd-open', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget.closest('.dotd')); K.go('recipe', { id: r.id }); } }, 'Open recipe'),
-            cookable ? h('button', { class: 'btn primary', type: 'button', onclick: () => { K.go('recipe', { id: r.id }); K.openCook(r.id); } }, K.icon('cook'), 'Cook') : null))));
   }
 
   /* ---------- scaling ---------- */
