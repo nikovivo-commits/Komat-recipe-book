@@ -1524,3 +1524,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-by { flex-basis: 100%; color: #8A8D88; font: 600 .78rem var(--sans); }
 .wb-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
 .wb-form .btn { justify-self: end; }
+.ost-title { margin-top: 24px; }
+.wboard.empty .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }

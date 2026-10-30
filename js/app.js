@@ -13,7 +13,7 @@
   };
   const ui = K.ui;
 
-  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Orders', 'order'], ['schedule', 'Schedule', 'rota'], ['events', 'Events', 'event']];
+  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Whiteboard', 'board'], ['schedule', 'Schedule', 'rota'], ['events', 'Events', 'event']];
   const TAB_OF = { recipe: 'recipes', edit: 'recipes', brand: 'recipes', stock: 'today', lists: 'today' };
 
   /* ---------- navigation ---------- */

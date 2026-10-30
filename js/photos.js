@@ -7,7 +7,7 @@
   const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule', events: 'events' };
   /* the recipe book opens on a different dish each day */
   const DAILY = ['recipes', 'salmon', 'soup', 'chocolate', 'cauliflower', 'fishcakes', 'sandwiches', 'herring'];
-  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Orders'], ['schedule', 'Schedule'], ['events', 'Events']];
+  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Whiteboard'], ['schedule', 'Schedule'], ['events', 'Events']];
 
   K.defaultPagePhoto = function (tab) {
     if (tab === 'recipes') {
