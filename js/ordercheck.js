@@ -266,7 +266,7 @@
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) { K.tossSheet(); setTimeout(() => K.flash('lights-off', 4200), 1300); }
+      if (S.close) K.tossSheet(() => K.flash('lights-off', 4200));
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });

@@ -1526,3 +1526,42 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-form .btn { justify-self: end; }
 .ost-title { margin-top: 24px; }
 .wboard.empty .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* the bin film: yesterday's (or today's) sheet thrown away */
+.bin-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fadein .3s ease both; }
+.bin-cap { position: absolute; left: 0; right: 0; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); margin: 0; padding: 0 24px; text-align: center; color: #fff; font: 700 1.9rem/1.1 var(--hand, cursive); text-shadow: 0 2px 12px rgba(0, 0, 0, .6); animation: rise-in .5s ease .4s both; }
+.binned .bin-film, .binned .bin-cap, .binned .fm-paper { opacity: 0; transition: opacity .4s ease; }
+.fresh-moment.binning { background: #0E0E0D; animation: none; }
+.toss-moment.binning { background: #0E0E0D; }
+.toss-moment.out { animation: fadeout .4s ease both; }
+.toss-moment { pointer-events: auto; }
+
+/* the dated top of each sheet: green for today, amber when you are writing tomorrow's */
+.daystamp { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 2px 12px; margin: 8px 0 12px; padding: 10px 14px; border-radius: 12px; border: 2px solid var(--ready); background: var(--ready-soft); color: var(--ink); }
+.daystamp.next { border-color: var(--todo); background: var(--todo-soft); border-style: dashed; }
+.ds-k { font-size: .76rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ready); }
+.daystamp.next .ds-k { color: var(--ink); }
+.ds-d { grid-row: 1 / span 2; grid-column: 2; font: 700 1.5rem/1 var(--display); white-space: nowrap; }
+.ds-t { font-size: .82rem; color: var(--muted); }
+.board-stamp { border-color: #C9CCC6; background: var(--surface); }
+.board-stamp .ds-k { color: var(--muted); }
+.fm-date { margin: 0; font: 700 1.3rem var(--mono); opacity: .9; animation: rise-in .5s ease 2s both; }
+
+/* the kitchen day line: 04:00 to 04:00 */
+.dayline { display: grid; gap: 6px; margin: 4px 0 14px; padding: 12px 14px 30px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.dl-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: .9rem; }
+.dl-head b { font-family: var(--mono); }
+.dl-late { padding: 1px 8px; border-radius: 6px; background: var(--todo-soft); color: var(--ink); font-weight: 700; font-size: .8rem; }
+.dl-bar { position: relative; height: 12px; margin-top: 18px; border-radius: 6px; background: var(--surface-2); }
+.dl-day { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px 0 0 6px; background: var(--ready-soft); border: 1.5px solid var(--ready); border-right: 0; }
+.dl-plan { position: absolute; top: 0; bottom: 0; border-radius: 0 6px 6px 0; background: var(--todo-soft); border: 1.5px dashed var(--todo); border-left: 0; }
+.dl-mid { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--muted); opacity: .6; }
+.dl-now { position: absolute; top: -6px; bottom: -6px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--urgent); }
+.dl-now b { position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); padding: 0 5px; border-radius: 4px; background: var(--urgent); color: #fff; font: 700 .68rem/1.5 var(--mono); white-space: nowrap; }
+.dl-labels { position: relative; height: 14px; font: 600 .68rem/1.2 var(--mono); color: var(--muted); }
+.dl-labels span { position: absolute; top: 0; display: grid; white-space: nowrap; }
+.dl-labels span.c { transform: translateX(-50%); justify-items: center; }
+.dl-labels span.r { transform: translateX(-100%); justify-items: end; }
+.dl-labels small { font: 500 .62rem var(--sans); }
+.dl-labels span.low { top: 26px; }
+.dayline { padding-bottom: 52px; }

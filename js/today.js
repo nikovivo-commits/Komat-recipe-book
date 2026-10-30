@@ -25,6 +25,37 @@
     return true;
   }
   const firstName = () => String(K.me.name || '').trim().split(/\s+/)[0];
+  /* the top of a sheet: whose day it is, so nobody mixes up today's list with tomorrow's */
+  K.sheetDate = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  /* the kitchen day as one line, 04:00 to 04:00: where now is, when tomorrow's sheet is written,
+     and that midnight changes the date on the phone but not the kitchen's day */
+  function dayLine() {
+    const km = K.kitchenMinutes(), plan = K.toMinutes(K.kitchen().planFrom) || 21 * 60;
+    const pos = (m) => Math.max(0, Math.min(100, (m - 240) / 1440 * 100)) + '%';
+    const d0 = K.sheetDate(K.day(0)), d1 = K.sheetDate(K.day(1)), late = km >= 1440;
+    const hm = (m) => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    return h('section', { class: 'dayline', 'aria-label': 'The kitchen day: ' + d0 + ', 04:00 to 04:00. Now ' + hm(km) + '.' },
+      h('div', { class: 'dl-head' },
+        h('span', null, 'Kitchen day ', h('b', null, d0)),
+        late ? h('span', { class: 'dl-late' }, 'After midnight: still ' + d0 + ' until 04:00') : h('span', { class: 'muted' }, '04:00 → 04:00')),
+      h('div', { class: 'dl-bar', 'aria-hidden': 'true' },
+        h('span', { class: 'dl-day', style: { width: pos(plan) } }),
+        h('span', { class: 'dl-plan', style: { left: pos(plan), width: 'calc(100% - ' + pos(plan) + ')' } }),
+        h('span', { class: 'dl-mid', style: { left: pos(1440) } }),
+        h('span', { class: 'dl-now', style: { left: pos(km) } }, h('b', null, 'now ' + hm(km)))),
+      h('div', { class: 'dl-labels', 'aria-hidden': 'true' },
+        h('span', { style: { left: '0%' } }, '04:00'),
+        h('span', { class: 'c', style: { left: pos(plan) } }, hm(plan), h('small', null, 'write ' + K.parseYmd(K.day(1)).toLocaleDateString('en-GB', { weekday: 'short' }) + '’s sheet')),
+        h('span', { class: 'c low', style: { left: pos(1440) } }, '00:00', h('small', null, 'date changes, day doesn’t')),
+        h('span', { class: 'r', style: { left: '100%' } }, '04:00', h('small', null, K.parseYmd(K.day(1)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })))));
+  }
+  function stamp(ds, writing) {
+    const at = K.kitchen().planFrom || '21:00';
+    return h('div', { class: 'daystamp' + (writing ? ' next' : '') },
+      h('span', { class: 'ds-k' }, writing ? 'Tomorrow’s sheet · you are writing it' : 'Today’s sheet'),
+      h('b', { class: 'ds-d' }, K.sheetDate(ds)),
+      h('span', { class: 'ds-t' }, writing ? 'For the next shift, from 04:00. Today’s sheet goes in the bin.' : 'From 04:00 until ' + at + '. At ' + at + ' you write tomorrow’s.'));
+  }
   K.SHEETS.ready = function (S) {
     const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
     const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
@@ -273,6 +304,7 @@
     const setTab = (t) => { ui.todayTab = t; K.render(); };
     const tabBtn = (id, label, n) => h('button', { type: 'button', class: 'tjt', 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) }, label, n != null ? h('b', { class: 'mono' }, n) : null);
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
+    w.append(dayLine());
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Today’s lists' },
       tabBtn('todo', 'To do', String(todoN)),
       tabBtn('mep', 'Mise en place', ready + '/' + items.length),
@@ -288,6 +320,7 @@
     /* to do */
     const todo = h('section', { class: 'block tt-todo', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
+    todo.append(stamp(K.day(0), false));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
@@ -343,6 +376,7 @@
       h('div', { class: 'btns' },
         items.length && !tmr ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
+      stamp(tmr ? K.day(1) : K.day(0), tmr),
       h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
       tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
         : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
@@ -512,7 +546,7 @@
   function tomorrowBlock(st) {
     const list = K.tomorrowTasks(st);
     return h('section', { class: 'block card tmr tt-tmr', id: 't-tmr' },
-      h('h2', { class: 'block-title' }, 'For tomorrow', h('span', { class: 'n' }, K.prettyDate(K.day(1), { weekday: 'long' }))),
+      h('h2', { class: 'block-title' }, 'Notes for tomorrow'), stamp(K.day(1), true),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
       list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
         h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),

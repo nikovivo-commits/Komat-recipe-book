@@ -90,6 +90,7 @@
     }
     /* the whiteboard: every line in the hand and colour of whoever wrote it */
     const wb = h('div', { class: 'wboard' + (list.length ? '' : ' empty') });
+    if (isToday) main.append(h('div', { class: 'daystamp board-stamp' }, h('span', { class: 'ds-k' }, 'Today’s board'), h('b', { class: 'ds-d' }, K.sheetDate(date)), h('span', { class: 'ds-t' }, 'Write what we need for the next delivery.')));
     list.forEach((x) => {
       const r0 = x.rows[0] || {};
       wb.append(h('div', { class: 'oline wb-line ' + x.s + ' ' + K.inkClass(r0.ink) + ' ' + K.handClass(r0.hand) },
