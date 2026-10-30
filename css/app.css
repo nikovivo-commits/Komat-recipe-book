@@ -1447,19 +1447,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .ink-opt b { grid-column: 2; font-weight: 700; }
 .ink-opt small { grid-column: 2; color: var(--muted); font-size: .75rem; }
 
-/* each person's handwriting */
-.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
-.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
-.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
-.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
-.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
-.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
-.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
-.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
-.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
-.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
-.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
-.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
 .tnote { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.1 var(--hand); }
 .input.hand { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.2 var(--hand); }
 .ink-h { margin: 6px 0 0; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -1577,3 +1564,34 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 /* the greeting sits on dark steel: light inks there */
 .welcome .wname.ink-black { --pen: #ECEAE4; } .welcome .wname.ink-blue { --pen: #93B4FF; } .welcome .wname.ink-red { --pen: #FF8F86; } .welcome .wname.ink-green { --pen: #7BD3A0; }
 .welcome .wname.ink-purple { --pen: #C9A8F2; } .welcome .wname.ink-orange { --pen: #FFB27A; } .welcome .wname.ink-teal { --pen: #6FD6DE; } .welcome .wname.ink-pink { --pen: #F59AC9; }
+
+/* each person's handwriting (all with Cyrillic) */
+.hand-spray { --hand: "Rubik Spray Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-dirt { --hand: "Rubik Dirt", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-burned { --hand: "Rubik Burned", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-kablammo { --hand: "Kablammo", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-ruslan { --hand: "Ruslan Display", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-dela { --hand: "Dela Gothic One", cursive; --hand-w: 400; --hand-s: 0.92rem; }
+.hand-distressed { --hand: "Rubik Distressed", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-yanone { --hand: "Yanone Kaffeesatz", cursive; --hand-w: 600; --hand-s: 1.15rem; }
+.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-oi { --hand: "Oi", cursive; --hand-w: 400; --hand-s: 0.85rem; }
+.hand-greatvibes { --hand: "Great Vibes", cursive; --hand-w: 400; --hand-s: 1.35rem; }
+.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
+.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
+.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
+.hand-comfort { --hand: "Comforter", cursive; --hand-w: 400; --hand-s: 1.50rem; }
+.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
+.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-playpen { --hand: "Playpen Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
+.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
+.hand-scribble { --hand: "Rubik Scribble", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-doodle { --hand: "Rubik Doodle Shadow", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-pixel { --hand: "Press Start 2P", cursive; --hand-w: 400; --hand-s: 0.70rem; }
+.hand-group { display: grid; gap: 6px; }
+.hand-gname { font-size: .74rem; font-weight: 700; color: var(--muted); }

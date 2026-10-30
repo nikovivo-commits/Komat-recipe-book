@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Neucha&family=Marck+Script&family=Amatic+SC:wght@700&family=Pangolin&family=Bad+Script&family=Shantell+Sans:wght@600&family=Pacifico&family=Comforter+Brush&family=Underdog&family=Lobster&family=Rubik+Wet+Paint&family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&family=Rubik+Spray+Paint&family=Rubik+Wet+Paint&family=Rubik+Dirt&family=Rubik+Burned&family=Kablammo&family=Ruslan+Display&family=Dela+Gothic+One&family=Rubik+Distressed&family=Yanone+Kaffeesatz:wght@600&family=Underdog&family=Oi&family=Great+Vibes&family=Pacifico&family=Lobster&family=Marck+Script&family=Comforter+Brush&family=Comforter&family=Bad+Script&family=Caveat:wght@700&family=Pangolin&family=Shantell+Sans:wght@600&family=Playpen+Sans:wght@600&family=Neucha&family=Amatic+SC:wght@700&family=Rubik+Scribble&family=Rubik+Doodle+Shadow&family=Press+Start+2P&display=swap">
 <style>
 /* Layout: a steel "pass" band (header, page heads) over pale board-formed concrete; stoneware-white
    cards hold the work. Phones get one column and a thumb-reach tab bar; wide screens split work | brief. */
@@ -1454,19 +1454,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .ink-opt b { grid-column: 2; font-weight: 700; }
 .ink-opt small { grid-column: 2; color: var(--muted); font-size: .75rem; }
 
-/* each person's handwriting */
-.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
-.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
-.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
-.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
-.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
-.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
-.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
-.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
-.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
-.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
-.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
-.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
 .tnote { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.1 var(--hand); }
 .input.hand { font: var(--hand-w, 700) var(--hand-s, 1.28rem)/1.2 var(--hand); }
 .ink-h { margin: 6px 0 0; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -1584,6 +1571,37 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 /* the greeting sits on dark steel: light inks there */
 .welcome .wname.ink-black { --pen: #ECEAE4; } .welcome .wname.ink-blue { --pen: #93B4FF; } .welcome .wname.ink-red { --pen: #FF8F86; } .welcome .wname.ink-green { --pen: #7BD3A0; }
 .welcome .wname.ink-purple { --pen: #C9A8F2; } .welcome .wname.ink-orange { --pen: #FFB27A; } .welcome .wname.ink-teal { --pen: #6FD6DE; } .welcome .wname.ink-pink { --pen: #F59AC9; }
+
+/* each person's handwriting (all with Cyrillic) */
+.hand-spray { --hand: "Rubik Spray Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-wetpaint { --hand: "Rubik Wet Paint", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-dirt { --hand: "Rubik Dirt", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-burned { --hand: "Rubik Burned", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-kablammo { --hand: "Kablammo", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-ruslan { --hand: "Ruslan Display", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-dela { --hand: "Dela Gothic One", cursive; --hand-w: 400; --hand-s: 0.92rem; }
+.hand-distressed { --hand: "Rubik Distressed", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-yanone { --hand: "Yanone Kaffeesatz", cursive; --hand-w: 600; --hand-s: 1.15rem; }
+.hand-underdog { --hand: "Underdog", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-oi { --hand: "Oi", cursive; --hand-w: 400; --hand-s: 0.85rem; }
+.hand-greatvibes { --hand: "Great Vibes", cursive; --hand-w: 400; --hand-s: 1.35rem; }
+.hand-pacifico { --hand: "Pacifico", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-lobster { --hand: "Lobster", cursive; --hand-w: 400; --hand-s: 1.10rem; }
+.hand-marck { --hand: "Marck Script", cursive; --hand-w: 400; --hand-s: 1.20rem; }
+.hand-comforter { --hand: "Comforter Brush", cursive; --hand-w: 400; --hand-s: 1.45rem; }
+.hand-comfort { --hand: "Comforter", cursive; --hand-w: 400; --hand-s: 1.50rem; }
+.hand-badscript { --hand: "Bad Script", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-caveat { --hand: "Caveat", cursive; --hand-w: 700; --hand-s: 1.28rem; }
+.hand-pangolin { --hand: "Pangolin", cursive; --hand-w: 400; --hand-s: 1.05rem; }
+.hand-shantell { --hand: "Shantell Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-playpen { --hand: "Playpen Sans", cursive; --hand-w: 600; --hand-s: 1.00rem; }
+.hand-neucha { --hand: "Neucha", cursive; --hand-w: 400; --hand-s: 1.15rem; }
+.hand-amatic { --hand: "Amatic SC", cursive; --hand-w: 700; --hand-s: 1.35rem; }
+.hand-scribble { --hand: "Rubik Scribble", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-doodle { --hand: "Rubik Doodle Shadow", cursive; --hand-w: 400; --hand-s: 1.00rem; }
+.hand-pixel { --hand: "Press Start 2P", cursive; --hand-w: 400; --hand-s: 0.70rem; }
+.hand-group { display: grid; gap: 6px; }
+.hand-gname { font-size: .74rem; font-weight: 700; color: var(--muted); }
 
 </style>
 <div id="app"></div>
@@ -4240,19 +4258,35 @@ window.KOMAT_PART_ART = [
     { k: 'pink', name: 'Pink', light: '#B83280', dark: '#F59AC9' },
   ];
   K.HANDS = [
-    { k: 'caveat', name: 'Caveat' },
-    { k: 'neucha', name: 'Neucha' },
-    { k: 'marck', name: 'Marck Script' },
-    { k: 'amatic', name: 'Amatic SC' },
-    { k: 'pangolin', name: 'Pangolin' },
-    { k: 'badscript', name: 'Bad Script' },
-    { k: 'shantell', name: 'Shantell Sans' },
-    { k: 'pacifico', name: 'Pacifico' },
-    { k: 'comforter', name: 'Comforter Brush' },
-    { k: 'underdog', name: 'Underdog' },
-    { k: 'lobster', name: 'Lobster' },
-    { k: 'wetpaint', name: 'Rubik Wet Paint' },
+    { k: 'spray', name: 'Spray paint', g: 'Street' },
+    { k: 'wetpaint', name: 'Dripping paint', g: 'Street' },
+    { k: 'dirt', name: 'Dirty', g: 'Street' },
+    { k: 'burned', name: 'Burned', g: 'Street' },
+    { k: 'kablammo', name: 'Comic', g: 'Street' },
+    { k: 'ruslan', name: 'Heavy brush', g: 'Bold' },
+    { k: 'dela', name: 'Block', g: 'Bold' },
+    { k: 'distressed', name: 'Worn', g: 'Bold' },
+    { k: 'yanone', name: 'Narrow marker', g: 'Bold' },
+    { k: 'underdog', name: 'Underdog', g: 'Bold' },
+    { k: 'oi', name: 'Fat', g: 'Bold' },
+    { k: 'greatvibes', name: 'Calligraphy', g: 'Pretty' },
+    { k: 'pacifico', name: 'Pacifico', g: 'Pretty' },
+    { k: 'lobster', name: 'Lobster', g: 'Pretty' },
+    { k: 'marck', name: 'Marck Script', g: 'Pretty' },
+    { k: 'comforter', name: 'Soft brush', g: 'Pretty' },
+    { k: 'comfort', name: 'Loopy', g: 'Pretty' },
+    { k: 'badscript', name: 'Bad Script', g: 'Pretty' },
+    { k: 'caveat', name: 'Caveat', g: 'Neat' },
+    { k: 'pangolin', name: 'Pangolin', g: 'Neat' },
+    { k: 'shantell', name: 'Shantell', g: 'Neat' },
+    { k: 'playpen', name: 'Playpen', g: 'Neat' },
+    { k: 'neucha', name: 'Neucha', g: 'Neat' },
+    { k: 'amatic', name: 'Amatic', g: 'Messy' },
+    { k: 'scribble', name: 'Scribbled', g: 'Messy' },
+    { k: 'doodle', name: 'Doodle', g: 'Messy' },
+    { k: 'pixel', name: 'Pixel', g: 'Messy' },
   ];
+  K.HAND_GROUPS = [['Street', 'Street and graffiti'], ['Bold', 'Bold and rough'], ['Pretty', 'Pretty and curly'], ['Neat', 'Neat'], ['Messy', 'Messy']];
   const known = (k) => K.INKS.some((x) => x.k === k), knownHand = (k) => K.HANDS.some((x) => x.k === k);
   K.myHand = () => { const k = (K.me && K.me.hand) || K.store.get('hand', ''); return knownHand(k) ? k : ''; };
   K.handClass = (k) => 'hand-' + (knownHand(k) ? k : 'caveat');
@@ -4287,8 +4321,9 @@ window.KOMAT_PART_ART = [
     const body = h('div', { class: 'inkpick ' + K.inkClass(ink) },
       h('p', { class: 'muted' }, S.first ? 'Pick your handwriting and your Sharpie colour. Every DO, crossed-out line and comment you write shows in them, so the next shift knows who wrote what.' : 'How your writing looks on the sheet.'),
       h('h3', { class: 'ink-h' }, 'Handwriting'),
-      h('div', { class: 'hand-grid', role: 'radiogroup', 'aria-label': 'Handwriting' }, K.HANDS.map((x) => h('button', { type: 'button', role: 'radio', 'aria-checked': hand === x.k ? 'true' : 'false', 'aria-label': x.name, class: 'hand-opt ' + K.handClass(x.k), onclick: () => K.setHand(x.k) },
-        h('span', { class: 'hand-sample' }, sample)))),
+      K.HAND_GROUPS.map((gr) => h('div', { class: 'hand-group' }, h('span', { class: 'hand-gname' }, gr[1]),
+        h('div', { class: 'hand-grid', role: 'radiogroup', 'aria-label': 'Handwriting: ' + gr[1] }, K.HANDS.filter((x) => x.g === gr[0]).map((x) => h('button', { type: 'button', role: 'radio', 'aria-checked': hand === x.k ? 'true' : 'false', 'aria-label': x.name, class: 'hand-opt ' + K.handClass(x.k), onclick: () => K.setHand(x.k) },
+          h('span', { class: 'hand-sample' }, sample)))))),
       h('h3', { class: 'ink-h' }, 'Colour'),
       h('div', { class: 'ink-grid', role: 'radiogroup', 'aria-label': 'Marker colour' }, K.INKS.map((x) => h('button', { type: 'button', role: 'radio', 'aria-checked': ink === x.k ? 'true' : 'false', class: 'ink-opt ' + K.inkClass(x.k), onclick: () => K.setInk(x.k) },
         h('span', { class: 'ink-cap', 'aria-hidden': 'true' }), h('b', null, x.name), taken[x.k] ? h('small', null, taken[x.k].filter(Boolean).join(', ')) : null))),
