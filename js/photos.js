@@ -4,7 +4,7 @@
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DIR = 'assets/photos/theme/';
-  const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule', events: 'events' };
+  const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule-rota', events: 'events' };
   /* the recipe book opens on a different dish each day */
   const DAILY = ['recipes', 'salmon', 'soup', 'chocolate', 'cauliflower', 'fishcakes', 'sandwiches', 'herring'];
   K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Whiteboard'], ['schedule', 'Schedule'], ['events', 'Events']];
