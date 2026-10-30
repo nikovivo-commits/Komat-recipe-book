@@ -6,6 +6,8 @@
   'use strict';
 
   const GMAIL = 'Gmail';
+  const DRIVE = 'Google Drive';
+  const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   function compact(obj) {
     const out = {};
@@ -26,6 +28,7 @@
     downloads: null,
     state: 'checking', // 'checking' | 'ready' | 'off'
     gmailMissing: false, // the page may use Gmail, but this viewer has no Gmail connector
+    driveMissing: false,
 
     start: async function () {
       const claude = root.claude;
@@ -38,16 +41,33 @@
       this.downloads = results[1];
       this.state = this.mcp ? 'ready' : 'off';
       if (this.mcp) {
-        try {
-          const list = await this.mcp.listTools(GMAIL);
-          this.gmailMissing = !(list && list.servers || []).some(function (s) { return s.server === GMAIL && (s.tools || []).length; });
-        } catch (e) {
-          this.gmailMissing = false; // unknown: let the first call decide
-        }
+        const self = this;
+        const has = async function (server) {
+          try {
+            const list = await self.mcp.listTools(server);
+            return ((list && list.servers) || []).some(function (s) { return s.server === server && (s.tools || []).length; });
+          } catch (e) {
+            return true; // unknown: let the first call decide
+          }
+        };
+        const found = await Promise.all([has(GMAIL), has(DRIVE)]);
+        this.gmailMissing = !found[0];
+        this.driveMissing = !found[1];
       }
     },
 
     gmail: function () { return this.state === 'ready' && !this.gmailMissing; },
+    drive: function () { return this.state === 'ready' && !this.driveMissing; },
+
+    /** A Google Sheet as an Excel file: resolves {content (base64), title}. */
+    sheetAsXlsx: async function (fileId, refresh) {
+      const cache = { staleTime: 5 * 60 * 1000, gcTime: 30 * 60 * 1000 };
+      if (refresh) cache.refresh = true;
+      const res = await this.mcp.callTool(DRIVE, 'download_file_content', { fileId: fileId, exportMimeType: XLSX_MIME }, { cache: cache });
+      const p = (res && res.payload) || {};
+      if (!p.content) throw { code: 'tool_error', message: 'Google Drive sent no file content.' };
+      return { content: p.content, title: p.title || '' };
+    },
 
     sendEmail: async function (msg) {
       const res = await this.mcp.callTool(GMAIL, 'send_message', compact({
@@ -82,33 +102,34 @@
       }, { refetchInterval: 5 * 60 * 1000, cache: { staleTime: 60 * 1000, gcTime: 30 * 60 * 1000 } });
     },
 
-    /** Viewer-facing explanation for a Gmail failure. kind: 'read' | 'write'. */
-    explain: function (err, kind) {
+    /** Viewer-facing explanation for a connector failure. kind: 'read' | 'write'. */
+    explain: function (err, kind, server) {
+      const name = server || GMAIL;
       const code = (err && err.code) || 'upstream_error';
       switch (code) {
         case 'needs_reauth':
-          return { code: code, text: 'Gmail needs to be reconnected. In claude.ai open Settings → Connectors and reconnect Gmail.' };
+          return { code: code, text: name + ' needs to be reconnected. In claude.ai open Settings → Connectors and reconnect ' + name + '.' };
         case 'server_not_connected':
         case 'server_not_found':
-          return { code: code, text: 'Gmail is not connected for you. Add Gmail in claude.ai Settings → Connectors, then reload this page.' };
+          return { code: code, text: name + ' is not connected for you. Add ' + name + ' in claude.ai Settings → Connectors, then reload this page.' };
         case 'selection_required':
-          return { code: code, text: 'You have more than one Gmail account connected. Pick the business account when claude.ai asks, then try again.' };
+          return { code: code, text: 'You have more than one ' + name + ' account connected. Pick the business account when claude.ai asks, then try again.' };
         case 'not_in_manifest':
         case 'approval_required':
         case 'consent_required':
-          return { code: code, allow: true, text: 'This page is not allowed to use your Gmail yet.' };
+          return { code: code, allow: true, text: 'This page is not allowed to use your ' + name + ' yet.' };
         case 'blocked_by_policy':
-          return { code: code, text: 'Your organization does not allow Gmail here.' };
+          return { code: code, text: 'Your organization does not allow ' + name + ' here.' };
         case 'tool_error':
-          return { code: code, text: 'Gmail refused: ' + ((err && err.message) || 'unknown reason') };
+          return { code: code, text: name + ' refused: ' + ((err && err.message) || 'unknown reason') };
         case 'not_granted':
         case 'capability_disabled':
         case 'capability_removed':
-          return { code: code, text: 'Email is not available in this view. Open the page on claude.ai to use Gmail.' };
+          return { code: code, text: name + ' is not available in this view. Open the page on claude.ai to use it.' };
         default:
           return kind === 'write'
-            ? { code: code, unsure: true, text: 'Gmail did not confirm. Check your Gmail Sent folder before sending again.' }
-            : { code: code, retry: true, text: 'Gmail did not answer. Try again in a minute.' };
+            ? { code: code, unsure: true, text: name + ' did not confirm. Check your Gmail Sent folder before sending again.' }
+            : { code: code, retry: true, text: name + ' did not answer. Try again in a minute.' };
       }
     },
 

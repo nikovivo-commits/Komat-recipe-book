@@ -815,6 +815,81 @@
     });
   }
 
+  /* ---------- the daily cash report (Google Sheet, one sheet per day) ----------
+   * Layout per day: НАЧАЛО (opening cash); РАЗХОДИ label + amount in columns A-B (cash out);
+   * ПРИХОДИ label + amount in columns C-D (cash in); ОБЩО totals; ОСТАТЪК (cash left). */
+
+  function cellText(v) { return String(v === null || v === undefined ? '' : v).trim(); }
+  function cellNum(v) {
+    if (typeof v === 'number') return v;
+    const n = parseNum(cellText(v).replace(/^(lev|лв\.?|bgn|eur|€)\s*/i, '').replace(/\s*(lev|лв\.?|bgn|eur|€)$/i, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function parseCashDay(rows) {
+    const day = { name: '', opening: 0, out: [], in: [], closing: null };
+    let started = false;
+    (rows || []).forEach(function (row, r) {
+      row = row || [];
+      const a = cellText(row[0]);
+      const c = cellText(row[2]);
+      if (r === 0 && c && !/^име$/i.test(c)) day.name = c;
+      if (/^начало/i.test(a)) { day.opening = round(cellNum(row[1]), 2); return; }
+      if (/^остатък/i.test(a)) { day.closing = round(cellNum(row[1]), 2); return; }
+      if (/^разход/i.test(a) || /^приход/i.test(c)) { started = true; return; }
+      if (!started) return;
+      if (a && !/^общо/i.test(a) && cellNum(row[1]) > 0) day.out.push({ label: a, amount: round(cellNum(row[1]), 2) });
+      if (c && !/^общо/i.test(c) && cellNum(row[3]) > 0) day.in.push({ label: c, amount: round(cellNum(row[3]), 2) });
+    });
+    day.totalOut = round(day.out.reduce(function (t, x) { return t + x.amount; }, 0), 2);
+    day.totalIn = round(day.in.reduce(function (t, x) { return t + x.amount; }, 0), 2);
+    const computed = round(day.opening - day.totalOut + day.totalIn, 2);
+    if (day.closing === null) day.closing = computed;
+    day.filled = day.out.length > 0 || day.in.length > 0;
+    return day;
+  }
+
+  /** Who the cash went to: the first word of each line ("Метро", "Еконт", "Пране"). */
+  function payeeKey(label) {
+    return normName(label).replace(/[^0-9a-zа-я\s]/gi, ' ').trim().split(/\s+/)[0] || '';
+  }
+
+  /** A whole month: sheets [{name, rows}] named 1..31. */
+  function cashMonth(sheets) {
+    const days = (sheets || []).filter(function (sh) { return /^\d{1,2}$/.test(String(sh.name).trim()); })
+      .map(function (sh) { return Object.assign({ day: Number(String(sh.name).trim()) }, parseCashDay(sh.rows)); })
+      .sort(function (a, b) { return a.day - b.day; });
+    const filled = days.filter(function (d) { return d.filled; });
+    const payees = {};
+    filled.forEach(function (d) {
+      d.out.forEach(function (x) {
+        const k = payeeKey(x.label);
+        if (!k) return;
+        const p = payees[k] || (payees[k] = { key: k, label: x.label.split(/[\s/,(]+/)[0], amount: 0, count: 0 });
+        p.amount = round(p.amount + x.amount, 2);
+        p.count += 1;
+      });
+    });
+    const last = filled[filled.length - 1] || null;
+    return {
+      days: days,
+      filled: filled.length,
+      totalOut: round(filled.reduce(function (t, d) { return t + d.totalOut; }, 0), 2),
+      totalIn: round(filled.reduce(function (t, d) { return t + d.totalIn; }, 0), 2),
+      lastDay: last ? last.day : null,
+      cashNow: last ? last.closing : null,
+      payees: Object.keys(payees).map(function (k) { return payees[k]; }).sort(function (a, b) { return b.amount - a.amount; })
+    };
+  }
+
+  /** A Google Sheets file id from a link or a bare id. */
+  function sheetId(link) {
+    const s = String(link || '').trim();
+    const m = /\/d\/([A-Za-z0-9_-]{20,})/.exec(s);
+    if (m) return m[1];
+    return /^[A-Za-z0-9_-]{20,}$/.test(s) ? s : '';
+  }
+
   const api = {
     DAY_MS: DAY_MS,
     WEEKDAYS: WEEKDAYS,
@@ -871,6 +946,10 @@
     stockUnitFor: stockUnitFor,
     kitchenAsks: kitchenAsks,
     eventBookings: eventBookings,
+    parseCashDay: parseCashDay,
+    cashMonth: cashMonth,
+    payeeKey: payeeKey,
+    sheetId: sheetId,
     FIELD_SYNONYMS: FIELD_SYNONYMS
   };
 

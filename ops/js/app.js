@@ -8,7 +8,8 @@
   const store = window.KomatStore;
   const net = window.KomatConnect;
 
-  const VIEWS = ['today', 'stock', 'orders', 'bar', 'bookings', 'inbox', 'setup'];
+  const VIEWS = ['today', 'stock', 'orders', 'bar', 'bookings', 'cash', 'invoices', 'inbox', 'setup'];
+  const OFFICE = ['cash', 'invoices', 'inbox'];
   const COLS = ['items', 'suppliers', 'orders', 'reservations', 'moves', 'kitchen'];
   const PREFS_KEY = 'komat-backoffice-prefs';
   const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -33,6 +34,7 @@
     orders: { tab: 'suggested' },
     bookings: { day: L.isoDate(new Date()) },
     bar: { tab: 'wines', q: '', range: 'today', last: null },
+    cash: { state: 'idle' },
     mail: {},
     watches: {},
     gmailOn: !!prefs().gmailOn,
@@ -602,9 +604,8 @@
   }
 
   function viewInbox(d) {
-    const head = '<div class="page-head"><div><p class="eyebrow">Business email</p><h1>Inbox</h1>' +
-      '<p class="muted small" style="margin:4px 0 0">Supplier replies, invoices and booking emails from your Gmail, refreshed every few minutes.</p></div>' +
-      (net.gmail() && ui.gmailOn ? '<div class="actions"><button type="button" class="btn" data-act="gmail-refresh">Refresh</button><button type="button" class="btn ghost" data-act="gmail-off">Disconnect</button></div>' : '') + '</div>';
+    const head = officeHead('inbox', 'Mail', 'Supplier replies, orders and booking emails from your Gmail, refreshed every few minutes.',
+      net.gmail() && ui.gmailOn ? '<button type="button" class="btn" data-act="gmail-refresh">Refresh</button><button type="button" class="btn ghost" data-act="gmail-off">Disconnect</button>' : '');
     if (net.gmailMissing) {
       return head + '<section class="panel stack"><h2>Add Gmail to your claude.ai account</h2>' +
         '<p class="muted" style="margin:0">In claude.ai open Settings → Connectors, add Gmail with your business account, then reload this page. Orders will then go out from your Gmail and supplier replies show up here.</p></section>';
@@ -667,6 +668,11 @@
       '<section class="panel stack"><h2>Email searches</h2><p class="small muted" style="margin:0">Gmail search words for the Inbox. Supplier mail is found from the supplier addresses automatically.</p><div class="form-grid">' +
       field('set-inboxQuery', 'Orders &amp; invoices', s.inboxQuery, 'wide') +
       field('set-bookingsQuery', 'Booking emails', s.bookingsQuery, 'wide', 'Tip: use your reservation system’s sender, e.g. from:noreply@yourbookingtool.com') +
+      field('set-invoiceQuery', 'Invoices', s.invoiceQuery || '', 'wide placeholder="' + esc(invoiceQuery(true)) + '"', 'Leave empty to look for invoices from your suppliers’ addresses.') +
+      '</div></section>' +
+      '<section class="panel stack"><h2>Cash report</h2><div class="form-grid">' +
+      field('set-cashSheet', 'Google Sheet link', s.cashSheet || '', 'wide placeholder="https://docs.google.com/spreadsheets/d/…"', 'The sheet you fill in every day: one tab per day with НАЧАЛО, РАЗХОДИ, ПРИХОДИ and ОСТАТЪК.') +
+      field('set-cashCurrency', 'Currency of the cash report', s.cashCurrency || '', 'maxlength="3" placeholder="' + esc(s.currency || 'EUR') + '" style="text-transform:uppercase"', 'BGN for months kept in leva.') +
       '</div></section>' +
       '<div class="actions"><button type="submit" class="btn primary"' + (store.readOnly ? ' disabled' : '') + '>Save setup</button></div>' +
       '<section class="panel stack"><h2>Connections</h2><dl class="kv">' +
@@ -944,6 +950,133 @@
         '<p class="small muted" style="margin:0">Your choices are remembered for the next report. Importing the same report again replaces it instead of counting it twice.</p>',
       foot: '<button type="button" class="btn" data-act="pos-back">Back</button><span class="spacer"></span><button type="button" class="btn primary" data-act="pos-run"' + (tracked.length ? '' : ' disabled') + '>Take ' + plural(tracked.length, 'article') + ' off stock</button>'
     };
+  }
+
+
+  /* ---------- office: cash report, invoices, mail ---------- */
+
+  function officeHead(tab, title, sub, actions) {
+    const link = function (v, label) { return '<a href="#' + v + '"' + (tab === v ? ' aria-current="page"' : '') + '>' + label + '</a>'; };
+    return '<div class="page-head"><div><p class="eyebrow">Office</p><h1>' + esc(title) + '</h1>' +
+      (sub ? '<p class="muted small" style="margin:4px 0 0">' + sub + '</p>' : '') + '</div>' +
+      (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div>' +
+      '<div><nav class="seg" aria-label="Office">' + link('cash', 'Cash') + link('invoices', 'Invoices') + link('inbox', 'Mail') + '</nav></div>';
+  }
+
+  function invoiceQuery(defaultOnly) {
+    const custom = String(store.settings.invoiceQuery || '').trim();
+    if (custom && !defaultOnly) return custom;
+    const sup = L.supplierQuery(store.list('suppliers'), 90);
+    return sup ? sup.replace(/ newer_than:\d+d$/, '') + ' (фактура OR invoice OR проформа) newer_than:90d'
+      : '(фактура OR invoice OR проформа) has:attachment newer_than:60d';
+  }
+
+  let cashFmt = null, cashCur = null;
+  function cashMoney(n) {
+    const cur = String(store.settings.cashCurrency || store.settings.currency || 'EUR').toUpperCase();
+    if (cur !== cashCur) {
+      try { cashFmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: cur }); } catch (e) { cashFmt = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      cashCur = cur;
+    }
+    return cashFmt.format(Number(n) || 0);
+  }
+
+  function base64Bytes(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function loadCash(refresh) {
+    const id = L.sheetId(store.settings.cashSheet);
+    if (!id || !net.drive()) return;
+    ui.cash = Object.assign({}, ui.cash, { state: 'loading', id: id });
+    render();
+    try {
+      const file = await net.sheetAsXlsx(id, refresh);
+      const X = await loadXlsx();
+      const wb = X.read(base64Bytes(file.content), { type: 'array' });
+      const sheets = wb.SheetNames.map(function (n) { return { name: n, rows: X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) }; });
+      const month = L.cashMonth(sheets);
+      ui.cash = { state: 'ok', id: id, title: file.title, month: month, at: Date.now(), sel: month.lastDay };
+    } catch (e) {
+      ui.cash = { state: 'error', id: id, error: e && e.code ? net.explain(e, 'read', 'Google Drive').text
+        : e && /reader/.test(e.message || '') ? 'The Excel reader could not load. Check the internet connection and try again.'
+          : 'The spreadsheet could not be read. Check that the link is a Google Sheet you can open.' };
+    }
+    render();
+  }
+
+  function viewCash(d) {
+    const s = store.settings;
+    const id = L.sheetId(s.cashSheet);
+    const c = ui.cash;
+    const head = officeHead('cash', 'Cash', 'The daily cash report: what was in the till, what went out and what came in.',
+      id && net.drive() ? '<a class="btn ghost" href="https://docs.google.com/spreadsheets/d/' + esc(id) + '/edit" target="_blank" rel="noopener">Open the sheet</a><button type="button" class="btn" data-act="cash-refresh">Refresh</button>' : '');
+    if (!id) {
+      return head + '<section class="panel stack"><h2>Connect the cash report</h2>' +
+        '<p class="muted" style="margin:0">Paste the link of the Google Sheet you fill in every day: one tab per day (1–31) with НАЧАЛО, РАЗХОДИ, ПРИХОДИ, ОБЩО and ОСТАТЪК. Komat Back Office reads it; it never changes it.</p>' +
+        '<div class="toolbar"><label class="sr-only" for="cash-link">Google Sheet link</label><input type="text" id="cash-link" placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1 1 320px">' +
+        '<button type="button" class="btn primary" data-act="cash-link-save">Connect</button></div></section>';
+    }
+    if (net.driveMissing) {
+      return head + '<section class="panel stack"><h2>Add Google Drive to your claude.ai account</h2><p class="muted" style="margin:0">In claude.ai open Settings → Connectors, add Google Drive with the account that can open the cash report, then reload this page.</p></section>';
+    }
+    if (!net.drive()) {
+      return head + '<section class="panel stack"><h2>The cash report opens on claude.ai</h2><p class="muted" style="margin:0">Open Komat Back Office from your claude.ai link with Google Drive connected to read the cash report here.</p></section>';
+    }
+    if (c.state === 'idle' || c.id !== id) {
+      ui.cash = { state: 'loading', id: id }; // marks it taken, so a second redraw doesn't start another download
+      setTimeout(function () { loadCash(false); }, 0);
+    }
+    if (c.state !== 'ok' && c.state !== 'error') return head + '<div class="loading"><div class="spinner"></div><span>Reading the cash report…</span></div>';
+    if (c.state === 'error') {
+      return head + '<section class="panel stack"><div class="note bad"><p>' + esc(c.error) + '</p></div><div class="actions"><button type="button" class="btn" data-act="cash-refresh">Try again</button><button type="button" class="btn ghost" data-act="cash-unlink">Use another sheet</button></div></section>';
+    }
+    const m = c.month;
+    if (!m.days.length) {
+      return head + '<section class="panel stack"><p style="margin:0">“' + esc(c.title) + '” has no day tabs named 1 to 31, so it does not look like the cash report.</p><div class="actions"><button type="button" class="btn" data-act="cash-unlink">Use another sheet</button></div></section>';
+    }
+    const sel = m.days.find(function (x) { return x.day === c.sel; }) || m.days.find(function (x) { return x.day === m.lastDay; }) || m.days[0];
+    const strip = '<div class="strip">' +
+      stat({ cls: 'hot', label: 'Cash left', value: m.cashNow === null ? '–' : cashMoney(m.cashNow), hint: m.lastDay ? 'end of day ' + m.lastDay : 'no days filled yet' }) +
+      stat({ label: 'Cash out', value: cashMoney(m.totalOut), hint: plural(m.filled, 'day') + ' filled' }) +
+      stat({ label: 'Cash in', value: cashMoney(m.totalIn), hint: 'ПРИХОДИ this month' }) +
+      stat({ label: 'Biggest payee', value: m.payees[0] ? cashMoney(m.payees[0].amount) : '–', hint: m.payees[0] ? m.payees[0].label + ', ' + plural(m.payees[0].count, 'time') : '' }) + '</div>';
+    const table = '<section class="panel flush"><div class="section-head"><h2>' + esc(c.title || 'Cash report') + '</h2><span class="muted small">read ' + esc(ago(c.at)) + '</span></div>' +
+      '<div class="table-wrap"><table class="line-table winelist cashdays"><thead><tr><th>Day</th><th class="r">Opening</th><th class="r">Out</th><th class="r">In</th><th class="r">Left</th><th>Who</th></tr></thead><tbody>' +
+      m.days.filter(function (x) { return x.filled || x.day === sel.day; }).map(function (x) {
+        return '<tr class="' + (x.day === sel.day ? 'sel' : '') + '"><td><button type="button" class="btn ghost sm" data-act="cash-day" data-day="' + x.day + '">Day ' + x.day + '</button></td>' +
+          '<td class="r num" data-l="Opening">' + esc(cashMoney(x.opening)) + '</td><td class="r num" data-l="Out">' + esc(cashMoney(x.totalOut)) + '</td>' +
+          '<td class="r num" data-l="In">' + esc(cashMoney(x.totalIn)) + '</td><td class="r num" data-l="Left"><b>' + esc(cashMoney(x.closing)) + '</b></td><td data-l="Who">' + esc(x.name) + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+    const lines = function (list, empty) {
+      return list.length ? '<div class="rows">' + list.map(function (x) {
+        return '<div class="row"><div class="row-main"><span class="name">' + esc(x.label) + '</span></div><span class="num">' + esc(cashMoney(x.amount)) + '</span><span></span></div>';
+      }).join('') + '</div>' : '<div class="empty"><span>' + empty + '</span></div>';
+    };
+    const max = m.payees[0] ? m.payees[0].amount : 1;
+    const dayPanel = '<section class="panel flush"><div class="section-head"><h2>Day ' + sel.day + '</h2><span class="muted small num">' + esc(cashMoney(sel.opening)) + ' → ' + esc(cashMoney(sel.closing)) + '</span></div>' +
+      '<h3 class="group-label">Out (РАЗХОДИ) <span>' + esc(cashMoney(sel.totalOut)) + '</span></h3>' + lines(sel.out, 'Nothing paid out.') +
+      '<h3 class="group-label">In (ПРИХОДИ) <span>' + esc(cashMoney(sel.totalIn)) + '</span></h3>' + lines(sel.in, 'Nothing came in.') + '</section>';
+    const payees = '<section class="panel stack"><div class="section-head"><h2>Where the cash went</h2><span class="muted small">this month</span></div>' +
+      '<div class="payees">' + m.payees.slice(0, 10).map(function (p) {
+        return '<div class="payee"><span class="payee-name">' + esc(p.label) + ' <span class="muted small">×' + p.count + '</span></span><span class="num">' + esc(cashMoney(p.amount)) + '</span>' +
+          '<span class="payee-bar" aria-hidden="true"><i style="width:' + Math.max(2, Math.round(p.amount / max * 100)) + '%"></i></span></div>';
+      }).join('') + '</div></section>';
+    return head + strip + '<div class="grid-2"><div class="stack">' + table + '</div><div class="stack">' + dayPanel + payees + '</div></div>';
+  }
+
+  function viewInvoices(d) {
+    const head = officeHead('invoices', 'Invoices', 'Invoice emails from your suppliers, newest first.', net.gmail() && ui.gmailOn ? '<button type="button" class="btn" data-act="gmail-refresh">Refresh</button>' : '');
+    if (!net.gmail() || !ui.gmailOn) {
+      return head + '<section class="panel stack"><h2>Invoices come from your Gmail</h2><p class="muted" style="margin:0">' +
+        (net.gmail() ? 'Connect Gmail on the Mail tab to list supplier invoices here.' : 'Open Komat Back Office on claude.ai with Gmail connected to list supplier invoices here.') + '</p>' +
+        (net.gmail() ? '<div class="actions"><a class="btn primary" href="#inbox">Connect Gmail</a></div>' : '') + '</section>';
+    }
+    return head + '<section class="panel flush"><div class="section-head"><h2>Invoice emails</h2>' + updatedLine('invoices') + '</div>' + mailList('invoices', 'No invoice emails found. Check the invoice search in Setup.') + '</section>' +
+      '<p class="small muted">Searching Gmail for: <code>' + esc(invoiceQuery()) + '</code>. Change it under <a href="#setup">Setup → Email searches</a>.</p>';
   }
 
   /* ---------- sheets (side panels) ---------- */
@@ -1429,14 +1562,15 @@
 
   /* ---------- Gmail ---------- */
 
-  const MAIL_KEYS = ['suppliers', 'orders', 'bookings'];
+  const MAIL_KEYS = ['suppliers', 'orders', 'bookings', 'invoices'];
 
   function mailQueries() {
     const s = store.settings;
     return {
       suppliers: L.supplierQuery(store.list('suppliers')),
       orders: String(s.inboxQuery || '').trim(),
-      bookings: String(s.bookingsQuery || '').trim()
+      bookings: String(s.bookingsQuery || '').trim(),
+      invoices: invoiceQuery()
     };
   }
 
@@ -1681,6 +1815,16 @@
       toast('Delivery checked in: ' + plural(added, 'item') + ' added to stock');
     },
 
+    'cash-link-save': function () {
+      const v = document.getElementById('cash-link').value;
+      if (!L.sheetId(v)) { toast('That does not look like a Google Sheets link.', 'bad'); return; }
+      store.saveSettings({ cashSheet: v.trim() });
+      ui.cash = { state: 'idle' };
+      render();
+    },
+    'cash-refresh': function () { loadCash(true); },
+    'cash-unlink': function () { store.saveSettings({ cashSheet: '' }); ui.cash = { state: 'idle' }; render(); },
+    'cash-day': function (el) { ui.cash.sel = Number(el.dataset.day); render(); },
     /* bar */
     'bar-tab': function (el) { ui.bar.tab = el.dataset.tab; render(); },
     'bar-range': function (el) { ui.bar.range = el.dataset.range; render(); },
@@ -1921,7 +2065,8 @@
       addRecords('reservations', sample.reservations);
       addRecords('orders', sample.orders);
       addRecords('moves', sample.moves);
-      addRecords('kitchen', sample.kitchen);
+      // Never replace real Kitchen Book data with the example versions.
+      addRecords('kitchen', sample.kitchen.filter(function (k) { const cur = store.get('kitchen', k.id); return !cur || cur.example; }));
       if (!L.num(store.settings.normalCoversWeek, 0)) store.saveSettings({ normalCoversWeek: 150 });
       toast('Example kitchen loaded');
       if (ui.view === 'setup') location.hash = '#today';
@@ -2068,6 +2213,9 @@
         boost: !!o.boost,
         vat: Math.max(0, numOrUndef(o.vat) || 0),
         inboxQuery: String(o.inboxQuery || '').trim(),
+        invoiceQuery: String(o.invoiceQuery || '').trim(),
+        cashSheet: String(o.cashSheet || '').trim(),
+        cashCurrency: String(o.cashCurrency || '').trim().toUpperCase().slice(0, 3),
         bookingsQuery: String(o.bookingsQuery || '').trim()
       });
       toast('Setup saved');
@@ -2242,9 +2390,10 @@
 
   function renderChrome(d) {
     const counts = { orders: d.toOrderIds.length, stock: d.out.length, bar: d.sellable.filter(function (i) { return d.status[i.id] === 'out'; }).length };
+    const navView = OFFICE.indexOf(ui.view) > -1 ? 'office' : ui.view;
     document.querySelectorAll('[data-nav]').forEach(function (a) {
       const v = a.dataset.nav;
-      if (v === ui.view) a.setAttribute('aria-current', 'page');
+      if (v === navView) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
       const c = a.querySelector('.count');
       if (c) {
@@ -2282,7 +2431,7 @@
     const d = derive();
     renderChrome(d);
     const html = {
-      today: viewToday, stock: viewStock, orders: viewOrders, bar: viewBar, bookings: viewBookings, inbox: viewInbox, setup: viewSetup
+      today: viewToday, stock: viewStock, orders: viewOrders, bar: viewBar, bookings: viewBookings, cash: viewCash, invoices: viewInvoices, inbox: viewInbox, setup: viewSetup
     }[ui.view](d);
     // Setup is a form: don't wipe what someone is typing when another person's change arrives.
     const a = document.activeElement;
@@ -2313,6 +2462,7 @@
     const v = location.hash.replace('#', '');
     const next = VIEWS.indexOf(v) > -1 ? v : 'today';
     if (next !== ui.view) {
+      if (ui.sheet) closeSheet();
       ui.view = next;
       ui.confirm = null;
       if (next !== 'stock') { ui.stock.counting = false; ui.stock.draft = {}; }

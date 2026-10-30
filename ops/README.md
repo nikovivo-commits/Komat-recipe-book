@@ -7,7 +7,8 @@ It sits next to the tools Komat already uses and reads from them instead of repl
 - **Hype** (hype-software.com): deliveries and sales are entered there, so Hype is the record of stock. Its stock report updates the counts here, and its sales report fills in wine and drink sales.
 - **reservation.tools**: its booking export and booking emails fill the covers calendar.
 - **Komat Kitchen Book**: the stations' Out / Low order checks become order lines, its events count as covers, and its recipe products can be added to the stock list.
-- **Gmail**: orders go out from the business address; supplier replies, invoices and booking emails show in the Inbox.
+- **Gmail**: orders go out from the business address; supplier replies, invoices and booking emails show under Office.
+- **The daily cash report** (Google Sheet, one tab per day with НАЧАЛО, РАЗХОДИ, ПРИХОДИ, ОСТАТЪК): read through Google Drive and shown under Office → Cash.
 
 ## Screens
 
@@ -18,7 +19,7 @@ It sits next to the tools Komat already uses and reads from them instead of repl
 | **Orders** | Suggested orders per supplier, rounded to whole cases, sacks or trays, including everything the kitchen asked for. Send with Gmail, save a Gmail draft, open in the email app or copy the text. Check deliveries in. |
 | **Bar** | **Wine list** for the floor: style, vintage, bottle and glass price, bottles and glasses left, gross profit after VAT. **Sales** per wine and drink from Hype's sales report. **Quick sell** buttons for drinks that don't go through Hype. |
 | **Bookings** | Covers per day for 14 days from reservation.tools exports, hand entries and Kitchen Book events. |
-| **Inbox** | Supplier mail, orders and invoices, booking emails. |
+| **Office** | **Cash**: the daily cash report: cash left, cash out and in per day, where the cash went this month. **Invoices**: invoice emails from your suppliers. **Mail**: supplier replies, orders and booking emails. |
 | **Setup** | Restaurant details, order email wording, copy-to address, VAT for margins, busy-week settings, backups. |
 
 ### How orders are worked out
@@ -40,7 +41,9 @@ A count (a stock count, an update from Hype, or a figure typed on an item) sets 
 ## Two ways to run it
 
 1. **On claude.ai (for the team).** The published page keeps everything in a shared database, live for everyone the page is shared with. Gmail works through each person's own claude.ai Gmail connector.
-2. **As a plain web page** (GitHub Pages or any static host): open `ops/index.html` through a web server. Everything except Gmail works, and data stays in that browser (Setup → Export backup to move it).
+2. **As a plain web page** (GitHub Pages or any static host): open `ops/index.html` through a web server. Everything except Gmail and the cash report works, and data stays in that browser (Setup → Export backup to move it).
+
+The cash report is read with each viewer's own Google Drive connection, so it shows for people who can open that Google Sheet. The app only reads it.
 
 ## The Kitchen Book link
 

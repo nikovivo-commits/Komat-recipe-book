@@ -343,3 +343,58 @@ test('Bulgarian Hype-style exports: stock list, sales report and bookings', () =
   const res = L.parseCSV('Дата;Час;Име;Брой гости;Телефон\n30.10.2026;19:30;Иванов;4;0888\n');
   assert.deepEqual(L.rowsToReservations(res).map(r => [r.date, r.time, r.name, r.covers]), [['2026-10-30', '19:30', 'Иванов', 4]]);
 });
+
+/* ---------- cash report ---------- */
+
+// Same layout as the daily sheets of the cash report; the numbers are made up.
+function cashSheet(opening, out, inc, name) {
+  const rows = [['', 'ИМЕ', name || '', ''], ['НАЧАЛО', opening, '', ''], ['РАЗХОДИ', '', 'ПРИХОДИ', '']];
+  for (let i = 0; i < 16; i++) {
+    const o = out[i] || ['', 0];
+    const n = i < 8 ? (inc[i] || ['', 0]) : ['', ''];
+    rows.push([o[0], o[1], i === 8 ? 'ОБЩО ' : n[0], i === 8 ? inc.reduce((t, x) => t + x[1], 0) : n[1]]);
+  }
+  rows.push(['', '', '', '']);
+  rows.push(['ОБЩО ', out.reduce((t, x) => t + x[1], 0), '', '']);
+  rows.push(['ОСТАТЪК', opening - out.reduce((t, x) => t + x[1], 0) + inc.reduce((t, x) => t + x[1], 0), '', '']);
+  return rows;
+}
+
+test('parseCashDay reads opening cash, cash out, cash in and what is left', () => {
+  const d = L.parseCashDay(cashSheet(1000, [['МИЯЛНО ', 100], ['Метро', 250.5], ['Пране', 20]], [['Хляб', 40]], 'Иван'));
+  assert.equal(d.name, 'Иван');
+  assert.equal(d.opening, 1000);
+  assert.deepEqual(d.out.map(x => [x.label, x.amount]), [['МИЯЛНО', 100], ['Метро', 250.5], ['Пране', 20]]);
+  assert.deepEqual(d.in, [{ label: 'Хляб', amount: 40 }]);
+  assert.equal(d.totalOut, 370.5);
+  assert.equal(d.totalIn, 40);
+  assert.equal(d.closing, 669.5);
+  assert.equal(d.filled, true);
+  // Formatted text cells ("lev1,500.00") read too.
+  const t = L.parseCashDay([['', 'ИМЕ'], ['НАЧАЛО', 'lev1,500.00'], ['РАЗХОДИ', '', 'ПРИХОДИ'], ['Еконт', 'lev83.50', '', 'lev0.00']]);
+  assert.equal(t.opening, 1500);
+  assert.equal(t.totalOut, 83.5);
+  assert.equal(t.closing, 1416.5);
+});
+
+test('cashMonth adds up the filled days and groups who the cash went to', () => {
+  const m = L.cashMonth([
+    { name: '1', rows: cashSheet(1000, [['Метро', 200], ['Еконт Цеков', 50]], []) },
+    { name: '2', rows: cashSheet(1500, [['Метро ', 100], ['Пране', 20]], [['Фабриката', 60]]) },
+    { name: '3', rows: cashSheet(0, [], []) },
+    { name: 'Notes', rows: [['x']] }
+  ]);
+  assert.equal(m.days.length, 3);
+  assert.equal(m.filled, 2);
+  assert.equal(m.totalOut, 370);
+  assert.equal(m.totalIn, 60);
+  assert.equal(m.lastDay, 2);
+  assert.equal(m.cashNow, 1440);
+  assert.deepEqual(m.payees.map(p => [p.label, p.amount, p.count]), [['Метро', 300, 2], ['Еконт', 50, 1], ['Пране', 20, 1]]);
+});
+
+test('sheetId takes a Google Sheets link or a bare id', () => {
+  assert.equal(L.sheetId('https://docs.google.com/spreadsheets/d/1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM/edit?usp=sharing'), '1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM');
+  assert.equal(L.sheetId('1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM'), '1SU7ul0uX-YzxdtBv7lIhirh7bMxx23YWcyjj6sgquvM');
+  assert.equal(L.sheetId('not a link'), '');
+});
