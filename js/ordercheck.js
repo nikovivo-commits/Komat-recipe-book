@@ -258,8 +258,8 @@
     ((K.orderFor(st) || {}).items || []).forEach((i) => { prev[i.n.toLowerCase()] = i; });
     items.forEach((i) => {
       const p = prev[i.n.toLowerCase()];
-      if (p && p.s === i.s && (p.note || '') === i.note && p.by !== undefined) { i.by = p.by; i.ink = p.ink; i.hand = p.hand; }
-      else { i.by = K.me.id || ''; i.ink = K.myInk() || 'blue'; i.hand = K.myHand() || 'caveat'; }
+      if (p && p.s === i.s && (p.note || '') === i.note && p.by !== undefined) { i.by = p.by; i.ink = p.ink; i.hand = p.hand; if (p.late) i.late = true; if (p.at) i.at = p.at; }
+      else { i.by = K.me.id || ''; i.ink = K.myInk() || 'blue'; i.hand = K.myHand() || 'caveat'; i.at = Date.now(); if (K.orderPhase() === 'late') i.late = true; }
     });
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();

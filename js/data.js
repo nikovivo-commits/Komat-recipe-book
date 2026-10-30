@@ -424,23 +424,16 @@
   };
 
   /* ---------- orders and whiteboard ---------- */
-  /* a station's order on the board; once the board is sent off and cleaned it no longer counts (pass all to see it anyway) */
-  K.orderFor = (st, date, all) => { const o = D.orders[(date || K.day(0)) + '_' + st]; return o && (all || !o.sent) ? o : null; };
-  /* the board was sent (by email) and wiped clean: every open station order is marked sent */
-  K.markBoardSent = function (to) {
-    const at = Date.now(), ps = [];
-    K.STATIONS.forEach((s) => {
-      const id = K.day(0) + '_' + s[0], o = D.orders[id];
-      if (!o || o.sent) return;
-      o.sent = at; o.sentTo = to || ''; o.sentBy = K.me.id || '';
-      ps.push(K.db.doc('orders/' + id).set(o));
-    });
-    K.refresh(true);
-    return Promise.all(ps).catch(writeFailed);
-  };
+  /* The order runs on its own clock. Everything written from 12:00 until midnight is one order;
+     at midnight it goes to the head chef and the board is wiped. From midnight until 12:00 the next
+     day, anything new is a "Sorry chef, I forgot to order" line on that same order. From 12:00 a new
+     order starts. An order is named by the day it was written (its noon). */
+  K.orderPhase = () => (new Date().getHours() < 12 ? 'late' : 'open');
+  K.orderDay = (n) => K.ymd(K.addDays(new Date(Date.now() - 12 * 3600 * 1000), n || 0));
+  K.orderFor = (st, date) => D.orders[(date || K.orderDay()) + '_' + st] || null;
   K.sendOrder = function (st, items, closing) {
-    const id = K.day(0) + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
-    const body = { date: K.day(0), station: st, items: items, at: Date.now(), by: K.me.id || '' };
+    const day = K.orderDay(), id = day + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
+    const body = { date: day, station: st, items: items, at: Date.now(), by: K.me.id || '' };
     /* show it at once; the database catches up */
     if (items.length) D.orders[id] = body; else delete D.orders[id];
     let p = items.length ? ref.set(body) : had ? ref.delete() : Promise.resolve();
@@ -448,7 +441,7 @@
     return p;
   };
   K.saveBoard = function (dataUrl) {
-    const d = K.day(0);
+    const d = K.orderDay();
     return K.db.doc('boards/' + d).set({ date: d, photo: dataUrl, at: Date.now(), by: K.me.id || '' });
   };
 
@@ -577,8 +570,8 @@
     }, onErr));
     coll('checks', [1, 0, -1, -2, -3], 'checks');
     coll('prep', [0, 1, -1, -2, -3], 'prep');
-    coll('orders', [0, -1], 'orders');
-    coll('boards', [0, -1], 'boards');
+    coll('orders', [1, 0, -1, -2], 'orders');
+    coll('boards', [1, 0, -1, -2], 'boards');
   }
   function onErr(e) { if (e && e.code === 'revoked') { D.revoked = true; K.refresh(); } }
   K.subscribe = function () {
