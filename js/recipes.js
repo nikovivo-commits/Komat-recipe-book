@@ -343,11 +343,11 @@
     return { comps: comps, main: main, hasMain: !!(main.ingredients.length || main.steps.length) };
   }
   K.recipeParts = parts;
-  function topbar(r, cookable, onEdit) {
+  function topbar(r, cookable, onEdit, cookBelow) {
     return K.subbar('Recipes', () => K.back('recipes'), [
       'wakeLock' in navigator ? h('button', { type: 'button', class: 'icon-btn' + (ui.wake ? ' on' : ''), 'aria-pressed': ui.wake ? 'true' : 'false', title: ui.wake ? 'Screen stays on' : 'Keep the screen on', 'aria-label': 'Keep the screen on', onclick: K.toggleWake }, K.icon('sun')) : null,
       K.me.admin ? h('button', { type: 'button', class: 'btn small', onclick: onEdit }, K.icon('edit'), h('span', { class: 'hide-xs' }, 'Edit')) : null,
-      cookable ? h('button', { type: 'button', class: 'btn small primary', onclick: () => K.openCook(r.id, ui.comp) }, K.icon('cook'), 'Cook') : null,
+      cookable && !cookBelow ? h('button', { type: 'button', class: 'btn small primary', onclick: () => K.openCook(r.id, ui.comp) }, K.icon('cook'), 'Cook') : null,
     ], r.name);
   }
   function metaChips(r, part) {
@@ -415,8 +415,29 @@
         r.plating ? h('p', { class: 'prose' }, r.plating) : null));
     }
     if (r.notes) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Notes'), h('p', { class: 'prose' }, r.notes)));
-    return { top: topbar(r, cookable, () => K.startEdit(r)), body: body };
+    return { top: topbar(r, cookable, () => K.startEdit(r), true), body: body, tabs: false, bar: recipeBar(r, comps.concat(P.hasMain || !comps.length ? [main] : []), cookable) };
   };
+
+  /* the bar under the thumb: scale the whole dish up or down, and Cook */
+  const STEPS = [0.5, 1, 1.5, 2, 3, 4];
+  const stepLabel = (f) => (f === 0.5 ? '½' : '×' + K.fmtNum(f));
+  function recipeBar(r, all, cookable) {
+    const now = () => factor(all[0]), near = () => { let b = 0; STEPS.forEach((s, i) => { if (Math.abs(s - now()) < Math.abs(STEPS[b] - now())) b = i; }); return b; };
+    const out = h('output', { class: 'rb-val mono', 'aria-live': 'polite' }, stepLabel(now()));
+    const move = (d) => {
+      const i = Math.max(0, Math.min(STEPS.length - 1, near() + d)), f = STEPS[i];
+      if (Math.abs(f - now()) < 0.0005) return;
+      all.forEach((p) => { setFactor(p, f); updateScaled(p, true); });
+      out.textContent = stepLabel(f);
+      K.vibrate(6);
+    };
+    return [
+      h('div', { class: 'rb-step', role: 'group', 'aria-label': 'Scale the whole dish' },
+        h('button', { type: 'button', class: 'rb-b', 'aria-label': 'Make less', onclick: () => move(-1) }, K.icon('minus')), out,
+        h('button', { type: 'button', class: 'rb-b', 'aria-label': 'Make more', onclick: () => move(1) }, K.icon('plus'))),
+      cookable ? h('button', { type: 'button', class: 'rb-cook', onclick: () => K.openCook(r.id, ui.comp) }, K.icon('cook'), 'Cook') : null,
+    ];
+  }
 
   function compPage(r, c) {
     const ci = ui.comp, part = { key: 'x', ci: ci, name: c.name, yieldQty: c.yieldQty, yieldUnit: c.yieldUnit, ingredients: c.ingredients, steps: c.steps };

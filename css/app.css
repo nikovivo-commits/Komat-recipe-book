@@ -1363,3 +1363,47 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .welcome.draw .wword { animation-delay: calc(.3s + var(--i, 0) * .12s - var(--el, 0ms)); }
 .welcome .wword { margin-right: .26em; }
 .welcome .wname { margin-left: 0; }
+
+/* Schedule: your next shift on top of your week */
+.nextshift { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; margin: 4px 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--apron-soft); color: var(--ink); }
+.ns-k { flex-basis: 100%; color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.ns-when { font-size: 1.15rem; }
+.ns-n { margin-left: auto; color: var(--muted); font-size: .85rem; }
+
+/* Today, from the UI canvas: three equal stations, three list tabs, one to-do card */
+.stpick-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .08); }
+.stpick-btns button { justify-content: center; gap: 6px; min-height: 44px; padding: 0 6px; border: 0; background: none; color: #C9CCC8; font-weight: 600; font-size: .9rem; }
+.stpick-btns .ico { width: 18px; height: 18px; }
+.stpick-btns button[aria-pressed="true"] { background: var(--on-steel); color: #1C1B1A; font-weight: 700; }
+.st-pill { border-radius: 10px; }
+.tjump { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--line); overflow: visible; }
+.tjump .tjt { justify-content: center; min-height: 42px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; white-space: nowrap; }
+.tjump .tjt[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .3); }
+.tjump .tjt b { padding: 1px 6px; border-radius: 6px; background: transparent; color: var(--muted); font-size: .75rem; }
+.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: #fff; }
+@media (max-width: 999px) {
+  .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
+  .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
+  .today.tab-tmr .tt-todo, .today.tab-tmr .tt-mep { display: none; }
+}
+@media (min-width: 1000px) { .tjump { display: none; } }
+.donerow { border-top: 1px solid var(--line); }
+.donerow summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px; list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; }
+.donerow summary::-webkit-details-marker { display: none; }
+.donerow summary b { color: var(--ink); }
+.dr-ok { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--ready); color: var(--ready-ink); }
+.dr-ok .ico { width: 13px; height: 13px; }
+.dr-names { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.freshfoot { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); color: var(--muted); font-size: .8rem; }
+.freshfoot .ico { width: 16px; height: 16px; color: var(--apron); }
+
+/* Recipe: the bar under the thumb, dark, with a scale stepper and a big Cook button */
+.actionbar:has(.rb-step) { background: var(--steel); border-top: 0; box-shadow: 0 -10px 24px -16px rgba(0, 0, 0, .6); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.actionbar:has(.rb-step) .actionbar-in { align-items: center; gap: 10px; }
+.rb-step { flex: none; display: flex; align-items: center; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .09); color: var(--on-steel); }
+.rb-b { display: grid; place-items: center; width: 44px; height: 48px; border: 0; border-radius: 10px; background: none; color: var(--on-steel); }
+.rb-b:active { background: rgba(255, 255, 255, .12); }
+.rb-b .ico { width: 18px; height: 18px; }
+.rb-val { min-width: 48px; text-align: center; font-size: 1.05rem; font-weight: 700; }
+.rb-cook { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border: 0; border-radius: 14px; background: var(--apron); color: #fff; font: 700 1.05rem var(--sans); }
+.rb-cook .ico { width: 22px; height: 22px; }

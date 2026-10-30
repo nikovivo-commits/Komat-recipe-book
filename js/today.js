@@ -118,7 +118,7 @@
   function stationPicker() {
     const cur = K.getStation(), from = ui.stFrom && ui.stFrom !== cur ? ui.stFrom : null;
     const pill = h('span', { class: 'st-pill', 'aria-hidden': 'true' });
-    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1]))));
+    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1].split(' ')[0]))));
     requestAnimationFrame(() => {
       if (!pill.isConnected) return;
       const at = (st) => btns.querySelector('.st-' + st);
@@ -262,33 +262,25 @@
 
     /* phones: a sticky bar to jump between the parts of the page */
     const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
-    /* three tiles under the greeting: the list, the to-do, and the evening (or what is urgent) */
-    const urgN = K.openUrgents().length, fts = feat ? eventTimes(feat) : [];
-    const tile = (cls, big, label, onclick) => h('button', { type: 'button', class: 'tile' + (cls ? ' ' + cls : ''), onclick: onclick }, h('span', { class: 'tile-n mono' }, big), h('span', { class: 'tile-l' }, label));
-    const tiles = h('div', { class: 'tiles' },
-      tile('tile-mep' + (items.length && ready === items.length ? ' done' : ''), [String(ready), h('span', { class: 'of' }, '/' + items.length)], items.length && ready === items.length ? 'Ready for service' : 'Mise en place', () => jumpTo('t-mep')),
-      tile('', String(todoN), 'To do', () => jumpTo('t-todo')),
-      feat ? tile('accent', fts.length ? fts[0].t : K.countdown(feat), fts.length && fts[0].what ? cap(fts[0].what) : feat.title || 'Event', openEvent(feat))
-        : tile(urgN ? 'bad' : '', String(urgN), 'Urgent', () => jumpTo('t-brief')));
-    w.append(tiles);
-    /* the numbers on the tiles flip to their new value when something changed */
-    const tileN = Array.from(tiles.querySelectorAll('.tile-n')), nowN = tileN.map((e) => e.textContent);
-    if (ui.tileOld && ui.tileOld.length === nowN.length && K.rollNumbers) K.rollNumbers(ui.tileOld, tileN);
-    ui.tileOld = nowN;
-    if (feat) w.append(tonightCard(feat));
-    w.append(h('nav', { class: 'tjump', 'aria-label': 'Jump to' },
-      h('button', { type: 'button', onclick: () => jumpTo('t-todo') }, 'To do', h('b', { class: 'mono' }, String(todoN))),
-      h('button', { type: 'button', onclick: () => jumpTo('t-mep') }, 'Mise en place', h('b', { class: 'mono' }, ready + '/' + items.length)),
-      h('button', { type: 'button', onclick: () => jumpTo('t-tmr') }, 'Tomorrow')));
+    /* one list at a time on a phone: To do, Mise en place or Tomorrow (all of them side by side on wide screens) */
+    const tab = ui.todayTab || 'todo';
+    const setTab = (t) => { ui.todayTab = t; K.render(); };
+    const tabBtn = (id, label, n) => h('button', { type: 'button', class: 'tjt', 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) }, label, n != null ? h('b', { class: 'mono' }, n) : null);
+    w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
+    w.append(h('nav', { class: 'tjump', 'aria-label': 'Today’s lists' },
+      tabBtn('todo', 'To do', String(todoN)),
+      tabBtn('mep', 'Mise en place', ready + '/' + items.length),
+      tabBtn('tmr', 'Tomorrow', null)));
+    if (feat) w.append(h('div', { class: 'tt-todo' }, tonightCard(feat)));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);
     const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
     grid.append(left, right);
-    left.append(h('div', { class: 'only-narrow', id: 't-brief' }, brief(feat)));
+    left.append(h('div', { class: 'only-narrow tt-todo', id: 't-brief' }, brief(feat)));
     right.append(h('div', { class: 'only-wide' }, brief(feat)));
 
     /* to do */
-    const todo = h('section', { class: 'block', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
+    const todo = h('section', { class: 'block tt-todo', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
@@ -318,11 +310,20 @@
     if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Swipe left to remove a task.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
+    /* the done tasks fold into one row under the list, and the page says how the day ends */
+    if (doneTasks.length) {
+      const names = doneTasks.map((d) => d.name);
+      todo.append(h('details', { class: 'donerow' }, h('summary', null, h('span', { class: 'dr-ok' }, K.icon('check')), h('b', null, doneTasks.length + ' done'),
+        h('span', { class: 'dr-names' }, names.slice(0, 2).join(', ') + (names.length > 2 ? ', +' + (names.length - 2) : ''))),
+        h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, d.name),
+          h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
+    }
+    todo.append(h('p', { class: 'freshfoot' }, K.icon('sun'), 'A fresh list every morning. Nothing carries over.'));
     left.append(todo);
 
     /* order: only what tomorrow's prep list needs */
     const order = K.orderFor(st), nTmr = K.checkItems(st, K.day(1)).filter((it) => K.markState(st, it.id, K.day(1)) === 'do').length;
-    left.append(h('button', { class: 'askorder' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
+    left.append(h('button', { class: 'askorder tt-todo' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'),
       h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
         h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : nTmr ? 'Ingredients for the ' + nTmr + (nTmr === 1 ? ' thing' : ' things') + ' on tomorrow’s prep list' : 'Mark tomorrow’s prep list first, then check its ingredients')),
@@ -332,24 +333,21 @@
     const tmr = K.planningTomorrow(), listDay = K.listDay();
     const dayName = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
     const pickDay = (v) => { ui.listFor = { v: v, day: K.day(0) }; ui.addTo = null; K.render(); };
-    left.append(h('div', { class: 'block-top', id: 't-mep' }, h('h2', { class: 'block-title' }, tmr ? 'Tomorrow’s prep list' : 'Mise en place'),
+    left.append(h('div', { class: 'block-top tt-mep', id: 't-mep' }, h('h2', { class: 'block-title' }, tmr ? 'Tomorrow’s prep list' : 'Mise en place'),
       h('div', { class: 'btns' },
         items.length && !tmr ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
       h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
       tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
         : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, 'DO'), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
-    left.append(checklist(st, tmr ? listDay : null));
+    const cklist = checklist(st, tmr ? listDay : null); cklist.classList.add('tt-mep'); left.append(cklist);
     const cl = K.closedInfo(st);
-    left.append(h('div', { class: 'finish' + (cl ? ' done' : '') },
+    left.append(h('div', { class: 'finish tt-mep' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
       tmr ? h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')
-        : h('button', { class: 'btn wide', type: 'button', onclick: () => { pickDay('tomorrow'); setTimeout(() => { const el = document.getElementById('t-mep'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); K.toast('Now mark what has to be made tomorrow'); } }, K.icon('next'), 'Closing? Write tomorrow’s prep list')));
+        : h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.todayTab = 'mep'; pickDay('tomorrow'); window.scrollTo(0, 0); K.toast('Now mark what has to be made tomorrow'); } }, K.icon('next'), 'Closing? Write tomorrow’s prep list')));
 
     right.append(tomorrowBlock(st));
-    if (doneTasks.length) right.append(h('details', { class: 'block card donebox' }, h('summary', null, 'Done today', h('span', { class: 'n' }, String(doneTasks.length))),
-      h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, d.name),
-        h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     body.append(h('button', { type: 'button', class: 'fab', 'aria-label': 'Add a task', title: 'Add a task',
       onclick: (e) => { const r = e.currentTarget.getBoundingClientRect(); ui.sheet = { type: 'addtask', st: st, when: 'today', text: '', urgent: false, ox: r.left + r.width / 2, oy: r.top + r.height / 2 }; K.render(); } }, K.icon('plus')));
     return { body: body };
@@ -503,7 +501,7 @@
   /* ---------- for tomorrow ---------- */
   function tomorrowBlock(st) {
     const list = K.tomorrowTasks(st);
-    return h('section', { class: 'block card tmr', id: 't-tmr' },
+    return h('section', { class: 'block card tmr tt-tmr', id: 't-tmr' },
       h('h2', { class: 'block-title' }, 'For tomorrow', h('span', { class: 'n' }, K.prettyDate(K.day(1), { weekday: 'long' }))),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
       list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },

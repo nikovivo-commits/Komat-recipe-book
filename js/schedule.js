@@ -57,6 +57,16 @@
       const mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
       if (me && people.includes(me)) {
         const r = (doc.rows || {})[me] || [];
+        /* the next shift first: when it is, its hours, and how many shifts this week */
+        const works = (c) => ['p', 'br', 'other'].includes(K.codeClass(c));
+        const from = isNow ? ti : 0, ni = r.findIndex((c, i) => i >= from && works(c)), n = r.filter(works).length;
+        if (ni >= 0) {
+          const c = r[ni], lab = K.codeLabel(c), hrs = (lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/) || [''])[0].replace('-', '–');
+          const when = isNow && ni === ti ? 'Today' : isNow && ni === ti + 1 ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
+          mine.append(h('div', { class: 'nextshift' }, h('span', { class: 'ns-k' }, 'Your next shift'),
+            h('b', { class: 'ns-when' }, when, hrs ? h('span', { class: 'mono' }, ' · ' + hrs) : h('span', { class: 'mono' }, ' · ' + c)),
+            h('span', { class: 'ns-n' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week')));
+        }
         mine.append(h('div', { class: 'mydays' }, K.DAYS.map((d, i) => {
           const c = r[i] || '', dd = K.addDays(mon, i);
           return h('div', { class: 'myday ' + K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
