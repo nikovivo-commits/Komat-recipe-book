@@ -1496,6 +1496,42 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .set-ink { flex: none; width: 14px; height: 30px; border-radius: 5px 5px 7px 7px; background: var(--pen); }
 .set-hand { font-family: var(--hand); font-weight: var(--hand-w); font-size: calc(var(--hand-s) * .9); color: var(--pen); }
 
+/* the order whiteboard: lines in each writer's hand and marker, OUT circled */
+.wboard { position: relative; display: grid; gap: 4px; padding: 18px 16px 14px; border: 10px solid #C9CCC6; border-radius: 10px; background: linear-gradient(160deg, #FFFFFF, #F1F3F2 70%, #E9ECEB); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .06), 0 10px 24px -14px rgba(0, 0, 0, .5); color: #1C1B1A; }
+.wboard::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -16px; height: 8px; border-radius: 0 0 6px 6px; background: #B4B8B1; }
+.wb-line { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 34px 6px 0; border: 0; color: var(--pen); font-family: var(--hand); font-weight: var(--hand-w); }
+.wb-name { font-size: calc(var(--hand-s) * 1.25); line-height: 1.05; }
+.wb-s { font-size: var(--hand-s); }
+.wb-line.out .wb-s { padding: 0 8px; border: 2.5px solid #C42F1C; border-radius: 50% 45% 55% 48%; color: #C42F1C; transform: rotate(-4deg); }
+.wb-line.low .wb-s { text-decoration: underline wavy; text-underline-offset: 4px; }
+.wb-by { flex-basis: 100%; color: var(--pen); font: var(--hand-w) calc(var(--hand-s) * .85)/1.1 var(--hand); opacity: .9; }
+.wb-wipe { position: absolute; right: -4px; top: 4px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #8A8D88; }
+.wb-wipe .ico { width: 16px; height: 16px; }
+.wb-form { display: grid; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1.5px dashed #C9CCC6; }
+.wb-form .input { background: transparent; border-color: #C9CCC6; }
+.wb-acts { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+/* the board stays white in dark mode, so its ink stays the light-mode ink */
+.wboard .ink-black { --pen: #1C1B1A; } .wboard .ink-blue { --pen: #1F48B8; } .wboard .ink-red { --pen: #B3261E; } .wboard .ink-green { --pen: #1E7A44; }
+.wboard .ink-purple { --pen: #6B3FA0; } .wboard .ink-orange { --pen: #C2570C; } .wboard .ink-teal { --pen: #0E7C86; } .wboard .ink-pink { --pen: #B83280; }
+.wboard .seg { background: #E6E8E5; border-color: #C9CCC6; } .wboard .seg button { color: #5D605C; } .wboard .seg button[aria-pressed="true"] { background: #fff; color: #1C1B1A; }
+
+/* the whiteboard being wiped, and the sheet being thrown away */
+.wboard.wiping { overflow: hidden; }
+.wboard.wiping .wb-line { animation: smear-off .5s ease-in both; }
+@keyframes smear-off { to { opacity: 0; filter: blur(4px); transform: translateX(14px) skewX(-8deg); } }
+.eraser { position: absolute; z-index: 2; left: 0; top: 0; width: 86px; height: 40px; border-radius: 8px; background: linear-gradient(#3A3B3B 0 55%, #E9E4D8 55%); box-shadow: 0 8px 14px -6px rgba(0, 0, 0, .5); animation: erase 1.4s ease-in-out both; }
+@keyframes erase { 0% { transform: translate(-90px, 10px) rotate(-8deg); } 20% { transform: translate(260px, 30px) rotate(6deg); } 40% { transform: translate(10px, 90px) rotate(-6deg); } 60% { transform: translate(270px, 150px) rotate(5deg); } 80% { transform: translate(20px, 210px) rotate(-5deg); } 100% { transform: translate(420px, 240px) rotate(8deg); } }
+.wb-clean { margin: 4px 0; color: #9A9D98; font: 700 1.1rem var(--hand, cursive); }
+.wb-send { display: grid; gap: 6px; margin-top: 26px; }
+.toss-moment { position: fixed; inset: 0; z-index: 85; pointer-events: none; background: rgba(20, 20, 19, .35); animation: fadein .2s ease both; }
+@media (prefers-reduced-motion: reduce) { .eraser, .toss-moment { display: none; } }
+
+.wb-amt { font-size: calc(var(--hand-s) * 1.15); color: var(--pen); }
+.wb-amt + .wb-amt::before { content: "+ "; }
+.wb-by { flex-basis: 100%; color: #8A8D88; font: 600 .78rem var(--sans); }
+.wb-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
+.wb-form .btn { justify-self: end; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -2600,6 +2636,7 @@ window.KOMAT_PART_ART = [
     trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
     chef: '<path d="M7 14.5V20h10v-5.5"/><path d="M7 14.5a4 4 0 0 1-1.6-7.6A4.5 4.5 0 0 1 12 4a4.5 4.5 0 0 1 6.6 2.9A4 4 0 0 1 17 14.5z"/><path d="M7 17h10"/>',
     minus: '<path d="M5 12h14"/>',
+    send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
     cook: '<path d="M3 11h18v2a7 7 0 0 1-7 7h-4a7 7 0 0 1-7-7z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/>',
     list: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.5M4.5 12h.5M4.5 18h.5"/>',
     bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
@@ -3395,10 +3432,26 @@ window.KOMAT_PART_ART = [
   };
 
   /* ---------- orders and whiteboard ---------- */
-  K.orderFor = (st, date) => D.orders[(date || K.day(0)) + '_' + st] || null;
+  /* a station's order on the board; once the board is sent off and cleaned it no longer counts (pass all to see it anyway) */
+  K.orderFor = (st, date, all) => { const o = D.orders[(date || K.day(0)) + '_' + st]; return o && (all || !o.sent) ? o : null; };
+  /* the board was sent (by email) and wiped clean: every open station order is marked sent */
+  K.markBoardSent = function (to) {
+    const at = Date.now(), ps = [];
+    K.STATIONS.forEach((s) => {
+      const id = K.day(0) + '_' + s[0], o = D.orders[id];
+      if (!o || o.sent) return;
+      o.sent = at; o.sentTo = to || ''; o.sentBy = K.me.id || '';
+      ps.push(K.db.doc('orders/' + id).set(o));
+    });
+    K.refresh(true);
+    return Promise.all(ps).catch(writeFailed);
+  };
   K.sendOrder = function (st, items, closing) {
     const id = K.day(0) + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
-    let p = items.length ? ref.set({ date: K.day(0), station: st, items: items, at: Date.now(), by: K.me.id || '' }) : had ? ref.delete() : Promise.resolve();
+    const body = { date: K.day(0), station: st, items: items, at: Date.now(), by: K.me.id || '' };
+    /* show it at once; the database catches up */
+    if (items.length) D.orders[id] = body; else delete D.orders[id];
+    let p = items.length ? ref.set(body) : had ? ref.delete() : Promise.resolve();
     if (closing) p = p.then(() => K.setClosed(st));
     return p;
   };
@@ -4052,6 +4105,25 @@ window.KOMAT_PART_ART = [
     if (reduced() || !el) return;
     for (let i = 0; i < 8; i++) el.append(h('i', { class: 'spark', 'aria-hidden': 'true', style: { '--a': i * 45 + 'deg' } }));
     later(() => el.querySelectorAll('.spark').forEach((s) => s.remove()), 700);
+  };
+
+  /* the whiteboard is wiped: an eraser sweeps across and the writing smears away */
+  K.wipeBoard = function (el) {
+    if (reduced() || !el || !el.isConnected) return Promise.resolve();
+    const er = h('span', { class: 'eraser', 'aria-hidden': 'true' });
+    el.classList.add('wiping');
+    el.querySelectorAll('.wb-line').forEach((l, i) => { l.style.animationDelay = (0.12 + i * 0.12) + 's'; });
+    el.append(er);
+    return new Promise((res) => later(() => { er.remove(); res(); }, 1500));
+  };
+
+  /* yesterday's sheet: screwed up and thrown away (closing, and the start of a new day) */
+  K.tossSheet = function () {
+    if (reduced()) return;
+    const back = h('div', { class: 'toss-moment', 'aria-hidden': 'true' },
+      h('div', { class: 'fm-paper' }, h('b', null, 'Today'), [72, 54, 80, 46, 66, 58].map((wd, i) => h('i', { style: { width: wd + '%', '--r': (i % 2 ? 1 : -1) * 1.5 + 'deg' } }))));
+    document.body.append(back);
+    later(() => back.remove(), 1600);
   };
 
   /* a number counting up to its value */
@@ -6389,12 +6461,20 @@ window.KOMAT_PART_ART = [
     K.stockList(st, S.day).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
     const items = Object.keys(S.m).map((k) => ({ n: byKey[k] || k, s: S.m[k].s, note: (S.m[k].note || '').trim() }))
       .concat(S.extras.filter((x) => (x.n || '').trim()).map((x) => ({ n: x.n.trim(), s: 'out', note: (x.note || '').trim(), extra: true })));
+    /* each line keeps the hand it was written in: unchanged lines stay with whoever wrote them */
+    const prev = {};
+    ((K.orderFor(st) || {}).items || []).forEach((i) => { prev[i.n.toLowerCase()] = i; });
+    items.forEach((i) => {
+      const p = prev[i.n.toLowerCase()];
+      if (p && p.s === i.s && (p.note || '') === i.note && p.by !== undefined) { i.by = p.by; i.ink = p.ink; i.hand = p.hand; }
+      else { i.by = K.me.id || ''; i.ink = K.myInk() || 'blue'; i.hand = K.myHand() || 'caveat'; }
+    });
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) K.flash('lights-off', 4200);
+      if (S.close) { K.tossSheet(); setTimeout(() => K.flash('lights-off', 4200), 1300); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
@@ -6413,20 +6493,61 @@ window.KOMAT_PART_ART = [
   function combined(date) {
     const comb = {};
     K.STATIONS.forEach((s) => {
-      const d = K.orderFor(s[0], date);
+      const d = K.orderFor(s[0], date, date !== K.day(0));
       if (!d) return;
       d.items.forEach((i) => {
         const k = i.n.toLowerCase();
         if (!comb[k]) comb[k] = { n: i.n, s: 'low', rows: [] };
         if (i.s === 'out') comb[k].s = 'out';
-        comb[k].rows.push({ st: s[0], s: i.s, note: i.note });
+        comb[k].rows.push({ st: s[0], s: i.s, note: i.note, by: i.by || d.by, ink: i.ink, hand: i.hand });
       });
     });
     return Object.keys(comb).map((k) => comb[k]).sort((a, b) => (a.s === b.s ? 0 : a.s === 'out' ? -1 : 1) || a.n.localeCompare(b.n));
   }
+  /* send the board: the phone's mail app opens with the whole order, and the board is wiped */
+  function sendBoard(list, to, el) {
+    const date = K.day(0), body = orderText(date, list);
+    const href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent('Komat order · ' + K.prettyDate(date)) + '&body=' + encodeURIComponent(body);
+    try { window.location.href = href; } catch (e) { /* no mail app */ }
+    try { navigator.clipboard.writeText(body).catch(() => {}); } catch (e) { /* no clipboard here */ }
+    K.vibrate([10, 40, 10]);
+    (K.wipeBoard ? K.wipeBoard(el) : Promise.resolve()).then(() => K.markBoardSent(to)).then(() => K.toast(to ? 'Order sent to ' + to + '. The board is clean.' : 'The order is copied. The board is clean.', { tone: 'good' }));
+  }
+  /* write a line on the board: it goes on your station's order, in your hand */
+  function writeForm() {
+    const S = (ui.wbForm = ui.wbForm || { text: '', amt: '' });
+    const st = K.getStation(), hand = 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand());
+    return h('form', { class: 'wb-form', onsubmit: (e) => {
+      e.preventDefault();
+      const name = (S.text || '').trim(), amt = (S.amt || '').trim();
+      if (!name) { const el = document.getElementById('wb-in'); if (el) el.focus(); return; }
+      if (!amt) { K.toast('How much? Write the amount too.'); const el = document.getElementById('wb-amt'); if (el) el.focus(); return; }
+      const cur = ((K.orderFor(st) || {}).items || []).filter((i) => i.n.toLowerCase() !== name.toLowerCase());
+      cur.push({ n: name, s: 'out', note: amt, extra: true, by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat' });
+      S.text = ''; S.amt = '';
+      K.vibrate(10);
+      K.sendOrder(st, cur, false).then(() => K.render(), (er) => K.writeFailed(er));
+      K.render();
+    } },
+      h('div', { class: 'wb-row' },
+        h('input', { class: hand, id: 'wb-in', value: S.text, autocomplete: 'off', enterkeyhint: 'next', placeholder: 'What, e.g. лимони', 'aria-label': 'What we need', oninput: (e) => { S.text = e.target.value; } }),
+        h('input', { class: hand + ' wb-amt-in', id: 'wb-amt', value: S.amt, autocomplete: 'off', enterkeyhint: 'done', placeholder: '2 kg', 'aria-label': 'How much', oninput: (e) => { S.amt = e.target.value; } })),
+      h('button', { class: 'btn primary', type: 'submit' }, 'Write for ' + K.ST[st]));
+  }
+  /* wipe a line off the board: it comes off every station's order that has it */
+  function wipe(x) {
+    const k = x.n.toLowerCase(), before = {};
+    K.STATIONS.forEach((s) => {
+      const d = K.orderFor(s[0]);
+      if (!d || !d.items.some((i) => i.n.toLowerCase() === k)) return;
+      before[s[0]] = d.items.slice();
+      K.sendOrder(s[0], d.items.filter((i) => i.n.toLowerCase() !== k), false).then(() => K.render(), (er) => K.writeFailed(er));
+    });
+    K.toast('Wiped: ' + x.n, { undo: () => Object.keys(before).forEach((st) => K.sendOrder(st, before[st], false).then(() => K.render())) });
+  }
   function orderText(date, list) {
-    return 'Komat order · ' + K.prettyDate(date) + '\n' + list.map((x) => '- ' + x.n + ' (' + (x.s === 'out' ? 'OUT' : 'low') + ')' +
-      x.rows.filter((r) => r.note).map((r) => ' ' + r.note).join(';')).join('\n');
+    return 'Komat order · ' + K.prettyDate(date) + '\n' + list.map((x) => '- ' + x.n + ':' +
+      x.rows.map((r) => ' ' + (r.note || '?') + ' [' + K.ST[r.st] + (K.nameOf(r.by) ? ', ' + K.nameOf(r.by) : '') + ']').join(';')).join('\n');
   }
 
   K.V.orders = function () {
@@ -6449,15 +6570,30 @@ window.KOMAT_PART_ART = [
     grid.append(main);
     main.append(h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Order list', h('span', { class: 'n' }, list.length ? list.length + ' all day' : '')),
       list.length ? h('button', { class: 'btn small', type: 'button', onclick: () => K.copyText(orderText(date, list)) }, K.icon('copy'), 'Copy list') : null));
-    if (!list.length) {
+    if (!list.length && !isToday) {
       main.append(K.catRest(isToday ? 'Nothing ordered yet' : 'No app orders that day', 'Each station can check its products with a quick swipe and send what is low or out.',
         isToday ? h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.startStock(K.getStation(), false) }, K.icon('order'), 'Check ' + K.ST[K.getStation()] + ' now')) : null));
-    } else {
-      main.append(h('div', { class: 'olist card' }, list.map((x) => h('div', { class: 'oline ' + x.s },
-        K.produceThumb(x.n),
-        h('span', { class: 'obadge' }, x.s === 'out' ? 'Out' : 'Low'),
-        h('div', { class: 'oline-txt' }, h('b', null, x.n),
-          h('span', { class: 'muted' }, x.rows.map((r) => K.ST[r.st] + (r.note ? ': ' + r.note : '')).join(' · ')))))));
+    }
+    /* the whiteboard: every line in the hand and colour of whoever wrote it */
+    const wb = h('div', { class: 'wboard' + (list.length ? '' : ' empty') });
+    list.forEach((x) => {
+      const r0 = x.rows[0] || {};
+      wb.append(h('div', { class: 'oline wb-line ' + x.s + ' ' + K.inkClass(r0.ink) + ' ' + K.handClass(r0.hand) },
+        h('span', { class: 'wb-name' }, x.n),
+        x.rows.map((r) => h('span', { class: 'wb-amt ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, r.note || '…')),
+        h('span', { class: 'wb-by' }, x.rows.map((r) => K.ST[r.st].split(' ')[0] + (K.nameOf(r.by) ? ', ' + K.nameOf(r.by).split(' ')[0] : '')).join(' · ')),
+        isToday ? h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Wipe ' + x.n + ' off the board', onclick: () => wipe(x) }, K.icon('close')) : null));
+    });
+    /* after it was sent: the board is clean, with a faint note of when */
+    const sent = isToday ? K.STATIONS.map((x) => D.orders[date + '_' + x[0]]).filter((x) => x && x.sent).sort((a, b) => b.sent - a.sent)[0] : null;
+    if (!list.length && sent) wb.append(h('p', { class: 'wb-clean' }, 'Board cleaned · sent at ' + K.hm(sent.sent) + (K.nameOf(sent.sentBy) ? ' by ' + K.nameOf(sent.sentBy).split(' ')[0] : '')));
+    if (isToday) wb.append(writeForm());
+    main.append(wb);
+    if (isToday && list.length) {
+      const to = K.kitchen().orderEmail || '';
+      main.append(h('div', { class: 'wb-send' },
+        h('button', { class: 'btn primary wide', type: 'button', onclick: () => sendBoard(list, to, wb) }, K.icon('send'), to ? 'Send to ' + to + ' and clean the board' : 'Send the order and clean the board'),
+        to ? null : h('p', { class: 'hint' }, K.me.admin ? 'Add the email it goes to in Settings → Kitchen rules.' : 'The head chef can set where it goes in Settings → Kitchen rules.')));
     }
     const side = h('section', { class: 'block card board' },
       h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Whiteboard'),
@@ -6970,6 +7106,8 @@ window.KOMAT_PART_ART = [
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
       K.field('Tomorrow’s prep list starts at', h('input', { class: 'input mono', id: 'k-plan', type: 'time', value: k.planFrom || '21:00', oninput: (e) => { k.planFrom = e.target.value; } }),
         'From this time until 4 am the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
+      K.field('Send the order board to', h('input', { class: 'input', id: 'k-mail', type: 'email', autocomplete: 'email', value: k.orderEmail || '', placeholder: 'chef@example.com', oninput: (e) => { k.orderEmail = e.target.value.trim(); } }),
+        'When the board is sent, the phone opens an email to this address with everything written on it, and the board is wiped clean.'),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Repeating tasks'),
         h('p', { class: 'hint' }, 'They appear on a station’s to-do list on the chosen days, like ordering bread. A product name adds it to the top of that day’s order check.'),
         k.repeats.map((rp, i) => h('div', { class: 'rep card' },

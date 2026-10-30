@@ -66,6 +66,25 @@
     later(() => el.querySelectorAll('.spark').forEach((s) => s.remove()), 700);
   };
 
+  /* the whiteboard is wiped: an eraser sweeps across and the writing smears away */
+  K.wipeBoard = function (el) {
+    if (reduced() || !el || !el.isConnected) return Promise.resolve();
+    const er = h('span', { class: 'eraser', 'aria-hidden': 'true' });
+    el.classList.add('wiping');
+    el.querySelectorAll('.wb-line').forEach((l, i) => { l.style.animationDelay = (0.12 + i * 0.12) + 's'; });
+    el.append(er);
+    return new Promise((res) => later(() => { er.remove(); res(); }, 1500));
+  };
+
+  /* yesterday's sheet: screwed up and thrown away (closing, and the start of a new day) */
+  K.tossSheet = function () {
+    if (reduced()) return;
+    const back = h('div', { class: 'toss-moment', 'aria-hidden': 'true' },
+      h('div', { class: 'fm-paper' }, h('b', null, 'Today'), [72, 54, 80, 46, 66, 58].map((wd, i) => h('i', { style: { width: wd + '%', '--r': (i % 2 ? 1 : -1) * 1.5 + 'deg' } }))));
+    document.body.append(back);
+    later(() => back.remove(), 1600);
+  };
+
   /* a number counting up to its value */
   K.countUp = function (el, to, ms) {
     if (!el || reduced()) return;

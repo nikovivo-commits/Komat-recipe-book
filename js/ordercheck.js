@@ -253,12 +253,20 @@
     K.stockList(st, S.day).ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
     const items = Object.keys(S.m).map((k) => ({ n: byKey[k] || k, s: S.m[k].s, note: (S.m[k].note || '').trim() }))
       .concat(S.extras.filter((x) => (x.n || '').trim()).map((x) => ({ n: x.n.trim(), s: 'out', note: (x.note || '').trim(), extra: true })));
+    /* each line keeps the hand it was written in: unchanged lines stay with whoever wrote them */
+    const prev = {};
+    ((K.orderFor(st) || {}).items || []).forEach((i) => { prev[i.n.toLowerCase()] = i; });
+    items.forEach((i) => {
+      const p = prev[i.n.toLowerCase()];
+      if (p && p.s === i.s && (p.note || '') === i.note && p.by !== undefined) { i.by = p.by; i.ink = p.ink; i.hand = p.hand; }
+      else { i.by = K.me.id || ''; i.ink = K.myInk() || 'blue'; i.hand = K.myHand() || 'caveat'; }
+    });
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) K.flash('lights-off', 4200);
+      if (S.close) { K.tossSheet(); setTimeout(() => K.flash('lights-off', 4200), 1300); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });

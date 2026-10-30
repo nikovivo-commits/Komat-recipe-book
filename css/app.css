@@ -1488,3 +1488,39 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .ink-opt b, .ink-opt small { grid-column: auto; }
 .set-ink { flex: none; width: 14px; height: 30px; border-radius: 5px 5px 7px 7px; background: var(--pen); }
 .set-hand { font-family: var(--hand); font-weight: var(--hand-w); font-size: calc(var(--hand-s) * .9); color: var(--pen); }
+
+/* the order whiteboard: lines in each writer's hand and marker, OUT circled */
+.wboard { position: relative; display: grid; gap: 4px; padding: 18px 16px 14px; border: 10px solid #C9CCC6; border-radius: 10px; background: linear-gradient(160deg, #FFFFFF, #F1F3F2 70%, #E9ECEB); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .06), 0 10px 24px -14px rgba(0, 0, 0, .5); color: #1C1B1A; }
+.wboard::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -16px; height: 8px; border-radius: 0 0 6px 6px; background: #B4B8B1; }
+.wb-line { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 34px 6px 0; border: 0; color: var(--pen); font-family: var(--hand); font-weight: var(--hand-w); }
+.wb-name { font-size: calc(var(--hand-s) * 1.25); line-height: 1.05; }
+.wb-s { font-size: var(--hand-s); }
+.wb-line.out .wb-s { padding: 0 8px; border: 2.5px solid #C42F1C; border-radius: 50% 45% 55% 48%; color: #C42F1C; transform: rotate(-4deg); }
+.wb-line.low .wb-s { text-decoration: underline wavy; text-underline-offset: 4px; }
+.wb-by { flex-basis: 100%; color: var(--pen); font: var(--hand-w) calc(var(--hand-s) * .85)/1.1 var(--hand); opacity: .9; }
+.wb-wipe { position: absolute; right: -4px; top: 4px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #8A8D88; }
+.wb-wipe .ico { width: 16px; height: 16px; }
+.wb-form { display: grid; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1.5px dashed #C9CCC6; }
+.wb-form .input { background: transparent; border-color: #C9CCC6; }
+.wb-acts { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+/* the board stays white in dark mode, so its ink stays the light-mode ink */
+.wboard .ink-black { --pen: #1C1B1A; } .wboard .ink-blue { --pen: #1F48B8; } .wboard .ink-red { --pen: #B3261E; } .wboard .ink-green { --pen: #1E7A44; }
+.wboard .ink-purple { --pen: #6B3FA0; } .wboard .ink-orange { --pen: #C2570C; } .wboard .ink-teal { --pen: #0E7C86; } .wboard .ink-pink { --pen: #B83280; }
+.wboard .seg { background: #E6E8E5; border-color: #C9CCC6; } .wboard .seg button { color: #5D605C; } .wboard .seg button[aria-pressed="true"] { background: #fff; color: #1C1B1A; }
+
+/* the whiteboard being wiped, and the sheet being thrown away */
+.wboard.wiping { overflow: hidden; }
+.wboard.wiping .wb-line { animation: smear-off .5s ease-in both; }
+@keyframes smear-off { to { opacity: 0; filter: blur(4px); transform: translateX(14px) skewX(-8deg); } }
+.eraser { position: absolute; z-index: 2; left: 0; top: 0; width: 86px; height: 40px; border-radius: 8px; background: linear-gradient(#3A3B3B 0 55%, #E9E4D8 55%); box-shadow: 0 8px 14px -6px rgba(0, 0, 0, .5); animation: erase 1.4s ease-in-out both; }
+@keyframes erase { 0% { transform: translate(-90px, 10px) rotate(-8deg); } 20% { transform: translate(260px, 30px) rotate(6deg); } 40% { transform: translate(10px, 90px) rotate(-6deg); } 60% { transform: translate(270px, 150px) rotate(5deg); } 80% { transform: translate(20px, 210px) rotate(-5deg); } 100% { transform: translate(420px, 240px) rotate(8deg); } }
+.wb-clean { margin: 4px 0; color: #9A9D98; font: 700 1.1rem var(--hand, cursive); }
+.wb-send { display: grid; gap: 6px; margin-top: 26px; }
+.toss-moment { position: fixed; inset: 0; z-index: 85; pointer-events: none; background: rgba(20, 20, 19, .35); animation: fadein .2s ease both; }
+@media (prefers-reduced-motion: reduce) { .eraser, .toss-moment { display: none; } }
+
+.wb-amt { font-size: calc(var(--hand-s) * 1.15); color: var(--pen); }
+.wb-amt + .wb-amt::before { content: "+ "; }
+.wb-by { flex-basis: 100%; color: #8A8D88; font: 600 .78rem var(--sans); }
+.wb-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
+.wb-form .btn { justify-self: end; }

@@ -424,10 +424,26 @@
   };
 
   /* ---------- orders and whiteboard ---------- */
-  K.orderFor = (st, date) => D.orders[(date || K.day(0)) + '_' + st] || null;
+  /* a station's order on the board; once the board is sent off and cleaned it no longer counts (pass all to see it anyway) */
+  K.orderFor = (st, date, all) => { const o = D.orders[(date || K.day(0)) + '_' + st]; return o && (all || !o.sent) ? o : null; };
+  /* the board was sent (by email) and wiped clean: every open station order is marked sent */
+  K.markBoardSent = function (to) {
+    const at = Date.now(), ps = [];
+    K.STATIONS.forEach((s) => {
+      const id = K.day(0) + '_' + s[0], o = D.orders[id];
+      if (!o || o.sent) return;
+      o.sent = at; o.sentTo = to || ''; o.sentBy = K.me.id || '';
+      ps.push(K.db.doc('orders/' + id).set(o));
+    });
+    K.refresh(true);
+    return Promise.all(ps).catch(writeFailed);
+  };
   K.sendOrder = function (st, items, closing) {
     const id = K.day(0) + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
-    let p = items.length ? ref.set({ date: K.day(0), station: st, items: items, at: Date.now(), by: K.me.id || '' }) : had ? ref.delete() : Promise.resolve();
+    const body = { date: K.day(0), station: st, items: items, at: Date.now(), by: K.me.id || '' };
+    /* show it at once; the database catches up */
+    if (items.length) D.orders[id] = body; else delete D.orders[id];
+    let p = items.length ? ref.set(body) : had ? ref.delete() : Promise.resolve();
     if (closing) p = p.then(() => K.setClosed(st));
     return p;
   };
