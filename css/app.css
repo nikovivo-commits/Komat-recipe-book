@@ -1681,3 +1681,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 @media (hover: hover) { .tcheck.tbox:hover { border-color: var(--muted); color: var(--pen, var(--ink)); } }
 .tcheck.tbox.ticked::before { content: ""; position: absolute; left: 2px; right: 2px; top: 50%; height: 3px; border-radius: 2px; background: var(--pen, var(--ink)); transform: rotate(-9deg) scaleX(0); transform-origin: left center; animation: strike-in .22s ease-out forwards; }
 .tcheck.tbox.ticked::after { border-color: var(--pen, var(--ink)); }
+
+/* the pick-boxes under a DO row, drawn like the paper sheet: pencil dashes and handwriting, no app buttons */
+.jobs.paper { gap: 8px 10px; }
+.jobs.paper .job { min-height: 44px; border: 2px dashed color-mix(in srgb, var(--muted) 60%, transparent); border-radius: 8px; background: transparent; color: var(--muted); font: 700 1.25rem/1 var(--hand); letter-spacing: 0; transform: rotate(-.6deg); }
+.jobs.paper .job:nth-child(even) { transform: rotate(.7deg); }
+.jobs.paper .job:active { transform: scale(.95); }
+.jobs.paper .job.on { border: 2.5px solid var(--pen); background: transparent; color: var(--pen); }
+.jobs.paper .job.add { border-style: dotted; font-size: 1.1rem; }
+.jobs.paper .job.add svg { width: 16px; height: 16px; }

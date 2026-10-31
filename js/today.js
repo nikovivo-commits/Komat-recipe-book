@@ -566,7 +566,7 @@
     };
     let n = 0;
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
-      h('div', { class: 'jobs ' + K.inkClass(m.ink), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
+      h('div', { class: 'jobs paper ' + K.inkClass(m.ink) + ' ' + K.handClass(K.myHand()), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
         K.KINDS.filter((x) => x[0]).map((x) => { const on = ks.includes(x[0]); return h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on ? ' on ' + K.handClass(m.hand) + (ui.kindNew === key + x[0] ? ' draw' : '') : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], onclick: () => pick(x[0]) }, x[3] || x[1]); }),
         h('button', { type: 'button', style: '--i:' + n++, class: 'job add', 'aria-label': m.c ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(m.c ? 'edit' : 'plus'), m.c ? 'Edit note' : 'Note')),
       noteForm(key, m.c || '', (t) => K.setMark(st, it, { c: t }, date)));
