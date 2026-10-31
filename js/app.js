@@ -90,7 +90,7 @@
     app.textContent = '';
     const out = view();
     app.append(out.top || header());
-    document.body.classList.toggle('over-photo', !out.top);
+    document.body.classList.toggle('over-photo', !out.top && !out.solid);
     if (D.noWrite && K.mode === 'cloud') app.append(noWriteBanner());
     app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') + (ui.pageIn ? ' page-in' : '') }, out.body));
     ui.pageIn = false;

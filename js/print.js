@@ -8,7 +8,8 @@
 
   /* everything on a station's to-do list for today (n = 0) or tomorrow (n = 1) */
   K.todoFor = function (st, n) {
-    const day = K.day(n), wd = K.parseYmd(day).getDay(), tasks = [], groups = [], byName = {};
+    /* repeats and events follow the calendar; the prep list and tasks follow the station's sheet */
+    const day = K.day(n), sheet = K.sday(st, n), wd = K.parseYmd(day).getDay(), tasks = [], groups = [], byName = {};
     const short = (ds) => K.prettyDate(ds, { weekday: 'short', day: 'numeric', month: 'short' });
     (K.kitchen().repeats || []).filter((rp) => rp.station === st && (rp.days || []).includes(wd)).forEach((rp) => {
       const d = D.prep[K.prepId('auto-' + rp.id, day)];
@@ -26,40 +27,47 @@
       .forEach((d) => tasks.push({ name: d.name, note: d.note, urgent: !!d.urgent }));
     if (n) K.tomorrowTasks(st).forEach((x) => tasks.push({ name: x.d.name, note: x.d.note, urgent: !!x.d.urgent, meta: 'Left for tomorrow' + (K.nameOf(x.d.leftBy) ? ' by ' + K.nameOf(x.d.leftBy) : '') }));
     tasks.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
-    const date = n ? day : undefined;
+    const date = sheet;
     K.checkItems(st, date).forEach((it) => {
       if (K.markState(st, it.id, date) !== 'do' && !K.isUrgent(st, it.id, date)) return;
       if (!byName[it.group]) groups.push(byName[it.group] = { name: it.group, items: [] });
-      byName[it.group].items.push({ name: it.name, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date) });
+      const m = K.mark(st, it.id, date) || {};
+      byName[it.group].items.push({ name: it.name, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand });
     });
     groups.forEach((g) => g.items.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)));
-    return { tasks: tasks, groups: groups, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
+    return { sheet: sheet, tasks: tasks, groups: groups, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
   };
 
-  /* ---------- the paper ---------- */
-  const box = () => h('span', { class: 'pr-box', 'aria-hidden': 'true' });
+  /* ---------- the paper ----------
+     The same sheet as on the phone: each line starts with the box the cook wrote in (DO, OPT, DEF…),
+     printed in their hand, to be crossed out by pen. Urgent lines are banded grey and labelled. */
+  function box(x) {
+    const words = x && x.written ? (x.words && x.words.length ? x.words : ['DO']) : [];
+    return h('span', { class: 'pr-box' + (words.length ? ' w' + Math.min(words.length, 3) + (words.length === 1 && words[0].length > 4 ? ' long' : '') + ' ' + K.handClass(x.hand) : ''), 'aria-hidden': 'true' }, words.map((w) => h('i', null, w)));
+  }
   function line(x) {
-    return h('li', { class: x.urgent ? 'urg' : null }, box(),
-      h('span', { class: 'pr-txt' }, h('b', null, x.name), x.urgent ? h('em', null, 'Urgent') : null,
+    return h('li', { class: x.urgent ? 'urg' : null }, box(x),
+      h('span', { class: 'pr-txt' }, x.urgent ? h('em', null, 'Urgent') : null, h('b', null, x.name),
         x.note ? h('span', { class: 'pr-note' }, x.note) : null, x.meta ? h('span', { class: 'pr-meta' }, x.meta) : null));
   }
   function page(st, n) {
-    const t = K.todoFor(st, n), many = t.groups.reduce((s, g) => s + g.items.length, 0) > 12;
+    const t = K.todoFor(st, n), rows = t.count, two = rows > 14;
+    const when = K.prettyDate(t.sheet, { weekday: 'long', day: 'numeric', month: 'long' });
     return h('section', { class: 'pr-page' },
       h('header', { class: 'pr-head' },
         h('img', { class: 'pr-logo', src: 'assets/brand/logo-black.png', alt: 'Komat' }),
         h('div', { class: 'pr-title' },
-          h('span', { class: 'pr-kicker' }, n ? 'Prep list for tomorrow' : 'To do today'),
-          h('h1', null, K.ST[st]),
-          h('p', null, K.prettyDate(K.day(n))))),
-      t.tasks.length ? h('div', { class: 'pr-sec' }, h('h2', null, 'Tasks', h('span', null, String(t.tasks.length))), h('ul', null, t.tasks.map(line))) : null,
-      t.groups.length ? h('div', { class: 'pr-sec' }, h('h2', null, 'Mise en place to make', h('span', null, String(t.count - t.tasks.length))),
-        h('div', { class: 'pr-groups' + (many ? ' two' : '') }, t.groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))) : null,
-      !t.count ? h('p', { class: 'pr-none' }, 'Nothing on the list yet.') : null,
-      h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, [0, 1, 2, 3, 4].map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
+          h('span', { class: 'pr-kicker' }, K.ST[st] + ' · ' + (n ? 'Tomorrow’s sheet' : 'Today’s sheet')),
+          h('h1', null, when),
+          h('p', null, rows ? rows + (rows === 1 ? ' thing' : ' things') + ' to do' : 'Nothing on the list yet'))),
+      h('div', { class: 'pr-sec' }, h('h2', null, 'To do', h('span', null, String(rows))),
+        h('div', { class: 'pr-cols' + (two ? ' two' : '') },
+          t.tasks.length ? h('div', { class: 'pr-group' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map(line))) : null,
+          t.groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))),
+      h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, [0, 1, 2, 3, 4, 5].map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
       h('footer', { class: 'pr-foot' },
-        h('span', null, 'Tick it here, then in the app when you can.'),
-        h('span', null, 'Printed ' + K.prettyDate(K.ymd(new Date()), { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + K.hm(Date.now()))));
+        h('span', null, 'Cross out the box when it’s done, then in the app.'),
+        h('span', null, 'Komat · ' + K.ST[st] + ' · printed ' + K.prettyDate(K.ymd(new Date()), { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + K.hm(Date.now()))));
   }
   K.printTodos = function (n, sts) {
     const old = document.getElementById('printsheet');
@@ -73,13 +81,13 @@
   window.addEventListener('afterprint', () => { const s = document.getElementById('printsheet'); if (s) s.remove(); });
 
   /* ---------- choosing what to print ---------- */
-  K.openPrint = function () { ui.sheet = { type: 'print', n: K.planningTomorrow() ? 1 : 0, st: K.getStation() }; K.render(); };
+  K.openPrint = function () { ui.sheet = { type: 'print', n: ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow()) ? 1 : 0, st: K.getStation() }; K.render(); };
   K.SHEETS.print = function (S) {
     const sts = S.st === 'all' ? K.STATIONS.map((s) => s[0]) : [S.st];
     const count = sts.reduce((a, st) => a + K.todoFor(st, S.n).count, 0);
-    const dayName = (n) => K.parseYmd(K.day(n)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+    const dayName = (n) => K.parseYmd(K.sday(S.st === 'all' ? K.getStation() : S.st, n)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
     const paper = page(sts[0], S.n);
-    return K.sheet('Print the to-do list', h('div', { class: 'print-opts' },
+    return K.sheet('Print the sheet', h('div', { class: 'print-opts' },
       h('div', { class: 'print-pick' },
         h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Day'),
           K.seg([[0, 'Today · ' + dayName(0)], [1, 'Tomorrow · ' + dayName(1)]], S.n, (v) => { S.n = v; K.render(); }, { 'aria-label': 'Day', class: 'seg daypick-seg' })),

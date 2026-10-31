@@ -27,36 +27,7 @@
   const firstName = () => String(K.me.name || '').trim().split(/\s+/)[0];
   /* the top of a sheet: whose day it is, so nobody mixes up today's list with tomorrow's */
   K.sheetDate = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-  /* the kitchen day as one line, 04:00 to 04:00: where now is, when tomorrow's sheet is written,
-     and that midnight changes the date on the phone but not the kitchen's day */
-  function dayLine(st) {
-    const km = K.kitchenMinutes(), plan = K.toMinutes(K.kitchen().planFrom) || 21 * 60;
-    const pos = (m) => Math.max(0, Math.min(100, (m - 240) / 1440 * 100)) + '%';
-    const d0 = K.sheetDate(K.day(0)), late = km >= 1440, off = st ? K.sheetOff(st) : 0;
-    const hm = (m) => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-    return h('section', { class: 'dayline', 'aria-label': 'The kitchen day: ' + d0 + ', 04:00 to 04:00. Now ' + hm(km) + '.' },
-      h('div', { class: 'dl-head' },
-        h('span', null, 'Kitchen day ', h('b', null, d0)),
-        late ? h('span', { class: 'dl-late' }, 'After midnight: still ' + d0 + ' until 04:00') : h('span', { class: 'muted' }, '04:00 → 04:00')),
-      off ? h('p', { class: 'dl-sheet' + (off < 0 ? ' old' : '') }, off > 0 ? 'Closing is done: ' + K.sheetDate(K.sday(st)) + '’s sheet is up.' : 'Nobody closed yet, so ' + K.sheetDate(K.sday(st)) + '’s sheet stays up until someone writes the next one.') : null,
-      h('div', { class: 'dl-bar', 'aria-hidden': 'true' },
-        h('span', { class: 'dl-day', style: { width: pos(plan) } }),
-        h('span', { class: 'dl-plan', style: { left: pos(plan), width: 'calc(100% - ' + pos(plan) + ')' } }),
-        h('span', { class: 'dl-mid', style: { left: pos(1440) } }),
-        h('span', { class: 'dl-now', style: { left: pos(km) } }, h('b', null, 'now ' + hm(km)))),
-      h('div', { class: 'dl-labels', 'aria-hidden': 'true' },
-        h('span', { style: { left: '0%' } }, '04:00'),
-        h('span', { class: 'c', style: { left: pos(plan) } }, hm(plan), h('small', null, 'write ' + K.parseYmd(K.day(1)).toLocaleDateString('en-GB', { weekday: 'short' }) + '’s sheet')),
-        h('span', { class: 'c low', style: { left: pos(1440) } }, '00:00', h('small', null, 'date changes, day doesn’t')),
-        h('span', { class: 'r', style: { left: '100%' } }, '04:00', h('small', null, K.parseYmd(K.day(1)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })))));
-  }
-  function stamp(ds, writing) {
-    const at = K.kitchen().planFrom || '21:00';
-    return h('div', { class: 'daystamp' + (writing ? ' next' : '') },
-      h('span', { class: 'ds-k' }, writing ? 'Tomorrow’s sheet · you are writing it' : 'Today’s sheet'),
-      h('b', { class: 'ds-d' }, K.sheetDate(ds)),
-      h('span', { class: 'ds-t' }, writing ? 'For the next shift. When you finish, today’s sheet goes in the bin and this one goes up.' : 'Stays up until closing. From ' + at + ' you write tomorrow’s, and it takes over when you finish.'));
-  }
+
   K.SHEETS.ready = function (S) {
     const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
     const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
@@ -87,44 +58,7 @@
   const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
   const evWhen = (e, ts) => (K.daysUntil(e.date) === 0 ? (ts.length && ts[0].t >= '17:00' ? 'tonight' : 'today') : 'tomorrow');
   const openEvent = (e) => () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); };
-  function hello() {
-    const m = K.kitchenMinutes();
-    return m < 12 * 60 ? 'Good morning' : m < 17 * 60 ? 'Good afternoon' : m < 23 * 60 ? 'Good evening' : 'Late shift';
-  }
-  /* the top of Today: a greeting under the Komat rays (they draw in once per visit) and the station picker */
-  function welcome(st, feat) {
-    const name = firstName(), urg = K.openUrgents().length;
-    /* the greeting plays for the first 2 seconds of a visit; a redraw inside that picks up where it was */
-    if (!ui.drawAt) ui.drawAt = Date.now();
-    const el = Date.now() - ui.drawAt, draw = el < 2000;
-    ui.raysDrawn = true;
-    if (K.freshDay) K.freshDay();
-    if (draw && !ui.logoIn) { ui.logoIn = true; document.body.classList.add('logo-in'); setTimeout(() => document.body.classList.remove('logo-in'), 1700); }
-    const words = (s) => (draw ? s.split(' ').map((w, i) => h('span', { class: 'wword', style: { '--i': i } }, w)) : s);
-    let line;
-    if (feat) {
-      const ts = eventTimes(feat);
-      line = (feat.title || 'An event') + ' is ' + evWhen(feat, ts) + (feat.guests ? ': ' + feat.guests + ' guests' : '') + (ts.length ? ', from ' + ts[0].t : '') + '.';
-    } else line = urg ? urg + ' urgent ' + (urg === 1 ? 'item' : 'items') + ' across the kitchen.' : 'Nothing urgent so far.';
-    const rays = h('span', { class: 'w-rays', 'aria-hidden': 'true' });
-    rays.innerHTML = K.welcomeRaysSvg();
-    /* each station has its own glow (warm, frosty, gold); switching cross-fades it */
-    const from = ui.stFrom && ui.stFrom !== st ? ui.stFrom : null;
-    const fx = h('span', { class: 'w-fx fx-' + st, 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(() => h('i')));
-    const film = draw || ui.filmOn ? K.clip(st === 'hot' ? 'flame' : 'sunrise', 'w-clip') : null;
-    if (draw) ui.filmOn = true;
-    return h('section', { class: 'phead welcome' + (draw ? ' draw' : '') + (from ? ' st-switch' : ''), style: draw ? { '--el': el + 'ms' } : null },
-      film,
-      from ? h('span', { class: 'w-tint t-' + from + ' out', 'aria-hidden': 'true' }) : null,
-      h('span', { class: 'w-tint t-' + st + (from ? ' in' : ''), 'aria-hidden': 'true' }), fx, rays,
-      h('div', { class: 'wrap welcome-in' },
-        h('div', { class: 'wtext' },
-          h('span', { class: 'wdate mono' }, K.parseYmd(K.day(0)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })),
-          h('span', { class: 'wkick' }, greeting() + ' · ' + K.ST[st]),
-          h('h1', { class: 'whello' }, words(hello() + (name ? ',' : '')), name ? h('span', { class: 'wname ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()) + (draw ? ' wword' : ''), style: draw ? { '--i': 2 } : null }, name) : null),
-          h('p', { class: 'wline' }, line)),
-        stationPicker()));
-  }
+
   /* the next event, today or tomorrow: when, how many, the run of the evening and a taste of the menu */
   function tonightCard(e) {
     const ts = eventTimes(e), d = K.parseYmd(e.date);
@@ -142,9 +76,44 @@
       dishes.length ? h('div', { class: 'tn-dishes' }, dishes.slice(0, 5).map((n) => h('span', { class: 'tn-dish' }, n)),
         dishes.length > 5 ? h('span', { class: 'tn-dish more' }, '+' + (dishes.length - 5) + ' more') : null) : null);
   }
-  function greeting() {
-    const m = K.kitchenMinutes();
-    return m < 11 * 60 ? 'Morning prep' : m < 16 * 60 ? 'Afternoon' : m < 23 * 60 ? 'Evening service' : 'Closing time';
+  /* ---------- the sheet's head: station, whose sheet, until when ---------- */
+  function sheetHead(st, tab) {
+    if (K.freshDay) K.freshDay();
+    const off = K.sheetOff(st), tmr = tab === 'tmr';
+    return h('section', { class: 'sheethead' }, h('div', { class: 'wrap sh-in' },
+      stationPicker(),
+      h('div', { class: 'sh-day' },
+        h('div', { class: 'sh-date' }, h('span', { class: 'sh-k' + (tmr ? ' w' : '') }, tmr ? 'Writing tomorrow’s sheet' : 'Today’s sheet'),
+          h('b', null, K.sheetDate(tmr ? K.sday(st, 1) : K.sday(st)))),
+        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : off < 0 ? 'Nobody closed yet, so it stays up' : 'Up until closing'))));
+  }
+  /* a section's heading line: title, count, a quiet hint or small controls on the right */
+  function secHead(title, n, hint) {
+    const tools = Array.prototype.slice.call(arguments, 3).filter(Boolean);
+    return h('div', { class: 'sec-head' }, h('h2', { class: 'sec-title' }, title, n != null ? h('span', { class: 'mono' }, String(n)) : null),
+      tools.length ? h('div', { class: 'sec-tools' }, tools) : hint ? h('span', { class: 'sec-hint' }, hint) : null);
+  }
+  /* the last line of a sheet: write a task (or a note), ! for urgent, + to add */
+  function sheetAdd(id, placeholder, aria, onAdd) {
+    const S = (ui.taskForms = ui.taskForms || {})[id] || (ui.taskForms[id] = { text: '', urgent: false });
+    return h('form', { class: 'sheet-add', onsubmit: (ev) => {
+      ev.preventDefault();
+      const t = (S.text || '').trim();
+      if (!t) { const el = document.getElementById(id + '-task'); if (el) el.focus(); return; }
+      onAdd(t, S.urgent);
+      ui.taskForms[id] = { text: '', urgent: false };
+      K.render();
+    } },
+      h('input', { class: 'input', id: id + '-task', placeholder: placeholder, 'aria-label': placeholder, value: S.text, enterkeyhint: 'done', oninput: (e) => { S.text = e.target.value; } }),
+      h('button', { type: 'button', class: 'sa-flag' + (S.urgent ? ' on' : ''), 'aria-pressed': S.urgent ? 'true' : 'false', 'aria-label': 'Urgent', title: 'Urgent', onclick: () => { S.urgent = !S.urgent; K.render(); } }, '!'),
+      h('button', { class: 'sa-add', type: 'submit', 'aria-label': aria, title: aria }, K.icon('plus')));
+  }
+  /* who is working today, one slim line */
+  function onToday() {
+    const os = K.onToday();
+    if (!os.length) return null;
+    return h('div', { class: 'ontoday tt-today', 'aria-label': 'On today' }, h('span', { class: 'ot-k' }, 'On today'),
+      os.map((x) => h('span', { class: 'ot-chip' }, K.personName(x.id), h('b', { class: 'mono' }, x.code))));
   }
   /* the stations as buttons; a pill slides from the station you were on to the new one */
   function stationPicker() {
@@ -182,26 +151,7 @@
   };
 
   /* ---------- the daily brief ---------- */
-  /* for now the daily brief only says who is working; flip this to bring the urgent list back */
-  const BRIEF_URGENT = false;
-  function brief(feat) {
-    const urg = BRIEF_URGENT ? K.openUrgents() : [], os = K.onToday();
-    const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e) && e !== feat);
-    const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
-    if (BRIEF_URGENT) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
-      urg.length ? h('div', { class: 'urglist' }, urg.map((d) => h('div', { class: 'urgrow' },
-        h('button', { type: 'button', class: 'urgname', onclick: () => K.pickStation(d.station) },
-          h('b', null, d.name), d.note ? h('span', { class: 'tnote' }, d.note) : null,
-          h('span', { class: 'urgmeta' }, [K.ST[d.station] || d.station, d.urgentAt || d.at ? 'since ' + K.hm(d.urgentAt || d.at) : '', K.nameOf(d.by)].filter(Boolean).join(' · '))),
-        h('button', { type: 'button', class: 'pbtn done', onclick: () => (d.check ? doneMark(d.station, d.it) : doneTask(d.station, { key: d.key, name: d.name }, d._id)) }, K.icon('check'), 'Done'))))
-        : h('p', { class: 'none' }, 'Nothing urgent. Smooth so far.')));
-    if (ev.length) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'Events coming up'),
-      h('div', { class: 'evmini' }, ev.map((e) => h('button', { type: 'button', class: 'evchip', onclick: () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); } },
-        h('b', null, K.countdown(e)), h('span', null, (e.title || 'Event') + (e.time ? ' · ' + e.time : '') + (e.guests ? ' · ' + e.guests + ' guests' : '')))))));
-    if (os.length) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' }, 'On today'),
-      h('div', { class: 'tags' }, os.map((x) => h('span', { class: 'codechip ' + K.codeClass(x.code) }, K.personName(x.id), h('b', { class: 'mono' }, x.code))))));
-    return box;
-  }
+
 
   /* ---------- actions with undo ---------- */
   function doneMark(st, it) {
@@ -283,7 +233,8 @@
         h('button', { type: 'button', class: 'tcheck tbox ' + K.inkClass(o.kindInk) + (o.box ? ' written' : ''), 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) },
           o.box ? K.doMark(false, o.kinds && o.kinds.length ? o.kinds : ['do'], o.kindHand) : null),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
-          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
+          o.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
+          h('span', { class: 'todo-name' }, o.name),
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -296,9 +247,8 @@
 
   /* ---------- the Today page ---------- */
   K.V.today = function () {
-    const st = K.getStation(), body = h('div', { class: 'page has-fab' });
+    const st = K.getStation(), body = h('div', { class: 'page today-page' });
     const feat = K.upcomingEvents().find((e) => K.isLive(e) && K.daysUntil(e.date) <= 1);
-    body.append(welcome(st, feat));
     const w = h('div', { class: 'wrap today' + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '') });
     body.append(w);
     const items = K.checkItems(st);
@@ -319,22 +269,21 @@
     const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
       h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
-    w.append(dayLine(st));
+    body.prepend(sheetHead(st, tab));
     w.append(h('nav', { class: 'tjump two', 'aria-label': 'Today or tomorrow' },
       tabBtn('today', 'check', 'Today', (todoN ? todoN + ' to do' : 'All done') + ' · ' + ready + '/' + items.length + ' ready', todoN > 0),
       tabBtn('tmr', 'note', 'Tomorrow', nTmr ? nTmr + ' to make' + (nNotes ? ' · ' + nNotes + (nNotes === 1 ? ' note' : ' notes') : '') : 'Write the prep list')));
     if (feat) w.append(h('div', { class: 'tt-today' }, tonightCard(feat)));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);
-    const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
-    grid.append(left, right);
-    left.append(h('div', { class: 'only-narrow tt-today', id: 't-brief' }, brief(feat)));
-    right.append(h('div', { class: 'only-wide' }, brief(feat)));
+    const left = h('div', { class: 'today-main' });
+    grid.append(left);
+    const on = onToday();
+    if (on) left.append(on);
 
     /* ===== Today ===== */
-    const todo = h('section', { class: 'block tt-today', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
-      K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
-    todo.append(stamp(K.sday(st), false));
+    const todo = h('section', { class: 'tsec tt-today', id: 't-todo' }, secHead('To do', todoN, 'Tap the box when it’s done',
+      K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print the sheet', title: 'Print the sheet', onclick: () => K.openPrint() }, K.icon('print')) : null));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
@@ -361,9 +310,8 @@
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
-    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the box when it’s done, or swipe right.'));
-    todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
-    todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
+    todo.append(h('div', { class: 'todos' }, rows.length ? rows : h('p', { class: 'todos-empty' }, h('b', null, 'All clear. '), 'Mark a row DO below, or add a task.'),
+      sheetAdd('new', 'Add a task, e.g. portion 20 sea bass', 'Add the task', (t, urg) => K.setPrep(st, { key: 'task-' + K.uid(), name: t }, 'need', urg))));
     /* the done tasks fold into one row under the list, and the page says how the day ends */
     if (doneTasks.length) {
       const names = doneTasks.map((d) => d.name);
@@ -372,35 +320,28 @@
         h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, d.name),
           h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     }
-    todo.append(h('p', { class: 'freshfoot' }, K.icon('sun'), 'This list stays until closing, when tomorrow’s takes over.'));
     left.append(todo);
 
-    left.append(h('div', { class: 'block-top tt-today', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
-      h('div', { class: 'btns' },
-        items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
-        K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      h('div', { class: 'tt-today' }, stamp(K.sday(st), false)),
-      items.length ? h('p', { class: 'hint legend-row tt-today' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.doneMark('', '', false)), ' when it’s ready. Under it, swap DO for OPT, CHECK, Defrost, Portion or Vacuum. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+    const editBtn = () => (K.me.admin ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Edit the list', title: 'Edit the list', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit')) : null);
+    left.append(h('div', { class: 'tsec tt-today', id: 't-mep' }, secHead('Mise en place', null, null,
+      items.length ? h('button', { type: 'button', class: 'sec-chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null, editBtn()),
+      items.length ? h('div', { class: 'mep-prog' }, h('span', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: { width: Math.round(ready / items.length * 100) + '%' } })), h('span', { class: 'mono' }, ready + '/' + items.length + ' ready')) : null));
     const ckToday = checklist(st, null); ckToday.classList.add('tt-today'); left.append(ckToday);
     left.append(h('div', { class: 'finish tt-today' },
-      h('button', { class: 'btn wide', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, K.icon('next'), 'Closing? Write tomorrow’s list')));
+      h('button', { class: 'btn wide outline-apron', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, 'Closing? Write tomorrow’s list', K.icon('next'))));
 
     /* ===== Tomorrow ===== */
     const order = K.orderFor(st), cl = K.closedInfo(st);
-    left.append(h('div', { class: 'block-top tt-tmr', id: 't-plan' }, h('h2', { class: 'block-title' }, 'Tomorrow’s prep list'),
-      K.me.admin ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list')) : null),
-      h('div', { class: 'tt-tmr' }, stamp(tday, true)),
-      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then write what it needs instead of DO: OPT (optional), CHECK, DEF (defrost), PORTION or VAC (vacuum), as many as fit. It lands on their to-do list in the morning.'));
+    left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed', editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')));
+      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide big', type: 'button', onclick: () => K.startStock(st, true) }, K.icon('order'), cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for ' + nTmr : 'Done: nothing to make tomorrow'),
+      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.')));
     if (order) left.append(h('button', { class: 'askorder sent tt-tmr', type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'), h('span', { class: 'ask-txt' }, h('b', null, 'Order sent for ' + K.ST[st]), h('span', null, order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change')), K.icon('next')));
-    left.append(tomorrowBlock(st));
-    body.append(h('button', { type: 'button', class: 'fab', 'aria-label': 'Add a task', title: 'Add a task',
-      onclick: (e) => { const r = e.currentTarget.getBoundingClientRect(); ui.sheet = { type: 'addtask', st: st, when: 'today', text: '', urgent: false, ox: r.left + r.width / 2, oy: r.top + r.height / 2 }; K.render(); } }, K.icon('plus')));
-    return { body: body };
+    left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
+    return { body: body, solid: true };
   };
 
   /* Add a task: the sheet blooms out of the + button */
@@ -503,7 +444,7 @@
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
       h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
-        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; K.vibrate(8); } K.setMark(st, it, next === 'do' ? { d: 'do', k: '' } : { d: next }); } } }, s === 'do' ? K.doMark(wrote, K.markKind(st, it.id), (K.mark(st, it.id) || {}).hand) : s === 'ok' ? K.doneMark(((K.mark(st, it.id) || {}).k) || '', (K.mark(st, it.id) || {}).hand, pop) : ''),
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; ui.openRow = it.id; K.vibrate(8); } K.setMark(st, it, next === 'do' ? { d: 'do', k: '' } : { d: next }); } } }, s === 'do' ? K.doMark(wrote, K.markKind(st, it.id), (K.mark(st, it.id) || {}).hand) : s === 'ok' ? K.doneMark(((K.mark(st, it.id) || {}).k) || '', (K.mark(st, it.id) || {}).hand, pop) : ''),
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
@@ -512,9 +453,10 @@
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
-      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do', k: '' }); } },
+      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; ui.openRow = it.id; K.setMark(st, it, { d: 'do', k: '' }); } },
     });
-    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
+    /* on today's list the options open only under the row just marked DO */
+    return s === 'do' && ui.openRow === it.id ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
   function allReady(st, items, btn) {
@@ -573,18 +515,17 @@
   /* ---------- for tomorrow ---------- */
   function tomorrowBlock(st) {
     const list = K.tomorrowTasks(st);
-    return h('section', { class: 'block card tmr tt-tmr', id: 't-tmr' },
-      h('h2', { class: 'block-title' }, 'Notes for tomorrow'), stamp(K.sday(st, 1), true),
-      h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
-      list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
-        h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
-        h('div', { class: 'sw-in no-check' },
-          h('div', { class: 'todo-main' }, h('span', { class: 'todo-name' }, x.d.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
-            h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
-          h('button', { class: 'mflag', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
-        { left: { run: () => K.removePrep(x.id), fold: true } }))) : null,
-      addTaskForm('tmr', 'e.g. Defrost 4 lamb saddles', 'Leave it', (t, urg, note) => K.leaveForTomorrow(st, t, urg, note)),
-      h('p', { class: 'hint' }, 'For another station? Switch “I’m on” at the top first.'));
+    return h('section', { class: 'tsec tt-tmr', id: 't-tmr' }, secHead('Notes', list.length || null, 'Lands on their to-do'),
+      h('div', { class: 'todos notes' },
+        list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
+          h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
+          h('div', { class: 'sw-in no-check' },
+            h('div', { class: 'todo-main' }, x.d.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
+              h('span', { class: 'note-line tnote ' + K.inkClass(x.d.noteInk || K.myInk()) + ' ' + K.handClass(x.d.noteHand || K.myHand()) }, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
+              h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
+            h('button', { class: 'sec-btn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
+          { left: { run: () => K.removePrep(x.id), fold: true } })),
+        sheetAdd('tmr', 'Leave a note for the next shift', 'Leave the note', (t, urg) => K.leaveForTomorrow(st, t, urg))));
   }
 
   /* ---------- the head chef's list editor ---------- */
