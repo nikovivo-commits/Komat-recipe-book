@@ -256,18 +256,15 @@
   /* ---------- to-do rows ---------- */
   /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
      tap the words to add a comment, ! flags it urgent for everyone */
-  /* urgent: the name circled in marker, the way you would on the paper sheet (in the pen of whoever flagged it, else red) */
-  function urgCircle(name, ink) {
-    const s = document.createElement('span');
+  /* urgent: the whole row circled in marker, the way you would on the paper sheet (in the pen of whoever flagged it, else red) */
+  function urgLoop(name) {
     const fresh = ui.urgNew === name;
     if (fresh) setTimeout(() => { if (ui.urgNew === name) ui.urgNew = null; }, 0);
-    s.className = 'urgcircle ' + (ink ? K.inkClass(ink) : 'ink-red') + (fresh ? ' draw' : '');
-    s.append(name);
     const v = document.createElement('span');
-    v.className = 'loop'; v.setAttribute('aria-hidden', 'true');
-    v.innerHTML = '<svg viewBox="0 0 200 46" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M24 7C60 2 150 1 186 8c14 3 13 28-6 33-30 6-120 6-160 0C4 38 2 14 22 8c14-4 30-4 46-5"/></svg>';
-    s.append(v);
-    return s;
+    v.className = 'rowloop' + (fresh ? ' draw' : '');
+    v.setAttribute('aria-hidden', 'true');
+    v.innerHTML = '<svg viewBox="0 0 200 60" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M26 6C70 1 140 0 184 5c13 2 15 40-2 48-34 7-120 6-160 1C5 52 3 14 20 8c10-3 26-4 42-5"/></svg>';
+    return v;
   }
   function todoRow(o) {
     const nkey = o.note ? o.noteKey : null;   /* no "+ comment" on Today: only a comment written earlier shows, and can be edited */
@@ -278,14 +275,15 @@
       if (K.sparks) K.sparks(btn);
       K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
     };
-    const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
+    const row = h('div', { class: 'todo' + (o.urgent ? ' urgent ' + (o.urgInk ? K.inkClass(o.urgInk) : 'ink-red') : '') + (o.kind ? ' ' + o.kind : '') },
+      o.urgent ? urgLoop(o.name) : null,
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
       h('div', { class: 'sw-in' },
         /* the same box as on the sheet: what was written (DO, OPT, DEFROST…), tap it when it is done */
         h('button', { type: 'button', class: 'tcheck tbox ' + K.inkClass(o.kindInk) + (o.box ? ' written' : ''), 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) },
           o.box ? K.doMark(false, o.kinds && o.kinds.length ? o.kinds : ['do'], o.kindHand) : null),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
-          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.urgent ? urgCircle(o.name, o.urgInk) : o.name),
+          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,

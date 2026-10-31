@@ -1727,3 +1727,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tcheck.tbox .domark.word.n3 { font-size: 1.02rem; }
 .todo-name { font-size: 1.3rem; line-height: 1.15; }
 .todo-meta { font-size: .88rem; }
+
+/* urgent: the whole row circled by hand, in the flagger's pen (the old straight red outline and the circle round the name are gone) */
+.todo.urgent::after, .todo.repeat::after { display: none; }
+.rowloop { position: absolute; inset: 2px 3px; color: var(--pen, var(--urgent)); pointer-events: none; z-index: 3; transform: rotate(-.3deg); }
+.rowloop svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rowloop.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .7s cubic-bezier(.4, 0, .6, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .rowloop.draw path { animation: none; stroke-dashoffset: 0; } }
