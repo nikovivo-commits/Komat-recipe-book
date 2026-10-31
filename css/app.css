@@ -1714,3 +1714,16 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .todo.urgent::after, .todo.repeat::after { content: ""; position: absolute; inset: 3px; border: 2.5px solid var(--urgent); border-radius: 9px 22px 11px 26px / 24px 9px 22px 12px; transform: rotate(-.35deg); pointer-events: none; z-index: 3; }
 .todo.urgent > .sw-in, .todo.repeat > .sw-in { padding-left: 16px; }
 .todo > .sw-in { padding-left: 18px; }
+
+/* Today's to-do: big, easy to read at a glance */
+.todo > .sw-in { grid-template-columns: 84px minmax(0, 1fr) auto; min-height: 84px; }
+.todo > .sw-in.no-check { grid-template-columns: minmax(0, 1fr) auto; }
+.tcheck.tbox { width: 76px; height: 64px; }
+.tcheck.tbox .domark { width: 66px; height: 44px; }
+.tcheck.tbox .domark.word { width: auto; height: auto; font-size: 1.7rem; }
+.tcheck.tbox .domark.word.w-chk { font-size: 1.35rem; }
+.tcheck.tbox .domark.word.w-por { font-size: 1.15rem; }
+.tcheck.tbox .domark.word.n2 { font-size: 1.3rem; }
+.tcheck.tbox .domark.word.n3 { font-size: 1.02rem; }
+.todo-name { font-size: 1.3rem; line-height: 1.15; }
+.todo-meta { font-size: .88rem; }

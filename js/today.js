@@ -270,7 +270,7 @@
     return s;
   }
   function todoRow(o) {
-    const nkey = o.noteKey;
+    const nkey = o.note ? o.noteKey : null;   /* no "+ comment" on Today: only a comment written earlier shows, and can be edited */
     const done = (btn) => {
       K.vibrate(12);
       if (!btn) { o.onDone(); return; }
@@ -363,7 +363,7 @@
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
-    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the box when it’s done, or swipe right. Tap the words to add a comment.'));
+    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the box when it’s done, or swipe right.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     /* the done tasks fold into one row under the list, and the page says how the day ends */
@@ -460,7 +460,7 @@
       h('button', { type: 'button', class: 'pbtn flag' + (S.urgent ? ' on' : ''), 'aria-pressed': S.urgent ? 'true' : 'false', 'aria-label': 'Urgent', title: 'Urgent', onclick: () => { S.urgent = !S.urgent; K.render(); } }, '!'),
       h('button', { class: 'btn primary', type: 'submit' }, label)),
     S.showNote ? h('input', { class: 'input', id: id + '-note', placeholder: 'Comment (optional), e.g. 2 for the event, the rest for service', 'aria-label': 'Comment', value: S.note, oninput: (e) => { S.note = e.target.value; } })
-      : h('button', { type: 'button', class: 'link-btn', onclick: () => { S.showNote = true; K.render(); const el = document.getElementById(id + '-note'); if (el) el.focus(); } }, '+ Add a comment'));
+      : id === 'new' ? null : h('button', { type: 'button', class: 'link-btn', onclick: () => { S.showNote = true; K.render(); const el = document.getElementById(id + '-note'); if (el) el.focus(); } }, '+ Add a comment'));
   }
 
   /* ---------- checklist ---------- */
