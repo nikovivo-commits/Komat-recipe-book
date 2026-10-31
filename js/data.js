@@ -278,6 +278,9 @@
   K.markState = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.d) || ''; };
   K.isUrgent = (st, id, date) => { const m = K.mark(st, id, date); return !!(m && (m.u || m.d === 'urg') && m.d !== 'ok'); };
   K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
+  /* what is written in a DO box: DO, OPT (optional, if there's time) or CHECK (check how much is left) */
+  K.markKind = (st, id, date) => { const m = K.mark(st, id, date); return m && m.d === 'do' && (m.k === 'opt' || m.k === 'chk') ? m.k : ''; };
+  K.KINDS = [['', 'DO'], ['opt', 'OPT'], ['chk', 'CHECK']];
 
   /* patch one row's mark: {d:'do'|'ok'|''} or {u:bool} or {c:'comment'} */
   K.setMark = function (st, it, patch, date) {
@@ -290,7 +293,7 @@
     const m = Object.assign({}, prev || {}, patch, { n: it.name });
     if ('d' in patch && (patch.d === 'ok' || patch.d === '')) m.u = false;
     if (!('c' in patch) || Object.keys(patch).length > 1) { m.t = Date.now(); m.by = K.me.id || ''; }
-    if ('d' in patch && K.myInk) m.ink = K.myInk() || 'blue';
+    if (('d' in patch || 'k' in patch) && K.myInk) { m.ink = K.myInk() || 'blue'; m.hand = (K.myHand && K.myHand()) || 'caveat'; }
     if ('c' in patch && K.myInk) { m.cink = K.myInk() || 'blue'; m.chand = (K.myHand && K.myHand()) || 'caveat'; m.cby = K.me.id || ''; }
     doc.marks[it.id] = m;
     K.refresh(true);

@@ -1375,10 +1375,20 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 /* jobs for a row marked DO: three stickers and a comment, all in view; a picked one is circled in the writer's pen */
 .jobs-wrap { display: grid; gap: 8px; padding: 0 12px 12px 52px; }
-.jobs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.jobs .job.add { grid-column: 1 / -1; }
-.jobs.with-done .job.add { grid-column: 1 / 3; }
-.jobs.with-done .job.done { grid-column: 3 / 5; }
+.jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 6px; }
+.jobs .job.add { padding: 0 12px; }
+.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 12px; background: var(--line); }
+.kind { min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: 800 .82rem/1 var(--sans); letter-spacing: .06em; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
+.kind:active { transform: scale(.95); }
+.kind[aria-checked="true"] { background: var(--surface); color: var(--pen, var(--ink)); box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .35); }
+.jobs-wrap.fresh .kind { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
+@media (max-width: 400px) { .job-word { display: none; } }
+/* OPT and CHECK in the DO box: the cook's handwriting, written on left to right */
+.domark.word { display: block; width: auto; height: auto; color: currentColor; font: var(--hand-w, 700) 1.15rem/1 var(--hand); white-space: nowrap; letter-spacing: -.01em; transform: rotate(-5deg); }
+.domark.word.draw { animation: wordWrite .45s cubic-bezier(.4, 0, .6, 1) both; }
+@keyframes wordWrite { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% -10% -20% 0); } }
+.mbox.sample .domark.word { font-size: .9rem; }
+@media (prefers-reduced-motion: reduce) { .domark.word.draw { animation: none; } }
 .job { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 700 .86rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
 .job:active { transform: scale(.94); }
 .job.on { border: 2.5px solid var(--pen); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: transparent; color: var(--pen); font: var(--hand-w, 700) 1.2rem/1 var(--hand); transform: rotate(-1.5deg); }
@@ -1386,9 +1396,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .job.on.draw { animation: jobDraw .38s cubic-bezier(.2, 1.4, .4, 1); }
 .job.add { flex: 0 0 auto; padding: 0 12px; border-style: dashed; }
 .job svg { width: 15px; height: 15px; }
-.job.done { flex: 0 0 auto; position: relative; padding: 0 12px; border-color: var(--ready); background: var(--ready); color: var(--ready-ink, #fff); }
-.job.done svg { width: 18px; height: 18px; stroke-width: 2.6; }
-.jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 60ms); }
+.jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
 .jobs-wrap.fresh { animation: jobsOpen .28s ease-out both; }
 @keyframes jobIn { from { opacity: 0; transform: translateY(-8px) scale(.85); } }
 @keyframes jobDraw { 0% { transform: scale(.7) rotate(-6deg); opacity: .3; } 60% { transform: scale(1.08) rotate(-1deg); opacity: 1; } 100% { transform: rotate(-1.5deg); } }
@@ -1640,3 +1648,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .finish .btn.wide { white-space: normal; text-align: center; }
 .dl-sheet { margin: 2px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--ready-soft, var(--surface-2)); color: var(--ink); font-size: .84rem; font-weight: 600; }
 .dl-sheet.old { background: var(--todo-soft); }
+.domark.word.w-chk { font-size: .92rem; letter-spacing: -.03em; transform: rotate(-6deg) translateX(-2px); }
+.mbox.sample .domark.word.w-chk { font-size: .75rem; }

@@ -114,8 +114,15 @@
     'M35.6 6.8c-6.3.3-9.1 6.7-8.4 12 .7 5.3 4.4 8.6 9.1 7.9 5.2-.8 7.9-6.3 7.1-11.7-.7-4.8-4-8.6-9-7.6-1.6.4-2.8 1.3-3.6 2.4',
     'M4.5 31.2c11.4-1.9 25.5-2.3 41.3-.6',
   ];
-  K.doMark = function (draw) {
+  K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
+    if (kind) {
+      /* OPT and CHECK are written in the cook's own hand */
+      s.className = 'domark word w-' + kind + ' ' + (K.handClass ? K.handClass(hand) : '') + (draw && !reduced() ? ' draw' : '');
+      s.setAttribute('aria-hidden', 'true');
+      s.textContent = kind === 'opt' ? 'OPT' : 'CHECK';
+      return s;
+    }
     s.className = 'domark' + (draw && !reduced() ? ' draw' : '');
     s.setAttribute('aria-hidden', 'true');
     s.innerHTML = '<svg viewBox="0 0 50 34" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' +

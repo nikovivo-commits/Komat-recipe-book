@@ -341,7 +341,7 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
+        meta: [K.markKind(st, it.id) === 'opt' ? 'OPT · if there’s time' : K.markKind(st, it.id) === 'chk' ? 'CHECK what’s left' : '', it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
@@ -376,7 +376,7 @@
     left.append(h('div', { class: 'block-top tt-tmr', id: 't-plan' }, h('h2', { class: 'block-title' }, 'Tomorrow’s prep list'),
       K.me.admin ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list')) : null),
       h('div', { class: 'tt-tmr' }, stamp(tday, true)),
-      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then pick what to do with it: defrost, portion, vacuum, or OPT if it’s optional. It lands on their to-do list in the morning.'));
+      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then choose DO, OPT (optional) or CHECK and what it needs: defrost, portion, vacuum. It lands on their to-do list in the morning.'));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -489,7 +489,7 @@
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
       h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
-        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; K.vibrate(8); } K.setMark(st, it, { d: next }); } } }, s === 'do' ? K.doMark(wrote) : s === 'ok' ? K.icon('check') : ''),
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; K.vibrate(8); } K.setMark(st, it, next === 'do' ? { d: 'do', k: '' } : { d: next }); } } }, s === 'do' ? K.doMark(wrote, K.markKind(st, it.id), (K.mark(st, it.id) || {}).hand) : s === 'ok' ? K.icon('check') : ''),
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
@@ -498,7 +498,7 @@
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
-      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
+      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do', k: '' }); } },
     });
     return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
   }
@@ -522,11 +522,11 @@
     const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
     const wrote = ui.wrote === it.id;
     if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
-    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, { d: v }, day); };
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v }, day); };
     const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
-        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote) : ''),
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote, K.markKind(st, it.id, day), m.hand) : ''),
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
@@ -539,27 +539,29 @@
     });
     return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, m, wrote)) : sw;
   }
-  /* what to do with a row marked DO: Defrost, Portion, Vacuum or OPT (optional, if there's time), ticked in the hand and ink of whoever picked them,
-     plus a comment. All of it lands on the next shift's to-do list as one comment */
-  const JOBS = ['Defrost', 'Portion', 'Vacuum', 'OPT'];
+  /* under a row marked DO: what goes in the box (DO, OPT = optional, CHECK = check what's left), then the jobs it
+     needs, ticked in the hand and ink of whoever picked them, and a comment. Jobs and comment land on the to-do list */
+  const JOBS = ['Defrost', 'Portion', 'Vacuum'];
   const isJob = (p) => JOBS.some((j) => j.toLowerCase() === p.toLowerCase());
   function splitJobs(note) {
     const parts = String(note || '').split(/\s*,\s*/).filter(Boolean);
     return { jobs: parts.filter(isJob), free: parts.filter((p) => !isJob(p)).join(', ') };
   }
   function jobChips(st, it, day, m, fresh) {
-    const sp = splitJobs(m.c), key = (day ? 'jt:' : 'jm:') + it.id, has = (j) => sp.jobs.some((p) => p.toLowerCase() === j.toLowerCase());
+    const sp = splitJobs(m.c), key = (day ? 'jt:' : 'jm:') + it.id, kind = K.markKind(st, it.id, day || undefined);
+    const on = (j) => sp.jobs.some((p) => p.toLowerCase() === j.toLowerCase());
     const save = (list) => K.setMark(st, it, { c: list.join(', ') }, day || undefined);
     const toggle = (j) => { K.vibrate(on(j) ? 6 : 12); ui.jobNew = on(j) ? null : key + j; save((on(j) ? sp.jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : sp.jobs.concat(j)).concat(sp.free ? [sp.free] : [])); };
-    const on = has;
+    const setKind = (k) => { if (k === kind) return; K.vibrate(10); ui.wrote = it.id; K.setMark(st, it, { k: k }, day || undefined); };
     const drawn = ui.jobNew;
     if (drawn) setTimeout(() => { if (ui.jobNew === drawn) ui.jobNew = null; }, 0);
+    let n = 0;
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
-      h('div', { class: 'jobs' + (day ? '' : ' with-done'), role: 'group', 'aria-label': 'What to do with ' + it.name },
-        JOBS.map((j, i) => h('button', { type: 'button', style: '--i:' + i, title: j === 'OPT' ? 'Optional: make it if there is time' : null, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
-        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-label': sp.free ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), h('span', { class: 'job-word' }, 'Comment')),
-        /* today's list only: done, straight from the row */
-        day ? null : h('button', { type: 'button', style: '--i:' + (JOBS.length + 1), class: 'job done', 'aria-label': 'Done: ' + it.name, title: 'Done', onclick: (e) => { K.vibrate(12); if (K.sparks) K.sparks(e.currentTarget); markReady(st, it); } }, K.icon('check'), h('span', { class: 'job-word' }, 'Done'))),
+      h('div', { class: 'kinds ' + K.inkClass(m.ink), role: 'radiogroup', 'aria-label': 'What to write in the box for ' + it.name },
+        K.KINDS.map((x) => h('button', { type: 'button', role: 'radio', style: '--i:' + n++, class: 'kind', 'aria-checked': kind === x[0] ? 'true' : 'false', title: x[0] === 'opt' ? 'Optional: make it if there is time' : x[0] === 'chk' ? 'Check how much is left' : 'Has to be made', onclick: () => setKind(x[0]) }, x[1]))),
+      h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
+        JOBS.map((j) => h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
+        h('button', { type: 'button', style: '--i:' + n++, class: 'job add', 'aria-label': sp.free ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), h('span', { class: 'job-word' }, 'Note'))),
       noteForm(key, sp.free, (t) => save(sp.jobs.concat(t ? [t] : []))));
   }
 
