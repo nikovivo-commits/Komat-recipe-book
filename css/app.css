@@ -1670,3 +1670,14 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 @media (prefers-reduced-motion: reduce) { .urgcircle.draw .loop path { animation: none; stroke-dashoffset: 0; } }
 .todo-name .urgtag { margin-right: 10px; }
 .todo-name .urgcircle { margin-left: 2px; }
+/* to-do rows: the sheet's box instead of a green circle */
+.tcheck.tbox { width: 56px; height: 46px; border-radius: 8px; border: 2px dashed var(--line); color: var(--pen, var(--ink)); }
+.tcheck.tbox.written { border-color: transparent; }
+.tcheck.tbox .domark { width: 44px; height: 30px; }
+.tcheck.tbox .domark.word { width: auto; height: auto; }
+.tcheck.tbox.ticked { background: transparent; color: var(--pen, var(--ink)); animation: pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+.tcheck.tbox.ticked::after { border-radius: 10px; }
+.tcheck.tbox.ticked .domark { opacity: .75; }
+@media (hover: hover) { .tcheck.tbox:hover { border-color: var(--muted); color: var(--pen, var(--ink)); } }
+.tcheck.tbox.ticked::before { content: ""; position: absolute; left: 2px; right: 2px; top: 50%; height: 3px; border-radius: 2px; background: var(--pen, var(--ink)); transform: rotate(-9deg) scaleX(0); transform-origin: left center; animation: strike-in .22s ease-out forwards; }
+.tcheck.tbox.ticked::after { border-color: var(--pen, var(--ink)); }

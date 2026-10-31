@@ -116,7 +116,7 @@
   ];
   K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
-    const ks = Array.isArray(kind) ? kind : kind ? [kind] : [];
+    const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
     if (ks.length) {
       /* OPT, CHECK, DEF, POR, VAC are written in the cook's own hand; several stack in the box */
       s.className = 'domark word n' + Math.min(ks.length, 3) + (ks.length === 1 ? ' w-' + ks[0] : '') + ' ' + (K.handClass ? K.handClass(hand) : '') + (draw && !reduced() ? ' draw' : '');

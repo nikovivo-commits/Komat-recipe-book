@@ -281,10 +281,11 @@
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent' : '') + (o.kind ? ' ' + o.kind : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
       h('div', { class: 'sw-in' },
-        h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
+        /* the same box as on the sheet: what was written (DO, OPT, DEFROST…), tap it when it is done */
+        h('button', { type: 'button', class: 'tcheck tbox ' + K.inkClass(o.kindInk) + (o.box ? ' written' : ''), 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) },
+          o.box ? K.doMark(false, o.kinds && o.kinds.length ? o.kinds : ['do'], o.kindHand) : null),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.urgent ? urgCircle(o.name, o.urgInk) : o.name),
-          o.kinds && o.kinds.length ? h('span', { class: 'tnote todo-kinds ' + K.inkClass(o.kindInk) + ' ' + K.handClass(o.kindHand) }, K.kindWords(o.kinds).join('  ')) : null,
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -355,14 +356,14 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
+        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
         meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => { if (!u) ui.urgNew = it.name; K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
-    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Tap the words to add a comment.'));
+    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the box when it’s done, or swipe right. Tap the words to add a comment.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     /* the done tasks fold into one row under the list, and the page says how the day ends */
