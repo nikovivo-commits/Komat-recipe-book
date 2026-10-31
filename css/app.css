@@ -1754,3 +1754,13 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mlink, .gname-link, .mep .mname > :first-child { text-decoration: none; background-image: none; }
 .mrow.ok .mname > :first-child { background-image: linear-gradient(var(--pen), var(--pen)); }
 .domark.draw path:nth-child(4) { display: none; }
+
+/* ready: the whole box crossed out with a big X, two strokes (the old single strike is gone) */
+.donemark .cross, .tcheck.tbox .cross { position: absolute; inset: -3px -4px; color: var(--pen, var(--ink)); pointer-events: none; }
+.cross svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.donemark .strike { display: none; }
+.donemark.draw .cross path, .cross.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .14s cubic-bezier(.4, 0, .6, 1) forwards; animation-delay: var(--d, 0s); }
+.tcheck.tbox.ticked::before { display: none; }
+.donemark { opacity: .85; }
+@media (prefers-reduced-motion: reduce) { .donemark.draw .cross path, .cross.draw path { animation: none; stroke-dashoffset: 0; } }
+.mbox .donemark { width: 100%; height: 100%; }

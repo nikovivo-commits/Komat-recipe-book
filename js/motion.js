@@ -158,16 +158,22 @@
     return s;
   };
 
+  /* a big X over the whole box, two strokes of marker */
+  K.crossBox = function () {
+    const x = document.createElement('span');
+    x.className = 'cross';
+    x.setAttribute('aria-hidden', 'true');
+    x.innerHTML = '<svg viewBox="0 0 60 46" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M3 4c14 9 34 23 54 38"/><path pathLength="1" vector-effect="non-scaling-stroke" style="--d:.13s" d="M56 5c-16 10-35 23-51 36"/></svg>';
+    return x;
+  };
+
   /* ready: the word in the box (DO, OPT or CHECK) crossed out with one Sharpie stroke, like on the paper sheet */
   K.doneMark = function (kind, hand, draw) {
     const s = document.createElement('span');
     s.className = 'donemark' + (draw && !reduced() ? ' draw' : '');
     s.setAttribute('aria-hidden', 'true');
     s.append(K.doMark(false, K.kindsOf({ k: kind }), hand));
-    const x = document.createElement('span');
-    x.className = 'strike';
-    x.innerHTML = '<svg viewBox="0 0 60 20" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path pathLength="1" d="M2 13.5c12-3.2 28-6.4 56-8.6"/></svg>';
-    s.append(x);
+    s.append(K.crossBox());
     return s;
   };
 
