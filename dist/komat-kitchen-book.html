@@ -1864,6 +1864,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pr-page.full .pr-box.long i { font-size: 8.5pt; }
 .pr-page.full .pr-txt b { font-size: 10pt; }
 .pr-page.full .pr-group h3 { margin-top: 8pt; }
+.jobs.paper .job.add { grid-column: 1 / -1; }
 
 </style>
 <div id="app"></div>
@@ -3622,8 +3623,8 @@ window.KOMAT_PART_ART = [
   K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
   /* what is written in a DO box instead of DO: one or more of OPT (optional), CHECK (check what's left),
      DEF (defrost), POR (portion), VAC (vacuum). Nothing picked = DO */
-  K.KINDS = [['', 'DO', 'Has to be made'], ['def', 'DEF', 'Defrost', 'Defrost'], ['por', 'PORTION', 'Portion', 'Portion'], ['vac', 'VAC', 'Vacuum', 'Vacuum'], ['chk', 'CHECK', 'Check what’s left', 'CHECK'], ['opt', 'OPT', 'Optional: if there’s time', 'OPT']];
-  /* always in the sheet's order: DEF, PORTION, VAC, CHECK, OPT */
+  K.KINDS = [['def', 'DEF', 'Defrost', 'Defrost'], ['do', 'DO', 'Has to be made', 'DO'], ['por', 'PORTION', 'Portion', 'Portion'], ['vac', 'VAC', 'Vacuum', 'Vacuum'], ['chk', 'CHECK', 'Check what’s left', 'CHECK'], ['opt', 'OPT', 'Optional: if there’s time', 'OPT']];
+  /* always in the sheet's order: DEF, DO, PORTION, VAC, CHECK, OPT */
   K.kindsOf = (m) => { const have = String((m && m.k) || '').split(','); return K.KINDS.map((x) => x[0]).filter((c) => c && have.includes(c)); };
   K.markKind = (st, id, date) => { const m = K.mark(st, id, date); return m && m.d === 'do' ? K.kindsOf(m) : []; };
   K.kindWords = (ks) => ks.map((c) => K.KINDS.find((x) => x[0] === c)[1]);
@@ -4399,7 +4400,8 @@ window.KOMAT_PART_ART = [
   }
   K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
-    const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
+    let ks = Array.isArray(kind) ? kind : kind ? [kind] : [];
+    if (ks.length === 1 && ks[0] === 'do') ks = [];   /* DO on its own is the big hand-drawn DO below */
     if (ks.length) {
       /* OPT, CHECK, DEF, PORTION, VAC: the same marker strokes and underline as DO, one word under the other */
       s.className = 'domark words n' + Math.min(ks.length, 3) + (draw && !reduced() ? ' draw' : '');
@@ -6602,7 +6604,7 @@ window.KOMAT_PART_ART = [
     let n = 0;
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
       h('div', { class: 'jobs paper ' + K.inkClass(m.ink) + ' ' + K.handClass(K.myHand()), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
-        K.KINDS.filter((x) => x[0]).map((x) => { const on = ks.includes(x[0]); return h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on ? ' on ' + K.handClass(m.hand) + (ui.kindNew === key + x[0] ? ' draw' : '') : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], onclick: () => pick(x[0]) }, x[3] || x[1]); }),
+        K.KINDS.map((x) => { const on = ks.includes(x[0]); return h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on ? ' on ' + K.handClass(m.hand) + (ui.kindNew === key + x[0] ? ' draw' : '') : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], onclick: () => pick(x[0]) }, x[3] || x[1]); }),
         h('button', { type: 'button', style: '--i:' + n++, class: 'job add', 'aria-label': m.c ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(m.c ? 'edit' : 'plus'), m.c ? 'Edit note' : 'Note')),
       noteForm(key, m.c || '', (t) => K.setMark(st, it, { c: t }, date)));
   }

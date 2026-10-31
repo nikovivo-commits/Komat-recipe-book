@@ -143,7 +143,8 @@
   }
   K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
-    const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
+    let ks = Array.isArray(kind) ? kind : kind ? [kind] : [];
+    if (ks.length === 1 && ks[0] === 'do') ks = [];   /* DO on its own is the big hand-drawn DO below */
     if (ks.length) {
       /* OPT, CHECK, DEF, PORTION, VAC: the same marker strokes and underline as DO, one word under the other */
       s.className = 'domark words n' + Math.min(ks.length, 3) + (draw && !reduced() ? ' draw' : '');

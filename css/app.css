@@ -1857,3 +1857,4 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pr-page.full .pr-box.long i { font-size: 8.5pt; }
 .pr-page.full .pr-txt b { font-size: 10pt; }
 .pr-page.full .pr-group h3 { margin-top: 8pt; }
+.jobs.paper .job.add { grid-column: 1 / -1; }
