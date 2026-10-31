@@ -1375,8 +1375,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 /* jobs for a row marked DO: three stickers and a comment, all in view; a picked one is circled in the writer's pen */
 .jobs-wrap { display: grid; gap: 8px; padding: 0 12px 12px 52px; }
-.jobs { display: flex; flex-wrap: wrap; gap: 6px; }
-.job { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 700 .86rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
+.jobs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.jobs .job.add { grid-column: 1 / -1; }
+.jobs.with-done .job.add { grid-column: 1 / 3; }
+.jobs.with-done .job.done { grid-column: 3 / 5; }
+.job { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 700 .86rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
 .job:active { transform: scale(.94); }
 .job.on { border: 2.5px solid var(--pen); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: transparent; color: var(--pen); font: var(--hand-w, 700) 1.2rem/1 var(--hand); transform: rotate(-1.5deg); }
 .job.on:nth-child(2) { transform: rotate(1.2deg); }
@@ -1385,7 +1388,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .job svg { width: 15px; height: 15px; }
 .job.done { flex: 0 0 auto; position: relative; padding: 0 12px; border-color: var(--ready); background: var(--ready); color: var(--ready-ink, #fff); }
 .job.done svg { width: 18px; height: 18px; stroke-width: 2.6; }
-@media (max-width: 480px) { .job-word { display: none; } .job.add, .job.done { width: 42px; padding: 0; } }
 .jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 60ms); }
 .jobs-wrap.fresh { animation: jobsOpen .28s ease-out both; }
 @keyframes jobIn { from { opacity: 0; transform: translateY(-8px) scale(.85); } }
