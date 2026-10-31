@@ -689,5 +689,9 @@ window.KOMAT_TR = {
 "ябълков оцет": "apple vinegar",
 "ягода": "strawberry",
 "яйца": "eggs",
-"яйца на стайна температура": "eggs at room temperature"
+"яйца на стайна температура": "eggs at room temperature",
+"Гома понзу (тахан понзу за гьозите)": "Goma ponzu (tahini ponzu for the gyoza)",
+"атари гома (тахан)": "atari goma (tahini)",
+"сусамово олио": "sesame oil",
+"черен пипер зърна": "black peppercorns"
 };

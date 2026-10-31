@@ -1078,32 +1078,32 @@ window.KOMAT_SEED.recipes = [
   "id": "goma-ponzu",
   "ingredients": [
    {
-    "n": "atari goma (tahini)",
+    "n": "атари гома (тахан)",
     "q": "750",
     "u": "g"
    },
    {
-    "n": "ponzu",
+    "n": "понзу",
     "q": "1",
     "u": "L"
    },
    {
-    "n": "water",
+    "n": "вода",
     "q": "100",
     "u": "ml"
    },
    {
-    "n": "sugar",
+    "n": "захар",
     "q": "70",
     "u": "g"
    },
    {
-    "n": "sesame oil",
+    "n": "сусамово олио",
     "q": "1.25",
     "u": "tbsp"
    }
   ],
-  "name": "Goma ponzu (tahini ponzu for the gyoza)",
+  "name": "Гома понзу (тахан понзу за гьозите)",
   "notes": "Source: Nobu. This is a quarter of the original sheet, which made 3 kg atari goma, 4 L ponzu, 400 ml water, 280 g sugar and 5 tbsp sesame oil. 1.25 tbsp sesame oil is about 19 ml. There is no method on the sheet.",
   "onMenu": true,
   "photo": "",

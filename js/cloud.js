@@ -218,7 +218,7 @@
   /* one-off recipe corrections for the live book: each only touches a recipe still holding the old wording */
   function fixRecipes() {
     /* recipes added to the app after the book went live: each is put in once, only if it is not there, and never again after that */
-    const ADD = [{"allergens": [], "allergensChecked": false, "category": "Sauces & stocks", "components": [], "id": "goma-ponzu", "ingredients": [{"n": "atari goma (tahini)", "q": "750", "u": "g"}, {"n": "ponzu", "q": "1", "u": "L"}, {"n": "water", "q": "100", "u": "ml"}, {"n": "sugar", "q": "70", "u": "g"}, {"n": "sesame oil", "q": "1.25", "u": "tbsp"}], "name": "Goma ponzu (tahini ponzu for the gyoza)", "notes": "Source: Nobu. This is a quarter of the original sheet, which made 3 kg atari goma, 4 L ponzu, 400 ml water, 280 g sugar and 5 tbsp sesame oil. 1.25 tbsp sesame oil is about 19 ml. There is no method on the sheet.", "onMenu": true, "photo": "", "plating": "", "services": ["alacarte"], "station": "hot", "steps": [], "type": "recipe", "updated": 1793462072606, "videos": [], "yieldQty": "", "yieldUnit": ""}];
+    const ADD = [{"allergens": [], "allergensChecked": false, "category": "Sauces & stocks", "components": [], "id": "goma-ponzu", "ingredients": [{"n": "атари гома (тахан)", "q": "750", "u": "g"}, {"n": "понзу", "q": "1", "u": "L"}, {"n": "вода", "q": "100", "u": "ml"}, {"n": "захар", "q": "70", "u": "g"}, {"n": "сусамово олио", "q": "1.25", "u": "tbsp"}], "name": "Гома понзу (тахан понзу за гьозите)", "notes": "Source: Nobu. This is a quarter of the original sheet, which made 3 kg atari goma, 4 L ponzu, 400 ml water, 280 g sugar and 5 tbsp sesame oil. 1.25 tbsp sesame oil is about 19 ml. There is no method on the sheet.", "onMenu": true, "photo": "", "plating": "", "services": ["alacarte"], "station": "hot", "steps": [], "type": "recipe", "updated": 1793462072606, "videos": [], "yieldQty": "", "yieldUnit": ""}];
     /* the gyoza group on the hot list gets its sesame sauce row, once */
     try {
       if (!localStorage.getItem('komat-added-gz3')) {
@@ -233,6 +233,17 @@
             g.items.push({ id: 'gz3', link: 'goma-ponzu', name: 'сусамов сос (гома понзу)' }); hit = true;
           }));
           if (hit) return cl.update({ stations: d.stations });
+        }).catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
+    /* the goma ponzu was first saved in English: put it in the book's Bulgarian so the language switch can translate it */
+    try {
+      if (!localStorage.getItem('komat-bg-goma')) {
+        const gr = K.db.doc('recipes/goma-ponzu');
+        gr.get().then((s) => {
+          try { localStorage.setItem('komat-bg-goma', '1'); } catch (e) { /* ignore */ }
+          const d = s.exists ? s.data() : null;
+          if (d && d.name === 'Goma ponzu (tahini ponzu for the gyoza)') return gr.update({ name: ADD[0].name, ingredients: ADD[0].ingredients });
         }).catch(() => {});
       }
     } catch (e) { /* ignore */ }
