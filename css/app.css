@@ -1662,3 +1662,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .domark.word.n2 span, .domark.word.n3 span { letter-spacing: -.04em; }
 /* what the cook wrote in the DO box, again on the to-do list: same words, same pen */
 .todo-kinds { font-size: 1.45rem; line-height: 1; letter-spacing: .01em; transform: rotate(-1.5deg); margin: 2px 0; }
+/* urgent: circled in marker */
+.urgcircle { position: relative; display: inline-block; padding: 3px 10px; margin: -3px -4px; color: inherit; }
+.urgcircle .loop { position: absolute; inset: -4px -6px; color: var(--pen, var(--urgent)); pointer-events: none; transform: rotate(-.8deg); }
+.urgcircle .loop svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.urgcircle.draw .loop path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .5s cubic-bezier(.4, 0, .6, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .urgcircle.draw .loop path { animation: none; stroke-dashoffset: 0; } }
+.todo-name .urgtag { margin-right: 10px; }
+.todo-name .urgcircle { margin-left: 2px; }

@@ -256,6 +256,19 @@
   /* ---------- to-do rows ---------- */
   /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
      tap the words to add a comment, ! flags it urgent for everyone */
+  /* urgent: the name circled in marker, the way you would on the paper sheet (in the pen of whoever flagged it, else red) */
+  function urgCircle(name, ink) {
+    const s = document.createElement('span');
+    const fresh = ui.urgNew === name;
+    if (fresh) setTimeout(() => { if (ui.urgNew === name) ui.urgNew = null; }, 0);
+    s.className = 'urgcircle ' + (ink ? K.inkClass(ink) : 'ink-red') + (fresh ? ' draw' : '');
+    s.append(name);
+    const v = document.createElement('span');
+    v.className = 'loop'; v.setAttribute('aria-hidden', 'true');
+    v.innerHTML = '<svg viewBox="0 0 200 46" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M24 7C60 2 150 1 186 8c14 3 13 28-6 33-30 6-120 6-160 0C4 38 2 14 22 8c14-4 30-4 46-5"/></svg>';
+    s.append(v);
+    return s;
+  }
   function todoRow(o) {
     const nkey = o.noteKey;
     const done = (btn) => {
@@ -270,7 +283,7 @@
       h('div', { class: 'sw-in' },
         h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
-          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
+          h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.urgent ? urgCircle(o.name, o.urgInk) : o.name),
           o.kinds && o.kinds.length ? h('span', { class: 'tnote todo-kinds ' + K.inkClass(o.kindInk) + ' ' + K.handClass(o.kindHand) }, K.kindWords(o.kinds).join('  ')) : null,
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
@@ -330,9 +343,9 @@
     todoTasks.forEach((d) => {
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
-        name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, noteKey: 'p:' + d._id,
+        name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
         meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task', d.urgent && K.nameOf(d.by) ? 'flagged by ' + K.nameOf(d.by) : ''],
-        onUrgent: () => K.setPrep(st, it, 'need', !d.urgent),
+        onUrgent: () => { if (!d.urgent) ui.urgNew = d.name; K.setPrep(st, it, 'need', !d.urgent); },
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
         onNote: (t) => K.setPrepNote(d._id, t),
@@ -342,9 +355,9 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand,
+        kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
         meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
-        onUrgent: () => K.setMark(st, it, { u: !u }),
+        onUrgent: () => { if (!u) ui.urgNew = it.name; K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
