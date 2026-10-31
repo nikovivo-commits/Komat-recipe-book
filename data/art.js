@@ -7,6 +7,7 @@ window.KOMAT_ART = [
   "cveklo-gaspacho",
   "domaten-sos",
   "dresing-baz",
+  "goma-ponzu",
   "gyozi-salamuriika-staro",
   "gyozi-smes-staro",
   "kazandibi",
