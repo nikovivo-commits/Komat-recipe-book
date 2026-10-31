@@ -116,11 +116,12 @@
   ];
   K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
-    if (kind) {
-      /* OPT and CHECK are written in the cook's own hand */
-      s.className = 'domark word w-' + kind + ' ' + (K.handClass ? K.handClass(hand) : '') + (draw && !reduced() ? ' draw' : '');
+    const ks = Array.isArray(kind) ? kind : kind ? [kind] : [];
+    if (ks.length) {
+      /* OPT, CHECK, DEF, POR, VAC are written in the cook's own hand; several stack in the box */
+      s.className = 'domark word n' + Math.min(ks.length, 3) + (ks.length === 1 ? ' w-' + ks[0] : '') + ' ' + (K.handClass ? K.handClass(hand) : '') + (draw && !reduced() ? ' draw' : '');
       s.setAttribute('aria-hidden', 'true');
-      s.textContent = kind === 'opt' ? 'OPT' : 'CHECK';
+      K.kindWords(ks).forEach((w) => { const b = document.createElement('span'); b.textContent = w; s.append(b); });
       return s;
     }
     s.className = 'domark' + (draw && !reduced() ? ' draw' : '');
@@ -135,7 +136,7 @@
     const s = document.createElement('span');
     s.className = 'donemark' + (draw && !reduced() ? ' draw' : '');
     s.setAttribute('aria-hidden', 'true');
-    s.append(K.doMark(false, kind, hand));
+    s.append(K.doMark(false, K.kindsOf({ k: kind }), hand));
     const x = document.createElement('span');
     x.className = 'strike';
     x.innerHTML = '<svg viewBox="0 0 60 20" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path pathLength="1" d="M2 13.5c12-3.2 28-6.4 56-8.6"/></svg>';

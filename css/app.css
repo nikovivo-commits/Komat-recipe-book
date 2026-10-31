@@ -1377,12 +1377,13 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 /* jobs for a row marked DO: three stickers and a comment, all in view; a picked one is circled in the writer's pen */
 .jobs-wrap { display: grid; gap: 8px; padding: 0 12px 12px 52px; }
-.jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 6px; }
-.jobs .job.add { padding: 0 12px; }
-.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 12px; background: var(--line); }
-.kind { min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: 800 .82rem/1 var(--sans); letter-spacing: .06em; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
+.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 48px; gap: 4px; padding: 4px; border-radius: 14px; background: var(--line); }
+.kind { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 800 .84rem/1 var(--sans); letter-spacing: .06em; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
 .kind:active { transform: scale(.95); }
-.kind[aria-checked="true"] { background: var(--surface); color: var(--pen, var(--ink)); box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .35); }
+.kind[aria-pressed="true"] { background: var(--surface); color: var(--pen, var(--ink)); font: var(--hand-w, 700) 1.2rem/1 var(--hand); letter-spacing: 0; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .35); }
+.kind.add { grid-column: 4; grid-row: 1 / span 2; display: grid; place-items: center; border: 1.5px dashed var(--muted); background: transparent; }
+.kind.add svg { width: 18px; height: 18px; }
+
 .jobs-wrap.fresh .kind { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
 @media (max-width: 400px) { .job-word { display: none; } }
 /* OPT and CHECK in the DO box: the cook's handwriting, written on left to right */
@@ -1660,3 +1661,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mbox.sample .donemark .domark { width: 30px; height: 21px; }
 .mbox.sample.ok { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .donemark.draw .strike path { animation: none; stroke-dashoffset: 0; } }
+/* several words in one box: stacked, smaller */
+.domark.word span { display: block; }
+.domark.word.n2 { font-size: .8rem; line-height: .92; text-align: center; }
+.domark.word.n3 { font-size: .62rem; line-height: .9; text-align: center; }
