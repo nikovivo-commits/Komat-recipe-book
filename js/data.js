@@ -280,7 +280,7 @@
   K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
   /* what is written in a DO box instead of DO: one or more of OPT (optional), CHECK (check what's left),
      DEF (defrost), POR (portion), VAC (vacuum). Nothing picked = DO */
-  K.KINDS = [['', 'DO', 'Has to be made'], ['opt', 'OPT', 'Optional: if there’s time'], ['chk', 'CHECK', 'Check what’s left'], ['def', 'DEF', 'Defrost'], ['por', 'POR', 'Portion'], ['vac', 'VAC', 'Vacuum']];
+  K.KINDS = [['', 'DO', 'Has to be made'], ['opt', 'OPT', 'Optional: if there’s time'], ['chk', 'CHECK', 'Check what’s left'], ['def', 'DEF', 'Defrost', 'Defrost'], ['por', 'PORTION', 'Portion', 'Portion'], ['vac', 'VAC', 'Vacuum', 'Vacuum']];
   K.kindsOf = (m) => String((m && m.k) || '').split(',').filter((c) => c && K.KINDS.some((x) => x[0] === c));
   K.markKind = (st, id, date) => { const m = K.mark(st, id, date); return m && m.d === 'do' ? K.kindsOf(m) : []; };
   K.kindWords = (ks) => ks.map((c) => K.KINDS.find((x) => x[0] === c)[1]);

@@ -1384,29 +1384,21 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 /* jobs for a row marked DO: three stickers and a comment, all in view; a picked one is circled in the writer's pen */
 .jobs-wrap { display: grid; gap: 8px; padding: 0 12px 12px 52px; }
-.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 48px; gap: 4px; padding: 4px; border-radius: 14px; background: var(--line); }
-.kind { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 800 .84rem/1 var(--sans); letter-spacing: .06em; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
-.kind:active { transform: scale(.95); }
-.kind[aria-pressed="true"] { background: var(--surface); color: var(--pen, var(--ink)); font: var(--hand-w, 700) 1.2rem/1 var(--hand); letter-spacing: 0; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .35); }
-.kind.add { grid-column: 4; grid-row: 1 / span 2; display: grid; place-items: center; border: 1.5px dashed var(--muted); background: transparent; }
-.kind.add svg { width: 18px; height: 18px; }
-
-.jobs-wrap.fresh .kind { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
-@media (max-width: 400px) { .job-word { display: none; } }
+.jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
 /* OPT and CHECK in the DO box: the cook's handwriting, written on left to right */
 .domark.word { display: block; width: auto; height: auto; color: currentColor; font: var(--hand-w, 700) 1.15rem/1 var(--hand); white-space: nowrap; letter-spacing: -.01em; transform: rotate(-5deg); }
 .domark.word.draw { animation: wordWrite .45s cubic-bezier(.4, 0, .6, 1) both; }
 @keyframes wordWrite { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% -10% -20% 0); } }
 .mbox.sample .domark.word { font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) { .domark.word.draw { animation: none; } }
-.job { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 700 .86rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
+.job { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 4px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: 700 .9rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
 .job:active { transform: scale(.94); }
 .job.on { border: 2.5px solid var(--pen); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: transparent; color: var(--pen); font: var(--hand-w, 700) 1.2rem/1 var(--hand); transform: rotate(-1.5deg); }
 .job.on:nth-child(2) { transform: rotate(1.2deg); }
 .job.on.draw { animation: jobDraw .38s cubic-bezier(.2, 1.4, .4, 1); }
 .job.add { flex: 0 0 auto; padding: 0 12px; border-style: dashed; }
 .job svg { width: 15px; height: 15px; }
-.jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 40ms); }
 .jobs-wrap.fresh { animation: jobsOpen .28s ease-out both; }
 @keyframes jobIn { from { opacity: 0; transform: translateY(-8px) scale(.85); } }
 @keyframes jobDraw { 0% { transform: scale(.7) rotate(-6deg); opacity: .3; } 60% { transform: scale(1.08) rotate(-1deg); opacity: 1; } 100% { transform: rotate(-1.5deg); } }
@@ -1672,6 +1664,9 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .domark.word span { display: block; }
 .domark.word.n2 { font-size: .8rem; line-height: .92; text-align: center; }
 .domark.word.n3 { font-size: .62rem; line-height: .9; text-align: center; }
+/* PORTION is a long word in a small box */
+.domark.word.w-por { font-size: .72rem; letter-spacing: -.04em; }
+.domark.word.n2 span, .domark.word.n3 span { letter-spacing: -.04em; }
 
 </style>
 <div id="app"></div>
@@ -3430,7 +3425,7 @@ window.KOMAT_PART_ART = [
   K.markNote = (st, id, date) => { const m = K.mark(st, id, date); return (m && m.c) || ''; };
   /* what is written in a DO box instead of DO: one or more of OPT (optional), CHECK (check what's left),
      DEF (defrost), POR (portion), VAC (vacuum). Nothing picked = DO */
-  K.KINDS = [['', 'DO', 'Has to be made'], ['opt', 'OPT', 'Optional: if there’s time'], ['chk', 'CHECK', 'Check what’s left'], ['def', 'DEF', 'Defrost'], ['por', 'POR', 'Portion'], ['vac', 'VAC', 'Vacuum']];
+  K.KINDS = [['', 'DO', 'Has to be made'], ['opt', 'OPT', 'Optional: if there’s time'], ['chk', 'CHECK', 'Check what’s left'], ['def', 'DEF', 'Defrost', 'Defrost'], ['por', 'PORTION', 'Portion', 'Portion'], ['vac', 'VAC', 'Vacuum', 'Vacuum']];
   K.kindsOf = (m) => String((m && m.k) || '').split(',').filter((c) => c && K.KINDS.some((x) => x[0] === c));
   K.markKind = (st, id, date) => { const m = K.mark(st, id, date); return m && m.d === 'do' ? K.kindsOf(m) : []; };
   K.kindWords = (ks) => ks.map((c) => K.KINDS.find((x) => x[0] === c)[1]);
@@ -6234,7 +6229,7 @@ window.KOMAT_PART_ART = [
         items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
       h('div', { class: 'tt-today' }, stamp(K.sday(st), false)),
-      items.length ? h('p', { class: 'hint legend-row tt-today' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.doneMark('', '', false)), ' when it’s ready. Under it, swap DO for OPT, CHECK, DEF, POR or VAC. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+      items.length ? h('p', { class: 'hint legend-row tt-today' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.doneMark('', '', false)), ' when it’s ready. Under it, swap DO for OPT, CHECK, Defrost, Portion or Vacuum. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
     const ckToday = checklist(st, null); ckToday.classList.add('tt-today'); left.append(ckToday);
     left.append(h('div', { class: 'finish tt-today' },
       h('button', { class: 'btn wide', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, K.icon('next'), 'Closing? Write tomorrow’s list')));
@@ -6244,7 +6239,7 @@ window.KOMAT_PART_ART = [
     left.append(h('div', { class: 'block-top tt-tmr', id: 't-plan' }, h('h2', { class: 'block-title' }, 'Tomorrow’s prep list'),
       K.me.admin ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list')) : null),
       h('div', { class: 'tt-tmr' }, stamp(tday, true)),
-      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then write what it needs instead of DO: OPT (optional), CHECK, DEF (defrost), POR (portion), VAC (vacuum), as many as fit. It lands on their to-do list in the morning.'));
+      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then write what it needs instead of DO: OPT (optional), CHECK, DEF (defrost), PORTION or VAC (vacuum), as many as fit. It lands on their to-do list in the morning.'));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -6412,15 +6407,15 @@ window.KOMAT_PART_ART = [
   function jobChips(st, it, day, m, fresh) {
     const key = (day ? 'jt:' : 'jm:') + it.id, ks = K.kindsOf(m), date = day || undefined;
     const pick = (c) => {
-      K.vibrate(10); ui.wrote = it.id;
-      const next = !c ? [] : ks.includes(c) ? ks.filter((x) => x !== c) : ks.concat(c);
+      K.vibrate(10); ui.wrote = it.id; ui.kindNew = key + c;
+      const next = ks.includes(c) ? ks.filter((x) => x !== c) : ks.concat(c);
       K.setMark(st, it, { k: K.KINDS.map((x) => x[0]).filter((x) => next.includes(x)).join(',') }, date);
     };
     let n = 0;
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
-      h('div', { class: 'kinds ' + K.inkClass(m.ink), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
-        K.KINDS.map((x) => { const on = x[0] ? ks.includes(x[0]) : !ks.length; return h('button', { type: 'button', style: '--i:' + n++, class: 'kind' + (on ? ' ' + K.handClass(m.hand) : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], 'aria-label': x[1] + ': ' + x[2], onclick: () => pick(x[0]) }, x[1]); }),
-        h('button', { type: 'button', style: '--i:' + n++, class: 'kind add', 'aria-label': m.c ? 'Edit the comment' : 'Add a comment', title: 'Comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(m.c ? 'edit' : 'plus'))),
+      h('div', { class: 'jobs ' + K.inkClass(m.ink), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
+        K.KINDS.filter((x) => x[0]).map((x) => { const on = ks.includes(x[0]); return h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on ? ' on ' + K.handClass(m.hand) + (ui.kindNew === key + x[0] ? ' draw' : '') : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], onclick: () => pick(x[0]) }, x[3] || x[1]); }),
+        h('button', { type: 'button', style: '--i:' + n++, class: 'job add', 'aria-label': m.c ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(m.c ? 'edit' : 'plus'), m.c ? 'Edit note' : 'Note')),
       noteForm(key, m.c || '', (t) => K.setMark(st, it, { c: t }, date)));
   }
 
