@@ -1744,3 +1744,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tcheck.tbox .domark.words.n3 svg { height: 23px; }
 .mbox .domark.words.n2 svg { height: 18px; }
 .mbox .domark.words.n3 svg { height: 13px; }
+/* every box word is written stroke by stroke, letter after letter, like DO */
+.domark.words.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .14s cubic-bezier(.4, 0, .6, 1) forwards; animation-delay: var(--d, 0s); }
+.domark.words.draw svg + svg path { animation-delay: calc(var(--d, 0s) + .4s); }
+@media (prefers-reduced-motion: reduce) { .domark.words.draw path { animation: none; stroke-dashoffset: 0; } }
+.domark.words.draw svg + svg + svg path { animation-delay: calc(var(--d, 0s) + .8s); }

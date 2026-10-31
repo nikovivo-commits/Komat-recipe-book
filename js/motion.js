@@ -132,11 +132,11 @@
     A: [17, 'M.6 27c2.4-7 4.6-13.8 7.2-20.6', 'M7.8 6.4c2.6 6.8 5 13.8 7.4 20.6', 'M3.8 18.6c3.4-.6 6.8-.6 9.8-.2'],
   };
   function wordSvg(word) {
-    let x = 4, paths = '';
+    let x = 4, n = 0, paths = '';
     word.split('').forEach((ch) => {
       const g = GLYPH[ch];
       if (!g) return;
-      paths += '<g transform="translate(' + x + ' 0)">' + g.slice(1).map((d, i) => '<path pathLength="1" style="--i:' + i + '" d="' + d + '"/>').join('') + '</g>';
+      paths += '<g transform="translate(' + x + ' 0)">' + g.slice(1).map((d) => '<path pathLength="1" style="--d:' + (n++ * 0.07).toFixed(2) + 's" d="' + d + '"/>').join('') + '</g>';
       x += g[0] + 3;
     });
     const w = x + 2;
@@ -147,7 +147,7 @@
     const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
     if (ks.length) {
       /* OPT, CHECK, DEF, PORTION, VAC: the same marker strokes and underline as DO, one word under the other */
-      s.className = 'domark words n' + Math.min(ks.length, 3);
+      s.className = 'domark words n' + Math.min(ks.length, 3) + (draw && !reduced() ? ' draw' : '');
       s.setAttribute('aria-hidden', 'true');
       K.kindWords(ks).forEach((w) => s.insertAdjacentHTML('beforeend', wordSvg(w)));
       return s;
