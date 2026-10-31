@@ -1728,12 +1728,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .todo-name { font-size: 1.3rem; line-height: 1.15; }
 .todo-meta { font-size: .88rem; }
 
-/* urgent: the whole row circled by hand, in the flagger's pen (the old straight red outline and the circle round the name are gone) */
+/* urgent rows: no circling, just the red marker bar, the URGENT tag and the red ! */
 .todo.urgent::after, .todo.repeat::after { display: none; }
-.rowloop { position: absolute; inset: 2px 3px; color: var(--pen, var(--urgent)); pointer-events: none; z-index: 3; transform: rotate(-.3deg); }
-.rowloop svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.rowloop.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .7s cubic-bezier(.4, 0, .6, 1) forwards; }
-@media (prefers-reduced-motion: reduce) { .rowloop.draw path { animation: none; stroke-dashoffset: 0; } }
 
 /* box words drawn like DO: stacked, each as wide as the box allows */
 .domark.words { display: grid; justify-items: center; align-content: center; width: 100%; height: auto; transform: rotate(-3deg); gap: 0; }
@@ -1741,12 +1737,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .domark.words.n1 svg { height: 30px; }
 .domark.words.n2 svg { height: 21px; }
 .domark.words.n3 svg { height: 16px; }
-.domark.words.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .16s cubic-bezier(.4, 0, .6, 1) forwards !important; animation-duration: .16s !important; animation-delay: .05s; }
 .mbox .domark.words { max-width: 100%; }
 .tcheck.tbox .domark.words { width: 100%; }
 .tcheck.tbox .domark.words.n1 svg { height: 44px; }
 .tcheck.tbox .domark.words.n2 svg { height: 31px; }
 .tcheck.tbox .domark.words.n3 svg { height: 23px; }
-@media (prefers-reduced-motion: reduce) { .domark.words.draw path { animation: none !important; stroke-dashoffset: 0; } }
 .mbox .domark.words.n2 svg { height: 18px; }
 .mbox .domark.words.n3 svg { height: 13px; }

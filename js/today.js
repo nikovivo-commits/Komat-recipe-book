@@ -258,16 +258,6 @@
   /* ---------- to-do rows ---------- */
   /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
      tap the words to add a comment, ! flags it urgent for everyone */
-  /* urgent: the whole row circled in marker, the way you would on the paper sheet (in the pen of whoever flagged it, else red) */
-  function urgLoop(name) {
-    const fresh = ui.urgNew === name;
-    if (fresh) setTimeout(() => { if (ui.urgNew === name) ui.urgNew = null; }, 0);
-    const v = document.createElement('span');
-    v.className = 'rowloop' + (fresh ? ' draw' : '');
-    v.setAttribute('aria-hidden', 'true');
-    v.innerHTML = '<svg viewBox="0 0 200 60" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M26 6C70 1 140 0 184 5c13 2 15 40-2 48-34 7-120 6-160 1C5 52 3 14 20 8c10-3 26-4 42-5"/></svg>';
-    return v;
-  }
   function todoRow(o) {
     const nkey = o.note ? o.noteKey : null;   /* no "+ comment" on Today: only a comment written earlier shows, and can be edited */
     const done = (btn) => {
@@ -278,7 +268,6 @@
       K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
     };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent ' + (o.urgInk ? K.inkClass(o.urgInk) : 'ink-red') : '') + (o.kind ? ' ' + o.kind : '') },
-      o.urgent ? urgLoop(o.name) : null,
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
       h('div', { class: 'sw-in' },
         /* the same box as on the sheet: what was written (DO, OPT, DEFROST…), tap it when it is done */
@@ -346,7 +335,7 @@
       rows.push(todoRow({
         name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
         meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task'],
-        onUrgent: () => { if (!d.urgent) ui.urgNew = d.name; K.setPrep(st, it, 'need', !d.urgent); },
+        onUrgent: () => { K.setPrep(st, it, 'need', !d.urgent); },
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
         onNote: (t) => K.setPrepNote(d._id, t),
@@ -358,7 +347,7 @@
         name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
         box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
         meta: [it.group],
-        onUrgent: () => { if (!u) ui.urgNew = it.name; K.setMark(st, it, { u: !u }); },
+        onUrgent: () => { K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
