@@ -130,6 +130,19 @@
     return s;
   };
 
+  /* ready: the word in the box (DO, OPT or CHECK) crossed out with one Sharpie stroke, like on the paper sheet */
+  K.doneMark = function (kind, hand, draw) {
+    const s = document.createElement('span');
+    s.className = 'donemark' + (draw && !reduced() ? ' draw' : '');
+    s.setAttribute('aria-hidden', 'true');
+    s.append(K.doMark(false, kind, hand));
+    const x = document.createElement('span');
+    x.className = 'strike';
+    x.innerHTML = '<svg viewBox="0 0 60 20" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path pathLength="1" d="M2 13.5c12-3.2 28-6.4 56-8.6"/></svg>';
+    s.append(x);
+    return s;
+  };
+
   /* a highlight pill that slides to the chosen button of a group */
   K.placePill = function (pill, btn, animate) {
     if (!pill) return;
