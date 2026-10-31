@@ -1690,3 +1690,15 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .jobs.paper .job.on { border: 2.5px solid var(--pen); background: transparent; color: var(--pen); }
 .jobs.paper .job.add { border-style: dotted; font-size: 1.1rem; }
 .jobs.paper .job.add svg { width: 16px; height: 16px; }
+
+/* to-dos as lines on the sheet: one card, thin dividers, no coloured edges (urgent is circled by hand) */
+.todos { gap: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.todos > .todo, .todos > .todo-wrap > .todo { border: 0; border-radius: 0; }
+.todos > .todo, .todos > .todo-wrap { border-bottom: 1px solid var(--line); }
+.todos > :last-child { border-bottom: 0; }
+.todo > .sw-in, .todo.urgent > .sw-in, .todo.event > .sw-in, .todo.repeat > .sw-in { box-shadow: none; }
+.todo.urgent { border-color: transparent; }
+.todo > .sw-in { grid-template-columns: 58px minmax(0, 1fr) auto; }
+.todo > .sw-in.no-check { grid-template-columns: minmax(0, 1fr) auto; }
+.todos > .todo.urgent { border-bottom-color: var(--line); }
+.todos > :last-child, .todos > .todo.urgent:last-child { border-bottom-color: transparent; }
