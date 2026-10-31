@@ -69,7 +69,7 @@
           h('h1', null, when),
           h('p', null, (t.tasks.length + marked) + ' to do' + (full ? ' · the whole list, so nothing is missed' : '')))),
       h('div', { class: 'pr-sec' }, h('h2', null, full ? 'Prep list' : 'To do', h('span', null, full ? marked + ' marked of ' + (rows - t.tasks.length) : String(rows))),
-        h('div', { class: 'pr-cols' + (three ? ' three' : two ? ' two' : '') },
+        h('div', { class: 'pr-cols' + (three ? ' pr-c3' : two ? ' pr-c2' : '') },
           t.tasks.length ? h('div', { class: 'pr-group tasks' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map(line))) : null,
           groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))),
       h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, (full ? [0, 1, 2] : [0, 1, 2, 3, 4, 5]).map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
