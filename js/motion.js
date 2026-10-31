@@ -114,14 +114,43 @@
     'M35.6 6.8c-6.3.3-9.1 6.7-8.4 12 .7 5.3 4.4 8.6 9.1 7.9 5.2-.8 7.9-6.3 7.1-11.7-.7-4.8-4-8.6-9-7.6-1.6.4-2.8 1.3-3.6 2.4',
     'M4.5 31.2c11.4-1.9 25.5-2.3 41.3-.6',
   ];
+  /* the letters of the box words, one stroke each, drawn like the DO above (y 6 to 27) */
+  const GLYPH = {
+    D: [17, 'M1.5 6.5c-.3 6.8-.1 13.6.2 20.6', 'M.6 7.4c6.4-2.3 13.2.1 14.4 7.3 1.1 6.6-4.1 11.6-13.9 12.6'],
+    O: [18, 'M8.6 6.8c-6.3.3-9.1 6.7-8.4 12 .7 5.3 4.4 8.6 9.1 7.9 5.2-.8 7.9-6.3 7.1-11.7-.7-4.8-4-8.6-9-7.6-1.6.4-2.8 1.3-3.6 2.4'],
+    P: [16, 'M2 27c-.2-7-.3-13.6.1-20.4', 'M1.2 7.2c6.6-1.8 13.2.2 13.2 5.6 0 5.2-5.6 7.4-12.9 6.6'],
+    T: [17, 'M0 7.4c5.4-1 10.8-1.2 16.2-.2', 'M8.2 7.4c-.4 6.4-.2 13.2.2 19.6'],
+    C: [16, 'M14.6 10.2c-2.6-3.8-8.4-4.4-11.6-.8-3.2 3.6-3 10.4.4 14 3.2 3.2 8.8 3 11.4-1.2'],
+    H: [16, 'M2 6.6c.2 6.8.1 13.6-.1 20.4', 'M14 6.4c.2 6.8.2 13.8 0 20.6', 'M2 16.8c4-.6 8-.8 12-.2'],
+    E: [16, 'M2 6.8c-.2 6.8-.1 13.4.1 20.2', 'M2.2 7.2c4-.8 8.2-.8 12.6-.2', 'M2.4 16.4c3.4-.5 6.8-.5 10-.2', 'M2.2 26.8c4.4-.6 8.8-.6 13 0'],
+    F: [15, 'M2 6.8c-.2 6.8-.1 13.4.1 20.2', 'M2.2 7.2c4-.8 8.2-.8 12.6-.2', 'M2.4 16.4c3.4-.5 6.8-.5 10-.2'],
+    K: [16, 'M2 6.6c.2 6.8.1 13.6-.1 20.4', 'M14.6 6.6c-4.2 3.2-8.2 6.2-12.6 9.4', 'M5.6 14.4c3.4 3.6 6.8 8.2 9.4 12.6'],
+    R: [16, 'M2 27c-.2-7-.3-13.6.1-20.4', 'M1.2 7.2c6.6-1.8 13.2.2 13.2 5.6 0 5.2-5.6 7.4-12.9 6.6', 'M7.4 19.6c2.4 2.6 4.6 5 7 7.6'],
+    I: [13, 'M3.6 7c3-.4 6-.4 8.8 0', 'M3.6 26.8c3 .4 6 .4 8.8 0', 'M8 7.2c.2 6.6.1 13.2-.1 19.6'],
+    N: [17, 'M2 27c-.2-7-.3-13.6.1-20.4', 'M2.2 7c4.2 5.8 8.8 12 12 19.8', 'M14.4 26.6c.2-6.6.2-13.4 0-20.2'],
+    V: [17, 'M1 6.6c3.6 6.8 7.2 13.8 7.6 20.4', 'M8.6 27c2.4-7 4.6-13.6 7-20.4'],
+    A: [17, 'M.6 27c2.4-7 4.6-13.8 7.2-20.6', 'M7.8 6.4c2.6 6.8 5 13.8 7.4 20.6', 'M3.8 18.6c3.4-.6 6.8-.6 9.8-.2'],
+  };
+  function wordSvg(word) {
+    let x = 4, paths = '';
+    word.split('').forEach((ch) => {
+      const g = GLYPH[ch];
+      if (!g) return;
+      paths += '<g transform="translate(' + x + ' 0)">' + g.slice(1).map((d, i) => '<path pathLength="1" style="--i:' + i + '" d="' + d + '"/>').join('') + '</g>';
+      x += g[0] + 3;
+    });
+    const w = x + 2;
+    paths += '<path pathLength="1" style="--i:3" d="M3 31.2c' + (w * .28).toFixed(1) + ' -1.9 ' + (w * .6).toFixed(1) + ' -2.3 ' + (w - 6).toFixed(1) + ' -.6"/>';
+    return '<svg viewBox="0 0 ' + w.toFixed(0) + ' 34" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+  }
   K.doMark = function (draw, kind, hand) {
     const s = document.createElement('span');
     const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
     if (ks.length) {
-      /* OPT, CHECK, DEF, POR, VAC are written in the cook's own hand; several stack in the box */
-      s.className = 'domark word n' + Math.min(ks.length, 3) + (ks.length === 1 ? ' w-' + ks[0] : '') + ' ' + (K.handClass ? K.handClass(hand) : '') + (draw && !reduced() ? ' draw' : '');
+      /* OPT, CHECK, DEF, PORTION, VAC: the same marker strokes and underline as DO, one word under the other */
+      s.className = 'domark words n' + Math.min(ks.length, 3) + (draw && !reduced() ? ' draw' : '');
       s.setAttribute('aria-hidden', 'true');
-      K.kindWords(ks).forEach((w) => { const b = document.createElement('span'); b.textContent = w; s.append(b); });
+      K.kindWords(ks).forEach((w) => s.insertAdjacentHTML('beforeend', wordSvg(w)));
       return s;
     }
     s.className = 'domark' + (draw && !reduced() ? ' draw' : '');
