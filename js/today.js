@@ -264,8 +264,17 @@
       K.vibrate(12);
       if (!btn) { o.onDone(); return; }
       btn.classList.add('ticked');
-      if (K.sparks) K.sparks(btn);
-      K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
+      /* one marker line through the whole task (box and name), then the row folds away */
+      const todo = btn.closest('.todo');
+      if (todo && !todo.querySelector('.rowstrike') && !K.reducedMotion()) {
+        const x = document.createElement('span');
+        x.className = 'rowstrike ' + [...btn.classList].filter((c) => c.startsWith('ink-')).join(' ');
+        x.setAttribute('aria-hidden', 'true');
+        x.innerHTML = '<svg viewBox="0 0 300 24" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M4 14c50-6 110-9 160-5 40 3 90 1 132-3"/></svg>';
+        todo.append(x);
+        todo.classList.add('struck');
+      }
+      K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, K.reducedMotion() ? 220 : 520);
     };
     const row = h('div', { class: 'todo' + (o.urgent ? ' urgent ' + (o.urgInk ? K.inkClass(o.urgInk) : 'ink-red') : '') + (o.kind ? ' ' + o.kind : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),

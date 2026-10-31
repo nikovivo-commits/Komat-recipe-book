@@ -1754,3 +1754,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mlink, .gname-link, .mep .mname > :first-child { text-decoration: none; background-image: none; }
 .mrow.ok .mname > :first-child { background-image: linear-gradient(var(--pen), var(--pen)); }
 .domark.draw path:nth-child(4) { display: none; }
+
+/* tap the box on a to-do: one marker line crosses out the whole task, then it folds away */
+.rowstrike { position: absolute; left: 8px; right: 8px; top: 50%; height: 26px; margin-top: -13px; color: var(--pen, var(--ink)); pointer-events: none; z-index: 4; }
+.rowstrike svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rowstrike path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-write .32s cubic-bezier(.4, 0, .6, 1) forwards; }
+.todo.struck .todo-main, .todo.struck .tbox { opacity: .55; transition: opacity .3s ease .15s; }
+.tcheck.tbox.ticked::after { display: none; }
+.tcheck.tbox.written.ticked { border-color: transparent; }
