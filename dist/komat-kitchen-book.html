@@ -4288,7 +4288,6 @@ window.KOMAT_PART_ART = [
       x += g[0] + 3;
     });
     const w = x + 2;
-    paths += '<path pathLength="1" style="--i:3" d="M3 31.2c' + (w * .28).toFixed(1) + ' -1.9 ' + (w * .6).toFixed(1) + ' -2.3 ' + (w - 6).toFixed(1) + ' -.6"/>';
     return '<svg viewBox="0 0 ' + w.toFixed(0) + ' 34" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
   }
   K.doMark = function (draw, kind, hand) {
@@ -4296,7 +4295,7 @@ window.KOMAT_PART_ART = [
     const ks = (Array.isArray(kind) ? kind : kind ? [kind] : []).filter((c) => c !== 'do');
     if (ks.length) {
       /* OPT, CHECK, DEF, PORTION, VAC: the same marker strokes and underline as DO, one word under the other */
-      s.className = 'domark words n' + Math.min(ks.length, 3) + (draw && !reduced() ? ' draw' : '');
+      s.className = 'domark words n' + Math.min(ks.length, 3);
       s.setAttribute('aria-hidden', 'true');
       K.kindWords(ks).forEach((w) => s.insertAdjacentHTML('beforeend', wordSvg(w)));
       return s;
