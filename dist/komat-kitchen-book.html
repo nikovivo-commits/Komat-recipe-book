@@ -1373,7 +1373,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjump .tjt { justify-content: center; min-height: 42px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; white-space: nowrap; }
 .tjump .tjt[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .3); }
 .tjump .tjt b { padding: 1px 6px; border-radius: 6px; background: transparent; color: var(--muted); font-size: .75rem; }
-.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: #fff; }
+.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: var(--apron-ink); }
 @media (max-width: 999px) {
   .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
   .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
@@ -1602,6 +1602,25 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .hand-pixel { --hand: "Press Start 2P", cursive; --hand-w: 400; --hand-s: 0.70rem; }
 .hand-group { display: grid; gap: 6px; }
 .hand-gname { font-size: .74rem; font-weight: 700; color: var(--muted); }
+
+/* ---------- order check list: amount + basket ---------- */
+.stock.buy { grid-template-columns: minmax(0, 1fr) auto; }
+.buy-acts { display: flex; align-items: center; gap: 8px; }
+.buy-qty { display: flex; align-items: stretch; height: 46px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.buy-qty:focus-within { border-color: var(--ink); }
+.buy-in { width: 3.6em; min-width: 0; padding: 0 6px 0 10px; border: 0; background: transparent; color: var(--ink); font: 700 1.05rem/1 var(--sans); text-align: right; outline: none; }
+.buy-unit { min-width: 3em; padding: 0 9px; border: 0; border-left: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: 700 .86rem/1 var(--sans); }
+.buy-go { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 12px; background: var(--apron); color: var(--apron-ink); }
+.buy-go svg { width: 22px; height: 22px; }
+.buy-go:active { transform: scale(.92); }
+.basket .block-title { display: flex; align-items: center; gap: 10px; }
+.basket .block-title svg { flex: none; width: 26px; height: 26px; }
+.basket { margin-top: 18px; }
+.basket-list { display: grid; }
+.basket-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--line); animation: rise .25s ease-out; }
+.basket-row > :first-child { width: 36px; height: 36px; border-radius: 9px; }
+.basket-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 380px) { .stock.buy { grid-template-columns: 1fr; } .buy-acts { justify-content: flex-end; } }
 
 </style>
 <div id="app"></div>
@@ -3261,6 +3280,7 @@ window.KOMAT_PART_ART = [
       return;
     }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
+    if (!map[o.key].u && !depth && g.u) map[o.key].u = g.u;
     const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
     if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
   }
@@ -6581,29 +6601,74 @@ window.KOMAT_PART_ART = [
     const ings = sl.ings;
     const w = h('div', { class: 'wrap page narrow' });
     w.append(h('h1', { class: 'rtitle' }, 'Do you have it for ' + dayWord(S) + '?'),
-      h('p', { class: 'muted' }, sl.toMake.length ? 'The ingredients for tomorrow’s prep list: ' + planLine(sl) + '. Tap Low or Out for what you need.' : 'Bread and the products checked every day.'));
+      h('p', { class: 'muted' }, sl.toMake.length ? 'The ingredients for tomorrow’s prep list: ' + planLine(sl) + '. Write how much you need and tap the basket.' : 'Bread and the products checked every day.'));
     w.append(h('div', { class: 'search small' }, K.icon('search'), h('input', { class: 'search-in', id: 'stockq', type: 'search', enterkeyhint: 'search', placeholder: 'Find a product', value: S.q, 'aria-label': 'Find a product',
       oninput: (e) => { S.q = e.target.value; const l = document.getElementById('stocklist'); if (l) l.replaceWith(rows(ings)); } })));
     w.append(rows(ings));
+    const bk = basket(S, ings);
+    if (bk) w.append(bk);
     w.append(extrasBlock(S));
     return { top: top, body: w, tabs: false, bar: sendBar(S) };
   }
+  /* the unit a product is ordered in: grams are bought by the kilo, millilitres by the litre */
+  const UNITS = ['kg', 'g', 'L', 'pcs', 'box', 'bunch'];
+  const BUY = { g: 'kg', kg: 'kg', ml: 'L', l: 'L', pcs: 'pcs', bunch: 'bunch', tin: 'tin', 'пакет': 'пакет' };
+  const unitOf = (S, k, g) => (S.unit && S.unit[k]) || BUY[String(g.u || '').toLowerCase()] || 'pcs';
   function rows(ings) {
     const S = ui.stock, q = S.q.trim().toLowerCase();
-    const list = ings.filter((g) => !q || g.name.toLowerCase().includes(q) || K.latin(g.name).includes(q));
-    if (!list.length) return h('div', { id: 'stocklist' }, h('p', { class: 'none' }, ings.length ? 'No product matches.' : 'No products in this station’s recipes yet. Use “Something else” below.'));
+    S.unit = S.unit || {};
+    const open = ings.filter((g) => !S.m[g.name.toLowerCase()]);
+    const list = open.filter((g) => !q || g.name.toLowerCase().includes(q) || K.latin(g.name).includes(q));
+    if (!list.length) return h('div', { id: 'stocklist' }, h('p', { class: 'none' }, !ings.length ? 'No products in this station’s recipes yet. Use “Something else” below.' : open.length ? 'No product matches.' : 'Everything is in the basket or covered.'));
     return h('div', { id: 'stocklist', class: 'stocklist' }, list.map((g) => {
-      const k = g.name.toLowerCase(), cur = S.m[k] || { s: 'ok', note: '' };
-      return h('div', { class: 'stock' + (cur.s !== 'ok' ? ' ' + cur.s : '') + (g.flag ? ' flag-' + g.flag : '') },
+      const k = g.name.toLowerCase(), id = 'bq' + ings.indexOf(g);
+      const add = (e) => {
+        const row = e.target.closest('.stock'), inp = row && row.querySelector('input');
+        const v = inp ? inp.value.trim().replace(',', '.') : '';
+        S.m[k] = { s: 'out', note: v ? v + ' ' + unitOf(S, k, g) : '' };
+        K.vibrate(12);
+        toBasket(row, () => K.render());
+      };
+      return h('div', { class: 'stock buy' + (g.flag ? ' flag-' + g.flag : '') },
         h('div', { class: 'stock-name' }, K.produceThumb(g.name), h('span', { class: 'stock-txt' }, h('b', null, g.name), h('span', { class: 'muted' }, g.usedIn.join(', ')))),
-        h('div', { class: 'stock-acts', role: 'group', 'aria-label': g.name }, [['ok', 'Have'], ['low', 'Low'], ['out', 'Out']].map((o) =>
-          h('button', { type: 'button', class: 'sbtn ' + o[0], 'aria-pressed': cur.s === o[0] ? 'true' : 'false', onclick: () => {
-            if (o[0] === 'ok') delete S.m[k]; else S.m[k] = { s: o[0], note: cur.note || '' };
-            K.vibrate(8);
-            K.render();
-          } }, o[1]))),
-        cur.s !== 'ok' ? h('input', { class: 'input small', id: 'sq-' + K.safeId(k), placeholder: 'How much? e.g. 2 kg', enterkeyhint: 'done', 'aria-label': 'Amount of ' + g.name, value: cur.note, oninput: (e) => { S.m[k].note = e.target.value; } }) : null);
+        h('div', { class: 'buy-acts' },
+          h('span', { class: 'buy-qty' },
+            h('input', { class: 'buy-in', id: id, type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '0', enterkeyhint: 'done', 'aria-label': 'How much ' + g.name,
+              onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(e); } } }),
+            h('button', { type: 'button', class: 'buy-unit', title: 'Change the unit', 'aria-label': 'Unit for ' + g.name + ': ' + unitOf(S, k, g) + '. Tap to change',
+              onclick: (e) => { const u = unitOf(S, k, g), l = UNITS.includes(u) ? UNITS : [u].concat(UNITS); S.unit[k] = l[(l.indexOf(u) + 1) % l.length]; e.currentTarget.textContent = S.unit[k]; e.currentTarget.setAttribute('aria-label', 'Unit for ' + g.name + ': ' + S.unit[k] + '. Tap to change'); } }, unitOf(S, k, g))),
+          h('button', { type: 'button', class: 'buy-go', 'aria-label': 'Add ' + g.name + ' to the order', title: 'Add to the order', onclick: add }, K.icon('order'))));
     }));
+  }
+  /* the product's photo flies down into the order button while its row folds away */
+  function toBasket(row, done) {
+    if (!row || K.reducedMotion() || !row.animate) { done(); return; }
+    const pic = row.querySelector('.stock-name > *'), bar = document.querySelector('.btn.primary.wide');
+    if (pic && bar) {
+      const a = pic.getBoundingClientRect(), b = bar.getBoundingClientRect(), fly = pic.cloneNode(true);
+      Object.assign(fly.style, { position: 'fixed', left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', height: a.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none', borderRadius: '12px' });
+      document.body.append(fly);
+      const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      fly.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + dx * 0.5 + 'px,' + (dy * 0.5 - 60) + 'px) scale(.8)', opacity: 1, offset: .55 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.25)', opacity: .2 }],
+        { duration: 520, easing: 'cubic-bezier(.3,.6,.4,1)' }).onfinish = () => { fly.remove(); bar.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' }); };
+    }
+    const h0 = row.offsetHeight;
+    row.style.overflow = 'hidden';
+    row.animate([{ height: h0 + 'px', opacity: 1, transform: 'translateX(0)' }, { height: h0 + 'px', opacity: 0, transform: 'translateX(18%)', offset: .45 }, { height: '0px', opacity: 0, transform: 'translateX(18%)', paddingTop: '0px', paddingBottom: '0px', borderBottomWidth: '0px' }],
+      { duration: 420, easing: 'ease-in-out', fill: 'forwards' }).onfinish = () => setTimeout(done, 120);
+  }
+  function basket(S, ings) {
+    const byKey = {};
+    ings.forEach((g) => { byKey[g.name.toLowerCase()] = g.name; });
+    const ks = Object.keys(S.m);
+    if (!ks.length) return null;
+    return h('section', { class: 'block basket' },
+      h('h2', { class: 'block-title' }, K.icon('order'), 'In the order (' + ks.length + ')'),
+      h('div', { class: 'basket-list' }, ks.map((k) => h('div', { class: 'basket-row' },
+        K.produceThumb(byKey[k] || k),
+        h('b', null, byKey[k] || k),
+        h('span', { class: 'mono muted' }, S.m[k].note || (S.m[k].s === 'low' ? 'running low' : 'out')),
+        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Take ' + (byKey[k] || k) + ' out of the order', title: 'Take it out', onclick: () => { delete S.m[k]; K.render(); } }, K.icon('close'))))));
   }
 
   /* ---------- send ---------- */

@@ -181,6 +181,7 @@
       return;
     }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
+    if (!map[o.key].u && !depth && g.u) map[o.key].u = g.u;
     const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
     if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
   }

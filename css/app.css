@@ -1366,7 +1366,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjump .tjt { justify-content: center; min-height: 42px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; white-space: nowrap; }
 .tjump .tjt[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .3); }
 .tjump .tjt b { padding: 1px 6px; border-radius: 6px; background: transparent; color: var(--muted); font-size: .75rem; }
-.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: #fff; }
+.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: var(--apron-ink); }
 @media (max-width: 999px) {
   .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
   .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
@@ -1595,3 +1595,22 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .hand-pixel { --hand: "Press Start 2P", cursive; --hand-w: 400; --hand-s: 0.70rem; }
 .hand-group { display: grid; gap: 6px; }
 .hand-gname { font-size: .74rem; font-weight: 700; color: var(--muted); }
+
+/* ---------- order check list: amount + basket ---------- */
+.stock.buy { grid-template-columns: minmax(0, 1fr) auto; }
+.buy-acts { display: flex; align-items: center; gap: 8px; }
+.buy-qty { display: flex; align-items: stretch; height: 46px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.buy-qty:focus-within { border-color: var(--ink); }
+.buy-in { width: 3.6em; min-width: 0; padding: 0 6px 0 10px; border: 0; background: transparent; color: var(--ink); font: 700 1.05rem/1 var(--sans); text-align: right; outline: none; }
+.buy-unit { min-width: 3em; padding: 0 9px; border: 0; border-left: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: 700 .86rem/1 var(--sans); }
+.buy-go { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 12px; background: var(--apron); color: var(--apron-ink); }
+.buy-go svg { width: 22px; height: 22px; }
+.buy-go:active { transform: scale(.92); }
+.basket .block-title { display: flex; align-items: center; gap: 10px; }
+.basket .block-title svg { flex: none; width: 26px; height: 26px; }
+.basket { margin-top: 18px; }
+.basket-list { display: grid; }
+.basket-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--line); animation: rise .25s ease-out; }
+.basket-row > :first-child { width: 36px; height: 36px; border-radius: 9px; }
+.basket-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 380px) { .stock.buy { grid-template-columns: 1fr; } .buy-acts { justify-content: flex-end; } }
