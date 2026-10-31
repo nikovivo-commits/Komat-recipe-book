@@ -271,6 +271,7 @@
         h('button', { type: 'button', class: 'tcheck', 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) }, K.icon('check')),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           h('span', { class: 'todo-name' }, o.urgent ? h('span', { class: 'urgtag' }, 'Urgent') : null, o.name),
+          o.kinds && o.kinds.length ? h('span', { class: 'tnote todo-kinds ' + K.inkClass(o.kindInk) + ' ' + K.handClass(o.kindHand) }, K.kindWords(o.kinds).join('  ')) : null,
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -341,7 +342,8 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        meta: [K.markKind(st, it.id).length ? K.markKind(st, it.id).map((c) => K.KINDS.find((x) => x[0] === c)[2]).join(' · ') : '', it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
+        kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand,
+        meta: [it.group, u && K.nameOf(m.by) ? 'flagged by ' + K.nameOf(m.by) : ''],
         onUrgent: () => K.setMark(st, it, { u: !u }),
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),

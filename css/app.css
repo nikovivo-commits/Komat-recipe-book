@@ -1660,3 +1660,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 /* PORTION is a long word in a small box */
 .domark.word.w-por { font-size: .72rem; letter-spacing: -.04em; }
 .domark.word.n2 span, .domark.word.n3 span { letter-spacing: -.04em; }
+/* what the cook wrote in the DO box, again on the to-do list: same words, same pen */
+.todo-kinds { font-size: 1.45rem; line-height: 1; letter-spacing: .01em; transform: rotate(-1.5deg); margin: 2px 0; }
