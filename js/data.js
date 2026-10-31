@@ -209,7 +209,7 @@
   /* what to ask about when ordering: only the ingredients for the rows marked DO on tomorrow's prep list,
      plus products the kitchen rules pin (bread on its days, products checked daily) */
   K.stockList = function (st, day) {
-    day = day || K.day(1);
+    day = day || K.sday(st, 1);
     const map = {}, unlinked = [];
     basics = new Set((K.kitchen().basics || []).map(ordKey));
     const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
@@ -233,7 +233,27 @@
 
   /* ---------- mise en place checklists ---------- */
   K.sections = (st) => (D.checklists && D.checklists.stations && D.checklists.stations[st] && D.checklists.stations[st].sections) || [];
-  K.checkId = (st, date) => (date || K.day(0)) + '_' + st;
+  /* The sheet a station works from. It is not swapped by the clock: today's sheet stays up until the closing
+     cook finishes tomorrow's list (then it goes in the bin and the new one is up at once). If nobody closed
+     yesterday, yesterday's sheet stays up, unless tomorrow's list had already been written for today. */
+  const dayStart = (ds) => K.parseYmd(ds).getTime() + 4 * 3600 * 1000;
+  function sheetOff(st) {
+    const doc = (n) => D.checks[K.day(n) + '_' + st];
+    const closed = (n) => { const d = doc(n); return !!(d && d.closed && d.closed.at); };
+    const written = (n, before) => {
+      const d = doc(n), ok = (t) => !before || (t || 0) < before;
+      if (d && Object.keys(d.marks || {}).some((k) => ok(d.marks[k].t))) return true;
+      if (d && !before && Object.keys(d.extra || {}).some((k) => (d.extra[k] || []).length)) return true;
+      const pre = K.day(n) + '_day_';
+      return Object.keys(D.prep).some((id) => id.startsWith(pre) && D.prep[id].station === st && !/^(evt|auto)-/.test(D.prep[id].key || '') && ok(D.prep[id].leftAt || D.prep[id].at));
+    };
+    if (closed(0)) return 1;
+    if (!closed(-1) && written(-1) && !written(0, dayStart(K.day(0)))) return -1;
+    return 0;
+  }
+  K.sheetOff = sheetOff;
+  K.sday = (st, n) => K.day(sheetOff(st) + (n || 0));
+  K.checkId = (st, date) => (date || K.sday(st)) + '_' + st;
   /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
   K.planningTomorrow = function () {
     const f = K.ui.listFor;
@@ -251,7 +271,7 @@
   };
   /* a row's mark for one day (today by default). Every day starts clean: nothing left open the day before comes back */
   K.mark = function (st, id, date) {
-    const t = D.checks[K.checkId(st, date || K.day(0))], m = t && t.marks && t.marks[id];
+    const t = D.checks[K.checkId(st, date)], m = t && t.marks && t.marks[id];
     if (!m) return null;
     return m.d === 'urg' ? Object.assign({}, m, { d: 'do' }) : m;
   };
@@ -261,7 +281,7 @@
 
   /* patch one row's mark: {d:'do'|'ok'|''} or {u:bool} or {c:'comment'} */
   K.setMark = function (st, it, patch, date) {
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
@@ -283,7 +303,7 @@
   /* patch several rows at once (All ready): [{it, patch}], one write */
   K.setMarks = function (st, list, date) {
     if (!list.length) return Promise.resolve();
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
@@ -308,7 +328,7 @@
     });
   };
   K.addExtra = function (st, gkey, name, date) {
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     const doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     doc.extra = doc.extra || {};
     const list = (doc.extra[gkey] || []).concat([{ id: 'x' + K.uid(), name: name }]);
@@ -317,7 +337,7 @@
   K.removeExtra = function (st, gkey, itemId, date) {
     const doc = D.checks[K.checkId(st, date)];
     if (!doc || !doc.extra) return;
-    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.day(0));
+    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.sday(st));
   };
   function saveExtra(st, gkey, list, day) {
     const id = K.checkId(st, day), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
@@ -331,12 +351,12 @@
   }
   K.closedInfo = (st) => { const d = D.checks[K.checkId(st)]; return d && d.closed && d.closed.at ? d.closed : null; };
   K.setClosed = function (st) {
-    const id = K.checkId(st), doc = D.checks[id] || (D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} });
+    const day = K.sday(st), id = K.checkId(st, day), doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     const c = { at: Date.now(), by: K.me.id || '' };
     doc.closed = c;
     const ref = K.db.doc('checks/' + id);
     return ref.update({ closed: c, at: Date.now() }).catch((e) => (e && e.code === 'invalid_argument'
-      ? ref.set({ date: K.day(0), station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
+      ? ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
   };
   K.saveChecklists = function (n, msg) {
     D.checklists = n;
@@ -348,10 +368,11 @@
   K.prepId = (key, date) => (date || K.day(0)) + '_day_' + K.safeId(key);
   /* status: 'need' | 'done' | '' (removed). it = {key, name, note?} */
   K.setPrep = function (st, it, status, urgent) {
-    const id = K.prepId(it.key), old = D.prep[id];
+    /* event tasks and repeats follow the calendar; everything else is on the station's sheet */
+    const day = /^(evt|auto)-/.test(it.key) ? K.day(0) : K.sday(st), id = K.prepId(it.key, day), old = D.prep[id];
     let u = urgent === undefined ? !!(old && old.urgent) : !!urgent;
     if (status !== 'need') u = false;
-    const body = { date: K.day(0), station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
+    const body = { date: day, station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
     if (old && old.leftBy) { body.leftBy = old.leftBy; body.leftAt = old.leftAt || 0; }
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
     if (nt) { body.note = nt; if (old && old.noteInk && it.note === undefined) { body.noteInk = old.noteInk; if (old.noteHand) body.noteHand = old.noteHand; if (old.noteBy) body.noteBy = old.noteBy; } else if (it.note) { body.noteInk = (K.myInk && K.myInk()) || 'blue'; body.noteHand = (K.myHand && K.myHand()) || 'caveat'; body.noteBy = K.me.id || ''; } }
@@ -384,7 +405,7 @@
   };
   /* today's tasks for a station. Every day starts clean: tasks left open on earlier days don't come back */
   K.dayTasks = function (st) {
-    const out = [], pre = K.day(0) + '_day_';
+    const out = [], pre = K.sday(st) + '_day_';
     Object.keys(D.prep).forEach((id) => {
       const d = D.prep[id];
       if (id.startsWith(pre) && d.station === st && d.status) out.push(Object.assign({ _id: id }, d));
@@ -392,7 +413,7 @@
     return out.sort((a, b) => (a.at || 0) - (b.at || 0));
   };
   K.leaveForTomorrow = function (st, name, urgent, note) {
-    const date = K.day(1), key = 'task-' + K.uid(), id = K.prepId(key, date);
+    const date = K.sday(st, 1), key = 'task-' + K.uid(), id = K.prepId(key, date);
     const body = { date: date, station: st, service: 'day', key: key, name: name, status: 'need', at: Date.now(), by: K.me.id || '', task: true, urgent: !!urgent, leftBy: K.me.id || '', leftAt: Date.now() };
     if (urgent) body.urgentAt = Date.now();
     if (note) body.note = note;
@@ -401,7 +422,7 @@
     return K.db.doc('prep/' + id).set(body).then(() => K.toast('Left for tomorrow on ' + K.ST[st]), (e) => { delete D.prep[id]; K.refresh(true); writeFailed(e); });
   };
   K.tomorrowTasks = function (st) {
-    const pre = K.day(1) + '_day_', out = [];
+    const pre = K.sday(st, 1) + '_day_', out = [];
     Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if (id.startsWith(pre) && d.station === st && d.status === 'need') out.push({ id: id, d: d }); });
     return out.sort((a, b) => (b.d.urgent ? 1 : 0) - (a.d.urgent ? 1 : 0) || (a.d.at || 0) - (b.d.at || 0));
   };
@@ -415,7 +436,7 @@
   /* every urgent thing in the kitchen today, oldest first */
   K.openUrgents = function () {
     const out = [], pre = K.day(0) + '_';
-    Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if (id.startsWith(pre) && d.urgent && d.status === 'need') out.push(Object.assign({ _id: id }, d)); });
+    Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if ((id.startsWith(pre) || id.startsWith(K.sday(d.station) + '_')) && d.urgent && d.status === 'need') out.push(Object.assign({ _id: id }, d)); });
     K.STATIONS.forEach((s) => K.checkItems(s[0]).forEach((it) => {
       if (!K.isUrgent(s[0], it.id)) return;
       const m = K.mark(s[0], it.id) || {};
@@ -569,8 +590,8 @@
       D[into] = m;
       K.refresh();
     }, onErr));
-    coll('checks', [1, 0, -1, -2, -3], 'checks');
-    coll('prep', [0, 1, -1, -2, -3], 'prep');
+    coll('checks', [2, 1, 0, -1, -2, -3], 'checks');
+    coll('prep', [2, 1, 0, -1, -2, -3], 'prep');
     coll('orders', [1, 0, -1, -2], 'orders');
     coll('boards', [1, 0, -1, -2], 'boards');
   }

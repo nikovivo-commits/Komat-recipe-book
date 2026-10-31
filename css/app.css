@@ -1633,3 +1633,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .basket-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 380px) { .stock.buy { grid-template-columns: 1fr; } .buy-acts { justify-content: flex-end; } }
 .finish .btn.wide { white-space: normal; text-align: center; }
+.dl-sheet { margin: 2px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--ready-soft, var(--surface-2)); color: var(--ink); font-size: .84rem; font-weight: 600; }
+.dl-sheet.old { background: var(--todo-soft); }

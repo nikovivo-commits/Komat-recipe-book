@@ -93,11 +93,11 @@
   };
 
   /* closing: today's sheet goes in the bin, then whatever comes next (the lights going off) */
-  K.tossSheet = function (then) {
+  K.tossSheet = function (then, day) {
     if (reduced()) { if (then) then(); return; }
     const back = h('div', { class: 'toss-moment binning', role: 'status' });
     document.body.append(back);
-    binScene(back, (K.sheetDate ? K.sheetDate(K.day(0)) + ': ' : '') + 'today’s sheet goes in the bin', () => { back.classList.add('out'); later(() => back.remove(), 400); if (then) then(); });
+    binScene(back, (K.sheetDate ? K.sheetDate(day || K.day(0)) + ': ' : '') + 'today’s sheet goes in the bin', () => { back.classList.add('out'); later(() => back.remove(), 400); if (then) then(); });
   };
 
   /* the whiteboard is wiped: an eraser sweeps across and the writing smears away */

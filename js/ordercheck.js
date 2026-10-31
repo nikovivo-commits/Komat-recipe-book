@@ -8,7 +8,7 @@
   K.startStock = function (st, closing) {
     const prev = K.orderFor(st), m = {}, extras = [];
     if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
-    ui.stock = { st: st, day: K.day(1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
+    ui.stock = { st: st, day: K.sday(st, 1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
     K.go('stock');
   };
 
@@ -308,10 +308,11 @@
     });
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();
+    const was = K.sday(st);
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) K.tossSheet(() => K.flash('lights-off', 4200));
+      if (S.close) { ui.todayTab = 'today'; K.tossSheet(() => K.flash('lights-off', 4200), was); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });

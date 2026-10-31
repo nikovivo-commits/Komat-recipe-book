@@ -1640,6 +1640,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .basket-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 380px) { .stock.buy { grid-template-columns: 1fr; } .buy-acts { justify-content: flex-end; } }
 .finish .btn.wide { white-space: normal; text-align: center; }
+.dl-sheet { margin: 2px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--ready-soft, var(--surface-2)); color: var(--ink); font-size: .84rem; font-weight: 600; }
+.dl-sheet.old { background: var(--todo-soft); }
 
 </style>
 <div id="app"></div>
@@ -3327,7 +3329,7 @@ window.KOMAT_PART_ART = [
   /* what to ask about when ordering: only the ingredients for the rows marked DO on tomorrow's prep list,
      plus products the kitchen rules pin (bread on its days, products checked daily) */
   K.stockList = function (st, day) {
-    day = day || K.day(1);
+    day = day || K.sday(st, 1);
     const map = {}, unlinked = [];
     basics = new Set((K.kitchen().basics || []).map(ordKey));
     const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
@@ -3351,7 +3353,27 @@ window.KOMAT_PART_ART = [
 
   /* ---------- mise en place checklists ---------- */
   K.sections = (st) => (D.checklists && D.checklists.stations && D.checklists.stations[st] && D.checklists.stations[st].sections) || [];
-  K.checkId = (st, date) => (date || K.day(0)) + '_' + st;
+  /* The sheet a station works from. It is not swapped by the clock: today's sheet stays up until the closing
+     cook finishes tomorrow's list (then it goes in the bin and the new one is up at once). If nobody closed
+     yesterday, yesterday's sheet stays up, unless tomorrow's list had already been written for today. */
+  const dayStart = (ds) => K.parseYmd(ds).getTime() + 4 * 3600 * 1000;
+  function sheetOff(st) {
+    const doc = (n) => D.checks[K.day(n) + '_' + st];
+    const closed = (n) => { const d = doc(n); return !!(d && d.closed && d.closed.at); };
+    const written = (n, before) => {
+      const d = doc(n), ok = (t) => !before || (t || 0) < before;
+      if (d && Object.keys(d.marks || {}).some((k) => ok(d.marks[k].t))) return true;
+      if (d && !before && Object.keys(d.extra || {}).some((k) => (d.extra[k] || []).length)) return true;
+      const pre = K.day(n) + '_day_';
+      return Object.keys(D.prep).some((id) => id.startsWith(pre) && D.prep[id].station === st && !/^(evt|auto)-/.test(D.prep[id].key || '') && ok(D.prep[id].leftAt || D.prep[id].at));
+    };
+    if (closed(0)) return 1;
+    if (!closed(-1) && written(-1) && !written(0, dayStart(K.day(0)))) return -1;
+    return 0;
+  }
+  K.sheetOff = sheetOff;
+  K.sday = (st, n) => K.day(sheetOff(st) + (n || 0));
+  K.checkId = (st, date) => (date || K.sday(st)) + '_' + st;
   /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
   K.planningTomorrow = function () {
     const f = K.ui.listFor;
@@ -3369,7 +3391,7 @@ window.KOMAT_PART_ART = [
   };
   /* a row's mark for one day (today by default). Every day starts clean: nothing left open the day before comes back */
   K.mark = function (st, id, date) {
-    const t = D.checks[K.checkId(st, date || K.day(0))], m = t && t.marks && t.marks[id];
+    const t = D.checks[K.checkId(st, date)], m = t && t.marks && t.marks[id];
     if (!m) return null;
     return m.d === 'urg' ? Object.assign({}, m, { d: 'do' }) : m;
   };
@@ -3379,7 +3401,7 @@ window.KOMAT_PART_ART = [
 
   /* patch one row's mark: {d:'do'|'ok'|''} or {u:bool} or {c:'comment'} */
   K.setMark = function (st, it, patch, date) {
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
@@ -3401,7 +3423,7 @@ window.KOMAT_PART_ART = [
   /* patch several rows at once (All ready): [{it, patch}], one write */
   K.setMarks = function (st, list, date) {
     if (!list.length) return Promise.resolve();
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
@@ -3426,7 +3448,7 @@ window.KOMAT_PART_ART = [
     });
   };
   K.addExtra = function (st, gkey, name, date) {
-    const day = date || K.day(0), id = K.checkId(st, day);
+    const day = date || K.sday(st), id = K.checkId(st, day);
     const doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     doc.extra = doc.extra || {};
     const list = (doc.extra[gkey] || []).concat([{ id: 'x' + K.uid(), name: name }]);
@@ -3435,7 +3457,7 @@ window.KOMAT_PART_ART = [
   K.removeExtra = function (st, gkey, itemId, date) {
     const doc = D.checks[K.checkId(st, date)];
     if (!doc || !doc.extra) return;
-    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.day(0));
+    return saveExtra(st, gkey, (doc.extra[gkey] || []).filter((x) => x.id !== itemId), date || K.sday(st));
   };
   function saveExtra(st, gkey, list, day) {
     const id = K.checkId(st, day), doc = D.checks[id], old = (doc.extra[gkey] || []).slice();
@@ -3449,12 +3471,12 @@ window.KOMAT_PART_ART = [
   }
   K.closedInfo = (st) => { const d = D.checks[K.checkId(st)]; return d && d.closed && d.closed.at ? d.closed : null; };
   K.setClosed = function (st) {
-    const id = K.checkId(st), doc = D.checks[id] || (D.checks[id] = { date: K.day(0), station: st, marks: {}, extra: {} });
+    const day = K.sday(st), id = K.checkId(st, day), doc = D.checks[id] || (D.checks[id] = { date: day, station: st, marks: {}, extra: {} });
     const c = { at: Date.now(), by: K.me.id || '' };
     doc.closed = c;
     const ref = K.db.doc('checks/' + id);
     return ref.update({ closed: c, at: Date.now() }).catch((e) => (e && e.code === 'invalid_argument'
-      ? ref.set({ date: K.day(0), station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
+      ? ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
   };
   K.saveChecklists = function (n, msg) {
     D.checklists = n;
@@ -3466,10 +3488,11 @@ window.KOMAT_PART_ART = [
   K.prepId = (key, date) => (date || K.day(0)) + '_day_' + K.safeId(key);
   /* status: 'need' | 'done' | '' (removed). it = {key, name, note?} */
   K.setPrep = function (st, it, status, urgent) {
-    const id = K.prepId(it.key), old = D.prep[id];
+    /* event tasks and repeats follow the calendar; everything else is on the station's sheet */
+    const day = /^(evt|auto)-/.test(it.key) ? K.day(0) : K.sday(st), id = K.prepId(it.key, day), old = D.prep[id];
     let u = urgent === undefined ? !!(old && old.urgent) : !!urgent;
     if (status !== 'need') u = false;
-    const body = { date: K.day(0), station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
+    const body = { date: day, station: st, service: 'day', key: it.key, name: it.name, status: status, at: Date.now(), by: K.me.id || '', task: true, urgent: u };
     if (old && old.leftBy) { body.leftBy = old.leftBy; body.leftAt = old.leftAt || 0; }
     const nt = it.note !== undefined ? it.note : (old && old.note) || '';
     if (nt) { body.note = nt; if (old && old.noteInk && it.note === undefined) { body.noteInk = old.noteInk; if (old.noteHand) body.noteHand = old.noteHand; if (old.noteBy) body.noteBy = old.noteBy; } else if (it.note) { body.noteInk = (K.myInk && K.myInk()) || 'blue'; body.noteHand = (K.myHand && K.myHand()) || 'caveat'; body.noteBy = K.me.id || ''; } }
@@ -3502,7 +3525,7 @@ window.KOMAT_PART_ART = [
   };
   /* today's tasks for a station. Every day starts clean: tasks left open on earlier days don't come back */
   K.dayTasks = function (st) {
-    const out = [], pre = K.day(0) + '_day_';
+    const out = [], pre = K.sday(st) + '_day_';
     Object.keys(D.prep).forEach((id) => {
       const d = D.prep[id];
       if (id.startsWith(pre) && d.station === st && d.status) out.push(Object.assign({ _id: id }, d));
@@ -3510,7 +3533,7 @@ window.KOMAT_PART_ART = [
     return out.sort((a, b) => (a.at || 0) - (b.at || 0));
   };
   K.leaveForTomorrow = function (st, name, urgent, note) {
-    const date = K.day(1), key = 'task-' + K.uid(), id = K.prepId(key, date);
+    const date = K.sday(st, 1), key = 'task-' + K.uid(), id = K.prepId(key, date);
     const body = { date: date, station: st, service: 'day', key: key, name: name, status: 'need', at: Date.now(), by: K.me.id || '', task: true, urgent: !!urgent, leftBy: K.me.id || '', leftAt: Date.now() };
     if (urgent) body.urgentAt = Date.now();
     if (note) body.note = note;
@@ -3519,7 +3542,7 @@ window.KOMAT_PART_ART = [
     return K.db.doc('prep/' + id).set(body).then(() => K.toast('Left for tomorrow on ' + K.ST[st]), (e) => { delete D.prep[id]; K.refresh(true); writeFailed(e); });
   };
   K.tomorrowTasks = function (st) {
-    const pre = K.day(1) + '_day_', out = [];
+    const pre = K.sday(st, 1) + '_day_', out = [];
     Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if (id.startsWith(pre) && d.station === st && d.status === 'need') out.push({ id: id, d: d }); });
     return out.sort((a, b) => (b.d.urgent ? 1 : 0) - (a.d.urgent ? 1 : 0) || (a.d.at || 0) - (b.d.at || 0));
   };
@@ -3533,7 +3556,7 @@ window.KOMAT_PART_ART = [
   /* every urgent thing in the kitchen today, oldest first */
   K.openUrgents = function () {
     const out = [], pre = K.day(0) + '_';
-    Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if (id.startsWith(pre) && d.urgent && d.status === 'need') out.push(Object.assign({ _id: id }, d)); });
+    Object.keys(D.prep).forEach((id) => { const d = D.prep[id]; if ((id.startsWith(pre) || id.startsWith(K.sday(d.station) + '_')) && d.urgent && d.status === 'need') out.push(Object.assign({ _id: id }, d)); });
     K.STATIONS.forEach((s) => K.checkItems(s[0]).forEach((it) => {
       if (!K.isUrgent(s[0], it.id)) return;
       const m = K.mark(s[0], it.id) || {};
@@ -3687,8 +3710,8 @@ window.KOMAT_PART_ART = [
       D[into] = m;
       K.refresh();
     }, onErr));
-    coll('checks', [1, 0, -1, -2, -3], 'checks');
-    coll('prep', [0, 1, -1, -2, -3], 'prep');
+    coll('checks', [2, 1, 0, -1, -2, -3], 'checks');
+    coll('prep', [2, 1, 0, -1, -2, -3], 'prep');
     coll('orders', [1, 0, -1, -2], 'orders');
     coll('boards', [1, 0, -1, -2], 'boards');
   }
@@ -4238,11 +4261,11 @@ window.KOMAT_PART_ART = [
   };
 
   /* closing: today's sheet goes in the bin, then whatever comes next (the lights going off) */
-  K.tossSheet = function (then) {
+  K.tossSheet = function (then, day) {
     if (reduced()) { if (then) then(); return; }
     const back = h('div', { class: 'toss-moment binning', role: 'status' });
     document.body.append(back);
-    binScene(back, (K.sheetDate ? K.sheetDate(K.day(0)) + ': ' : '') + 'today’s sheet goes in the bin', () => { back.classList.add('out'); later(() => back.remove(), 400); if (then) then(); });
+    binScene(back, (K.sheetDate ? K.sheetDate(day || K.day(0)) + ': ' : '') + 'today’s sheet goes in the bin', () => { back.classList.add('out'); later(() => back.remove(), 400); if (then) then(); });
   };
 
   /* the whiteboard is wiped: an eraser sweeps across and the writing smears away */
@@ -5817,15 +5840,16 @@ window.KOMAT_PART_ART = [
   K.sheetDate = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   /* the kitchen day as one line, 04:00 to 04:00: where now is, when tomorrow's sheet is written,
      and that midnight changes the date on the phone but not the kitchen's day */
-  function dayLine() {
+  function dayLine(st) {
     const km = K.kitchenMinutes(), plan = K.toMinutes(K.kitchen().planFrom) || 21 * 60;
     const pos = (m) => Math.max(0, Math.min(100, (m - 240) / 1440 * 100)) + '%';
-    const d0 = K.sheetDate(K.day(0)), d1 = K.sheetDate(K.day(1)), late = km >= 1440;
+    const d0 = K.sheetDate(K.day(0)), late = km >= 1440, off = st ? K.sheetOff(st) : 0;
     const hm = (m) => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
     return h('section', { class: 'dayline', 'aria-label': 'The kitchen day: ' + d0 + ', 04:00 to 04:00. Now ' + hm(km) + '.' },
       h('div', { class: 'dl-head' },
         h('span', null, 'Kitchen day ', h('b', null, d0)),
         late ? h('span', { class: 'dl-late' }, 'After midnight: still ' + d0 + ' until 04:00') : h('span', { class: 'muted' }, '04:00 → 04:00')),
+      off ? h('p', { class: 'dl-sheet' + (off < 0 ? ' old' : '') }, off > 0 ? 'Closing is done: ' + K.sheetDate(K.sday(st)) + '’s sheet is up.' : 'Nobody closed yet, so ' + K.sheetDate(K.sday(st)) + '’s sheet stays up until someone writes the next one.') : null,
       h('div', { class: 'dl-bar', 'aria-hidden': 'true' },
         h('span', { class: 'dl-day', style: { width: pos(plan) } }),
         h('span', { class: 'dl-plan', style: { left: pos(plan), width: 'calc(100% - ' + pos(plan) + ')' } }),
@@ -5842,7 +5866,7 @@ window.KOMAT_PART_ART = [
     return h('div', { class: 'daystamp' + (writing ? ' next' : '') },
       h('span', { class: 'ds-k' }, writing ? 'Tomorrow’s sheet · you are writing it' : 'Today’s sheet'),
       h('b', { class: 'ds-d' }, K.sheetDate(ds)),
-      h('span', { class: 'ds-t' }, writing ? 'For the next shift, from 04:00. Today’s sheet goes in the bin.' : 'From 04:00 until ' + at + '. At ' + at + ' you write tomorrow’s.'));
+      h('span', { class: 'ds-t' }, writing ? 'For the next shift. When you finish, today’s sheet goes in the bin and this one goes up.' : 'Stays up until closing. From ' + at + ' you write tomorrow’s, and it takes over when you finish.'));
   }
   K.SHEETS.ready = function (S) {
     const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
@@ -6087,13 +6111,13 @@ window.KOMAT_PART_ART = [
     const nNotes = K.tomorrowTasks(st).length;
 
     /* two tabs: what to do today, and tomorrow's list being written. After closing time it opens on Tomorrow */
-    const tab = ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow()) ? 'tmr' : 'today';
+    const tab = ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow() && K.sheetOff(st) < 1) ? 'tmr' : 'today';
     const setTab = (t) => { ui.todayTab = t; ui.addTo = null; ui.noteFor = null; K.render(); };
-    const tday = K.day(1), nTmr = K.checkItems(st, tday).filter((it) => K.markState(st, it.id, tday) === 'do').length;
+    const tday = K.sday(st, 1), nTmr = K.checkItems(st, tday).filter((it) => K.markState(st, it.id, tday) === 'do').length;
     const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
       h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
-    w.append(dayLine());
+    w.append(dayLine(st));
     w.append(h('nav', { class: 'tjump two', 'aria-label': 'Today or tomorrow' },
       tabBtn('today', 'check', 'Today', (todoN ? todoN + ' to do' : 'All done') + ' · ' + ready + '/' + items.length + ' ready', todoN > 0),
       tabBtn('tmr', 'note', 'Tomorrow', nTmr ? nTmr + ' to make' + (nNotes ? ' · ' + nNotes + (nNotes === 1 ? ' note' : ' notes') : '') : 'Write the prep list')));
@@ -6108,7 +6132,7 @@ window.KOMAT_PART_ART = [
     /* ===== Today ===== */
     const todo = h('section', { class: 'block tt-today', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
-    todo.append(stamp(K.day(0), false));
+    todo.append(stamp(K.sday(st), false));
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
@@ -6145,14 +6169,14 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, d.name),
           h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     }
-    todo.append(h('p', { class: 'freshfoot' }, K.icon('sun'), 'A fresh list every morning. Nothing carries over.'));
+    todo.append(h('p', { class: 'freshfoot' }, K.icon('sun'), 'This list stays until closing, when tomorrow’s takes over.'));
     left.append(todo);
 
     left.append(h('div', { class: 'block-top tt-today', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
       h('div', { class: 'btns' },
         items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      h('div', { class: 'tt-today' }, stamp(K.day(0), false)),
+      h('div', { class: 'tt-today' }, stamp(K.sday(st), false)),
       items.length ? h('p', { class: 'hint legend-row tt-today' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
     const ckToday = checklist(st, null); ckToday.classList.add('tt-today'); left.append(ckToday);
     left.append(h('div', { class: 'finish tt-today' },
@@ -6352,7 +6376,7 @@ window.KOMAT_PART_ART = [
   function tomorrowBlock(st) {
     const list = K.tomorrowTasks(st);
     return h('section', { class: 'block card tmr tt-tmr', id: 't-tmr' },
-      h('h2', { class: 'block-title' }, 'Notes for tomorrow'), stamp(K.day(1), true),
+      h('h2', { class: 'block-title' }, 'Notes for tomorrow'), stamp(K.sday(st, 1), true),
       h('p', { class: 'hint' }, 'Leave a note for whoever is on ' + K.ST[st] + ' tomorrow. It lands on their to-do list.'),
       list.length ? h('div', { class: 'todos' }, list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
         h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
@@ -6424,7 +6448,7 @@ window.KOMAT_PART_ART = [
   K.startStock = function (st, closing) {
     const prev = K.orderFor(st), m = {}, extras = [];
     if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
-    ui.stock = { st: st, day: K.day(1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
+    ui.stock = { st: st, day: K.sday(st, 1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
     K.go('stock');
   };
 
@@ -6724,10 +6748,11 @@ window.KOMAT_PART_ART = [
     });
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();
+    const was = K.sday(st);
     K.sendOrder(st, items, S.close).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) K.tossSheet(() => K.flash('lights-off', 4200));
+      if (S.close) { ui.todayTab = 'today'; K.tossSheet(() => K.flash('lights-off', 4200), was); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
