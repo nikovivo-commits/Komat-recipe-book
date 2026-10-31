@@ -557,7 +557,9 @@
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
       h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
         JOBS.map((j, i) => h('button', { type: 'button', style: '--i:' + i, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
-        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), 'Comment')),
+        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-label': sp.free ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), h('span', { class: 'job-word' }, 'Comment')),
+        /* today's list only: done, straight from the row */
+        day ? null : h('button', { type: 'button', style: '--i:' + (JOBS.length + 1), class: 'job done', 'aria-label': 'Done: ' + it.name, title: 'Done', onclick: (e) => { K.vibrate(12); if (K.sparks) K.sparks(e.currentTarget); markReady(st, it); } }, K.icon('check'), h('span', { class: 'job-word' }, 'Done'))),
       noteForm(key, sp.free, (t) => save(sp.jobs.concat(t ? [t] : []))));
   }
 

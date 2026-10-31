@@ -1390,6 +1390,9 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .job.on.draw { animation: jobDraw .38s cubic-bezier(.2, 1.4, .4, 1); }
 .job.add { flex: 0 0 auto; padding: 0 12px; border-style: dashed; }
 .job svg { width: 15px; height: 15px; }
+.job.done { flex: 0 0 auto; position: relative; padding: 0 12px; border-color: var(--ready); background: var(--ready); color: var(--ready-ink, #fff); }
+.job.done svg { width: 18px; height: 18px; stroke-width: 2.6; }
+@media (max-width: 480px) { .job-word { display: none; } .job.add, .job.done { width: 42px; padding: 0; } }
 .jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 60ms); }
 .jobs-wrap.fresh { animation: jobsOpen .28s ease-out both; }
 @keyframes jobIn { from { opacity: 0; transform: translateY(-8px) scale(.85); } }
@@ -6368,7 +6371,9 @@ window.KOMAT_PART_ART = [
     return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
       h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
         JOBS.map((j, i) => h('button', { type: 'button', style: '--i:' + i, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
-        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), 'Comment')),
+        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-label': sp.free ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), h('span', { class: 'job-word' }, 'Comment')),
+        /* today's list only: done, straight from the row */
+        day ? null : h('button', { type: 'button', style: '--i:' + (JOBS.length + 1), class: 'job done', 'aria-label': 'Done: ' + it.name, title: 'Done', onclick: (e) => { K.vibrate(12); if (K.sparks) K.sparks(e.currentTarget); markReady(st, it); } }, K.icon('check'), h('span', { class: 'job-word' }, 'Done'))),
       noteForm(key, sp.free, (t) => save(sp.jobs.concat(t ? [t] : []))));
   }
 
