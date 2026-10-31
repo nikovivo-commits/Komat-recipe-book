@@ -1858,3 +1858,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pr-page.full .pr-txt b { font-size: 10pt; }
 .pr-page.full .pr-group h3 { margin-top: 8pt; }
 .jobs.paper .job.add { grid-column: 1 / -1; }
+/* always one A4 page per station: very long lists get a third column and are scaled to fit */
+.pr-cols.three { column-count: 3; column-gap: 16pt; }
+@media print { .pr-page { break-inside: avoid; } .pr-fit { width: 182mm; overflow: hidden; break-inside: avoid; } .pr-fit + .pr-fit, .pr-page + .pr-fit, .pr-fit + .pr-page { break-before: page; } }
+.pr-group.tasks { break-inside: auto; }

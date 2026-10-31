@@ -59,7 +59,7 @@
   }
   function page(st, n, full) {
     const t = K.todoFor(st, n), marked = t.count - t.tasks.length;
-    const groups = full ? t.all : t.groups, rows = t.tasks.length + groups.reduce((a, g) => a + g.items.length, 0), two = rows > 14;
+    const groups = full ? t.all : t.groups, rows = t.tasks.length + groups.reduce((a, g) => a + g.items.length, 0), two = rows > 14, three = rows > 46;
     const when = K.prettyDate(t.sheet, { weekday: 'long', day: 'numeric', month: 'long' });
     return h('section', { class: 'pr-page' + (full ? ' full' : '') },
       h('header', { class: 'pr-head' },
@@ -69,13 +69,38 @@
           h('h1', null, when),
           h('p', null, (t.tasks.length + marked) + ' to do' + (full ? ' · the whole list, so nothing is missed' : '')))),
       h('div', { class: 'pr-sec' }, h('h2', null, full ? 'Prep list' : 'To do', h('span', null, full ? marked + ' marked of ' + (rows - t.tasks.length) : String(rows))),
-        h('div', { class: 'pr-cols' + (two ? ' two' : '') },
-          t.tasks.length ? h('div', { class: 'pr-group' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map(line))) : null,
+        h('div', { class: 'pr-cols' + (three ? ' three' : two ? ' two' : '') },
+          t.tasks.length ? h('div', { class: 'pr-group tasks' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map(line))) : null,
           groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))),
       h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, (full ? [0, 1, 2] : [0, 1, 2, 3, 4, 5]).map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
       h('footer', { class: 'pr-foot' },
         h('span', null, 'Cross out the box when it’s done, then in the app.'),
         h('span', null, 'Komat · ' + K.ST[st] + ' · printed ' + K.prettyDate(K.ymd(new Date()), { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + K.hm(Date.now()))));
+  }
+  /* one station, one A4 page, however long the list: lay each page out wider and scale it down until it fits the paper */
+  function fitOnePage(sheet) {
+    const mm = (v) => v * 96 / 25.4, W = mm(182), H = mm(264);
+    sheet.style.cssText = 'display:block;position:fixed;left:-10000px;top:0;visibility:hidden;width:' + W + 'px';
+    Array.from(sheet.querySelectorAll('.pr-page')).forEach((pg) => {
+      let sc = 1;
+      pg.style.width = W + 'px';
+      if (pg.offsetHeight > H) {
+        for (sc = 0.95; sc > 0.4; sc -= 0.03) {
+          pg.style.width = (W / sc) + 'px';
+          if (pg.offsetHeight * sc <= H) break;
+        }
+      }
+      if (sc < 1) {
+        pg.style.transform = 'scale(' + sc.toFixed(3) + ')';
+        pg.style.transformOrigin = '0 0';
+        const fit = document.createElement('div');
+        fit.className = 'pr-fit';
+        fit.style.height = H + 'px';
+        pg.replaceWith(fit);
+        fit.append(pg);
+      } else pg.style.width = '';
+    });
+    sheet.style.cssText = '';
   }
   K.printTodos = function (n, sts, full) {
     const old = document.getElementById('printsheet');
@@ -84,7 +109,7 @@
     document.body.append(sheet);
     /* print once the logo has loaded, so it is on the paper */
     Promise.all(Array.from(sheet.querySelectorAll('img')).map((im) => (im.complete ? null : new Promise((r) => { im.onload = r; im.onerror = r; }))))
-      .then(() => setTimeout(() => window.print(), 30));
+      .then(() => { fitOnePage(sheet); setTimeout(() => window.print(), 30); });
   };
   window.addEventListener('afterprint', () => { const s = document.getElementById('printsheet'); if (s) s.remove(); });
 
