@@ -450,7 +450,8 @@
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
         note ? noteEl(note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
-      h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
+      h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!'),
+      s === 'ok' ? readyStrike(pop) : null));
     const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
       left: s === 'do' ? null : { run: () => { ui.wrote = it.id; ui.openRow = it.id; K.setMark(st, it, { d: 'do', k: '' }); } },
@@ -459,6 +460,12 @@
     return s === 'do' && ui.openRow === it.id ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
+  /* ready: one marker line through the box word and the name together */
+  function readyStrike(draw) {
+    const x = h('span', { class: 'rowstrike ready' + (draw ? '' : ' still'), 'aria-hidden': 'true' });
+    x.innerHTML = '<svg viewBox="0 0 300 24" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M4 14c50-6 110-9 160-5 40 3 90 1 132-3"/></svg>';
+    return x;
+  }
   function allReady(st, items, btn) {
     if (!items.length) return;
     const group = btn.closest('.mep-group'), boxes = group ? Array.from(group.querySelectorAll('.mrow:not(.ok) .mbox')) : [];

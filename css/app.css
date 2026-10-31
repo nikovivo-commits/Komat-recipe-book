@@ -1837,3 +1837,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .finish-note { margin: 0; color: var(--muted); font-size: .84rem; text-align: center; }
 @media (min-width: 1000px) { .today .today-grid { grid-template-columns: minmax(0, 1fr); max-width: 760px; } }
 .pr-box.long i { font-size: 10.5pt; letter-spacing: -.02em; }
+/* ready on the prep list: a single line through box and name (no separate strikes) */
+.mrow .sw-in { position: relative; }
+.mrow.ok .mname > :first-child { background-image: none !important; }
+.mrow.ok .donemark .strike { display: none; }
+.mrow.ok .donemark { opacity: .7; }
+.rowstrike.ready { left: 4px; right: 52px; z-index: 2; }
+.rowstrike.ready.still path { animation: none; stroke-dashoffset: 0; }
