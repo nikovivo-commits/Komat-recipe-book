@@ -296,19 +296,21 @@
     const evTodo = K.eventTasksToday(st).filter((k) => K.evTaskStatus(k.key) !== 'done');
     const reps = K.repeatsToday(st).filter((x) => !x.done);
     const todoN = doItems.length + todoTasks.length + evTodo.length + reps.length;
+    const nNotes = K.tomorrowTasks(st).length;
 
     /* phones: a sticky bar to jump between the parts of the page */
     const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
     /* one list at a time on a phone: To do, Mise en place or Tomorrow (all of them side by side on wide screens) */
     const tab = ui.todayTab || 'todo';
     const setTab = (t) => { ui.todayTab = t; K.render(); };
-    const tabBtn = (id, label, n) => h('button', { type: 'button', class: 'tjt', 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) }, label, n != null ? h('b', { class: 'mono' }, n) : null);
+    const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
+      h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
     w.append(dayLine());
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Today’s lists' },
-      tabBtn('todo', 'To do', String(todoN)),
-      tabBtn('mep', 'Mise en place', ready + '/' + items.length),
-      tabBtn('tmr', 'Tomorrow', null)));
+      tabBtn('todo', 'check', 'To do', todoN ? todoN + ' left' : 'All done', todoN > 0),
+      tabBtn('mep', 'list', 'Prep list', K.planningTomorrow() ? 'Tomorrow’s list' : ready + ' of ' + items.length + ' ready'),
+      tabBtn('tmr', 'note', 'Notes', nNotes ? nNotes + ' for tomorrow' : 'For tomorrow')));
     if (feat) w.append(h('div', { class: 'tt-todo' }, tonightCard(feat)));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);

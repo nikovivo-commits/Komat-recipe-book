@@ -1372,8 +1372,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjump { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--line); overflow: visible; }
 .tjump .tjt { justify-content: center; min-height: 42px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; white-space: nowrap; }
 .tjump .tjt[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .3); }
-.tjump .tjt b { padding: 1px 6px; border-radius: 6px; background: transparent; color: var(--muted); font-size: .75rem; }
-.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: var(--apron-ink); }
+.tjump .tjt { flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 6px 4px; }
+.tjt-top { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.tjt-top span { overflow: hidden; text-overflow: ellipsis; }
+.tjt-top svg { flex: none; width: 17px; height: 17px; }
+.tjt-sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: .72rem; font-weight: 600; }
+.tjump .tjt.hot .tjt-sub { color: var(--urgent); font-weight: 800; }
 @media (max-width: 999px) {
   .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
   .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
@@ -6065,19 +6069,21 @@ window.KOMAT_PART_ART = [
     const evTodo = K.eventTasksToday(st).filter((k) => K.evTaskStatus(k.key) !== 'done');
     const reps = K.repeatsToday(st).filter((x) => !x.done);
     const todoN = doItems.length + todoTasks.length + evTodo.length + reps.length;
+    const nNotes = K.tomorrowTasks(st).length;
 
     /* phones: a sticky bar to jump between the parts of the page */
     const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
     /* one list at a time on a phone: To do, Mise en place or Tomorrow (all of them side by side on wide screens) */
     const tab = ui.todayTab || 'todo';
     const setTab = (t) => { ui.todayTab = t; K.render(); };
-    const tabBtn = (id, label, n) => h('button', { type: 'button', class: 'tjt', 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) }, label, n != null ? h('b', { class: 'mono' }, n) : null);
+    const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
+      h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
     w.append(dayLine());
     w.append(h('nav', { class: 'tjump', 'aria-label': 'Today’s lists' },
-      tabBtn('todo', 'To do', String(todoN)),
-      tabBtn('mep', 'Mise en place', ready + '/' + items.length),
-      tabBtn('tmr', 'Tomorrow', null)));
+      tabBtn('todo', 'check', 'To do', todoN ? todoN + ' left' : 'All done', todoN > 0),
+      tabBtn('mep', 'list', 'Prep list', K.planningTomorrow() ? 'Tomorrow’s list' : ready + ' of ' + items.length + ' ready'),
+      tabBtn('tmr', 'note', 'Notes', nNotes ? nNotes + ' for tomorrow' : 'For tomorrow')));
     if (feat) w.append(h('div', { class: 'tt-todo' }, tonightCard(feat)));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);

@@ -1365,8 +1365,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjump { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--line); overflow: visible; }
 .tjump .tjt { justify-content: center; min-height: 42px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; white-space: nowrap; }
 .tjump .tjt[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px -3px rgba(0, 0, 0, .3); }
-.tjump .tjt b { padding: 1px 6px; border-radius: 6px; background: transparent; color: var(--muted); font-size: .75rem; }
-.tjump .tjt[aria-pressed="true"]:first-child b { background: var(--apron); color: var(--apron-ink); }
+.tjump .tjt { flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 6px 4px; }
+.tjt-top { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.tjt-top span { overflow: hidden; text-overflow: ellipsis; }
+.tjt-top svg { flex: none; width: 17px; height: 17px; }
+.tjt-sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: .72rem; font-weight: 600; }
+.tjump .tjt.hot .tjt-sub { color: var(--urgent); font-weight: 800; }
 @media (max-width: 999px) {
   .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
   .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
