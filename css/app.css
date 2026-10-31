@@ -1844,3 +1844,16 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mrow.ok .donemark { opacity: .7; }
 .rowstrike.ready { left: 4px; right: 52px; z-index: 2; }
 .rowstrike.ready.still path { animation: none; stroke-dashoffset: 0; }
+.pr-sec li.done .pr-box { position: relative; }
+.pr-sec li.done .pr-box::after { content: ""; position: absolute; left: -3pt; right: -3pt; top: 50%; height: 1.6pt; background: #000; transform: rotate(-8deg); }
+.pr-sec li.done .pr-txt b { text-decoration: line-through; text-decoration-thickness: 1.2pt; color: #555; }
+/* the whole list on one page: tighter lines */
+.pr-page.full .pr-sec { margin-top: 12pt; }
+.pr-page.full .pr-sec li { min-height: 21pt; padding-block: 2pt; grid-template-columns: 38pt minmax(0, 1fr); gap: 8pt; }
+.pr-page.full .pr-box { width: 38pt; height: 19pt; }
+.pr-page.full .pr-box i { font-size: 12pt; }
+.pr-page.full .pr-box.w2 i { font-size: 8pt; }
+.pr-page.full .pr-box.w3 i { font-size: 6.5pt; }
+.pr-page.full .pr-box.long i { font-size: 8.5pt; }
+.pr-page.full .pr-txt b { font-size: 10pt; }
+.pr-page.full .pr-group h3 { margin-top: 8pt; }

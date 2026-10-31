@@ -35,7 +35,14 @@
       byName[it.group].items.push({ name: it.name, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand });
     });
     groups.forEach((g) => g.items.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)));
-    return { sheet: sheet, tasks: tasks, groups: groups, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
+    /* the whole prep list, in the list's own order: marked rows carry their words, ready rows are struck */
+    const all = [], allBy = {};
+    K.checkItems(st, date).forEach((it) => {
+      const m = K.mark(st, it.id, date) || {}, state = K.markState(st, it.id, date);
+      if (!allBy[it.group]) all.push(allBy[it.group] = { name: it.group, items: [] });
+      allBy[it.group].items.push({ name: it.name, note: m.c || '', urgent: K.isUrgent(st, it.id, date), written: state === 'do' || state === 'ok', done: state === 'ok', words: K.kindWords(K.kindsOf(m)), hand: m.hand });
+    });
+    return { sheet: sheet, tasks: tasks, groups: groups, all: all, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
   };
 
   /* ---------- the paper ----------
@@ -46,33 +53,34 @@
     return h('span', { class: 'pr-box' + (words.length ? ' w' + Math.min(words.length, 3) + (words.length === 1 && words[0].length > 4 ? ' long' : '') + ' ' + K.handClass(x.hand) : ''), 'aria-hidden': 'true' }, words.map((w) => h('i', null, w)));
   }
   function line(x) {
-    return h('li', { class: x.urgent ? 'urg' : null }, box(x),
+    return h('li', { class: (x.urgent && !x.done ? 'urg' : '') + (x.done ? ' done' : '') }, box(x),
       h('span', { class: 'pr-txt' }, x.urgent ? h('em', null, 'Urgent') : null, h('b', null, x.name),
         x.note ? h('span', { class: 'pr-note' }, x.note) : null, x.meta ? h('span', { class: 'pr-meta' }, x.meta) : null));
   }
-  function page(st, n) {
-    const t = K.todoFor(st, n), rows = t.count, two = rows > 14;
+  function page(st, n, full) {
+    const t = K.todoFor(st, n), marked = t.count - t.tasks.length;
+    const groups = full ? t.all : t.groups, rows = t.tasks.length + groups.reduce((a, g) => a + g.items.length, 0), two = rows > 14;
     const when = K.prettyDate(t.sheet, { weekday: 'long', day: 'numeric', month: 'long' });
-    return h('section', { class: 'pr-page' },
+    return h('section', { class: 'pr-page' + (full ? ' full' : '') },
       h('header', { class: 'pr-head' },
         h('img', { class: 'pr-logo', src: 'assets/brand/logo-black.png', alt: 'Komat' }),
         h('div', { class: 'pr-title' },
           h('span', { class: 'pr-kicker' }, K.ST[st] + ' · ' + (n ? 'Tomorrow’s sheet' : 'Today’s sheet')),
           h('h1', null, when),
-          h('p', null, rows ? rows + (rows === 1 ? ' thing' : ' things') + ' to do' : 'Nothing on the list yet'))),
-      h('div', { class: 'pr-sec' }, h('h2', null, 'To do', h('span', null, String(rows))),
+          h('p', null, (t.tasks.length + marked) + ' to do' + (full ? ' · the whole list, so nothing is missed' : '')))),
+      h('div', { class: 'pr-sec' }, h('h2', null, full ? 'Prep list' : 'To do', h('span', null, full ? marked + ' marked of ' + (rows - t.tasks.length) : String(rows))),
         h('div', { class: 'pr-cols' + (two ? ' two' : '') },
           t.tasks.length ? h('div', { class: 'pr-group' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map(line))) : null,
-          t.groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))),
-      h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, [0, 1, 2, 3, 4, 5].map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
+          groups.map((g) => h('div', { class: 'pr-group' }, h('h3', null, g.name), h('ul', null, g.items.map(line)))))),
+      h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, (full ? [0, 1, 2] : [0, 1, 2, 3, 4, 5]).map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
       h('footer', { class: 'pr-foot' },
         h('span', null, 'Cross out the box when it’s done, then in the app.'),
         h('span', null, 'Komat · ' + K.ST[st] + ' · printed ' + K.prettyDate(K.ymd(new Date()), { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + K.hm(Date.now()))));
   }
-  K.printTodos = function (n, sts) {
+  K.printTodos = function (n, sts, full) {
     const old = document.getElementById('printsheet');
     if (old) old.remove();
-    const sheet = h('div', { id: 'printsheet', 'aria-hidden': 'true' }, sts.map((st) => page(st, n)));
+    const sheet = h('div', { id: 'printsheet', 'aria-hidden': 'true' }, sts.map((st) => page(st, n, full)));
     document.body.append(sheet);
     /* print once the logo has loaded, so it is on the paper */
     Promise.all(Array.from(sheet.querySelectorAll('img')).map((im) => (im.complete ? null : new Promise((r) => { im.onload = r; im.onerror = r; }))))
@@ -81,20 +89,22 @@
   window.addEventListener('afterprint', () => { const s = document.getElementById('printsheet'); if (s) s.remove(); });
 
   /* ---------- choosing what to print ---------- */
-  K.openPrint = function () { ui.sheet = { type: 'print', n: ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow()) ? 1 : 0, st: K.getStation() }; K.render(); };
+  K.openPrint = function () { ui.sheet = { type: 'print', full: true, n: ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow()) ? 1 : 0, st: K.getStation() }; K.render(); };
   K.SHEETS.print = function (S) {
     const sts = S.st === 'all' ? K.STATIONS.map((s) => s[0]) : [S.st];
     const count = sts.reduce((a, st) => a + K.todoFor(st, S.n).count, 0);
     const dayName = (n) => K.parseYmd(K.sday(S.st === 'all' ? K.getStation() : S.st, n)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
-    const paper = page(sts[0], S.n);
+    const paper = page(sts[0], S.n, S.full);
     return K.sheet('Print the sheet', h('div', { class: 'print-opts' },
       h('div', { class: 'print-pick' },
         h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Day'),
           K.seg([[0, 'Today · ' + dayName(0)], [1, 'Tomorrow · ' + dayName(1)]], S.n, (v) => { S.n = v; K.render(); }, { 'aria-label': 'Day', class: 'seg daypick-seg' })),
         h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'),
           K.seg(K.STATIONS.map((s) => [s[0], s[0] === 'pass' ? 'Pass' : s[1]]).concat([['all', 'All']]), S.st, (v) => { S.st = v; K.render(); }, { 'aria-label': 'Station' })),
+        h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Print'),
+          K.seg([[true, 'The whole list'], [false, 'Only what’s marked']], S.full, (v) => { S.full = v; K.render(); }, { 'aria-label': 'What to print' })),
         h('p', { class: 'muted' }, (count ? count + (count === 1 ? ' thing' : ' things') + ' to do' : 'Nothing on this list yet; it prints with lines to write on') + (sts.length > 1 ? ', one page per station.' : '.')),
-        h('button', { class: 'btn primary wide', type: 'button', onclick: () => { ui.sheet = null; K.render(); K.printTodos(S.n, sts); } }, K.icon('print'), sts.length > 1 ? 'Print 3 pages' : 'Print')),
+        h('button', { class: 'btn primary wide', type: 'button', onclick: () => { ui.sheet = null; K.render(); K.printTodos(S.n, sts, S.full); } }, K.icon('print'), sts.length > 1 ? 'Print 3 pages' : 'Print')),
       h('div', { class: 'pr-preview', 'aria-hidden': 'true' }, h('div', { class: 'pr-paper' }, paper))), { wide: true });
   };
 })();
