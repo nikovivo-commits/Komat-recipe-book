@@ -219,6 +219,23 @@
   function fixRecipes() {
     /* recipes added to the app after the book went live: each is put in once, only if it is not there, and never again after that */
     const ADD = [{"allergens": [], "allergensChecked": false, "category": "Sauces & stocks", "components": [], "id": "goma-ponzu", "ingredients": [{"n": "atari goma (tahini)", "q": "750", "u": "g"}, {"n": "ponzu", "q": "1", "u": "L"}, {"n": "water", "q": "100", "u": "ml"}, {"n": "sugar", "q": "70", "u": "g"}, {"n": "sesame oil", "q": "1.25", "u": "tbsp"}], "name": "Goma ponzu (tahini ponzu for the gyoza)", "notes": "Source: Nobu. This is a quarter of the original sheet, which made 3 kg atari goma, 4 L ponzu, 400 ml water, 280 g sugar and 5 tbsp sesame oil. 1.25 tbsp sesame oil is about 19 ml. There is no method on the sheet.", "onMenu": true, "photo": "", "plating": "", "services": ["alacarte"], "station": "hot", "steps": [], "type": "recipe", "updated": 1793462072606, "videos": [], "yieldQty": "", "yieldUnit": ""}];
+    /* the gyoza group on the hot list gets its sesame sauce row, once */
+    try {
+      if (!localStorage.getItem('komat-added-gz3')) {
+        const cl = K.db.doc('settings/checklists');
+        cl.get().then((s) => {
+          try { localStorage.setItem('komat-added-gz3', '1'); } catch (e) { /* ignore */ }
+          const d = s.exists ? s.data() : null, hot = d && d.stations && d.stations.hot;
+          if (!hot) return;
+          let hit = false;
+          (hot.sections || []).forEach((sec) => (sec.groups || []).forEach((g) => {
+            if (g.key !== 'g92' || (g.items || []).some((i) => i.id === 'gz3')) return;
+            g.items.push({ id: 'gz3', link: 'goma-ponzu', name: 'сусамов сос (гома понзу)' }); hit = true;
+          }));
+          if (hit) return cl.update({ stations: d.stations });
+        }).catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
     ADD.forEach((rec) => {
       const key = 'komat-added-' + rec.id;
       try { if (localStorage.getItem(key)) return; } catch (e) { return; }

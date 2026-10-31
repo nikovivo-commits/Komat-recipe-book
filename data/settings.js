@@ -274,6 +274,11 @@ window.KOMAT_SEED.settings = {
          {
           "id": "gz2",
           "name": "гьози (пълнене)"
+         },
+         {
+          "id": "gz3",
+          "link": "goma-ponzu",
+          "name": "сусамов сос (гома понзу)"
          }
         ],
         "key": "g92",
