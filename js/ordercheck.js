@@ -42,7 +42,7 @@
     w.append(K.catRest('Tomorrow’s prep list is empty',
       'Mark DO on what ' + K.ST[S.st] + ' has to make on ' + dayWord(S) + '. The check then asks only about the ingredients for those, like yolks and butter for a hollandaise.',
       h('div', { class: 'btns center' },
-        h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.listFor = { v: 'tomorrow', day: K.day(0) }; ui.todayTab = 'mep'; ui.stock = null; K.go('today'); setTimeout(() => { const el = document.getElementById('t-mep'); if (el) el.scrollIntoView({ block: 'start' }); }, 60); } }, K.icon('list'), 'Open tomorrow’s list'),
+        h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.listFor = { v: 'tomorrow', day: K.day(0) }; ui.todayTab = 'tmr'; ui.stock = null; K.go('today'); setTimeout(() => { const el = document.getElementById('t-plan'); if (el) el.scrollIntoView({ block: 'start' }); }, 60); } }, K.icon('list'), 'Open tomorrow’s list'),
         h('button', { class: 'btn', type: 'button', onclick: () => { S.anyway = true; S.summary = !sl.ings.length; K.render(true); } }, sl.ings.length ? 'Check bread and daily products' : 'Order something else'))));
     return { top: top, body: w, tabs: false };
   }

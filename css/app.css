@@ -557,7 +557,7 @@ select.input { appearance: auto; }
 .today { padding-block: 18px 32px; }
 .today-grid { display: grid; gap: 22px; }
 @media (min-width: 1000px) { .today-grid { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
-.today-main, .today-side { display: grid; gap: 18px; min-width: 0; align-content: start; }
+.today-main, .today-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; align-content: start; }
 .brief { display: grid; gap: 14px; padding: 16px; }
 .brief-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .brief-head h2 { font: 700 1.6rem/1 var(--display); }
@@ -893,7 +893,6 @@ button.todo-main { cursor: pointer; }
 .tjump button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 800; font-size: .88rem; }
 .tjump b { font-size: .78rem; color: var(--muted); }
 #t-todo, #t-mep, #t-tmr { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--top-h) + 64px); }
-@media (min-width: 1000px) { .tjump { display: none; } }
 
 /* ---------- the order check: a deck of product cards ---------- */
 .deck-page { display: flex; flex-direction: column; min-height: calc(100vh - var(--top-h) - env(safe-area-inset-top, 0px)); min-height: calc(100dvh - var(--top-h) - env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); overflow: hidden; }
@@ -1371,12 +1370,20 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjt-top svg { flex: none; width: 17px; height: 17px; }
 .tjt-sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: .72rem; font-weight: 600; }
 .tjump .tjt.hot .tjt-sub { color: var(--urgent); font-weight: 800; }
-@media (max-width: 999px) {
-  .today.tab-todo .tt-mep, .today.tab-todo .tt-tmr,
-  .today.tab-mep .tt-todo, .today.tab-mep .tt-tmr,
-  .today.tab-tmr .tt-todo, .today.tab-tmr .tt-mep { display: none; }
-}
-@media (min-width: 1000px) { .tjump { display: none; } }
+.tjump.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.today.tab-today .tt-tmr, .today.tab-tmr .tt-today { display: none !important; }
+
+/* jobs for a row marked DO: a strip of chips that scrolls sideways */
+.jobs-wrap { display: grid; gap: 8px; padding: 0 0 10px 52px; }
+.jobs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-right: -12px; padding-right: 12px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.jobs::-webkit-scrollbar { display: none; }
+.job { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 13px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: 700 .84rem/1 var(--sans); transition: background-color .12s ease, border-color .12s ease, transform .1s ease; }
+.job:active { transform: scale(.95); }
+.job[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.job.add { color: var(--muted); border-style: dashed; }
+.job svg { width: 15px; height: 15px; }
+.jobs-wrap .noteform { margin: 0; }
+@media (max-width: 420px) { .jobs-wrap { padding-left: 12px; } }
 .donerow { border-top: 1px solid var(--line); }
 .donerow summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px; list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; }
 .donerow summary::-webkit-details-marker { display: none; }
@@ -1618,3 +1625,4 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .basket-row > :first-child { width: 36px; height: 36px; border-radius: 9px; }
 .basket-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 380px) { .stock.buy { grid-template-columns: 1fr; } .buy-acts { justify-content: flex-end; } }
+.finish .btn.wide { white-space: normal; text-align: center; }

@@ -298,29 +298,27 @@
     const todoN = doItems.length + todoTasks.length + evTodo.length + reps.length;
     const nNotes = K.tomorrowTasks(st).length;
 
-    /* phones: a sticky bar to jump between the parts of the page */
-    const jumpTo = (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); };
-    /* one list at a time on a phone: To do, Mise en place or Tomorrow (all of them side by side on wide screens) */
-    const tab = ui.todayTab || 'todo';
-    const setTab = (t) => { ui.todayTab = t; K.render(); };
+    /* two tabs: what to do today, and tomorrow's list being written. After closing time it opens on Tomorrow */
+    const tab = ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow()) ? 'tmr' : 'today';
+    const setTab = (t) => { ui.todayTab = t; ui.addTo = null; ui.noteFor = null; K.render(); };
+    const tday = K.day(1), nTmr = K.checkItems(st, tday).filter((it) => K.markState(st, it.id, tday) === 'do').length;
     const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
       h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
     w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
     w.append(dayLine());
-    w.append(h('nav', { class: 'tjump', 'aria-label': 'Today’s lists' },
-      tabBtn('todo', 'check', 'To do', todoN ? todoN + ' left' : 'All done', todoN > 0),
-      tabBtn('mep', 'list', 'Prep list', K.planningTomorrow() ? 'Tomorrow’s list' : ready + ' of ' + items.length + ' ready'),
-      tabBtn('tmr', 'note', 'Notes', nNotes ? nNotes + ' for tomorrow' : 'For tomorrow')));
-    if (feat) w.append(h('div', { class: 'tt-todo' }, tonightCard(feat)));
+    w.append(h('nav', { class: 'tjump two', 'aria-label': 'Today or tomorrow' },
+      tabBtn('today', 'check', 'Today', (todoN ? todoN + ' to do' : 'All done') + ' · ' + ready + '/' + items.length + ' ready', todoN > 0),
+      tabBtn('tmr', 'note', 'Tomorrow', nTmr ? nTmr + ' to make' + (nNotes ? ' · ' + nNotes + (nNotes === 1 ? ' note' : ' notes') : '') : 'Write the prep list')));
+    if (feat) w.append(h('div', { class: 'tt-today' }, tonightCard(feat)));
     const grid = h('div', { class: 'today-grid' });
     w.append(grid);
     const left = h('div', { class: 'today-main' }), right = h('aside', { class: 'today-side' });
     grid.append(left, right);
-    left.append(h('div', { class: 'only-narrow tt-todo', id: 't-brief' }, brief(feat)));
+    left.append(h('div', { class: 'only-narrow tt-today', id: 't-brief' }, brief(feat)));
     right.append(h('div', { class: 'only-wide' }, brief(feat)));
 
-    /* to do */
-    const todo = h('section', { class: 'block tt-todo', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
+    /* ===== Today ===== */
+    const todo = h('section', { class: 'block tt-today', id: 't-todo' }, h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'To do', h('span', { class: 'n' }, String(todoN))),
       K.canPrint && K.canPrint() ? h('button', { class: 'icon-btn print-btn', type: 'button', 'aria-label': 'Print the to-do list', title: 'Print the to-do list', onclick: () => K.openPrint() }, K.icon('print')) : null));
     todo.append(stamp(K.day(0), false));
     const rows = [];
@@ -348,7 +346,7 @@
         onNote: (t) => K.setMark(st, it, { c: t }),
       }));
     });
-    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Swipe left to remove a task.'));
+    if (rows.length) todo.append(h('p', { class: 'hint todo-hint' }, 'Tap the circle when it’s done, or swipe right. Tap the words to add a comment.'));
     todo.append(rows.length ? h('div', { class: 'todos' }, rows) : K.catRest('All clear', 'Nothing is waiting on you. Mark a row DO in the list below, or add a task.'));
     todo.append(addTaskForm('new', 'Add a task, e.g. portion 20 sea bass', 'Add', (t, urg, note) => K.setPrep(st, { key: 'task-' + K.uid(), name: t, note: note }, 'need', urg)));
     /* the done tasks fold into one row under the list, and the page says how the day ends */
@@ -362,34 +360,29 @@
     todo.append(h('p', { class: 'freshfoot' }, K.icon('sun'), 'A fresh list every morning. Nothing carries over.'));
     left.append(todo);
 
-    /* order: only what tomorrow's prep list needs */
-    const order = K.orderFor(st), nTmr = K.checkItems(st, K.day(1)).filter((it) => K.markState(st, it.id, K.day(1)) === 'do').length;
-    left.append(h('button', { class: 'askorder tt-todo' + (order ? ' sent' : ''), type: 'button', onclick: () => K.startStock(st, false) },
-      K.icon('order'),
-      h('span', { class: 'ask-txt' }, h('b', null, order ? 'Order sent for ' + K.ST[st] : 'Anything to order?'),
-        h('span', null, order ? order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change' : nTmr ? 'Ingredients for the ' + nTmr + (nTmr === 1 ? ' thing' : ' things') + ' on tomorrow’s prep list' : 'Mark tomorrow’s prep list first, then check its ingredients')),
-      K.icon('next')));
-
-    /* mise en place: today's list, or (after closing time) tomorrow's prep list */
-    const tmr = K.planningTomorrow(), listDay = K.listDay();
-    const dayName = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
-    const pickDay = (v) => { ui.listFor = { v: v, day: K.day(0) }; ui.addTo = null; K.render(); };
-    left.append(h('div', { class: 'block-top tt-mep', id: 't-mep' }, h('h2', { class: 'block-title' }, tmr ? 'Tomorrow’s prep list' : 'Mise en place'),
+    left.append(h('div', { class: 'block-top tt-today', id: 't-mep' }, h('h2', { class: 'block-title' }, 'Mise en place'),
       h('div', { class: 'btns' },
-        items.length && !tmr ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
+        items.length ? h('button', { type: 'button', class: 'chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null,
         K.me.admin ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list') : null)),
-      stamp(tmr ? K.day(1) : K.day(0), tmr),
-      h('div', { class: 'daypick-row' }, K.seg([['today', 'Today · ' + dayName(K.day(0))], ['tomorrow', 'Tomorrow · ' + dayName(K.day(1))]], tmr ? 'tomorrow' : 'today', pickDay, { 'aria-label': 'Which day’s list', class: 'seg daypick-seg' })),
-      tmr ? h('p', { class: 'plan-note' }, h('b', null, 'Closing check for ' + K.prettyDate(K.day(1), { weekday: 'long' }) + '. '), 'Mark DO on everything the next shift needs to make. It is waiting on their list in the morning.')
-        : items.length ? h('p', { class: 'hint legend-row' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. Or swipe a row: right for ready, left for DO. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
-    const cklist = checklist(st, tmr ? listDay : null); cklist.classList.add('tt-mep'); left.append(cklist);
-    const cl = K.closedInfo(st);
-    left.append(h('div', { class: 'finish tt-mep' + (cl ? ' done' : '') },
-      cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      tmr ? h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')
-        : h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.todayTab = 'mep'; pickDay('tomorrow'); window.scrollTo(0, 0); K.toast('Now mark what has to be made tomorrow'); } }, K.icon('next'), 'Closing? Write tomorrow’s prep list')));
+      h('div', { class: 'tt-today' }, stamp(K.day(0), false)),
+      items.length ? h('p', { class: 'hint legend-row tt-today' }, 'Tap the box: ', h('span', { class: 'mbox sample do' }, K.doMark(false)), ' then ', h('span', { class: 'mbox sample ok' }, K.icon('check')), ' ready. ', h('b', { class: 'flagtxt' }, '!'), ' flags it urgent for everyone.') : null);
+    const ckToday = checklist(st, null); ckToday.classList.add('tt-today'); left.append(ckToday);
+    left.append(h('div', { class: 'finish tt-today' },
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, K.icon('next'), 'Closing? Write tomorrow’s list')));
 
-    right.append(tomorrowBlock(st));
+    /* ===== Tomorrow ===== */
+    const order = K.orderFor(st), cl = K.closedInfo(st);
+    left.append(h('div', { class: 'block-top tt-tmr', id: 't-plan' }, h('h2', { class: 'block-title' }, 'Tomorrow’s prep list'),
+      K.me.admin ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Edit list')) : null),
+      h('div', { class: 'tt-tmr' }, stamp(tday, true)),
+      h('p', { class: 'plan-note tt-tmr' }, h('b', null, K.prettyDate(tday, { weekday: 'long' }) + '. '), 'Tap DO on everything the next shift has to make, then pick what to do with it: defrost, portion, vacuum… It lands on their to-do list in the morning.'));
+    const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
+    left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
+      cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
+      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide', type: 'button', onclick: () => K.startStock(st, true) }, cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for these ' + nTmr : 'Done: nothing to make tomorrow')));
+    if (order) left.append(h('button', { class: 'askorder sent tt-tmr', type: 'button', onclick: () => K.startStock(st, false) },
+      K.icon('order'), h('span', { class: 'ask-txt' }, h('b', null, 'Order sent for ' + K.ST[st]), h('span', null, order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change')), K.icon('next')));
+    left.append(tomorrowBlock(st));
     body.append(h('button', { type: 'button', class: 'fab', 'aria-label': 'Add a task', title: 'Add a task',
       onclick: (e) => { const r = e.currentTarget.getBoundingClientRect(); ui.sheet = { type: 'addtask', st: st, when: 'today', text: '', urgent: false, ox: r.left + r.width / 2, oy: r.top + r.height / 2 }; K.render(); } }, K.icon('plus')));
     return { body: body };
@@ -467,14 +460,14 @@
         const toMake = day ? its.filter((it) => K.markState(st, it.id, day) === 'do').length : 0;
         const open = day ? [] : its.filter((it) => K.markState(st, it.id) !== 'ok');
         if (ui.leftOnly && !day) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
-        const adding = ui.addTo === st + '|' + g.key;
+        const adding = ui.addTo === st + '|' + (day || '') + '|' + g.key;
         const dish = groupDish(g.name, g.items);
         return h('div', { class: 'mep-group card' + (!day && total && done === total ? ' complete' : '') + (ui.glow === g.key ? ' glow' : '') },
           h('div', { class: 'mep-gname' },
             dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, g.name) : h('b', null, g.name),
             day ? (toMake ? h('span', { class: 'gcount tomake' }, toMake + ' to make') : null) : total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
             open.length > 1 ? h('button', { type: 'button', class: 'allready', onclick: (e) => allReady(st, open, e.currentTarget) }, K.icon('check'), 'All ready') : null,
-            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
+            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + (day || '') + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
           its.map((it) => mrow(st, it, day)),
           !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add ' + (day ? 'tomorrow’s' : 'today’s') + ' items.') : null,
           ui.leftOnly && !day && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
@@ -502,10 +495,11 @@
         note ? noteEl(note, 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
-    return K.swipeable(row, {
+    const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
       left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
     });
+    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, note)) : sw;
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
   function allReady(st, items, btn) {
@@ -538,10 +532,25 @@
           note ? h('span', { class: 'tnote' }, note) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
-    return K.swipeable(row, {
+    const sw = K.swipeable(row, {
       right: s ? { run: () => set('') } : null,
       left: s ? null : { run: () => set('do') },
     });
+    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, note)) : sw;
+  }
+  /* what to do with a row marked DO: tap the jobs it needs, or write a comment. Both land on the to-do list */
+  const JOBS = ['Defrost', 'Portion', 'Vacuum', 'Marinate', 'Cut', 'Cook', 'Label'];
+  const isJob = (p) => JOBS.some((j) => j.toLowerCase() === p.toLowerCase());
+  function jobChips(st, it, day, note) {
+    const parts = String(note || '').split(/\s*,\s*/).filter(Boolean), key = (day ? 'jt:' : 'jm:') + it.id;
+    const jobs = parts.filter(isJob), free = parts.filter((p) => !isJob(p)).join(', ');
+    const save = (list) => K.setMark(st, it, { c: list.join(', ') }, day || undefined);
+    const toggle = (j) => { K.vibrate(6); const on = jobs.some((p) => p.toLowerCase() === j.toLowerCase()); save((on ? jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : jobs.concat(j)).concat(free ? [free] : [])); };
+    return h('div', { class: 'jobs-wrap' },
+      h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
+        JOBS.map((j) => h('button', { type: 'button', class: 'job', 'aria-pressed': jobs.some((p) => p.toLowerCase() === j.toLowerCase()) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
+        h('button', { type: 'button', class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(free ? 'edit' : 'plus'), free ? 'Comment' : 'Add a comment')),
+      noteForm(key, free, (t) => save(jobs.concat(t ? [t] : []))));
   }
 
   /* ---------- for tomorrow ---------- */
