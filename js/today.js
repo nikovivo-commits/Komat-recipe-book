@@ -264,7 +264,6 @@
       K.vibrate(12);
       if (!btn) { o.onDone(); return; }
       btn.classList.add('ticked');
-      if (btn.classList.contains('tbox') && K.crossBox) { const x = K.crossBox(); x.classList.add('draw'); btn.append(x); }
       if (K.sparks) K.sparks(btn);
       K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, 220);
     };

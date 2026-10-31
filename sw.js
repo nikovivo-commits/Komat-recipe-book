@@ -1,7 +1,7 @@
 /* Offline support for the stand-alone site. The app itself comes from the network when it can,
    so updates arrive straight away, and from the cache when the kitchen Wi-Fi drops.
    Photos and fonts come from the cache first, so pages open fast. */
-const CACHE = 'komat-v49';
+const CACHE = 'komat-v50';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'data/translations.js', 'data/produce.js', 'data/art.js', 'data/recipes.js', 'data/settings.js', 'vendor/firebase.js', 'firebase-config.js',
