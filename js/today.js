@@ -182,11 +182,13 @@
   };
 
   /* ---------- the daily brief ---------- */
+  /* for now the daily brief only says who is working; flip this to bring the urgent list back */
+  const BRIEF_URGENT = false;
   function brief(feat) {
-    const urg = K.openUrgents(), os = K.onToday();
+    const urg = BRIEF_URGENT ? K.openUrgents() : [], os = K.onToday();
     const ev = K.upcomingEvents().filter((e) => K.daysUntil(e.date) <= 3 && K.isLive(e) && e !== feat);
     const box = h('section', { class: 'brief card' }, h('div', { class: 'brief-head' }, h('h2', null, 'Daily brief'), h('span', { class: 'muted' }, greeting())));
-    box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
+    if (BRIEF_URGENT) box.append(h('div', { class: 'brief-sec' }, h('span', { class: 'label' + (urg.length ? ' bad' : '') }, urg.length ? 'Urgent · ' + urg.length : 'Urgent'),
       urg.length ? h('div', { class: 'urglist' }, urg.map((d) => h('div', { class: 'urgrow' },
         h('button', { type: 'button', class: 'urgname', onclick: () => K.pickStation(d.station) },
           h('b', null, d.name), d.note ? h('span', { class: 'tnote' }, d.note) : null,
