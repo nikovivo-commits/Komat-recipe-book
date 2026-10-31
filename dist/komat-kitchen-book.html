@@ -1380,17 +1380,24 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .tjump.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .today.tab-today .tt-tmr, .today.tab-tmr .tt-today { display: none !important; }
 
-/* jobs for a row marked DO: a strip of chips that scrolls sideways */
-.jobs-wrap { display: grid; gap: 8px; padding: 0 0 10px 52px; }
-.jobs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-right: -12px; padding-right: 12px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
-.jobs::-webkit-scrollbar { display: none; }
-.job { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 13px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: 700 .84rem/1 var(--sans); transition: background-color .12s ease, border-color .12s ease, transform .1s ease; }
-.job:active { transform: scale(.95); }
-.job[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
-.job.add { color: var(--muted); border-style: dashed; }
+/* jobs for a row marked DO: three stickers and a comment, all in view; a picked one is circled in the writer's pen */
+.jobs-wrap { display: grid; gap: 8px; padding: 0 12px 12px 52px; }
+.jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+.job { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 700 .86rem/1 var(--sans); white-space: nowrap; transition: transform .12s ease, border-color .12s ease; }
+.job:active { transform: scale(.94); }
+.job.on { border: 2.5px solid var(--pen); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: transparent; color: var(--pen); font: var(--hand-w, 700) 1.2rem/1 var(--hand); transform: rotate(-1.5deg); }
+.job.on:nth-child(2) { transform: rotate(1.2deg); }
+.job.on.draw { animation: jobDraw .38s cubic-bezier(.2, 1.4, .4, 1); }
+.job.add { flex: 0 0 auto; padding: 0 12px; border-style: dashed; }
 .job svg { width: 15px; height: 15px; }
+.jobs-wrap.fresh .job { animation: jobIn .34s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 60ms); }
+.jobs-wrap.fresh { animation: jobsOpen .28s ease-out both; }
+@keyframes jobIn { from { opacity: 0; transform: translateY(-8px) scale(.85); } }
+@keyframes jobDraw { 0% { transform: scale(.7) rotate(-6deg); opacity: .3; } 60% { transform: scale(1.08) rotate(-1deg); opacity: 1; } 100% { transform: rotate(-1.5deg); } }
+@keyframes jobsOpen { from { max-height: 0; opacity: 0; } to { max-height: 220px; opacity: 1; } }
 .jobs-wrap .noteform { margin: 0; }
 @media (max-width: 420px) { .jobs-wrap { padding-left: 12px; } }
+@media (prefers-reduced-motion: reduce) { .jobs-wrap.fresh, .jobs-wrap.fresh .job, .job.on.draw { animation: none; } }
 .donerow { border-top: 1px solid var(--line); }
 .donerow summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px; list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; }
 .donerow summary::-webkit-details-marker { display: none; }
@@ -6273,14 +6280,14 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
-        note ? noteEl(note, 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
+        (s === 'do' ? splitJobs(note).free : note) ? noteEl(s === 'do' ? splitJobs(note).free : note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
       left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
     });
-    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, note)) : sw;
+    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
   function allReady(st, items, btn) {
@@ -6310,28 +6317,35 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
-          note ? h('span', { class: 'tnote' }, note) : null),
+          splitJobs(note).free ? noteEl(splitJobs(note).free, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
     const sw = K.swipeable(row, {
       right: s ? { run: () => set('') } : null,
       left: s ? null : { run: () => set('do') },
     });
-    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, note)) : sw;
+    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, m, wrote)) : sw;
   }
-  /* what to do with a row marked DO: tap the jobs it needs, or write a comment. Both land on the to-do list */
-  const JOBS = ['Defrost', 'Portion', 'Vacuum', 'Marinate', 'Cut', 'Cook', 'Label'];
+  /* what to do with a row marked DO: Defrost, Portion or Vacuum, ticked in the hand and ink of whoever picked them,
+     plus a comment. All of it lands on the next shift's to-do list as one comment */
+  const JOBS = ['Defrost', 'Portion', 'Vacuum'];
   const isJob = (p) => JOBS.some((j) => j.toLowerCase() === p.toLowerCase());
-  function jobChips(st, it, day, note) {
-    const parts = String(note || '').split(/\s*,\s*/).filter(Boolean), key = (day ? 'jt:' : 'jm:') + it.id;
-    const jobs = parts.filter(isJob), free = parts.filter((p) => !isJob(p)).join(', ');
+  function splitJobs(note) {
+    const parts = String(note || '').split(/\s*,\s*/).filter(Boolean);
+    return { jobs: parts.filter(isJob), free: parts.filter((p) => !isJob(p)).join(', ') };
+  }
+  function jobChips(st, it, day, m, fresh) {
+    const sp = splitJobs(m.c), key = (day ? 'jt:' : 'jm:') + it.id, has = (j) => sp.jobs.some((p) => p.toLowerCase() === j.toLowerCase());
     const save = (list) => K.setMark(st, it, { c: list.join(', ') }, day || undefined);
-    const toggle = (j) => { K.vibrate(6); const on = jobs.some((p) => p.toLowerCase() === j.toLowerCase()); save((on ? jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : jobs.concat(j)).concat(free ? [free] : [])); };
-    return h('div', { class: 'jobs-wrap' },
+    const toggle = (j) => { K.vibrate(on(j) ? 6 : 12); ui.jobNew = on(j) ? null : key + j; save((on(j) ? sp.jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : sp.jobs.concat(j)).concat(sp.free ? [sp.free] : [])); };
+    const on = has;
+    const drawn = ui.jobNew;
+    if (drawn) setTimeout(() => { if (ui.jobNew === drawn) ui.jobNew = null; }, 0);
+    return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
       h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
-        JOBS.map((j) => h('button', { type: 'button', class: 'job', 'aria-pressed': jobs.some((p) => p.toLowerCase() === j.toLowerCase()) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
-        h('button', { type: 'button', class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(free ? 'edit' : 'plus'), free ? 'Comment' : 'Add a comment')),
-      noteForm(key, free, (t) => save(jobs.concat(t ? [t] : []))));
+        JOBS.map((j, i) => h('button', { type: 'button', style: '--i:' + i, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
+        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), 'Comment')),
+      noteForm(key, sp.free, (t) => save(sp.jobs.concat(t ? [t] : []))));
   }
 
   /* ---------- for tomorrow ---------- */

@@ -492,14 +492,14 @@
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
-        note ? noteEl(note, 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
+        (s === 'do' ? splitJobs(note).free : note) ? noteEl(s === 'do' ? splitJobs(note).free : note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!')));
     const sw = K.swipeable(row, {
       right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
       left: s === 'do' ? null : { run: () => { ui.wrote = it.id; K.setMark(st, it, { d: 'do' }); } },
     });
-    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, note)) : sw;
+    return s === 'do' ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
   }
   /* All ready: the group's boxes tick one after another, then all of them are saved at once */
   function allReady(st, items, btn) {
@@ -529,28 +529,35 @@
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
-          note ? h('span', { class: 'tnote' }, note) : null),
+          splitJobs(note).free ? noteEl(splitJobs(note).free, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
     const sw = K.swipeable(row, {
       right: s ? { run: () => set('') } : null,
       left: s ? null : { run: () => set('do') },
     });
-    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, note)) : sw;
+    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, m, wrote)) : sw;
   }
-  /* what to do with a row marked DO: tap the jobs it needs, or write a comment. Both land on the to-do list */
-  const JOBS = ['Defrost', 'Portion', 'Vacuum', 'Marinate', 'Cut', 'Cook', 'Label'];
+  /* what to do with a row marked DO: Defrost, Portion or Vacuum, ticked in the hand and ink of whoever picked them,
+     plus a comment. All of it lands on the next shift's to-do list as one comment */
+  const JOBS = ['Defrost', 'Portion', 'Vacuum'];
   const isJob = (p) => JOBS.some((j) => j.toLowerCase() === p.toLowerCase());
-  function jobChips(st, it, day, note) {
-    const parts = String(note || '').split(/\s*,\s*/).filter(Boolean), key = (day ? 'jt:' : 'jm:') + it.id;
-    const jobs = parts.filter(isJob), free = parts.filter((p) => !isJob(p)).join(', ');
+  function splitJobs(note) {
+    const parts = String(note || '').split(/\s*,\s*/).filter(Boolean);
+    return { jobs: parts.filter(isJob), free: parts.filter((p) => !isJob(p)).join(', ') };
+  }
+  function jobChips(st, it, day, m, fresh) {
+    const sp = splitJobs(m.c), key = (day ? 'jt:' : 'jm:') + it.id, has = (j) => sp.jobs.some((p) => p.toLowerCase() === j.toLowerCase());
     const save = (list) => K.setMark(st, it, { c: list.join(', ') }, day || undefined);
-    const toggle = (j) => { K.vibrate(6); const on = jobs.some((p) => p.toLowerCase() === j.toLowerCase()); save((on ? jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : jobs.concat(j)).concat(free ? [free] : [])); };
-    return h('div', { class: 'jobs-wrap' },
+    const toggle = (j) => { K.vibrate(on(j) ? 6 : 12); ui.jobNew = on(j) ? null : key + j; save((on(j) ? sp.jobs.filter((p) => p.toLowerCase() !== j.toLowerCase()) : sp.jobs.concat(j)).concat(sp.free ? [sp.free] : [])); };
+    const on = has;
+    const drawn = ui.jobNew;
+    if (drawn) setTimeout(() => { if (ui.jobNew === drawn) ui.jobNew = null; }, 0);
+    return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
       h('div', { class: 'jobs', role: 'group', 'aria-label': 'What to do with ' + it.name },
-        JOBS.map((j) => h('button', { type: 'button', class: 'job', 'aria-pressed': jobs.some((p) => p.toLowerCase() === j.toLowerCase()) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
-        h('button', { type: 'button', class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(free ? 'edit' : 'plus'), free ? 'Comment' : 'Add a comment')),
-      noteForm(key, free, (t) => save(jobs.concat(t ? [t] : []))));
+        JOBS.map((j, i) => h('button', { type: 'button', style: '--i:' + i, class: 'job' + (on(j) ? ' on ' + K.inkClass(m.cink) + ' ' + K.handClass(m.chand) + (drawn === key + j ? ' draw' : '') : ''), 'aria-pressed': on(j) ? 'true' : 'false', onclick: () => toggle(j) }, j)),
+        h('button', { type: 'button', style: '--i:' + JOBS.length, class: 'job add', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(sp.free ? 'edit' : 'plus'), 'Comment')),
+      noteForm(key, sp.free, (t) => save(sp.jobs.concat(t ? [t] : []))));
   }
 
   /* ---------- for tomorrow ---------- */

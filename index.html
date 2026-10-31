@@ -53,6 +53,19 @@
 <script src="js/login.js"></script>
 <script src="js/print.js"></script>
 <!-- works offline once opened (stand-alone site only) -->
-<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
+<script>
+/* a new version takes over as soon as it is found: check on every return to the app, and reload once it is in (unless someone is typing) */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  var hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) {
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') r.update().catch(function () {}); });
+  }).catch(function () {});
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadSW) { hadSW = true; return; }
+    var go = function () { var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) { setTimeout(go, 3000); return; } location.reload(); };
+    go();
+  });
+}
+</script>
 </body>
 </html>
