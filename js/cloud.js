@@ -213,6 +213,22 @@
     }, () => {});
     K.user = { profiles: (ids) => Promise.resolve(ids.reduce((o, id) => { if (D.members[id]) o[id] = { name: D.members[id].name }; return o; }, {})) };
     K.subscribe();
+    if (K.me.admin) fixRecipes();
+  }
+  /* one-off recipe corrections for the live book: each only touches a recipe still holding the old wording */
+  function fixRecipes() {
+    const r = K.db.doc('recipes/beluga-lenti');
+    r.get().then((s) => {
+      const d = s.exists ? s.data() : null, cs = d && d.components;
+      if (!Array.isArray(cs)) return;
+      let hit = false;
+      cs.forEach((c) => {
+        if (c.name !== 'Пюре от целина') return;
+        (c.ingredients || []).forEach((i) => { if (i.n === 'карамелизиран лук' && i.q === '200') { i.q = '50'; hit = true; } });
+        c.steps = (c.steps || []).map((t) => (typeof t === 'string' && t.includes('200 г карамелизиран лук') ? (hit = true, t.replace('200 г карамелизиран лук', '50 г карамелизиран лук')) : t));
+      });
+      if (hit) return r.update({ components: cs });
+    }).catch(() => {});
   }
   function watch(u) {
     if (meUnsub) meUnsub();
