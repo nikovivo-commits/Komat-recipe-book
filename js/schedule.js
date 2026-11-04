@@ -29,14 +29,21 @@
   }
   const range = (mon) => { const sun = K.addDays(mon, 6); return mon.getDate() + '.' + (mon.getMonth() + 1) + ' – ' + sun.getDate() + '.' + (sun.getMonth() + 1); };
 
+  /* the day the rota points at: today until midday, then tomorrow (the day still being worked is over for planning).
+     On a Sunday afternoon the new week is only used once it has been posted. */
+  function focus() {
+    const now = K.kitchenNow(), after = new Date().getHours() >= 12, d = after ? K.addDays(now, 1) : now, wk = K.ymd(K.mondayOf(d));
+    if (wk !== K.thisWeek() && !D.weeks[wk]) return { wk: K.thisWeek(), idx: K.todayIdx() };
+    return { wk: wk, idx: (d.getDay() + 6) % 7 };
+  }
   K.V.schedule = function () {
-    const wk = ui.week || K.thisWeek(), mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === K.thisWeek(), ti = K.todayIdx();
+    const fc = focus(), wk = ui.week || fc.wk, mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === fc.wk, ti = fc.idx;
     const body = h('div', { class: 'page' });
     body.append(K.pageHead('Schedule', null, h('div', { class: 'phead-side' },
       h('p', { class: 'psub' }, range(mon) + (isNow ? ' · this week' : '')),
       h('div', { class: 'weeknav' },
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
-        h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = K.thisWeek(); K.render(); } }, 'This week'),
+        h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = focus().wk; K.render(); } }, 'This week'),
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
@@ -62,7 +69,7 @@
         const from = isNow ? ti : 0, ni = r.findIndex((c, i) => i >= from && works(c)), n = r.filter(works).length;
         if (ni >= 0) {
           const c = r[ni], lab = K.codeLabel(c), hrs = (lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/) || [''])[0].replace('-', '–');
-          const when = isNow && ni === ti ? 'Today' : isNow && ni === ti + 1 ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
+          const day = K.ymd(K.addDays(mon, ni)), t0 = K.kitchenNow(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
           mine.append(h('div', { class: 'nextshift' }, h('span', { class: 'ns-k' }, 'Your next shift'),
             h('b', { class: 'ns-when' }, when, hrs ? h('span', { class: 'mono' }, ' · ' + hrs) : h('span', { class: 'mono' }, ' · ' + c)),
             h('span', { class: 'ns-n' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week')));
