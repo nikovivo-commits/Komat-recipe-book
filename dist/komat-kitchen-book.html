@@ -7196,10 +7196,10 @@ window.KOMAT_PART_ART = [
   }
   const range = (mon) => { const sun = K.addDays(mon, 6); return mon.getDate() + '.' + (mon.getMonth() + 1) + ' – ' + sun.getDate() + '.' + (sun.getMonth() + 1); };
 
-  /* the day the rota points at: today until midday, then tomorrow (the day still being worked is over for planning).
-     On a Sunday afternoon the new week is only used once it has been posted. */
+  /* the day the rota points at is the real calendar date: it changes at midnight (the kitchen's own day runs until 4 am, but the rota is by date).
+     After midnight on a Sunday the new week is only used once it has been posted. */
   function focus() {
-    const now = K.kitchenNow(), after = new Date().getHours() >= 12, d = after ? K.addDays(now, 1) : now, wk = K.ymd(K.mondayOf(d));
+    const d = new Date(), wk = K.ymd(K.mondayOf(d));
     if (wk !== K.thisWeek() && !D.weeks[wk]) return { wk: K.thisWeek(), idx: K.todayIdx() };
     return { wk: wk, idx: (d.getDay() + 6) % 7 };
   }
@@ -7236,7 +7236,7 @@ window.KOMAT_PART_ART = [
         const from = isNow ? ti : 0, ni = r.findIndex((c, i) => i >= from && works(c)), n = r.filter(works).length;
         if (ni >= 0) {
           const c = r[ni], lab = K.codeLabel(c), hrs = (lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/) || [''])[0].replace('-', '–');
-          const day = K.ymd(K.addDays(mon, ni)), t0 = K.kitchenNow(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
+          const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
           mine.append(h('div', { class: 'nextshift' }, h('span', { class: 'ns-k' }, 'Your next shift'),
             h('b', { class: 'ns-when' }, when, hrs ? h('span', { class: 'mono' }, ' · ' + hrs) : h('span', { class: 'mono' }, ' · ' + c)),
             h('span', { class: 'ns-n' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week')));
