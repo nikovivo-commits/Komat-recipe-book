@@ -1250,21 +1250,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 @keyframes stamp-in { from { transform: translateX(-50%) rotate(-9deg) scale(2.2); opacity: 0; } to { transform: translateX(-50%) rotate(-9deg) scale(1); opacity: 1; } }
 .sm-msg { font-weight: 700; animation: rise-in .4s ease 2.3s both; }
 
-.fresh-moment { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; overflow: hidden; background: linear-gradient(#0E1420, #1B2433); animation: dawn 3.4s ease-in-out both; color: #fff; }
+.fresh-moment { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; overflow: hidden; background: #0E0E0D; color: #fff; }
 .fresh-moment.out { animation: fadeout .5s ease both; }
-@keyframes dawn { 0% { background: linear-gradient(#0E1420, #1B2433); } 55% { background: linear-gradient(#2E3A55, #C98F74); } 100% { background: linear-gradient(#6C7FA0, #F2C57C); } }
-.fm-clip { mix-blend-mode: screen; opacity: .0; animation: fadein 1.6s ease 1.2s both; }
-.fm-sun { position: absolute; left: 50%; bottom: -80px; width: 180px; height: 180px; margin-left: -90px; border-radius: 50%; background: radial-gradient(circle, #FFE7A8, #F2B35A 60%, rgba(242, 179, 90, 0) 72%); animation: sun-up 3s cubic-bezier(.3, .7, .3, 1) .2s both; }
-@keyframes sun-up { to { transform: translateY(-28vh); } }
-.fm-in { position: relative; display: grid; justify-items: center; gap: 10px; text-align: center; padding: 24px; }
-.fm-clock { position: relative; height: 1.2em; font-size: 3.4rem; line-height: 1.2; font-weight: 700; overflow: hidden; }
-.fm-clock span { display: block; }
-.fm-clock .a { animation: clock-out .45s ease 1.3s both; }
-.fm-clock .b { position: absolute; inset: 0; animation: clock-in .5s cubic-bezier(.3, 1.4, .5, 1) 1.3s both; }
-@keyframes clock-out { to { transform: translateY(-100%); opacity: 0; } }
-@keyframes clock-in { from { transform: translateY(100%); opacity: 0; } }
-.fm-title { font: 700 2.2rem/1 var(--display); animation: rise-in .5s ease 1.9s both; }
-.fm-line { opacity: .9; animation: rise-in .5s ease 2.2s both; }
 
 .welcome.draw .wword { display: inline-block; animation: rise-in .6s cubic-bezier(.2, .8, .2, 1) calc(.3s + var(--i, 0) * .12s) both; }
 .logo-in .brand img { animation: logo-sharpen 1.2s ease both; }
@@ -1472,7 +1459,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .ds-t { font-size: .82rem; color: var(--muted); }
 .board-stamp { border-color: #C9CCC6; background: var(--surface); }
 .board-stamp .ds-k { color: var(--muted); }
-.fm-date { margin: 0; font: 700 1.3rem var(--mono); opacity: .9; animation: rise-in .5s ease 2s both; }
 
 /* the kitchen day line: 04:00 to 04:00 */
 .dayline { display: grid; gap: 6px; margin: 4px 0 14px; padding: 12px 14px 30px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }

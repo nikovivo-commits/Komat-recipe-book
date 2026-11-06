@@ -39,7 +39,6 @@
     return true;
   };
 
-  /* the first look at Today on a new kitchen day: night turns to sunrise and the list starts clean */
   /* a short film that plays once over the page; null when films are off (reduced motion, data saver) */
   function film(name) {
     if (reduced() || (navigator.connection && navigator.connection.saveData)) return null;
@@ -70,7 +69,7 @@
     }
   }
 
-  /* the first look at Today on a new kitchen day: yesterday's sheet goes in the bin, the sun comes up, a clean sheet */
+  /* the first look at Today on a new kitchen day: yesterday's sheet goes in the bin */
   K.freshDay = function () {
     const seen = K.store.get('seenDay', ''), today = K.day(0);
     if (seen === today) return;
@@ -80,18 +79,7 @@
     document.body.append(back);
     let ended = false;
     const end = () => { if (ended) return; ended = true; back.classList.add('out'); later(() => back.remove(), 500); };
-    binScene(back, (K.sheetDate ? K.sheetDate(seen) + ': ' : '') + 'yesterday’s sheet goes in the bin', () => {
-      if (ended) return;
-      back.classList.remove('binning');
-      back.querySelectorAll('.bin-film, .bin-cap, .fm-paper').forEach((x) => x.remove());
-      back.append(K.clip ? K.clip('sunrise', 'fm-clip') : '', h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
-        h('div', { class: 'fm-in' },
-          h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '23:59'), h('span', { class: 'b' }, '00:00')),
-          h('h2', { class: 'fm-title' }, 'A fresh sheet'),
-          h('p', { class: 'fm-date' }, K.sheetDate ? K.sheetDate(today) : ''),
-          h('p', { class: 'fm-line' }, 'Nothing carries over from yesterday.')));
-      later(end, 3600);
-    });
+    binScene(back, (K.sheetDate ? K.sheetDate(seen) + ': ' : '') + 'yesterday’s sheet goes in the bin', end);
   };
 
   /* closing: today's sheet goes in the bin */
