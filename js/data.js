@@ -236,7 +236,7 @@
   /* The sheet a station works from. It is not swapped by the clock: today's sheet stays up until the closing
      cook finishes tomorrow's list (then it goes in the bin and the new one is up at once). If nobody closed
      yesterday, yesterday's sheet stays up, unless tomorrow's list had already been written for today. */
-  const dayStart = (ds) => K.parseYmd(ds).getTime() + 4 * 3600 * 1000;
+  const dayStart = (ds) => K.parseYmd(ds).getTime();
   function sheetOff(st) {
     const doc = (n) => D.checks[K.day(n) + '_' + st];
     const closed = (n) => { const d = doc(n); return !!(d && d.closed && d.closed.at); };
@@ -651,7 +651,7 @@
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     dateSubs();
-    /* the kitchen day turns over at 4 am: follow it if the app stays open */
+    /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);
   };
   let bugSub = null;

@@ -2798,20 +2798,20 @@ window.KOMAT_PART_ART = [
   };
   K.vibrate = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* not allowed */ } };
 
-  /* ---------- dates: the kitchen day runs until 4 am ---------- */
+  /* ---------- dates: every day turns over at midnight ---------- */
   const DAY = 86400000;
   K.ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   K.parseYmd = (s) => { const p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
   K.addDays = (d, n) => { const x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; };
-  K.kitchenNow = () => new Date(Date.now() - 4 * 3600 * 1000);
+  K.kitchenNow = () => new Date();
   /* K.day(0) = today's kitchen date, K.day(-1) = yesterday, K.day(1) = tomorrow */
   K.day = (n) => K.ymd(K.addDays(K.kitchenNow(), n || 0));
   K.daysUntil = (ds) => Math.round((K.parseYmd(ds) - K.parseYmd(K.day(0))) / DAY);
   K.mondayOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
   K.thisWeek = () => K.ymd(K.mondayOf(K.kitchenNow()));
   K.todayIdx = () => (K.kitchenNow().getDay() + 6) % 7;
-  /* minutes since midnight in kitchen time: after midnight counts as 24:xx */
-  K.kitchenMinutes = () => { const n = new Date(); const m = n.getHours() * 60 + n.getMinutes(); return m < 240 ? m + 1440 : m; };
+  /* minutes since midnight */
+  K.kitchenMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
   K.hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString('en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
   K.DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -3515,7 +3515,7 @@ window.KOMAT_PART_ART = [
   /* The sheet a station works from. It is not swapped by the clock: today's sheet stays up until the closing
      cook finishes tomorrow's list (then it goes in the bin and the new one is up at once). If nobody closed
      yesterday, yesterday's sheet stays up, unless tomorrow's list had already been written for today. */
-  const dayStart = (ds) => K.parseYmd(ds).getTime() + 4 * 3600 * 1000;
+  const dayStart = (ds) => K.parseYmd(ds).getTime();
   function sheetOff(st) {
     const doc = (n) => D.checks[K.day(n) + '_' + st];
     const closed = (n) => { const d = doc(n); return !!(d && d.closed && d.closed.at); };
@@ -3930,7 +3930,7 @@ window.KOMAT_PART_ART = [
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     dateSubs();
-    /* the kitchen day turns over at 4 am: follow it if the app stays open */
+    /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);
   };
   let bugSub = null;
@@ -4495,7 +4495,7 @@ window.KOMAT_PART_ART = [
       back.querySelectorAll('.bin-film, .bin-cap, .fm-paper').forEach((x) => x.remove());
       back.append(K.clip ? K.clip('sunrise', 'fm-clip') : '', h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
         h('div', { class: 'fm-in' },
-          h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '03:59'), h('span', { class: 'b' }, '04:00')),
+          h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '23:59'), h('span', { class: 'b' }, '00:00')),
           h('h2', { class: 'fm-title' }, 'A fresh sheet'),
           h('p', { class: 'fm-date' }, K.sheetDate ? K.sheetDate(today) : ''),
           h('p', { class: 'fm-line' }, 'Nothing carries over from yesterday.')));
@@ -7000,7 +7000,7 @@ window.KOMAT_PART_ART = [
   }
   const range = (mon) => { const sun = K.addDays(mon, 6); return mon.getDate() + '.' + (mon.getMonth() + 1) + ' – ' + sun.getDate() + '.' + (sun.getMonth() + 1); };
 
-  /* the day the rota points at is the real calendar date: it changes at midnight (the kitchen's own day runs until 4 am, but the rota is by date).
+  /* the day the rota points at is the real calendar date: it changes at midnight, like every other day in the app.
      After midnight on a Sunday the new week is only used once it has been posted. */
   function focus() {
     const d = new Date(), wk = K.ymd(K.mondayOf(d));
@@ -7473,7 +7473,7 @@ window.KOMAT_PART_ART = [
     const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
       K.field('Tomorrow’s prep list starts at', h('input', { class: 'input mono', id: 'k-plan', type: 'time', value: k.planFrom || '21:00', oninput: (e) => { k.planFrom = e.target.value; } }),
-        'From this time until 4 am the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
+        'From this time until midnight the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
       K.field('Send the order board to', h('input', { class: 'input', id: 'k-mail', type: 'email', autocomplete: 'email', value: k.orderEmail || '', placeholder: 'chef@example.com', oninput: (e) => { k.orderEmail = e.target.value.trim(); } }),
         'When the board is sent, the phone opens an email to this address with everything written on it, and the board is wiped clean.'),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Repeating tasks'),

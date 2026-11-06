@@ -41,20 +41,20 @@
   };
   K.vibrate = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* not allowed */ } };
 
-  /* ---------- dates: the kitchen day runs until 4 am ---------- */
+  /* ---------- dates: every day turns over at midnight ---------- */
   const DAY = 86400000;
   K.ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   K.parseYmd = (s) => { const p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
   K.addDays = (d, n) => { const x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; };
-  K.kitchenNow = () => new Date(Date.now() - 4 * 3600 * 1000);
+  K.kitchenNow = () => new Date();
   /* K.day(0) = today's kitchen date, K.day(-1) = yesterday, K.day(1) = tomorrow */
   K.day = (n) => K.ymd(K.addDays(K.kitchenNow(), n || 0));
   K.daysUntil = (ds) => Math.round((K.parseYmd(ds) - K.parseYmd(K.day(0))) / DAY);
   K.mondayOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
   K.thisWeek = () => K.ymd(K.mondayOf(K.kitchenNow()));
   K.todayIdx = () => (K.kitchenNow().getDay() + 6) % 7;
-  /* minutes since midnight in kitchen time: after midnight counts as 24:xx */
-  K.kitchenMinutes = () => { const n = new Date(); const m = n.getHours() * 60 + n.getMinutes(); return m < 240 ? m + 1440 : m; };
+  /* minutes since midnight */
+  K.kitchenMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
   K.hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString('en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
   K.DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

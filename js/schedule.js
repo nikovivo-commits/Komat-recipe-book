@@ -29,7 +29,7 @@
   }
   const range = (mon) => { const sun = K.addDays(mon, 6); return mon.getDate() + '.' + (mon.getMonth() + 1) + ' – ' + sun.getDate() + '.' + (sun.getMonth() + 1); };
 
-  /* the day the rota points at is the real calendar date: it changes at midnight (the kitchen's own day runs until 4 am, but the rota is by date).
+  /* the day the rota points at is the real calendar date: it changes at midnight, like every other day in the app.
      After midnight on a Sunday the new week is only used once it has been posted. */
   function focus() {
     const d = new Date(), wk = K.ymd(K.mondayOf(d));

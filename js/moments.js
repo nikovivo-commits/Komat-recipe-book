@@ -84,7 +84,7 @@
       back.querySelectorAll('.bin-film, .bin-cap, .fm-paper').forEach((x) => x.remove());
       back.append(K.clip ? K.clip('sunrise', 'fm-clip') : '', h('span', { class: 'fm-sun', 'aria-hidden': 'true' }),
         h('div', { class: 'fm-in' },
-          h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '03:59'), h('span', { class: 'b' }, '04:00')),
+          h('p', { class: 'fm-clock mono' }, h('span', { class: 'a' }, '23:59'), h('span', { class: 'b' }, '00:00')),
           h('h2', { class: 'fm-title' }, 'A fresh sheet'),
           h('p', { class: 'fm-date' }, K.sheetDate ? K.sheetDate(today) : ''),
           h('p', { class: 'fm-line' }, 'Nothing carries over from yesterday.')));

@@ -116,7 +116,7 @@
     const addBasic = (e) => { e.preventDefault(); const el = document.getElementById('k-basic'), v = el.value.trim(); if (!v) return; if (!k.basics.some((x) => x.toLowerCase() === v.toLowerCase())) k.basics.push(v); el.value = ''; K.render(); };
     return K.sheet('Kitchen rules', h('div', { class: 'stack' },
       K.field('Tomorrow’s prep list starts at', h('input', { class: 'input mono', id: 'k-plan', type: 'time', value: k.planFrom || '21:00', oninput: (e) => { k.planFrom = e.target.value; } }),
-        'From this time until 4 am the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
+        'From this time until midnight the mise en place list is for the next day: whoever closes marks what needs making, and the morning shift finds it on their list. Anyone can switch between Today and Tomorrow by hand.'),
       K.field('Send the order board to', h('input', { class: 'input', id: 'k-mail', type: 'email', autocomplete: 'email', value: k.orderEmail || '', placeholder: 'chef@example.com', oninput: (e) => { k.orderEmail = e.target.value.trim(); } }),
         'When the board is sent, the phone opens an email to this address with everything written on it, and the board is wiped clean.'),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Repeating tasks'),
