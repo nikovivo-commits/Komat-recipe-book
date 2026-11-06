@@ -119,7 +119,7 @@
   function stationPicker() {
     const cur = K.getStation(), from = ui.stFrom && ui.stFrom !== cur ? ui.stFrom : null;
     const pill = h('span', { class: 'st-pill', 'aria-hidden': 'true' });
-    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1].split(' ')[0]))));
+    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[0] === 'cold' ? s[1] : s[1].split(' ')[0]))));
     requestAnimationFrame(() => {
       if (!pill.isConnected) return;
       const at = (st) => btns.querySelector('.st-' + st);

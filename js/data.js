@@ -11,8 +11,8 @@
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
 
-  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass & pastry']];
-  K.ST = { hot: 'Hot', cold: 'Cold', pass: 'Pass & pastry' };
+  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass & pastry']];
+  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass & pastry' };
   K.ST_ICON = { hot: 'flame', cold: 'snow', pass: 'pass' };
   K.SERVICES = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['brunch', 'Brunch'], ['alacarte', 'À la carte']];
   K.SV = { breakfast: 'Breakfast', lunch: 'Lunch', brunch: 'Brunch', alacarte: 'À la carte' };

@@ -3364,8 +3364,8 @@ window.KOMAT_PART_ART = [
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
 
-  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass & pastry']];
-  K.ST = { hot: 'Hot', cold: 'Cold', pass: 'Pass & pastry' };
+  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass & pastry']];
+  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass & pastry' };
   K.ST_ICON = { hot: 'flame', cold: 'snow', pass: 'pass' };
   K.SERVICES = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['brunch', 'Brunch'], ['alacarte', 'À la carte']];
   K.SV = { breakfast: 'Breakfast', lunch: 'Lunch', brunch: 'Brunch', alacarte: 'À la carte' };
@@ -6219,7 +6219,7 @@ window.KOMAT_PART_ART = [
   function stationPicker() {
     const cur = K.getStation(), from = ui.stFrom && ui.stFrom !== cur ? ui.stFrom : null;
     const pill = h('span', { class: 'st-pill', 'aria-hidden': 'true' });
-    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[1].split(' ')[0]))));
+    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[0] === 'cold' ? s[1] : s[1].split(' ')[0]))));
     requestAnimationFrame(() => {
       if (!pill.isConnected) return;
       const at = (st) => btns.querySelector('.st-' + st);
