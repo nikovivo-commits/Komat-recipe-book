@@ -153,7 +153,7 @@
     K.sendOrder(st, items, S.close, S.base).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) { ui.todayTab = 'today'; K.tossSheet(() => K.flash('lights-off', 4200), was); }
+      if (S.close) { ui.todayTab = 'today'; K.tossSheet(null, was); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });

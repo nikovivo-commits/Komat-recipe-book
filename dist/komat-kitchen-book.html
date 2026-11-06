@@ -4446,23 +4446,25 @@ window.KOMAT_PART_ART = [
     ['webm', 'mp4'].forEach((x) => { const so = document.createElement('source'); so.src = 'assets/motion/' + name + '.' + x; so.type = 'video/' + x; v.append(so); });
     return v;
   }
-  /* yesterday's sheet goes in the bin: the film where it can play, a drawn paper ball where it can't */
+  /* yesterday's sheet goes in the bin: the film where it can play, a drawn paper ball where it can't. 50% faster than the film as shot. */
+  const BIN_SPEED = 1.5;
   function binScene(back, label, then) {
     const v = film('bin');
     let done = false;
-    const next = () => { if (done) return; done = true; back.classList.add('binned'); later(then, 450); };
+    const next = () => { if (done) return; done = true; back.classList.add('binned'); later(then, 450 / BIN_SPEED); };
     if (v) {
       v.className = 'bin-film';
+      v.defaultPlaybackRate = BIN_SPEED; v.playbackRate = BIN_SPEED;
       back.append(v, h('p', { class: 'bin-cap' }, label));
       v.addEventListener('ended', next);
       v.addEventListener('error', next, true);
       const p = v.play(); if (p && p.catch) p.catch(() => { v.remove(); paper(); });
-      later(next, 6500);
+      later(next, 6500 / BIN_SPEED);
     } else paper();
     function paper() {
       back.append(h('div', { class: 'fm-paper' }, h('b', null, 'Yesterday'), [72, 54, 80, 46, 66, 58].map((wd, i) => h('i', { style: { width: wd + '%', '--r': (i % 2 ? 1 : -1) * 1.5 + 'deg' } }))),
         h('p', { class: 'bin-cap' }, label));
-      later(next, 1500);
+      later(next, 1500 / BIN_SPEED);
     }
   }
 
@@ -4490,7 +4492,7 @@ window.KOMAT_PART_ART = [
     });
   };
 
-  /* closing: today's sheet goes in the bin, then whatever comes next (the lights going off) */
+  /* closing: today's sheet goes in the bin */
   K.tossSheet = function (then, day) {
     if (reduced()) { if (then) then(); return; }
     const back = h('div', { class: 'toss-moment binning', role: 'status' });
@@ -6789,7 +6791,7 @@ window.KOMAT_PART_ART = [
     K.sendOrder(st, items, S.close, S.base).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
-      if (S.close) { ui.todayTab = 'today'; K.tossSheet(() => K.flash('lights-off', 4200), was); }
+      if (S.close) { ui.todayTab = 'today'; K.tossSheet(null, was); }
       else if (items.length) K.sentMoment(items, 'Order sent for ' + K.ST[st] + ' · ' + items.length + (items.length === 1 ? ' item' : ' items'));
       if (S.close) K.celebrate('Mise en place finished' + (items.length ? ' · ' + items.length + ' on the order' : '') + '. Thank you!');
       else K.toast(items.length ? 'Order sent for ' + K.ST[st] + '. Thank you!' : 'Order cleared', { tone: 'good' });
