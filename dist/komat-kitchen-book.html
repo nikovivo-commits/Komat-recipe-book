@@ -268,8 +268,6 @@ body.over-photo:not(.scrolled) .top.over { background-color: transparent; border
 .chips { display: flex; align-items: center; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l)); padding: 8px var(--gutter-r) 2px var(--gutter-l); scrollbar-width: none; }
 .chips.filters { padding-top: 6px; }
 .chips .seg { flex: none; }
-.seg.small-seg { padding: 2px; }
-.seg.small-seg button { min-height: 34px; padding: 0 12px; font-size: .86rem; }
 .chips::-webkit-scrollbar { display: none; }
 .group { margin-top: 22px; }
 .group-title { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; font: 700 1.6rem/1.05 var(--display); }
@@ -324,11 +322,6 @@ body.over-photo:not(.scrolled) .top.over { background-color: transparent; border
 img.pthumb { background: var(--surface-2); }
 .pthumb.ph { display: grid; place-items: center; color: rgba(255, 255, 255, .92); font: 700 1.3rem/1 var(--display); text-transform: uppercase; }
 /* the photo must not be dragged or long-pressed on its own: the whole card moves */
-.pcard { -webkit-touch-callout: none; }
-.pcard img { pointer-events: none; -webkit-user-drag: none; user-select: none; }
-img.pc-mono { width: min(200px, 26vh, 100%); width: min(200px, 26dvh, 100%); height: auto; aspect-ratio: 1; flex: 0 1 auto; min-height: 0; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .5); }
-.sum-row { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
-.sum-row .input { grid-column: 2 / -1; }
 .stock-name { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: center; }
 .stock-txt { display: grid; min-width: 0; }
 .stock-txt .muted { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -901,74 +894,10 @@ button.todo-main { cursor: pointer; }
 .tjump b { font-size: .78rem; color: var(--muted); }
 #t-todo, #t-mep, #t-tmr { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + var(--top-h) + 64px); }
 
-/* ---------- the order check: a deck of product cards ---------- */
-.deck-page { display: flex; flex-direction: column; min-height: calc(100vh - var(--top-h) - env(safe-area-inset-top, 0px)); min-height: calc(100dvh - var(--top-h) - env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); overflow: hidden; }
-.deck-head { display: grid; gap: 8px; padding-top: 14px; max-width: 520px; }
-.deck-q { font: 700 clamp(1.6rem, 6.4vw, 2.3rem)/1.02 var(--display); }
-.deck-prog { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.deck-prog span { display: block; height: 100%; border-radius: 3px; background: var(--ready); transition: width .25s ease; }
-.deck-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .88rem; font-weight: 700; }
-.deck { position: relative; flex: 1; width: 100%; max-width: 440px; min-height: 290px; max-height: 480px; margin: 16px auto 0; }
-.pcard { position: absolute; top: 0; bottom: 28px; left: var(--gutter-l); right: var(--gutter-r); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 22px 16px; overflow: hidden; border-radius: 26px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 18px 40px -20px rgba(0, 0, 0, .5); text-align: center; touch-action: none; user-select: none; -webkit-user-select: none; transition: transform .25s cubic-bezier(.2, 1.2, .4, 1); }
-.pcard.d1 { transform: translateY(14px) scale(.95); opacity: .92; }
-.pcard.d2 { transform: translateY(28px) scale(.9); opacity: .7; }
-.pcard.front { cursor: grab; animation: rise .22s ease-out; }
-.pcard.held { cursor: grabbing; box-shadow: 0 28px 54px -20px rgba(0, 0, 0, .6); }
-.pcard.flag-red { border-color: var(--urgent); }
-@keyframes rise { from { transform: translateY(14px) scale(.95); } }
-.stamp { position: absolute; top: 22px; padding: 5px 12px; border: 3px solid currentColor; border-radius: 10px; font: 800 1.45rem/1 var(--display); letter-spacing: .08em; text-transform: uppercase; opacity: 0; pointer-events: none; }
-.stamp.have { left: 18px; color: var(--ready); transform: rotate(-12deg); }
-.stamp.out { right: 18px; color: var(--urgent); transform: rotate(12deg); }
-.stamp.low { top: auto; bottom: 22px; left: 50%; color: var(--todo-ink); background: var(--todo); border-color: var(--todo); transform: translateX(-50%) rotate(-4deg); }
-.pc-mono { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; color: rgba(255, 255, 255, .94); font: 700 2.9rem/1 var(--display); text-transform: uppercase; }
-.pc-name { font: 700 clamp(1.8rem, 7.6vw, 2.5rem)/1.04 var(--display); overflow-wrap: anywhere; text-wrap: balance; }
-.pc-used { display: grid; gap: 2px; color: var(--muted); font-size: .92rem; max-width: 32ch; }
-.pc-used span:not(.label) { color: var(--ink); font-weight: 600; }
-.deck-for { color: var(--muted); font-size: .88rem; font-weight: 600; }
-.sum-for { text-align: center; margin: -6px 0 14px; }
-.pc-flag { padding: 6px 10px; border-radius: 8px; background: var(--todo-soft); color: var(--todo-ink); font-weight: 700; font-size: .9rem; }
-.pc-flag.red { background: var(--urgent-soft); color: var(--urgent); }
-.pc-prev { color: var(--apron); font-weight: 700; font-size: .86rem; }
-.pc-never { flex: none; min-height: 36px; margin-top: 2px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: 600 .8rem/1 var(--sans); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 .codechip.basic { padding-right: 4px; }
 .chip-x { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
 .chip-x .ico { width: 14px; height: 14px; }
-.deck-acts { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 10px 0 4px; }
-.dbtn { display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--muted); font: 800 .82rem/1 var(--sans); user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-.dbtn > .ico { box-sizing: content-box; width: 30px; height: 30px; padding: 16px; border-radius: 50%; border: 2px solid currentColor; background: var(--surface); box-shadow: var(--shadow); transition: transform .12s ease; }
-.dbtn > span:not(.ico) { color: var(--ink); }
-.dbtn.out { color: var(--urgent); }
-.dbtn.have { color: var(--ready); }
-.dbtn.low { color: var(--low); }
-.dbtn.low > .ico { width: 24px; height: 24px; padding: 13px; }
-.dbtn:active > .ico { transform: scale(.88); }
-.deck-foot { display: flex; justify-content: space-between; gap: 10px; padding: 6px var(--gutter-r) 0 var(--gutter-l); max-width: 520px; width: 100%; margin: 0 auto; }
-.deck-foot .link-btn { text-decoration: none; }
-.deck-hint { padding: 4px var(--gutter-r) 0 var(--gutter-l); text-align: center; color: var(--muted); font-size: .84rem; }
-@media (max-height: 640px) { .deck-hint { display: none; } .deck-q { font-size: 1.5rem; } .pc-mono { width: 64px; height: 64px; font-size: 2.1rem; } }
 
-/* ---------- the order summary ---------- */
-.sum-head { display: grid; justify-items: center; gap: 8px; padding: 6px 0 18px; text-align: center; }
-.sum-badge { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ready); color: var(--ready-ink); animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
-.sum-badge .ico { width: 38px; height: 38px; }
-.sum-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
-.sstat { display: grid; justify-items: center; min-width: 72px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: .78rem; font-weight: 700; }
-.sstat b { font-size: 1.4rem; color: var(--ink); }
-.sstat.out b { color: var(--urgent); }
-.sstat.low b { color: var(--low); }
-.sstat.have b { color: var(--ready); }
-.sum-list { margin-bottom: 18px; }
-.sum-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 8px 10px 14px; border-top: 1px solid var(--line); }
-.sum-row:first-child { border-top: 0; }
-.sum-row.out { box-shadow: inset 4px 0 0 var(--urgent); }
-.sum-row.low { box-shadow: inset 4px 0 0 var(--todo); }
-.sum-row .input { grid-column: 1 / -1; }
-.sum-name { display: grid; min-width: 0; }
-.sum-name .muted { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.seg.mini-seg { padding: 2px; }
-.seg.mini-seg button { min-height: 34px; padding: 0 10px; font-size: .84rem; }
-.seg.mini-seg button:first-child[aria-pressed="true"] { background: var(--todo); color: var(--todo-ink); }
-.seg.mini-seg button:last-child[aria-pressed="true"] { background: var(--urgent); color: var(--urgent-ink); }
 .stock.low { box-shadow: inset 4px 0 0 var(--todo); padding-left: 10px; }
 .stock.out { box-shadow: inset 4px 0 0 var(--urgent); padding-left: 10px; }
 
@@ -979,16 +908,13 @@ button.todo-main { cursor: pointer; }
 body.has-bar { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 body:not(.has-tabs) .timers { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 body.has-bar .timers { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
-/* a running timer keeps its own space under the card deck */
-body.has-timers .deck-page { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
-body.has-timers .deck-hint { display: none; }
 
 /* ---------- celebrations ---------- */
 .confetti { position: fixed; inset: 0; z-index: 70; width: 100%; height: 100%; pointer-events: none; }
 
 /* ---------- touch: quick taps, no zoom on focus, a little give when pressed ---------- */
 button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
-.btn, .chip, .pbtn, .mbox, .mflag, .mtab, .dtab, .seg button, .preset, .sbtn, .icon-btn, .set-link, .rcard, .mini, .dbtn, .tjump button, .jump button, .codechip, .back-btn { -webkit-user-select: none; user-select: none; }
+.btn, .chip, .pbtn, .mbox, .mflag, .mtab, .dtab, .seg button, .preset, .sbtn, .icon-btn, .set-link, .rcard, .mini, .tjump button, .jump button, .codechip, .back-btn { -webkit-user-select: none; user-select: none; }
 .btn, .chip, .pbtn, .mbox, .sbtn, .preset, .set-link, .mini, .tjump button, .jump button, .codechip { transition: transform .1s ease, background-color .12s ease, border-color .12s ease; }
 .btn:active:not(:disabled), .chip:active, .pbtn:active, .sbtn:active, .preset:active, .set-link:active, .mini:active, .tjump button:active, .jump button:active, .codechip:active, .icon-btn:active { transform: scale(.96); }
 .rcard:active { transform: scale(.985); }
@@ -1000,7 +926,7 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
   .mflag { width: 44px; height: 44px; }
   .rcard:hover, .gal-item:hover img { transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { .pcard, .sheet, .sheet-back, .lightbox { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sheet, .sheet-back, .lightbox { animation: none !important; } }
 
 /* ---------- signing in to the kitchen (the real app) ---------- */
 .login-hero .hero-in { padding-block: calc(28px + env(safe-area-inset-top, 0px)) 92px; }
@@ -3364,8 +3290,8 @@ window.KOMAT_PART_ART = [
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
 
-  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass & pastry']];
-  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass & pastry' };
+  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
+  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass' };
   K.ST_ICON = { hot: 'flame', cold: 'snow', pass: 'pass' };
   K.SERVICES = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['brunch', 'Brunch'], ['alacarte', 'À la carte']];
   K.SV = { breakfast: 'Breakfast', lunch: 'Lunch', brunch: 'Brunch', alacarte: 'À la carte' };
@@ -3813,12 +3739,40 @@ window.KOMAT_PART_ART = [
   K.orderPhase = () => (new Date().getHours() < 12 ? 'late' : 'open');
   K.orderDay = (n) => K.ymd(K.addDays(new Date(Date.now() - 12 * 3600 * 1000), n || 0));
   K.orderFor = (st, date) => D.orders[(date || K.orderDay()) + '_' + st] || null;
-  K.sendOrder = function (st, items, closing) {
-    const day = K.orderDay(), id = day + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
-    const body = { date: day, station: st, items: items, at: Date.now(), by: K.me.id || '' };
+  /* An order is a set of lines, each saved as its own field (lines.<name>), so two phones writing at
+     the same time add to the order instead of replacing it. A removed line stays as {gone: true}.
+     Older orders kept a plain items list; the first write after that converts them. */
+  const lineKey = (i) => (i.late ? 'late|' : '') + String(i.n).toLowerCase();
+  const LINE = ['n', 's', 'note', 'by', 'ink', 'hand', 'at', 'late', 'extra'];
+  const sameLine = (a, b) => !!a && !!b && !a.gone && LINE.every((f) => (a[f] || '') === (b[f] || ''));
+  K.readOrder = function (doc) {
+    if (!doc || !doc.lines) return doc;
+    doc.items = Object.keys(doc.lines).map((k) => doc.lines[k]).filter((x) => x && !x.gone).sort((a, b) => (a.at || 0) - (b.at || 0));
+    return doc;
+  };
+  /* base: the lines this screen started from. Only those can be removed by this write, so a line
+     another phone added in the meantime is left alone. */
+  K.sendOrder = function (st, items, closing, base) {
+    const day = K.orderDay(), id = day + '_' + st, ref = K.db.doc('orders/' + id), cur = D.orders[id], had = !!cur;
+    const want = {}, now = Date.now();
+    items.forEach((i) => { want[lineKey(i)] = i; });
+    const body = { date: day, station: st, lines: want, at: now, by: K.me.id || '' };
+    const have = (cur && cur.lines) || {}, mine = base ? {} : null;
+    if (base) base.forEach((i) => { mine[lineKey(i)] = 1; });
     /* show it at once; the database catches up */
-    if (items.length) D.orders[id] = body; else delete D.orders[id];
-    let p = items.length ? ref.set(body) : had ? ref.delete() : Promise.resolve();
+    const keep = {};
+    Object.keys(have).forEach((k) => { if (!have[k].gone && !want[k] && base && !mine[k]) keep[k] = have[k]; });
+    const lines = Object.assign(keep, want);
+    if (Object.keys(lines).length) D.orders[id] = K.readOrder(Object.assign({}, body, { lines: lines })); else delete D.orders[id];
+    let p;
+    if (!had) p = items.length ? ref.set(body) : Promise.resolve();
+    else if (!cur.lines) p = items.length ? ref.set(body) : ref.delete();
+    else {
+      const patch = {};
+      Object.keys(want).forEach((k) => { if (!sameLine(have[k], want[k])) patch[k] = Object.assign({}, want[k], { gone: false }); });
+      Object.keys(have).forEach((k) => { if (!want[k] && !have[k].gone && (!base || mine[k])) patch[k] = { gone: true }; });
+      p = Object.keys(patch).length ? ref.update({ lines: patch, at: now, by: K.me.id || '' }) : Promise.resolve();
+    }
     if (closing) p = p.then(() => K.setClosed(st));
     return p;
   };
@@ -3946,7 +3900,7 @@ window.KOMAT_PART_ART = [
     const days = (list) => list.map((n) => K.day(n));
     const coll = (name, list, into) => unsubs.push(K.db.collection(name).where('date', 'in', days(list)).onSnapshot((s) => {
       const m = {};
-      s.docs.forEach((x) => { m[x.id] = K.clone(x.data()); });
+      s.docs.forEach((x) => { m[x.id] = K.clone(x.data()); if (into === 'orders' && !(K.readOrder(m[x.id]).items || []).length) delete m[x.id]; });
       D[into] = m;
       K.refresh();
     }, onErr));
@@ -6392,7 +6346,7 @@ window.KOMAT_PART_ART = [
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
         name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
-        meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task'],
+        meta: ['Task'],
         onUrgent: () => { K.setPrep(st, it, 'need', !d.urgent); },
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
@@ -6684,9 +6638,8 @@ window.KOMAT_PART_ART = [
 </script>
 <script>
 /* js/ordercheck.js */
-/* The order check: one product card at a time. Swipe right = have it, left = out,
-   up = running low. A summary at the end takes amounts and sends the order.
-   The classic list stays available for anyone who prefers it. */
+/* The order check: the ingredients for tomorrow’s prep list, each with a quantity and a basket button.
+   The list at the bottom takes anything else, and one button sends the order. */
 (function () {
   'use strict';
   const K = window.K, h = K.h, ui = K.ui;
@@ -6694,7 +6647,7 @@ window.KOMAT_PART_ART = [
   K.startStock = function (st, closing) {
     const prev = K.orderFor(st), m = {}, extras = [];
     if (prev) prev.items.forEach((i) => { if (i.extra) extras.push({ n: i.n, note: i.note || '' }); else m[i.n.toLowerCase()] = { s: i.s, note: i.note || '' }; });
-    ui.stock = { st: st, day: K.sday(st, 1), m: m, extras: extras, q: '', close: !!closing, mode: K.store.get('stockMode', 'swipe') === 'list' ? 'list' : 'swipe', idx: 0, hist: [], start: Date.now(), summary: !!prev && !closing };
+    ui.stock = { st: st, day: K.sday(st, 1), m: m, extras: extras, q: '', close: !!closing, start: Date.now(), anyway: !!prev && !closing, base: prev ? prev.items.slice() : [] };
     K.go('stock');
   };
 
@@ -6706,16 +6659,12 @@ window.KOMAT_PART_ART = [
     return K.photoWithFallback('assets/photos/produce/' + slug + '.jpg', (window.KOMAT_PRODUCE_SRC || {})[slug], letter, { class: cls || 'pthumb', alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' });
   };
   const count = (S) => Object.keys(S.m).length + S.extras.filter((x) => (x.n || '').trim()).length;
-  const clock = (ms) => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
   K.V.stock = function () {
-    const S = ui.stock, sl = K.stockList(S.st, S.day), ings = sl.ings;
-    const modeSeg = K.seg([['swipe', 'Swipe'], ['list', 'List']], S.mode, (v) => { S.mode = v; K.store.set('stockMode', v); if (v === 'swipe' && S.idx >= ings.length) S.summary = true; K.render(true); }, { 'aria-label': 'Check by', class: 'seg on-dark small-seg' });
-    const top = K.subbar(K.ST[S.st], () => K.go('today'), [modeSeg], S.close ? 'Finish mise en place' : 'Order check');
-    if (!sl.toMake.length && !S.summary && !S.anyway) return nothingPlanned(S, sl, top);
-    if (S.mode === 'list') return listMode(S, sl, top);
-    if (S.summary || S.idx >= ings.length) return summary(S, sl, top);
-    return deck(S, ings, top, sl);
+    const S = ui.stock, sl = K.stockList(S.st, S.day);
+    const top = K.subbar(K.ST[S.st], () => K.go('today'), [], S.close ? 'Finish mise en place' : 'Order check');
+    if (!sl.toMake.length && !S.anyway) return nothingPlanned(S, sl, top);
+    return listMode(S, sl, top);
   };
   /* what the check is for: the things marked DO on tomorrow's prep list */
   const dayWord = (S) => K.prettyDate(S.day, { weekday: 'long' });
@@ -6729,164 +6678,8 @@ window.KOMAT_PART_ART = [
       'Mark DO on what ' + K.ST[S.st] + ' has to make on ' + dayWord(S) + '. The check then asks only about the ingredients for those, like yolks and butter for a hollandaise.',
       h('div', { class: 'btns center' },
         h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.listFor = { v: 'tomorrow', day: K.day(0) }; ui.todayTab = 'tmr'; ui.stock = null; K.go('today'); setTimeout(() => { const el = document.getElementById('t-plan'); if (el) el.scrollIntoView({ block: 'start' }); }, 60); } }, K.icon('list'), 'Open tomorrow’s list'),
-        h('button', { class: 'btn', type: 'button', onclick: () => { S.anyway = true; S.summary = !sl.ings.length; K.render(true); } }, sl.ings.length ? 'Check bread and daily products' : 'Order something else'))));
+        h('button', { class: 'btn', type: 'button', onclick: () => { S.anyway = true; K.render(true); } }, sl.ings.length ? 'Check bread and daily products' : 'Order something else'))));
     return { top: top, body: w, tabs: false };
-  }
-
-  /* ---------- the card deck ---------- */
-  function deck(S, ings, top, sl) {
-    const left = ings.length - S.idx, pct = Math.round((S.idx / Math.max(1, ings.length)) * 100);
-    const wrap = h('div', { class: 'deck-page' });
-    wrap.append(h('div', { class: 'deck-head wrap' },
-      h('p', { class: 'deck-q' }, 'Do you have it for ' + dayWord(S) + '?'),
-      sl.toMake.length ? h('p', { class: 'deck-for' }, 'For tomorrow’s prep list: ' + planLine(sl)) : null,
-      h('div', { class: 'deck-prog', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(ings.length), 'aria-valuenow': String(S.idx) }, h('span', { style: { width: pct + '%' } })),
-      h('div', { class: 'deck-meta' }, h('span', { class: 'mono' }, (S.idx + 1) + ' / ' + ings.length), h('span', null, count(S) ? count(S) + ' to order so far' : left + ' to go'))));
-    const stack = h('div', { class: 'deck', id: 'deck' });
-    for (let i = Math.min(ings.length - 1, S.idx + 2); i >= S.idx; i--) stack.append(card(ings[i], i - S.idx, S));
-    wrap.append(stack);
-    wrap.append(h('div', { class: 'deck-acts' },
-      h('button', { type: 'button', class: 'dbtn out', onclick: () => fling('out') }, K.icon('close'), h('span', null, 'Out')),
-      h('button', { type: 'button', class: 'dbtn low', onclick: () => fling('low') }, K.icon('up'), h('span', null, 'Low')),
-      h('button', { type: 'button', class: 'dbtn have', onclick: () => fling('have') }, K.icon('check'), h('span', null, 'Have'))));
-    wrap.append(h('div', { class: 'deck-foot' },
-      h('button', { type: 'button', class: 'link-btn', disabled: !S.hist.length, onclick: undo }, K.icon('back'), 'Undo'),
-      h('button', { type: 'button', class: 'link-btn', onclick: () => { S.summary = true; K.render(true); } }, 'Skip to the summary', K.icon('next'))));
-    wrap.append(h('p', { class: 'deck-hint' }, 'Swipe right if you have it, left if it’s out, up if it’s running low.'));
-    return { top: top, body: wrap, tabs: false, after: () => { const c = document.querySelector('.pcard.front'); if (c) drag(c); } };
-  }
-  function card(g, depth, S) {
-    const k = g.name.toLowerCase(), cur = S.m[k];
-    return h('article', { class: 'pcard d' + depth + (depth === 0 ? ' front' : '') + (g.flag ? ' flag-' + g.flag : ''), 'aria-hidden': depth ? 'true' : null, 'aria-label': depth ? null : g.name },
-      h('span', { class: 'stamp have' }, 'Have'), h('span', { class: 'stamp out' }, 'Out'), h('span', { class: 'stamp low' }, 'Low'),
-      K.produceThumb(g.name, 'pc-mono'),
-      h('h2', { class: 'pc-name' }, g.name),
-      g.flag === 'red' ? h('p', { class: 'pc-flag red' }, g.usedIn[0]) : g.flag === 'ask' ? h('p', { class: 'pc-flag' }, g.usedIn[0]) : null,
-      !g.flag && g.usedIn.length ? h('p', { class: 'pc-used' }, h('span', { class: 'label' }, 'Needed for'), g.usedIn.slice(0, 3).map((u) => h('span', null, u)), g.usedIn.length > 3 ? h('span', null, '+' + (g.usedIn.length - 3) + ' more') : null) : null,
-      cur ? h('p', { class: 'pc-prev' }, 'Marked ' + (cur.s === 'out' ? 'out' : 'low') + ' earlier' + (cur.note ? ': ' + cur.note : '')) : null,
-      K.me.admin && !g.flag && depth === 0 ? h('button', { type: 'button', class: 'pc-never', onclick: () => neverAsk(g) }, 'Always in stock? Stop asking') : null);
-  }
-  /* the head chef can take a basic off the check for good (Kitchen rules lists them) */
-  function neverAsk(g) {
-    const before = (K.kitchen().basics || []).slice();
-    K.saveKitchen({ basics: before.concat([g.name]) });
-    K.vibrate(10);
-    K.toast(g.name + ' won’t be asked again', { tone: 'good', undo: () => K.saveKitchen({ basics: before }) });
-  }
-  /* follow the finger; let go past the edge to decide */
-  function drag(el) {
-    let x0 = 0, y0 = 0, dx = 0, dy = 0, pid = null, t0 = 0;
-    const stamps = { have: el.querySelector('.stamp.have'), out: el.querySelector('.stamp.out'), low: el.querySelector('.stamp.low') };
-    const paint = () => {
-      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + dx / 16 + 'deg)';
-      const up = -dy > Math.abs(dx);
-      stamps.have.style.opacity = !up && dx > 0 ? Math.min(1, dx / 90) : 0;
-      stamps.out.style.opacity = !up && dx < 0 ? Math.min(1, -dx / 90) : 0;
-      stamps.low.style.opacity = up ? Math.min(1, -dy / 80) : 0;
-    };
-    el.addEventListener('pointerdown', (e) => {
-      if (busy || e.target.closest('button')) return;
-      pid = e.pointerId; x0 = e.clientX; y0 = e.clientY; dx = 0; dy = 0; t0 = Date.now();
-      try { el.setPointerCapture(pid); } catch (err) { /* not capturable */ }
-      el.style.transition = 'none';
-      el.classList.add('held');
-    });
-    el.addEventListener('pointermove', (e) => { if (e.pointerId !== pid) return; dx = e.clientX - x0; dy = Math.min(40, e.clientY - y0); if (e.clientY - y0 < 0) dy = e.clientY - y0; paint(); });
-    const end = (e) => {
-      if (e.pointerId !== pid) return;
-      pid = null;
-      el.classList.remove('held');
-      const dt = Math.max(1, Date.now() - t0), vx = dx / dt, vy = dy / dt;
-      const up = -dy > Math.abs(dx);
-      let choice = null;
-      if (up && (dy < -90 || (vy < -0.5 && dy < -40))) choice = 'low';
-      else if (!up && (dx > 100 || (vx > 0.55 && dx > 40))) choice = 'have';
-      else if (!up && (dx < -100 || (vx < -0.55 && dx < -40))) choice = 'out';
-      if (choice) { decide(choice, el, dx, dy); return; }
-      el.style.transition = 'transform .25s cubic-bezier(.2,1.4,.4,1)';
-      dx = 0; dy = 0; paint();
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-  }
-  let busy = false;
-  function fling(choice) {
-    const el = document.querySelector('.pcard.front');
-    if (!el || busy) return;
-    const s = el.querySelector('.stamp.' + choice);
-    if (s) s.style.opacity = 1;
-    decide(choice, el, choice === 'have' ? 1 : choice === 'out' ? -1 : 0, choice === 'low' ? -1 : 0);
-  }
-  function decide(choice, el, dx, dy) {
-    const S = ui.stock, ings = K.stockList(S.st, S.day).ings, g = ings[S.idx];
-    if (!g || busy) return;
-    busy = true;
-    const k = g.name.toLowerCase();
-    S.hist.push({ k: k, prev: S.m[k] ? K.clone(S.m[k]) : null });
-    if (choice === 'have') delete S.m[k]; else S.m[k] = { s: choice, note: (S.m[k] && S.m[k].note) || '' };
-    S.idx++;
-    K.vibrate(choice === 'have' ? 8 : choice === 'low' ? [8, 30, 8] : 18);
-    const W = innerWidth;
-    const tx = choice === 'have' ? W * 1.1 : choice === 'out' ? -W * 1.1 : dx * 2, ty = choice === 'low' ? -innerHeight : dy * 2;
-    el.style.transition = 'transform .2s ease-in, opacity .2s ease-in';
-    el.style.transform = 'translate(' + tx + 'px,' + ty + 'px) rotate(' + (choice === 'have' ? 18 : choice === 'out' ? -18 : 0) + 'deg)';
-    el.style.opacity = '0.6';
-    setTimeout(() => {
-      busy = false;
-      if (S.idx >= ings.length) { S.summary = true; S.took = Date.now() - S.start; }
-      K.render(true);
-    }, 170);
-  }
-  function undo() {
-    const S = ui.stock, last = S.hist.pop();
-    if (!last) return;
-    if (last.prev) S.m[last.k] = last.prev; else delete S.m[last.k];
-    S.idx = Math.max(0, S.idx - 1);
-    S.summary = false;
-    K.render(true);
-  }
-  document.addEventListener('keydown', (e) => {
-    const S = ui.stock;
-    if (ui.view !== 'stock' || !S || S.mode !== 'swipe' || S.summary || ui.sheet) return;
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
-    const map = { ArrowRight: 'have', ArrowLeft: 'out', ArrowUp: 'low' };
-    if (map[e.key]) { e.preventDefault(); fling(map[e.key]); }
-    else if (e.key === 'Backspace' || e.key === 'z') { e.preventDefault(); undo(); }
-  });
-
-  /* ---------- the summary ---------- */
-  function summary(S, sl, top) {
-    const ings = sl.ings, byKey = {};
-    ings.forEach((g) => { byKey[g.name.toLowerCase()] = g; });
-    const marked = Object.keys(S.m).map((k) => ({ k: k, g: byKey[k] || { name: k, usedIn: [] }, m: S.m[k] })).sort((a, b) => (a.m.s === b.m.s ? a.g.name.localeCompare(b.g.name) : a.m.s === 'out' ? -1 : 1));
-    const outs = marked.filter((x) => x.m.s === 'out').length, lows = marked.length - outs;
-    const n = count(S);
-    const w = h('div', { class: 'wrap page narrow sum' });
-    w.append(h('div', { class: 'sum-head' },
-      h('span', { class: 'sum-badge' }, K.icon('check')),
-      h('h1', { class: 'rtitle' }, S.idx >= ings.length ? 'All checked' : 'Your order so far'),
-      h('p', { class: 'lead' }, n ? n + (n === 1 ? ' thing' : ' things') + ' to order. Everything else is covered.' : 'Fully stocked. Nothing to order.'),
-      h('div', { class: 'sum-stats' },
-        h('span', { class: 'sstat out' }, h('b', { class: 'mono' }, String(outs)), 'out'),
-        h('span', { class: 'sstat low' }, h('b', { class: 'mono' }, String(lows)), 'low'),
-        h('span', { class: 'sstat have' }, h('b', { class: 'mono' }, String(Math.max(0, Math.min(S.idx, ings.length) - marked.length))), 'have'),
-        S.took && S.idx >= ings.length ? h('span', { class: 'sstat' }, h('b', { class: 'mono' }, clock(S.took)), 'to check') : null)));
-    if (sl.toMake.length) w.append(h('p', { class: 'hint sum-for' }, 'Checked for tomorrow’s prep list: ' + planLine(sl) + '.'));
-    if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + (sl.unlinked.length === 1 ? ' item on tomorrow’s list has' : ' items on tomorrow’s list have') + ' no recipe, so check those yourself'),
-      h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their ingredients join the check.')));
-    if (marked.length) {
-      w.append(h('div', { class: 'olist card sum-list' }, marked.map((x) => h('div', { class: 'sum-row ' + x.m.s },
-        K.produceThumb(x.g.name),
-        h('div', { class: 'sum-name' }, h('b', null, x.g.name), x.g.usedIn && x.g.usedIn.length ? h('span', { class: 'muted' }, x.g.usedIn.slice(0, 2).join(', ')) : null),
-        K.seg([['low', 'Low'], ['out', 'Out']], x.m.s, (v) => { x.m.s = v; K.render(); }, { 'aria-label': x.g.name, class: 'seg mini-seg' }),
-        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'We have ' + x.g.name + ' after all', title: 'We have it', onclick: () => { delete S.m[x.k]; K.render(); } }, K.icon('close')),
-        h('input', { class: 'input small', id: 'sq-' + K.safeId(x.k), placeholder: 'How much? e.g. 2 kg', 'aria-label': 'Amount of ' + x.g.name, enterkeyhint: 'done', value: x.m.note, oninput: (e) => { x.m.note = e.target.value; } })))));
-    } else {
-      w.append(K.catRest('All stocked up', 'You have everything for ' + dayWord(S) + '’s prep list.' + (S.close ? ' Enjoy the rest of your shift.' : '')));
-    }
-    w.append(extrasBlock(S));
-    w.append(h('div', { class: 'btns center' }, h('button', { type: 'button', class: 'link-btn', onclick: () => { S.idx = 0; S.hist = []; S.summary = false; S.start = Date.now(); S.took = 0; K.render(true); } }, K.icon('back'), 'Check again from the start')));
-    return { top: top, body: w, tabs: false, bar: sendBar(S) };
   }
   function extrasBlock(S) {
     return h('section', { class: 'block' }, h('h2', { class: 'block-title' }, 'Something else'),
@@ -6911,6 +6704,8 @@ window.KOMAT_PART_ART = [
       h('p', { class: 'muted' }, sl.toMake.length ? 'The ingredients for tomorrow’s prep list: ' + planLine(sl) + '. Write how much you need and tap the basket.' : 'Bread and the products checked every day.'));
     w.append(h('div', { class: 'search small' }, K.icon('search'), h('input', { class: 'search-in', id: 'stockq', type: 'search', enterkeyhint: 'search', placeholder: 'Find a product', value: S.q, 'aria-label': 'Find a product',
       oninput: (e) => { S.q = e.target.value; const l = document.getElementById('stocklist'); if (l) l.replaceWith(rows(ings)); } })));
+    if (sl.unlinked.length) w.append(h('details', { class: 'unlinked' }, h('summary', null, sl.unlinked.length + (sl.unlinked.length === 1 ? ' item on tomorrow’s list has' : ' items on tomorrow’s list have') + ' no recipe, so check those yourself'),
+      h('p', { class: 'hint' }, sl.unlinked.join(', ')), h('p', { class: 'hint' }, 'Link them to a recipe in Edit list and their ingredients join the check.')));
     w.append(rows(ings));
     const bk = basket(S, ings);
     if (bk) w.append(bk);
@@ -6995,7 +6790,7 @@ window.KOMAT_PART_ART = [
     if (!items.length && !K.orderFor(st) && !S.close) { ui.stock = null; K.go('today'); K.toast('Fully stocked. Nice.', { tone: 'good' }); return; }
     ui.busy = true; K.render();
     const was = K.sday(st);
-    K.sendOrder(st, items, S.close).then(() => {
+    K.sendOrder(st, items, S.close, S.base).then(() => {
       ui.busy = false; ui.stock = null;
       K.go('today');
       if (S.close) { ui.todayTab = 'today'; K.tossSheet(() => K.flash('lights-off', 4200), was); }

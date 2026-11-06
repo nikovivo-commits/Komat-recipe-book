@@ -11,8 +11,8 @@
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, bugs: [], names: {}, noWrite: false,
   });
 
-  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass & pastry']];
-  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass & pastry' };
+  K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
+  K.ST = { hot: 'Hot', cold: 'Cold & pastry', pass: 'Pass' };
   K.ST_ICON = { hot: 'flame', cold: 'snow', pass: 'pass' };
   K.SERVICES = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['brunch', 'Brunch'], ['alacarte', 'À la carte']];
   K.SV = { breakfast: 'Breakfast', lunch: 'Lunch', brunch: 'Brunch', alacarte: 'À la carte' };
@@ -460,12 +460,40 @@
   K.orderPhase = () => (new Date().getHours() < 12 ? 'late' : 'open');
   K.orderDay = (n) => K.ymd(K.addDays(new Date(Date.now() - 12 * 3600 * 1000), n || 0));
   K.orderFor = (st, date) => D.orders[(date || K.orderDay()) + '_' + st] || null;
-  K.sendOrder = function (st, items, closing) {
-    const day = K.orderDay(), id = day + '_' + st, ref = K.db.doc('orders/' + id), had = !!D.orders[id];
-    const body = { date: day, station: st, items: items, at: Date.now(), by: K.me.id || '' };
+  /* An order is a set of lines, each saved as its own field (lines.<name>), so two phones writing at
+     the same time add to the order instead of replacing it. A removed line stays as {gone: true}.
+     Older orders kept a plain items list; the first write after that converts them. */
+  const lineKey = (i) => (i.late ? 'late|' : '') + String(i.n).toLowerCase();
+  const LINE = ['n', 's', 'note', 'by', 'ink', 'hand', 'at', 'late', 'extra'];
+  const sameLine = (a, b) => !!a && !!b && !a.gone && LINE.every((f) => (a[f] || '') === (b[f] || ''));
+  K.readOrder = function (doc) {
+    if (!doc || !doc.lines) return doc;
+    doc.items = Object.keys(doc.lines).map((k) => doc.lines[k]).filter((x) => x && !x.gone).sort((a, b) => (a.at || 0) - (b.at || 0));
+    return doc;
+  };
+  /* base: the lines this screen started from. Only those can be removed by this write, so a line
+     another phone added in the meantime is left alone. */
+  K.sendOrder = function (st, items, closing, base) {
+    const day = K.orderDay(), id = day + '_' + st, ref = K.db.doc('orders/' + id), cur = D.orders[id], had = !!cur;
+    const want = {}, now = Date.now();
+    items.forEach((i) => { want[lineKey(i)] = i; });
+    const body = { date: day, station: st, lines: want, at: now, by: K.me.id || '' };
+    const have = (cur && cur.lines) || {}, mine = base ? {} : null;
+    if (base) base.forEach((i) => { mine[lineKey(i)] = 1; });
     /* show it at once; the database catches up */
-    if (items.length) D.orders[id] = body; else delete D.orders[id];
-    let p = items.length ? ref.set(body) : had ? ref.delete() : Promise.resolve();
+    const keep = {};
+    Object.keys(have).forEach((k) => { if (!have[k].gone && !want[k] && base && !mine[k]) keep[k] = have[k]; });
+    const lines = Object.assign(keep, want);
+    if (Object.keys(lines).length) D.orders[id] = K.readOrder(Object.assign({}, body, { lines: lines })); else delete D.orders[id];
+    let p;
+    if (!had) p = items.length ? ref.set(body) : Promise.resolve();
+    else if (!cur.lines) p = items.length ? ref.set(body) : ref.delete();
+    else {
+      const patch = {};
+      Object.keys(want).forEach((k) => { if (!sameLine(have[k], want[k])) patch[k] = Object.assign({}, want[k], { gone: false }); });
+      Object.keys(have).forEach((k) => { if (!want[k] && !have[k].gone && (!base || mine[k])) patch[k] = { gone: true }; });
+      p = Object.keys(patch).length ? ref.update({ lines: patch, at: now, by: K.me.id || '' }) : Promise.resolve();
+    }
     if (closing) p = p.then(() => K.setClosed(st));
     return p;
   };
@@ -593,7 +621,7 @@
     const days = (list) => list.map((n) => K.day(n));
     const coll = (name, list, into) => unsubs.push(K.db.collection(name).where('date', 'in', days(list)).onSnapshot((s) => {
       const m = {};
-      s.docs.forEach((x) => { m[x.id] = K.clone(x.data()); });
+      s.docs.forEach((x) => { m[x.id] = K.clone(x.data()); if (into === 'orders' && !(K.readOrder(m[x.id]).items || []).length) delete m[x.id]; });
       D[into] = m;
       K.refresh();
     }, onErr));

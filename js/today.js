@@ -292,7 +292,7 @@
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
         name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
-        meta: [d.leftBy !== undefined ? 'Left from yesterday' + (K.nameOf(d.leftBy) ? ' by ' + K.nameOf(d.leftBy) : '') : 'Task'],
+        meta: ['Task'],
         onUrgent: () => { K.setPrep(st, it, 'need', !d.urgent); },
         onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
