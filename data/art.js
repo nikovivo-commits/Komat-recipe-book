@@ -3,6 +3,7 @@
 window.KOMAT_ART = [
   "barkani-yaitsa",
   "benedikt",
+  "cake-cacao",
   "cveklo",
   "cveklo-gaspacho",
   "domaten-sos",
