@@ -1442,7 +1442,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 @keyframes smear-off { to { opacity: 0; filter: blur(4px); transform: translateX(14px) skewX(-8deg); } }
 .eraser { position: absolute; z-index: 2; left: 0; top: 0; width: 86px; height: 40px; border-radius: 8px; background: linear-gradient(#3A3B3B 0 55%, #E9E4D8 55%); box-shadow: 0 8px 14px -6px rgba(0, 0, 0, .5); animation: erase 1.4s ease-in-out both; }
 @keyframes erase { 0% { transform: translate(-90px, 10px) rotate(-8deg); } 20% { transform: translate(260px, 30px) rotate(6deg); } 40% { transform: translate(10px, 90px) rotate(-6deg); } 60% { transform: translate(270px, 150px) rotate(5deg); } 80% { transform: translate(20px, 210px) rotate(-5deg); } 100% { transform: translate(420px, 240px) rotate(8deg); } }
-.wb-clean { margin: 4px 0; color: #9A9D98; font: 700 1.1rem var(--hand, cursive); }
 .wb-send { display: grid; gap: 6px; margin-top: 26px; }
 .toss-moment { position: fixed; inset: 0; z-index: 85; pointer-events: none; background: rgba(20, 20, 19, .35); animation: fadein .2s ease both; }
 @media (prefers-reduced-motion: reduce) { .eraser, .toss-moment { display: none; } }
@@ -1494,16 +1493,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .dl-labels span.low { top: 26px; }
 .dayline { padding-bottom: 52px; }
 
-/* the order clock: sent at midnight, Sorry chef until noon */
-.board-stamp.sent { border: 2px solid var(--ready); background: var(--ready-soft); }
-.board-stamp.sent .ds-k { color: var(--ready); }
-.wboard .sorry { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 10px; border-top: 2px dashed #E3B4AC; }
-.sorry-lab { color: #C42F1C; font: 800 .72rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
-.sorry-n { padding: 0 7px; border-radius: 999px; background: #C42F1C; color: #fff; font: 700 .72rem/1.6 var(--mono); }
-.wb-form.late .input { border-color: #E3B4AC; }
-.sorry-btn { background: #C42F1C; border-color: #C42F1C; }
-.wb-sent summary { cursor: pointer; color: #8A8D88; font: 600 .82rem var(--sans); padding: 4px 0; }
-.wb-sent-list { opacity: .55; }
+/* the order stamp: one order per day */
 
 /* first sign-in: pick your name from the rota */
 .whoami { display: grid; gap: 14px; }

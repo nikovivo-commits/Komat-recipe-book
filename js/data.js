@@ -453,16 +453,13 @@
   };
 
   /* ---------- orders and whiteboard ---------- */
-  /* The order runs on its own clock. Everything written from 12:00 until midnight is one order;
-     at midnight it goes to the head chef and the board is wiped. From midnight until 12:00 the next
-     day, anything new is a "Sorry chef, I forgot to order" line on that same order. From 12:00 a new
-     order starts. An order is named by the day it was written (its noon). */
-  K.orderPhase = () => (new Date().getHours() < 12 ? 'late' : 'open');
-  K.orderDay = (n) => K.ymd(K.addDays(new Date(Date.now() - 12 * 3600 * 1000), n || 0));
+  /* One order per calendar day: it turns over at midnight, when it counts as sent to the head chef. */
+  K.orderDay = (n) => K.day(n);
   K.orderFor = (st, date) => D.orders[(date || K.orderDay()) + '_' + st] || null;
   /* An order is a set of lines, each saved as its own field (lines.<name>), so two phones writing at
      the same time add to the order instead of replacing it. A removed line stays as {gone: true}.
      Older orders kept a plain items list; the first write after that converts them. */
+  /* orders written before "Sorry chef" was removed may still carry late lines: they keep their own key */
   const lineKey = (i) => (i.late ? 'late|' : '') + String(i.n).toLowerCase();
   const LINE = ['n', 's', 'note', 'by', 'ink', 'hand', 'at', 'late', 'extra'];
   const sameLine = (a, b) => !!a && !!b && !a.gone && LINE.every((f) => (a[f] || '') === (b[f] || ''));
