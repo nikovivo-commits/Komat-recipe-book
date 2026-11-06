@@ -5711,7 +5711,7 @@ window.KOMAT_SEED.recipes = [
    }
   ],
   "name": "Какаов кейк 5★",
-  "notes": "From a handwritten sheet titled \"Cake cacao 5★\". Makes 3 containers of 500 each. The method says to boil sugar with the water, cocoa and cream, but the ingredient list has no sugar. Check the amount with whoever wrote the sheet before the next batch.",
+  "notes": "From a handwritten sheet titled \"Cake cacao 5★\". Makes 3 containers of 500 each. No white sugar, only muscovado. The sheet gives no separate muscovado amount: check whether the 500 \"molasses\" line is the muscovado.",
   "onMenu": true,
   "photo": "",
   "plating": "",
@@ -5720,7 +5720,7 @@ window.KOMAT_SEED.recipes = [
   ],
   "station": "cold",
   "steps": [
-   "Сварете водата, захарта, какаото и сметаната до кипване.",
+   "Сварете водата, мускавадото, какаото и сметаната до кипване.",
    "Изсипете върху брашното и бакпулвера. Разбъркайте бързо.",
    "Изсипете върху леко разбитите яйца и маслото и разбъркайте.",
    "Разпределете в 3 съда по 500 г всеки.",
