@@ -5660,5 +5660,75 @@ window.KOMAT_SEED.recipes = [
   "videos": [],
   "yieldQty": "25",
   "yieldUnit": "portions"
+ },
+ {
+  "allergens": [],
+  "allergensChecked": false,
+  "category": "Desserts",
+  "components": [],
+  "id": "cake-cacao",
+  "ingredients": [
+   {
+    "n": "вода",
+    "q": "225",
+    "u": "ml"
+   },
+   {
+    "n": "какао",
+    "q": "50",
+    "u": "g"
+   },
+   {
+    "n": "масло (стайна температура)",
+    "q": "195",
+    "u": "g"
+   },
+   {
+    "n": "меласа",
+    "q": "500",
+    "u": "g"
+   },
+   {
+    "n": "яйца",
+    "q": "3",
+    "u": "pcs"
+   },
+   {
+    "n": "бакпулвер",
+    "q": "15",
+    "u": "g"
+   },
+   {
+    "n": "брашно",
+    "q": "225",
+    "u": "g"
+   },
+   {
+    "n": "сметана",
+    "q": "265",
+    "u": "g"
+   }
+  ],
+  "name": "Какаов кейк 5★",
+  "notes": "From a handwritten sheet titled \"Cake cacao 5★\". Makes 3 containers of 500 each. The method says to boil sugar with the water, cocoa and cream, but the ingredient list has no sugar. Check the amount with whoever wrote the sheet before the next batch.",
+  "onMenu": true,
+  "photo": "",
+  "plating": "",
+  "services": [
+   "alacarte"
+  ],
+  "station": "cold",
+  "steps": [
+   "Сварете водата, захарта, какаото и сметаната до кипване.",
+   "Изсипете върху брашното и бакпулвера. Разбъркайте бързо.",
+   "Изсипете върху леко разбитите яйца и маслото и разбъркайте.",
+   "Разпределете в 3 съда по 500 г всеки.",
+   "Печете 25 минути на 170 °C."
+  ],
+  "type": "recipe",
+  "updated": 1793963948413,
+  "videos": [],
+  "yieldQty": "",
+  "yieldUnit": ""
  }
 ];
