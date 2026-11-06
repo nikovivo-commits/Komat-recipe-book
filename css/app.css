@@ -321,6 +321,7 @@ img.pthumb { background: var(--surface-2); }
 .oline { grid-template-columns: 40px auto minmax(0, 1fr); align-items: center; }
 .oline .pthumb { width: 40px; height: 40px; }
 @media (min-width: 900px) { .rhead.has-photo { grid-template-columns: 5fr 6fr; gap: 36px; align-items: start; } .dish-photo { aspect-ratio: 4 / 3; } .rhead.has-photo .dish-photo-btn { position: sticky; top: 80px; } }
+.aka { margin-top: -6px; color: var(--muted); font-weight: 700; }
 .rtitle { font: 700 clamp(2.2rem, 7vw, 3.4rem)/.98 var(--display); overflow-wrap: anywhere; }
 .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .mchip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font: 700 .8rem/1.3 var(--sans); color: var(--muted); }

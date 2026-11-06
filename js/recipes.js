@@ -70,7 +70,7 @@
 
   function hay(r, c) {
     if (c) return (c.name + ' ' + c.ingredients.map((i) => i.n).join(' ') + ' ' + (c._alt || '')).toLowerCase();
-    return (r.name + ' ' + r.category + ' ' + r.ingredients.map((i) => i.n).join(' ') + ' ' + r.components.map((x) => x.name + ' ' + x.ingredients.map((i) => i.n).join(' ')).join(' ') + ' ' + (r._alt || '')).toLowerCase();
+    return (r.name + ' ' + (r.aka || '') + ' ' + r.category + ' ' + r.ingredients.map((i) => i.n).join(' ') + ' ' + r.components.map((x) => x.name + ' ' + x.ingredients.map((i) => i.n).join(' ')).join(' ') + ' ' + (r._alt || '')).toLowerCase();
   }
   /* Bulgarian spellings that differ only a little still find each other: гьози, гьоза, гиоза and гйоза,
      or домат and домати. ь and ъ are dropped, й becomes и, и before о is dropped, and the last word
@@ -127,6 +127,7 @@
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
     const part = c || r, isDish = !c && r.type === 'dish';
+    const akaHit = !c && q && r.aka && matchesQ(r.aka.toLowerCase(), q) && !matchesQ(r.name.toLowerCase(), q);
     return h('button', { class: 'rcard', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget); K.go('recipe', { id: r.id, comp: en.ci }); } },
       c ? thumb(null, c.name) : thumb(r, r.name),
       h('div', { class: 'card-txt' },
@@ -137,7 +138,7 @@
           isDish && r.components.length ? h('span', null, r.components.length + (r.components.length === 1 ? ' part' : ' parts')) : part.ingredients.length ? h('span', null, part.ingredients.length + ' ingredients') : null,
           K.stationOf(r, c) && K.ST[K.stationOf(r, c)] ? h('span', null, K.ST[K.stationOf(r, c)]) : null),
         c ? h('span', { class: 'card-in' }, 'In ' + r.name) : null,
-        why ? h('span', { class: 'card-why' }, 'Has ' + why) : null,
+        akaHit ? h('span', { class: 'card-why' }, 'Also called ' + r.aka) : why ? h('span', { class: 'card-why' }, 'Has ' + why) : null,
         !c && (r.onMenu === false || r.videos.length) ? h('span', { class: 'card-pills' },
           r.onMenu === false ? h('span', { class: 'pill muted' }, 'Off the menu') : null,
           r.videos.length ? h('span', { class: 'pill' }, K.icon('play'), 'Plating video') : null) : null));
@@ -368,6 +369,7 @@
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),
         h('h1', { class: 'rtitle' }, r.name),
+        r.aka ? h('p', { class: 'aka' }, 'Also called ' + r.aka) : null,
         metaChips(r, null),
         comps.length ? null : scaler(main, false),
         index, al, CLEAN())));

@@ -40,7 +40,7 @@
   K.norm = function (r) {
     const comps = Array.isArray(r.components) ? r.components.map(normComp) : [];
     return {
-      id: r.id, name: r.name || 'Untitled', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
+      id: r.id, name: r.name || 'Untitled', aka: r.aka || '', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
       photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], gallery: Array.isArray(r.gallery) ? r.gallery.filter((g) => g && g.id) : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
       steps: Array.isArray(r.steps) ? r.steps : [], plating: r.plating || '', notes: r.notes || '', allergens: Array.isArray(r.allergens) ? r.allergens : [],
       allergensChecked: !!r.allergensChecked, updated: r.updated || 0, station: r.station || '',

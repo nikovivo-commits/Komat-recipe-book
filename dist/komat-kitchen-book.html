@@ -328,6 +328,7 @@ img.pthumb { background: var(--surface-2); }
 .oline { grid-template-columns: 40px auto minmax(0, 1fr); align-items: center; }
 .oline .pthumb { width: 40px; height: 40px; }
 @media (min-width: 900px) { .rhead.has-photo { grid-template-columns: 5fr 6fr; gap: 36px; align-items: start; } .dish-photo { aspect-ratio: 4 / 3; } .rhead.has-photo .dish-photo-btn { position: sticky; top: 80px; } }
+.aka { margin-top: -6px; color: var(--muted); font-weight: 700; }
 .rtitle { font: 700 clamp(2.2rem, 7vw, 3.4rem)/.98 var(--display); overflow-wrap: anywhere; }
 .meta-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .mchip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font: 700 .8rem/1.3 var(--sans); color: var(--muted); }
@@ -3305,7 +3306,7 @@ window.KOMAT_PART_ART = [
   K.norm = function (r) {
     const comps = Array.isArray(r.components) ? r.components.map(normComp) : [];
     return {
-      id: r.id, name: r.name || 'Untitled', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
+      id: r.id, name: r.name || 'Untitled', aka: r.aka || '', category: r.category || '', yieldQty: r.yieldQty || '', yieldUnit: r.yieldUnit || '',
       photo: r.photo || '', videos: Array.isArray(r.videos) ? r.videos : [], gallery: Array.isArray(r.gallery) ? r.gallery.filter((g) => g && g.id) : [], ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
       steps: Array.isArray(r.steps) ? r.steps : [], plating: r.plating || '', notes: r.notes || '', allergens: Array.isArray(r.allergens) ? r.allergens : [],
       allergensChecked: !!r.allergensChecked, updated: r.updated || 0, station: r.station || '',
@@ -5123,7 +5124,7 @@ window.KOMAT_PART_ART = [
 
   function hay(r, c) {
     if (c) return (c.name + ' ' + c.ingredients.map((i) => i.n).join(' ') + ' ' + (c._alt || '')).toLowerCase();
-    return (r.name + ' ' + r.category + ' ' + r.ingredients.map((i) => i.n).join(' ') + ' ' + r.components.map((x) => x.name + ' ' + x.ingredients.map((i) => i.n).join(' ')).join(' ') + ' ' + (r._alt || '')).toLowerCase();
+    return (r.name + ' ' + (r.aka || '') + ' ' + r.category + ' ' + r.ingredients.map((i) => i.n).join(' ') + ' ' + r.components.map((x) => x.name + ' ' + x.ingredients.map((i) => i.n).join(' ')).join(' ') + ' ' + (r._alt || '')).toLowerCase();
   }
   /* Bulgarian spellings that differ only a little still find each other: гьози, гьоза, гиоза and гйоза,
      or домат and домати. ь and ъ are dropped, й becomes и, и before о is dropped, and the last word
@@ -5180,6 +5181,7 @@ window.KOMAT_PART_ART = [
   function card(en, q) {
     const r = en.r, c = en.c, why = q ? whyMatch(r, c, q) : '';
     const part = c || r, isDish = !c && r.type === 'dish';
+    const akaHit = !c && q && r.aka && matchesQ(r.aka.toLowerCase(), q) && !matchesQ(r.name.toLowerCase(), q);
     return h('button', { class: 'rcard', type: 'button', onclick: (e) => { K.morphFrom(e.currentTarget); K.go('recipe', { id: r.id, comp: en.ci }); } },
       c ? thumb(null, c.name) : thumb(r, r.name),
       h('div', { class: 'card-txt' },
@@ -5190,7 +5192,7 @@ window.KOMAT_PART_ART = [
           isDish && r.components.length ? h('span', null, r.components.length + (r.components.length === 1 ? ' part' : ' parts')) : part.ingredients.length ? h('span', null, part.ingredients.length + ' ingredients') : null,
           K.stationOf(r, c) && K.ST[K.stationOf(r, c)] ? h('span', null, K.ST[K.stationOf(r, c)]) : null),
         c ? h('span', { class: 'card-in' }, 'In ' + r.name) : null,
-        why ? h('span', { class: 'card-why' }, 'Has ' + why) : null,
+        akaHit ? h('span', { class: 'card-why' }, 'Also called ' + r.aka) : why ? h('span', { class: 'card-why' }, 'Has ' + why) : null,
         !c && (r.onMenu === false || r.videos.length) ? h('span', { class: 'card-pills' },
           r.onMenu === false ? h('span', { class: 'pill muted' }, 'Off the menu') : null,
           r.videos.length ? h('span', { class: 'pill' }, K.icon('play'), 'Plating video') : null) : null));
@@ -5421,6 +5423,7 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker' + (r.type === 'dish' ? ' dish' : '') }, (r.type === 'dish' ? 'Dish' : 'Recipe') + (r.category ? ' · ' + r.category : '')),
         h('h1', { class: 'rtitle' }, r.name),
+        r.aka ? h('p', { class: 'aka' }, 'Also called ' + r.aka) : null,
         metaChips(r, null),
         comps.length ? null : scaler(main, false),
         index, al, CLEAN())));
@@ -5560,7 +5563,7 @@ window.KOMAT_PART_ART = [
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
 
   function blank(cat, type) {
-    return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
+    return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', aka: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
       photo: '', gallery: [], videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
   }
   function editComp(c) {
@@ -5802,6 +5805,7 @@ window.KOMAT_PART_ART = [
     if (ui.msg) w.append(h('div', { class: 'banner bad', role: 'alert' }, ui.msg));
     if (K.me.admin && K.sample) w.append(scanBox());
     w.append(K.field(isDish ? 'Dish name' : 'Recipe name', h('input', { class: 'input big', id: 'ename', value: e.name, oninput: (ev) => { e.name = ev.target.value; } })));
+    w.append(K.field('Also called', h('input', { class: 'input', id: 'eaka', value: e.aka || '', autocomplete: 'off', oninput: (ev) => { e.aka = ev.target.value; } }), 'Another name people use for it. Search finds it too.'));
     w.append(h('div', { class: 'two' },
       K.field('Folder', h('input', { class: 'input', id: 'ecat', list: 'catl', value: e.category, placeholder: 'e.g. Sauces & stocks', oninput: (ev) => { e.category = ev.target.value; } })),
       K.field(isDish ? 'Station (default for parts)' : 'Station', stationSelect(e.station, 'No station', (v) => { e.station = v; }), null, 'est')),
@@ -5919,7 +5923,7 @@ window.KOMAT_PART_ART = [
       comps.push({ cid: c.cid || 'c' + K.uid(), name: cn, station: c.station || '', yieldQty: cq ? String(K.parseQty(cq)) : '', yieldUnit: cq ? (c.yieldUnit || '').trim() || 'g' : '', ingredients: ings, steps: steps, notes: (c.notes || '').trim() });
     }
     const rec = {
-      name: name, category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
+      name: name, aka: (e.aka || '').trim(), category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
       photo: e.photo || '', gallery: e.gallery.map((g) => ({ id: g.id, title: (g.title || '').trim() })), videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
       ingredients: clean(e.ingredients), steps: (e.stepsText || '').split('\n').map((s) => s.trim()).filter(Boolean),
       plating: (e.plating || '').trim(), notes: (e.notes || '').trim(), allergens: e.allergens.slice(), allergensChecked: !!e.allergensChecked,

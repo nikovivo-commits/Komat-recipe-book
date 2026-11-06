@@ -5662,6 +5662,7 @@ window.KOMAT_SEED.recipes = [
   "yieldUnit": "portions"
  },
  {
+  "aka": "Doli cake",
   "allergens": [],
   "allergensChecked": false,
   "category": "Desserts",

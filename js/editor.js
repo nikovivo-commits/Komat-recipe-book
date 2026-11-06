@@ -5,7 +5,7 @@
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
 
   function blank(cat, type) {
-    return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
+    return { id: K.uid(), type: type === 'dish' ? 'dish' : 'recipe', name: '', aka: '', category: typeof cat === 'string' ? cat : '', yieldQty: '', yieldUnit: type === 'dish' ? 'portions' : 'g',
       photo: '', gallery: [], videos: [], ingredients: [], steps: [], plating: '', notes: '', allergens: [], allergensChecked: false, components: [], station: '', services: ['alacarte'], onMenu: true };
   }
   function editComp(c) {
@@ -247,6 +247,7 @@
     if (ui.msg) w.append(h('div', { class: 'banner bad', role: 'alert' }, ui.msg));
     if (K.me.admin && K.sample) w.append(scanBox());
     w.append(K.field(isDish ? 'Dish name' : 'Recipe name', h('input', { class: 'input big', id: 'ename', value: e.name, oninput: (ev) => { e.name = ev.target.value; } })));
+    w.append(K.field('Also called', h('input', { class: 'input', id: 'eaka', value: e.aka || '', autocomplete: 'off', oninput: (ev) => { e.aka = ev.target.value; } }), 'Another name people use for it. Search finds it too.'));
     w.append(h('div', { class: 'two' },
       K.field('Folder', h('input', { class: 'input', id: 'ecat', list: 'catl', value: e.category, placeholder: 'e.g. Sauces & stocks', oninput: (ev) => { e.category = ev.target.value; } })),
       K.field(isDish ? 'Station (default for parts)' : 'Station', stationSelect(e.station, 'No station', (v) => { e.station = v; }), null, 'est')),
@@ -364,7 +365,7 @@
       comps.push({ cid: c.cid || 'c' + K.uid(), name: cn, station: c.station || '', yieldQty: cq ? String(K.parseQty(cq)) : '', yieldUnit: cq ? (c.yieldUnit || '').trim() || 'g' : '', ingredients: ings, steps: steps, notes: (c.notes || '').trim() });
     }
     const rec = {
-      name: name, category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
+      name: name, aka: (e.aka || '').trim(), category: (e.category || '').trim(), yieldQty: yq ? String(K.parseQty(yq)) : '', yieldUnit: yq ? yu : '',
       photo: e.photo || '', gallery: e.gallery.map((g) => ({ id: g.id, title: (g.title || '').trim() })), videos: e.videos.map((v) => ({ id: v.id, title: (v.title || '').trim() })),
       ingredients: clean(e.ingredients), steps: (e.stepsText || '').split('\n').map((s) => s.trim()).filter(Boolean),
       plating: (e.plating || '').trim(), notes: (e.notes || '').trim(), allergens: e.allergens.slice(), allergensChecked: !!e.allergensChecked,
