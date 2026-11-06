@@ -5152,7 +5152,16 @@ window.KOMAT_PART_ART = [
     if (c) return (c.name + ' ' + c.ingredients.map((i) => i.n).join(' ') + ' ' + (c._alt || '')).toLowerCase();
     return (r.name + ' ' + r.category + ' ' + r.ingredients.map((i) => i.n).join(' ') + ' ' + r.components.map((x) => x.name + ' ' + x.ingredients.map((i) => i.n).join(' ')).join(' ') + ' ' + (r._alt || '')).toLowerCase();
   }
-  function matchesQ(text, q) { return text.includes(q) || (/[a-z]/.test(q) && K.latin(text).includes(q)); }
+  /* Bulgarian spellings that differ only a little still find each other: гьози, гьоза, гиоза and гйоза,
+     or домат and домати. ь and ъ are dropped, й becomes и, и before о is dropped, and the last word
+     of what you typed loses its ending vowel. */
+  const fold = (t) => t.replace(/[ьъ]/g, '').replace(/й/g, 'и').replace(/и(?=о)/g, '');
+  const stem = (t) => t.replace(/([а-я]{3,})[аиеяоуъ](\s*)$/, '$1$2');
+  function matchesQ(text, q) {
+    if (text.includes(q)) return true;
+    if (/[a-z]/.test(q)) return K.latin(text).includes(q);
+    return fold(text).includes(stem(fold(q)));
+  }
   /* the first ingredient that matched, to show why a result is here */
   function whyMatch(r, c, q) {
     const nm = (c ? c.name : r.name).toLowerCase();
