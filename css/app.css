@@ -985,6 +985,8 @@ button, a, .chip, label.check, [role="checkbox"] { touch-action: manipulation; }
 .pr-txt em { font: 800 6.5pt/1 var(--sans); font-style: normal; letter-spacing: .16em; text-transform: uppercase; }
 .pr-note { font: 700 12.5pt/1.1 var(--hand); }
 .pr-meta { color: #555; font-size: 8.5pt; }
+.pr-en { display: block; color: #555; font-size: 8.5pt; font-weight: 500; font-style: italic; }
+.pr-group h3 .pr-en { display: inline; font-size: inherit; font-weight: 600; font-style: normal; letter-spacing: inherit; text-transform: uppercase; color: #666; }
 .pr-blank li { min-height: 30pt; }
 .pr-blank .pr-box { border-style: dashed; border-color: #888; }
 .pr-foot { display: flex; justify-content: space-between; gap: 12pt; margin-top: 18pt; padding-top: 6pt; border-top: 1pt solid #000; font-size: 7.5pt; color: #333; }
