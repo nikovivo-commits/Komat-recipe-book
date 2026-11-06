@@ -1424,7 +1424,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Казандиби смес",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Всичко се обърква в тенджера и се започва да се бърка постоянно докато не достигне желаната текстура.",
      "(пръчките трябва да се махнат също по някое време преди да е изцяло гъста сместа) Ако не знаеш, трябва някой да ти покаже, че не знам как да го обясня.",
@@ -1439,7 +1439,7 @@ window.KOMAT_SEED.recipes = [
     "ingredients": [],
     "name": "Загаряне на казана",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "След като имаме сместа готова я оставяме близо до газовите котлони на много ниски обороти за да може да стои топла и течна докато се гори в тавата.",
      "Двете алуминиеви тави се намазват с масло без да се прекалява много и се поръсват сериозно с пудра захар.",
@@ -1486,7 +1486,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Сладолед от салеп",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Млякото и салепа се загряват заедно за да се разтвори салепа хубаво и докато е още топло се добавят химиите и захарите и се пасира много добре."
     ],
@@ -1504,7 +1504,7 @@ window.KOMAT_SEED.recipes = [
   "services": [
    "alacarte"
   ],
-  "station": "pass",
+  "station": "cold",
   "steps": [],
   "type": "dish",
   "updated": 1790891308253,
@@ -1820,7 +1820,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Баница",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Млякото се запарва с корите от цитрусите за 10 мин във врялото мляко.",
      "Яйцата и маслото се пасират в млякото заедно със захарта и ванилията до хомогенна смес.",
@@ -1863,7 +1863,7 @@ window.KOMAT_SEED.recipes = [
    "breakfast",
    "brunch"
   ],
-  "station": "pass",
+  "station": "cold",
   "steps": [],
   "type": "dish",
   "updated": 1790891308254,
@@ -3012,7 +3012,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Реване",
     "notes": "Part of the first line is covered by the sticky note, and the rest of the method (adding the flour, baking) is not on the sheet.",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Яйцата се разбиват със захарта докато не се вдигнат до хард пик (хард пика на ?? яйца не е като на белтъците и зависи повече от обема, не от твърдостта).",
      "?"
@@ -3051,7 +3051,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Сироп за реване",
     "notes": "From the handwritten sticky note. \"Вода 600\" is written in marker under it.",
-    "station": "pass",
+    "station": "cold",
     "steps": [],
     "yieldQty": "",
     "yieldUnit": ""
@@ -3072,7 +3072,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Желе ягода",
     "notes": "Portioning (GN 1/1 tray): trim the rounded edges, do not use. 3 rows × 8 cm, 4 rows × 10 cm, pieces 8 × 10 cm. Total: 12 portions.",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "В термомикса на 105 градуса докато не ги стигне и после в 2 ниски гастро тави 1/1.",
      "Порцира се както е показано на картинката."
@@ -3106,7 +3106,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Ганаш бял шоколад и ягода",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Желатинът се накисва в студена вода.",
      "Отделно се обърква сметаната с ягодовото пюре и се загрява.",
@@ -3143,7 +3143,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Кръмб малина",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Сухите без лио малините се объркват в купата на планетарния миксер.",
      "Пуска се да върти бавно и му се добавя бавно маслото купче по купче.",
@@ -3178,7 +3178,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Пюре ягода",
     "notes": "",
-    "station": "pass",
+    "station": "cold",
     "steps": [
      "Кипва се докато не омекнат ягодите.",
      "Пасира се с пасатора.",
@@ -3223,7 +3223,7 @@ window.KOMAT_SEED.recipes = [
     ],
     "name": "Сладолед виолетки",
     "notes": "No method in the message.",
-    "station": "pass",
+    "station": "cold",
     "steps": [],
     "yieldQty": "",
     "yieldUnit": ""
@@ -3275,7 +3275,7 @@ window.KOMAT_SEED.recipes = [
   "services": [
    "alacarte"
   ],
-  "station": "pass",
+  "station": "cold",
   "steps": [],
   "type": "dish",
   "updated": 1790898447286,
@@ -3470,7 +3470,7 @@ window.KOMAT_SEED.recipes = [
   "services": [
    "alacarte"
   ],
-  "station": "pass",
+  "station": "cold",
   "steps": [],
   "type": "recipe",
   "updated": 1790894542061,
@@ -4710,7 +4710,7 @@ window.KOMAT_SEED.recipes = [
   "services": [
    "lunch"
   ],
-  "station": "pass",
+  "station": "cold",
   "steps": [
    "Bring to simmer cream, milk and vanilla…",
    "?"

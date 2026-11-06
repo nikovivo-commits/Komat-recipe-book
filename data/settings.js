@@ -257,6 +257,110 @@ window.KOMAT_SEED.settings = {
        }
       ],
       "title": "Студена"
+     },
+     {
+      "groups": [
+       {
+        "items": [
+         {
+          "id": "ipd0",
+          "link": "wa-granita",
+          "name": "гранита краставица"
+         },
+         {
+          "id": "ipd1",
+          "link": "sorbe-limon",
+          "name": "сорбе лимон"
+         },
+         {
+          "id": "ipd2",
+          "name": "лимон на резени"
+         }
+        ],
+        "key": "gpredes",
+        "name": "Предесерт (дегустационно меню)"
+       },
+       {
+        "items": [
+         {
+          "id": "irv1",
+          "link": "revane~0",
+          "name": "реване (блат)"
+         },
+         {
+          "id": "irv2",
+          "link": "revane~1",
+          "name": "сироп за реване"
+         },
+         {
+          "id": "irv3",
+          "link": "revane~6",
+          "name": "сладолед виолетки"
+         },
+         {
+          "id": "irv4",
+          "link": "revane~5",
+          "name": "пюре ягода"
+         },
+         {
+          "id": "irv5",
+          "link": "revane~4",
+          "name": "кръмб малина"
+         },
+         {
+          "id": "irv6",
+          "link": "revane~3",
+          "name": "ганаш бял шоколад и ягода"
+         },
+         {
+          "id": "irv7",
+          "link": "revane~2",
+          "name": "желе ягода"
+         },
+         {
+          "id": "irv8",
+          "name": "пресни ягоди"
+         }
+        ],
+        "key": "grevane",
+        "name": "Реване"
+       },
+       {
+        "items": [
+         {
+          "id": "i67",
+          "link": "kazandibi~0",
+          "name": "млечен микс"
+         },
+         {
+          "id": "i68",
+          "name": "шам тастък"
+         },
+         {
+          "id": "i69",
+          "link": "kazandibi~2",
+          "name": "салеп сладолед"
+         },
+         {
+          "id": "i70",
+          "name": "цветя"
+         },
+         {
+          "id": "i71",
+          "link": "kazandibi~1",
+          "name": "загори тава"
+         }
+        ],
+        "key": "g66",
+        "name": "Казан"
+       },
+       {
+        "items": [],
+        "key": "g72",
+        "name": "Обеден десерт"
+       }
+      ],
+      "title": "Пейстри"
      }
     ]
    },
@@ -578,110 +682,6 @@ window.KOMAT_SEED.settings = {
        }
       ],
       "title": "Пас"
-     },
-     {
-      "groups": [
-       {
-        "items": [
-         {
-          "id": "ipd0",
-          "link": "wa-granita",
-          "name": "гранита краставица"
-         },
-         {
-          "id": "ipd1",
-          "link": "sorbe-limon",
-          "name": "сорбе лимон"
-         },
-         {
-          "id": "ipd2",
-          "name": "лимон на резени"
-         }
-        ],
-        "key": "gpredes",
-        "name": "Предесерт (дегустационно меню)"
-       },
-       {
-        "items": [
-         {
-          "id": "irv1",
-          "link": "revane~0",
-          "name": "реване (блат)"
-         },
-         {
-          "id": "irv2",
-          "link": "revane~1",
-          "name": "сироп за реване"
-         },
-         {
-          "id": "irv3",
-          "link": "revane~6",
-          "name": "сладолед виолетки"
-         },
-         {
-          "id": "irv4",
-          "link": "revane~5",
-          "name": "пюре ягода"
-         },
-         {
-          "id": "irv5",
-          "link": "revane~4",
-          "name": "кръмб малина"
-         },
-         {
-          "id": "irv6",
-          "link": "revane~3",
-          "name": "ганаш бял шоколад и ягода"
-         },
-         {
-          "id": "irv7",
-          "link": "revane~2",
-          "name": "желе ягода"
-         },
-         {
-          "id": "irv8",
-          "name": "пресни ягоди"
-         }
-        ],
-        "key": "grevane",
-        "name": "Реване"
-       },
-       {
-        "items": [
-         {
-          "id": "i67",
-          "link": "kazandibi~0",
-          "name": "млечен микс"
-         },
-         {
-          "id": "i68",
-          "name": "шам тастък"
-         },
-         {
-          "id": "i69",
-          "link": "kazandibi~2",
-          "name": "салеп сладолед"
-         },
-         {
-          "id": "i70",
-          "name": "цветя"
-         },
-         {
-          "id": "i71",
-          "link": "kazandibi~1",
-          "name": "загори тава"
-         }
-        ],
-        "key": "g66",
-        "name": "Казан"
-       },
-       {
-        "items": [],
-        "key": "g72",
-        "name": "Обеден десерт"
-       }
-      ],
-      "title": "Пейстри"
      }
     ]
    }
