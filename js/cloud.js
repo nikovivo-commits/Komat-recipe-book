@@ -236,6 +236,23 @@
         }).catch(() => {});
       }
     } catch (e) { /* ignore */ }
+    /* Pass, Sauces: the wild garlic hollandaise row, once */
+    try {
+      if (!localStorage.getItem('komat-added-pass-hol')) {
+        const cl = K.db.doc('settings/checklists');
+        cl.get().then((s) => {
+          try { localStorage.setItem('komat-added-pass-hol', '1'); } catch (e) { /* ignore */ }
+          const d = s.exists ? s.data() : null, pass = d && d.stations && d.stations.pass;
+          if (!pass) return;
+          let hit = false;
+          (pass.sections || []).forEach((sec) => (sec.groups || []).forEach((g) => {
+            if (g.key !== 'g115' || (g.items || []).some((i) => i.id === 'i119')) return;
+            g.items.push({ id: 'i119', link: 'teleshko-bonfile~1', name: 'холандез с левурда' }); hit = true;
+          }));
+          if (hit) return cl.update({ stations: d.stations });
+        }).catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
     /* the goma ponzu was first saved in English: put it in the book's Bulgarian so the language switch can translate it */
     try {
       if (!localStorage.getItem('komat-bg-goma')) {

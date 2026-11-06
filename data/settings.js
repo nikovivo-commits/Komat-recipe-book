@@ -645,6 +645,11 @@ window.KOMAT_SEED.settings = {
          {
           "id": "i118",
           "name": "пил. жу"
+         },
+         {
+          "id": "i119",
+          "link": "teleshko-bonfile~1",
+          "name": "холандез с левурда"
          }
         ],
         "key": "g115",
