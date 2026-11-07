@@ -2005,3 +2005,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 .rp-pins { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 2px solid var(--apron); }
 .rp-pin { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.stag.st-learn-pass, .stag.st-learn-cold, .stag.st-learn-hot { font-style: italic; color: var(--muted); } .slate .stag.st-learn-pass { color: #D6D7D2; font-style: italic; } .slate .stag.st-learn-cold { color: #8FCBF2; font-style: italic; } .slate .stag.st-learn-hot { color: #FFB59E; font-style: italic; }
+.lu-learn-pass { border-left-color: var(--dot-pass); } .lu-learn-cold { border-left-color: var(--dot-cold); } .lu-learn-hot { border-left-color: var(--hot); }

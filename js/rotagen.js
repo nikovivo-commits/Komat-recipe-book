@@ -9,6 +9,8 @@
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
                  off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
                  emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
+                 learn: ['pass'], learnDays: 1 (a station they are learning and how many days a week: on those days
+                 they stand next to a teacher there, someone whose main station it is, instead of taking a place),
                  pattern: [7 codes], patternSt: 'br' }
      people    [{ id, name }] in the order the rota lists them
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
@@ -22,7 +24,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -61,6 +63,9 @@
       if (p.extra) extraDays[p.person] = (extraDays[p.person] || 0) + 1;
     });
     const pinned = (id, d) => !!(pin[id] && pin[id][d]);
+    const lrnN = (id) => ((S(id) || {}).learn || []).length ? +(S(id).learnDays || 0) : 0;
+    let LRN = {};
+    const lrnOf = (id, d) => !!(LRN[id] && LRN[id][d]);
     const S = (id) => setup[id];
     const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0) + (extraDays[id] || 0));
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
@@ -72,9 +77,10 @@
 
     /* ---------- one day: who stands where, given who works ---------- */
     function solveDay(d, work, special) {
+      if (work.__lrn) LRN = work.__lrn;
       const pins = auto.filter((id) => work[id][d] && pinned(id, d)), pl = placeList[d].slice();
       pins.forEach((id) => { const k = pl.indexOf(pin[id][d]); if (k >= 0) pl.splice(k, 1); });
-      const here = auto.filter((id) => work[id][d] && !special[id][d] && !pinned(id, d));
+      const here = auto.filter((id) => work[id][d] && !special[id][d] && !lrnOf(id, d) && !pinned(id, d));
       let best = null;
       const pick = new Array(pl.length).fill(null), used = {};
       (function dfs(i, cost) {
@@ -85,12 +91,15 @@
           pl.forEach((s, k) => { if (pick[k]) on[pick[k]] = s; });
           pins.forEach((id) => { if (STS.includes(pin[id][d])) on[id] = pin[id][d]; else extras[id] = pin[id][d]; });
           const mentorOnHot = Object.keys(on).some((id) => on[id] === 'hot' && S(id).mentor);
+          /* a teacher on a station: someone whose main station it is (or a mentor on Hot) */
+          const teach = (x) => Object.keys(on).some((id) => on[id] === x && ((S(id).stations || [])[0] === x || (x === 'hot' && S(id).mentor)));
           here.forEach((id) => {
             if (on[id]) return;
             if (S(id).learner && mentorOnHot && rank(id, 'hot') >= 0) extras[id] = 'learn';
             else if (rank(id, 'prep') >= 0) extras[id] = 'prep';
             else { extras[id] = 'float'; c += W.extra; }
           });
+          auto.forEach((id) => { if (work[id][d] && lrnOf(id, d)) { const x = S(id).learn[0]; extras[id] = 'learn-' + x; if (!teach(x)) c += W.noTeacher; } });
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;
         }
@@ -99,7 +108,8 @@
           if (used[id]) continue;
           const r = rank(id, s);
           if (r < 0) continue;
-          let c = r * W.rank + ((S(id).emergency || []).includes(s) ? W.emergency : 0);
+          const em = (S(id).emergency || []).includes(s);
+          let c = r * W.rank + (em ? W.emergency + (busy.includes(d) ? W.busyEmergency : 0) : 0);
           if (s === 'hot' && S(id).learner && busy.includes(d)) c += W.learnerAlone;
           used[id] = 1; pick[i] = id;
           dfs(i + 1, cost + c);
@@ -147,6 +157,7 @@
       let c = Math.max(0, target(id) - n) * W.short;
       for (let d = 0; d < 7; d++) if (w[d] && wish[id][d]) c += W.wish;
       if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
+      if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
       /* days off kept together only for whoever asked for it; filling the kitchen always comes first */
@@ -158,7 +169,8 @@
     const free = (id) => [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d]);
 
     function start() {
-      const work = {}, special = {};
+      const work = {}, special = {}, lrn = {};
+      work.__lrn = lrn;
       auto.forEach((id) => {
         let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
@@ -168,6 +180,8 @@
         f.slice(0, n).forEach((d) => { work[id][d] = 1; });
         const loose = f.slice(0, n).filter((d) => !pinned(id, d)), sn = S(id).special && S(id).special.n ? Math.min(S(id).special.n, loose.length) : 0;
         loose.slice(0, sn).forEach((d) => { special[id][d] = 1; });
+        lrn[id] = [0, 0, 0, 0, 0, 0, 0];
+        loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
       });
       return { work: work, special: special };
     }
@@ -178,32 +192,48 @@
       const total = days.reduce((a, x) => a + x.cost, 0) + auto.reduce((a, id) => a + pc[id], 0);
       return { days: days, pc: pc, total: total };
     }
-    const copy = (st) => ({ work: JSON.parse(JSON.stringify(st.work)), special: JSON.parse(JSON.stringify(st.special)) });
+    const copy = (st) => { const w = JSON.parse(JSON.stringify(st.work)); return { work: w, special: JSON.parse(JSON.stringify(st.special)) }; };
 
     let best = null;
     for (let run = 0; run < 3 && auto.length; run++) {
       let st = start(), ev = evalAll(st);
       const ITER = 1800;
       for (let it = 0; it < ITER; it++) {
-        const id = auto[Math.floor(R() * auto.length)], w = st.work[id], sp = st.special[id];
+        const id = auto[Math.floor(R() * auto.length)], w = st.work[id], sp = st.special[id], L = st.work.__lrn[id];
         const on = [], offd = [];
         for (let d = 0; d < 7; d++) { if (w[d]) { if (!pinned(id, d)) on.push(d); } else if (!hardOff[id][d]) offd.push(d); }
         const touched = [];
         let undo;
         const mv = R();
         if (S(id).special && S(id).special.n && mv < 0.25) {
-          const a = on.filter((d) => sp[d]), b = on.filter((d) => !sp[d]);
+          const a = on.filter((d) => sp[d]), b = on.filter((d) => !sp[d] && !L[d]);
           if (!a.length || !b.length) continue;
           const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
           sp[x] = 0; sp[y] = 1; touched.push(x, y);
           undo = () => { sp[x] = 1; sp[y] = 0; };
+        } else if (lrnN(id) && mv < 0.45) {
+          /* move a learning day, or drop one / add one back */
+          const a = on.filter((d) => L[d]), b = on.filter((d) => !L[d] && !sp[d]);
+          if (a.length && b.length && R() < 0.7) {
+            const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
+            L[x] = 0; L[y] = 1; touched.push(x, y);
+            undo = () => { L[x] = 1; L[y] = 0; };
+          } else if (a.length && R() < 0.5) {
+            const x = a[Math.floor(R() * a.length)];
+            L[x] = 0; touched.push(x);
+            undo = () => { L[x] = 1; };
+          } else if (b.length && a.length < lrnN(id)) {
+            const y = b[Math.floor(R() * b.length)];
+            L[y] = 1; touched.push(y);
+            undo = () => { L[y] = 0; };
+          } else continue;
         } else {
           if (!on.length || !offd.length) continue;
           const x = on[Math.floor(R() * on.length)], y = offd[Math.floor(R() * offd.length)];
-          const wasSp = sp[x];
-          w[x] = 0; w[y] = 1; sp[x] = 0; sp[y] = wasSp;
+          const wasSp = sp[x], wasL = L[x];
+          w[x] = 0; w[y] = 1; sp[x] = 0; sp[y] = wasSp; L[x] = 0; L[y] = wasL;
           touched.push(x, y);
-          undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; };
+          undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; };
         }
         const nd = touched.map((d) => solveDay(d, st.work, st.special)), np = personCost(id, st.work, st.special);
         const delta = touched.reduce((a, d, k) => a + nd[k].cost - ev.days[d].cost, 0) + np - ev.pc[id];
@@ -247,6 +277,7 @@
         const n = Object.keys(day.on).filter((id) => day.on[id] === s).length + Object.keys(day.handOn || {}).filter((id) => day.handOn[id] === s).length, need = placeList[d].filter((x) => x === s).length;
         if (n < need && !issues.some((x) => x.day === d && x.st === s)) issues.push({ sev: 'red', day: d, st: s, text: DAY[d] + ': nobody on ' + s });
       });
+      Object.keys(day.on).forEach((id) => { if ((S(id).emergency || []).includes(day.on[id])) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' covers ' + day.on[id] + ' on ' + DAY[d] + ' (emergency only)' }); });
       Object.keys(day.on).forEach((id) => { if (day.on[id] === 'hot' && S(id).learner && busy.includes(d)) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' is alone on Hot on ' + DAY[d] + ' (a busy day)' }); });
       if (brDays.includes(d)) {
         if (!day.br) issues.push({ sev: 'red', day: d, text: DAY[d] + ': nobody for breakfast' });

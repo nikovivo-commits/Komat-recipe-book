@@ -176,7 +176,7 @@
     const codes = QUICK.concat((D.codes.codes || []).map((x) => x.code)).filter((v, i, a) => a.indexOf(v) === i);
     return K.sheet(K.personName(c.id) + ' · ' + K.DAYS[c.i] + ' ' + K.addDays(K.parseYmd(c.wk), c.i).getDate(), [
       h('div', { class: 'quick' }, codes.map((v) => h('button', { type: 'button', class: 'codechip big ' + K.codeClass(v) + (String(cur).toUpperCase() === v.toUpperCase() ? ' on' : ''), title: K.codeLabel(v) || null, onclick: () => put(v) }, h('b', { class: 'mono' }, v)))),
-      K.STL ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'), K.seg([['', 'None']].concat(['hot', 'cold', 'pass', 'float', 'prep', 'learn', 'br'].map((s) => [s, K.STL[s]])), curSt, putSt, { 'aria-label': 'Station', class: 'seg small-seg st-seg' })) : null,
+      K.STL ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'), K.seg([['', 'None']].concat(['hot', 'cold', 'pass', 'float', 'prep', 'learn', 'learn-pass', 'br'].map((s) => [s, K.STL[s]])), curSt, putSt, { 'aria-label': 'Station', class: 'seg small-seg st-seg' })) : null,
       h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); put(document.getElementById('cellv').value.trim()); } },
         h('input', { class: 'input', id: 'cellv', value: cur, placeholder: 'Anything else, e.g. 10:30 or BR+4H', 'aria-label': 'Shift' }), h('button', { class: 'btn primary', type: 'submit' }, 'Set')),
       h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => put('') }, 'Clear'),

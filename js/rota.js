@@ -5,7 +5,7 @@
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Filler', br: 'Breakfast' };
+  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Filler', 'learn-hot': 'Hot · learning', 'learn-cold': 'Cold · learning', 'learn-pass': 'Pass · learning', br: 'Breakfast' };
   K.STL = STL;
   const PLACES = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
 
@@ -178,6 +178,11 @@
             const on = (s.emergency || []).includes(st);
             return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.emergency || []).slice(), j = l.indexOf(st); if (j >= 0) l.splice(j, 1); else l.push(st); q.emergency = l; }) }, on ? '! ' : '', STL[st]);
           }))) : null,
+          row('Learning', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass']].filter((o) => !sts.includes(o[0])).map((o) => {
+            const on = (s.learn || []).includes(o[0]);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.learn || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.learn = l; }) }, o[1]);
+          }))),
+          (s.learn || []).length ? row('Learning days', K.select([0, 1, 2, 3].map((n) => [n, n ? n + ' a week' : 'None this week']), s.learnDays || 0, (v) => set((p) => { person(p, id).learnDays = +v; }), { 'aria-label': 'Learning days a week', class: 'input small' })) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; }))),
@@ -212,7 +217,7 @@
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
-      s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
+      s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);
   function days(sel, onpick) {
