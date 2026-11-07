@@ -36,6 +36,7 @@
   --hot: #B8561F;
   --cold: #2C6A98;
   --pass: #7A6626;
+  --dot-hot: #C42F1C; --dot-cold: #2C6A98; --dot-pass: #3A3B3A; --dot-ink: #FFFFFF;
   --shadow: 0 1px 0 rgba(28, 27, 26, .04), 0 8px 24px -14px rgba(28, 27, 26, .35);
   --display: "Fira Sans Extra Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
   --sans: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -56,7 +57,7 @@
     --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
     --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
     --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
+    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45; --dot-hot: #E5533F; --dot-cold: #4F95D0; --dot-pass: #C9CBC6; --dot-ink: #121312;
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
     color-scheme: dark;
   }
@@ -68,7 +69,7 @@
   --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
   --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
   --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
+  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45; --dot-hot: #E5533F; --dot-cold: #4F95D0; --dot-pass: #C9CBC6; --dot-ink: #121312;
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
   color-scheme: dark;
 }
@@ -1826,6 +1827,15 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rp-sum span { grid-column: 1; font-size: .86rem; color: var(--muted); }
 .rp-sum .ico { grid-column: 2; grid-row: 1 / 3; color: var(--muted); }
 .rp-sum.is-off { opacity: .6; }
+
+.stdots { display: flex; gap: 3px; margin-top: 2px; }
+.stdots i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font: 800 .62rem/1 var(--sans); font-style: normal; color: var(--dot-ink); }
+.stdots .sd-hot { background: var(--dot-hot); } .stdots .sd-cold { background: var(--dot-cold); } .stdots .sd-pass { background: var(--dot-pass); }
+.rota tbody th .pn { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
+.rota tbody th .stdots { padding-bottom: 8px; }
+.rota tbody th .pname { padding: 8px 0 0; }
+.rp-sum b { display: flex; align-items: center; gap: 8px; }
+.rp-sum b .stdots { margin-top: 0; }
 
 </style>
 <div id="app"></div>
@@ -7151,7 +7161,7 @@ window.KOMAT_PART_ART = [
       h('tbody', null, people.map((id) => {
         const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
         return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : '') },
-          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : K.personName(id)),
+          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'pn' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
           K.DAYS.map((d, i) => {
             const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
             return h('td', { class: K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
@@ -7514,6 +7524,17 @@ window.KOMAT_PART_ART = [
   const person = (p, id) => (p.people[id] = p.people[id] || { mode: 'off' });
   const range = (wk) => { const m = K.parseYmd(wk), s = K.addDays(m, 6); return m.getDate() + '.' + (m.getMonth() + 1) + ' – ' + s.getDate() + '.' + (s.getMonth() + 1); };
   const nextWeek = () => K.ymd(K.addDays(K.mondayOf(new Date()), 7));
+  /* the stations someone can work, as small coloured letters under their name: always in the same order,
+     so the team sees where people can work but not the head chef's order of preference */
+  K.stDots = function (id) {
+    const s = (D.rotaplan && D.rotaplan.people || {})[id];
+    if (!s || s.mode !== 'auto') return null;
+    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
+    if (!can.length) return null;
+    return h('span', { class: 'stdots', title: 'Can work: ' + can.map((x) => STL[x[0]]).join(', ') },
+      h('span', { class: 'sr' }, 'Can work ' + can.map((x) => STL[x[0]]).join(', ')),
+      can.map((x) => h('i', { class: 'sd-' + x[0], 'aria-hidden': 'true' }, x[1])));
+  };
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
   /* the draft for a week; worked out again only when something it depends on changes */
@@ -7580,7 +7601,7 @@ window.KOMAT_PART_ART = [
     const mon = K.parseYmd(wk);
     box.append(h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
-      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, K.personName(id)),
+      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'pn' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
           const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
@@ -7613,7 +7634,7 @@ window.KOMAT_PART_ART = [
       const s = plan.people[pp.id] || { mode: 'off' }, id = pp.id;
       if (ui.rpOpen !== id) {
         box.append(h('button', { type: 'button', class: 'card rp-sum' + (s.mode === 'off' || !s.mode ? ' is-off' : ''), onclick: () => { ui.rpOpen = id; K.render(); } },
-          h('b', null, pp.name), h('span', null, summary(s)), K.icon('next')));
+          h('b', null, pp.name, K.stDots(id)), h('span', null, summary(s)), K.icon('next')));
         return;
       }
       const card = h('section', { class: 'card rp-person' + (s.mode === 'off' || !s.mode ? ' is-off' : '') },

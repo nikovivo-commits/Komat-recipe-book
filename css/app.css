@@ -29,6 +29,7 @@
   --hot: #B8561F;
   --cold: #2C6A98;
   --pass: #7A6626;
+  --dot-hot: #C42F1C; --dot-cold: #2C6A98; --dot-pass: #3A3B3A; --dot-ink: #FFFFFF;
   --shadow: 0 1px 0 rgba(28, 27, 26, .04), 0 8px 24px -14px rgba(28, 27, 26, .35);
   --display: "Fira Sans Extra Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
   --sans: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -49,7 +50,7 @@
     --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
     --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
     --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
+    --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45; --dot-hot: #E5533F; --dot-cold: #4F95D0; --dot-pass: #C9CBC6; --dot-ink: #121312;
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
     color-scheme: dark;
   }
@@ -61,7 +62,7 @@
   --ready: #5DB583; --ready-ink: #0B1F13; --ready-soft: #1C3226;
   --todo: #EDBE45; --todo-ink: #2A1E00; --todo-soft: #3A3014; --pen: #93B4FF; --pen-soft: #1B2642;
   --urgent: #F26B56; --urgent-ink: #1E0603; --urgent-soft: #3E1B15;
-  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45;
+  --hot: #E38A55; --cold: #74AAD8; --pass: #CDB566; --low: #EDBE45; --dot-hot: #E5533F; --dot-cold: #4F95D0; --dot-pass: #C9CBC6; --dot-ink: #121312;
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 26px -16px rgba(0, 0, 0, .8);
   color-scheme: dark;
 }
@@ -1819,3 +1820,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rp-sum span { grid-column: 1; font-size: .86rem; color: var(--muted); }
 .rp-sum .ico { grid-column: 2; grid-row: 1 / 3; color: var(--muted); }
 .rp-sum.is-off { opacity: .6; }
+
+.stdots { display: flex; gap: 3px; margin-top: 2px; }
+.stdots i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font: 800 .62rem/1 var(--sans); font-style: normal; color: var(--dot-ink); }
+.stdots .sd-hot { background: var(--dot-hot); } .stdots .sd-cold { background: var(--dot-cold); } .stdots .sd-pass { background: var(--dot-pass); }
+.rota tbody th .pn { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
+.rota tbody th .stdots { padding-bottom: 8px; }
+.rota tbody th .pname { padding: 8px 0 0; }
+.rp-sum b { display: flex; align-items: center; gap: 8px; }
+.rp-sum b .stdots { margin-top: 0; }

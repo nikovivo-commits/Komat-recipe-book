@@ -24,6 +24,17 @@
   const person = (p, id) => (p.people[id] = p.people[id] || { mode: 'off' });
   const range = (wk) => { const m = K.parseYmd(wk), s = K.addDays(m, 6); return m.getDate() + '.' + (m.getMonth() + 1) + ' – ' + s.getDate() + '.' + (s.getMonth() + 1); };
   const nextWeek = () => K.ymd(K.addDays(K.mondayOf(new Date()), 7));
+  /* the stations someone can work, as small coloured letters under their name: always in the same order,
+     so the team sees where people can work but not the head chef's order of preference */
+  K.stDots = function (id) {
+    const s = (D.rotaplan && D.rotaplan.people || {})[id];
+    if (!s || s.mode !== 'auto') return null;
+    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
+    if (!can.length) return null;
+    return h('span', { class: 'stdots', title: 'Can work: ' + can.map((x) => STL[x[0]]).join(', ') },
+      h('span', { class: 'sr' }, 'Can work ' + can.map((x) => STL[x[0]]).join(', ')),
+      can.map((x) => h('i', { class: 'sd-' + x[0], 'aria-hidden': 'true' }, x[1])));
+  };
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
   /* the draft for a week; worked out again only when something it depends on changes */
@@ -90,7 +101,7 @@
     const mon = K.parseYmd(wk);
     box.append(h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
-      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, K.personName(id)),
+      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'pn' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
           const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
@@ -123,7 +134,7 @@
       const s = plan.people[pp.id] || { mode: 'off' }, id = pp.id;
       if (ui.rpOpen !== id) {
         box.append(h('button', { type: 'button', class: 'card rp-sum' + (s.mode === 'off' || !s.mode ? ' is-off' : ''), onclick: () => { ui.rpOpen = id; K.render(); } },
-          h('b', null, pp.name), h('span', null, summary(s)), K.icon('next')));
+          h('b', null, pp.name, K.stDots(id)), h('span', null, summary(s)), K.icon('next')));
         return;
       }
       const card = h('section', { class: 'card rp-person' + (s.mode === 'off' || !s.mode ? ' is-off' : '') },
