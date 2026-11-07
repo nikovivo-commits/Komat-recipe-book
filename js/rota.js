@@ -165,7 +165,8 @@
           row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))),
           h('div', { class: 'rp-flags' },
             check('Learning Hot: not alone on busy days, learns next to a mentor when spare', !!s.learner, (v) => set((p) => { person(p, id).learner = v; })),
-            check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; }))));
+            check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; })),
+            check('Keep days off together when possible', !!s.together, (v) => set((p) => { person(p, id).together = v; }))));
       } else if (s.mode === 'fixed') {
         card.append(row('Every week', h('div', { class: 'rp-pattern' }, DAYS.map((d, i) => h('label', null, h('span', null, d),
           h('input', { class: 'input small mono', value: (s.pattern || [])[i] || '', 'aria-label': pp.name + ' ' + d, onchange: (e) => set((p) => { const q = person(p, id); q.pattern = (q.pattern || ['', '', '', '', '', '', '']).slice(); q.pattern[i] = e.target.value.trim(); }) }))))),
@@ -184,7 +185,7 @@
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x]).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
-      s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', s.mentor ? 'mentor' : ''].filter(Boolean).join(' · ');
+      s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);
   function days(sel, onpick) {

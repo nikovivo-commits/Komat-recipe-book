@@ -712,7 +712,7 @@ window.KOMAT_SEED.settings = {
    },
    {
     "code": "BR",
-    "label": "Breakfast"
+    "label": "Breakfast (until 16:00)"
    },
    {
     "code": "X",

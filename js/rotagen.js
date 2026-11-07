@@ -7,7 +7,7 @@
      week      'YYYY-MM-DD', the Monday
      plan      { people: { id: setup }, needs: { hot: [7], cold: [7], pass: [7] }, busy: [days], brDays: [days], brCode }
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
-                 off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool,
+                 off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
                  pattern: [7 codes], patternSt: 'br' }
      people    [{ id, name }] in the order the rota lists them
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
@@ -122,7 +122,8 @@
       if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
-      if (blocks > 1) c += (blocks - 1) * W.split;
+      /* days off kept together only for whoever asked for it; filling the kitchen always comes first */
+      if (blocks > 1 && s.together) c += (blocks - 1) * W.split;
       return c;
     }
 
