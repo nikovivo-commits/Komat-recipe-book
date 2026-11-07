@@ -407,6 +407,10 @@
       const lt = lateOK(id) ? best.st.work[id].reduce((a, b, d) => a + (b && best.st.work.__late[id][d] ? 1 : 0), 0) : 0, thirds = 3 * (n - lt) + 2 * lt;
       const fmt = (t) => Math.floor(t / 3) + (t % 3 === 1 ? '⅓' : t % 3 === 2 ? '⅔' : '');
       if (lateOK(id) ? thirds !== 3 * target(id) : n < target(id)) issues.push({ sev: 'amber', person: id, text: name(id) + ' gets ' + (lateOK(id) ? fmt(thirds) + ' of ' + target(id) + ' full days' : n + ' of ' + target(id) + ' days') + (thirds < 3 * target(id) ? ' (not enough free days)' : ' (more than usual)') });
+      if (lrnN(id)) {
+        const got = (best.st.work.__lrn[id] || []).reduce((a, x, d) => a + (x && best.st.work[id][d] ? 1 : 0), 0), want = Math.min(lrnN(id), n);
+        if (got < want) issues.push({ sev: 'amber', person: id, text: name(id) + ': ' + (got ? 'only ' + got + ' of ' + want : 'no') + ' ' + s.learn[0] + ' learning day' + (want - got === 1 && !got ? '' : 's') + ' this week (nobody spare to cover their own station)' });
+      }
       for (let d = 0; d < 7; d++) if (best.st.work[id][d] && ((s.avoid || []).includes(d) || (s.avoidMore || []).includes(d)) && !pinned(id, d)) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' comes in on ' + DAY[d] + ', a day off if possible (last resort)' });
       for (let d = 0; d < 7; d++) if (best.st.work[id][d] && wish[id][d]) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' but asked for it off (waiting for approval)' });
     });

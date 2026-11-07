@@ -74,6 +74,10 @@
     save(p);
   }
 
+  /* what if: days off tried out by the head chef, never saved and never sent to anyone */
+  const weekEnd = (wk) => K.ymd(K.addDays(K.parseYmd(wk), 6));
+  const wiFor = (wk) => (ui.whatIf || []).filter((x) => x.date >= wk && x.date <= weekEnd(wk));
+  const reqsFor = (wk) => (K.requestsFor ? K.requestsFor(wk) : []).concat(wiFor(wk).map((x) => ({ person: x.person, date: x.date, kind: x.kind, status: x.kind === 'paid' ? 'approved' : 'ok' })));
   K.V.rotaplan = function () {
     if (!K.me.admin) { ui.view = 'schedule'; return K.V.schedule(); }
     const wk = ui.rpWeek || nextWeek(), tab = ui.rpTab || 'draft';
@@ -84,8 +88,9 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.rpWeek = K.ymd(K.addDays(K.parseYmd(wk), -7)); K.render(); } }, K.icon('back')),
         h('b', { class: 'rp-week' }, 'Week ' + range(wk)),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.rpWeek = K.ymd(K.addDays(K.parseYmd(wk), 7)); K.render(); } }, K.icon('next'))),
-      K.seg([['draft', 'Draft'], ['team', 'Team'], ['needs', 'Needs']], tab, (v) => { ui.rpTab = v; K.render(); }, { 'aria-label': 'Part of the generator' })));
-    if (tab === 'team') w.append(team());
+      K.seg([['draft', 'Draft'], ['month', 'Month'], ['team', 'Team'], ['needs', 'Needs']], tab, (v) => { ui.rpTab = v; K.render(); }, { 'aria-label': 'Part of the generator' })));
+    if (tab === 'month') w.append(monthView(wk));
+    else if (tab === 'team') w.append(team());
     else if (tab === 'needs') w.append(needsView());
     else w.append(draft(wk));
     return { top: top, body: w, tabs: false };
@@ -99,7 +104,7 @@
         h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.rpTab = 'team'; K.render(); } }, 'Open Team'))));
       return box;
     }
-    const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), pins = K.rotaPins(wk), me = K.getMe(), mine = me && plan.people[me] && plan.people[me].mode === 'auto' ? plan.people[me] : null;
+    const r = K.rotaDraft(wk, reqsFor(wk)), wi = wiFor(wk), pins = K.rotaPins(wk), me = K.getMe(), mine = me && plan.people[me] && plan.people[me].mode === 'auto' ? plan.people[me] : null;
     const red = r.issues.filter((x) => x.sev === 'red');
     const dateOf = (d) => K.ymd(K.addDays(K.parseYmd(wk), d));
     const stFor = (x, id) => (x.st && !x.event ? x.st : ((plan.people[id] || {}).stations || [])[0] || 'float');
@@ -124,20 +129,63 @@
     if (amber.length) box.append(h('section', { class: 'rp-warn' }, h('h2', { class: 'block-title' }, 'Worth a look'), h('ul', null, amber.map((x) => h('li', null, x.text)))));
     if (info.length) box.append(h('details', { class: 'rp-info' }, h('summary', null, info.length + ' small notes'), h('ul', null, info.map((x) => h('li', null, x.text)))));
 
+    box.append(whatIfBox(wk, plan));
     const mon = K.parseYmd(wk);
     box.append(h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
       h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
-          const c = r.rows[id][i] || '', s = r.st[id][i] || '', hand = pins.some((p) => p.person === id && p.date === dateOf(i));
-          return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
+          const c = r.rows[id][i] || '', s = r.st[id][i] || '', hand = pins.some((p) => p.person === id && p.date === dateOf(i)), tried = wi.some((x) => x.person === id && x.date === dateOf(i));
+          return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') + (tried ? ' tried' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
         })))))));
     const has = !!D.weeks[wk];
+    if (wi.length) { box.append(h('p', { class: 'banner warn' }, h('b', null, 'What if is on. '), 'This draft includes days off you are only trying out, so it cannot be used. Clear them to use the real draft.')); return box; }
     box.append(h('div', { class: 'rp-use' },
       ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace the rota already saved for ' + range(wk) + '?'),
         h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
         : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
       h('p', { class: 'hint' }, 'You can still change any cell on the Schedule afterwards.')));
+    return box;
+  }
+  function whatIfBox(wk, plan) {
+    const wi = wiFor(wk), auto = (D.staff.people || []).filter((p) => (plan.people[p.id] || {}).mode === 'auto');
+    const f = (ui.wiForm = ui.wiForm || { person: '', days: [], kind: 'urgent' });
+    const box = h('details', { class: 'rp-whatif', open: !!wi.length || ui.wiOpen }, h('summary', { onclick: () => { ui.wiOpen = !ui.wiOpen; } }, h('b', null, 'What if…'), wi.length ? h('span', { class: 'rp-wi-n' }, String(wi.length)) : null, h('span', { class: 'hint' }, ' try days off without asking anyone')));
+    box.append(h('div', { class: 'rp-wi-in' },
+      K.select([['', 'Who']].concat(auto.map((p) => [p.id, p.name])), f.person, (v) => { f.person = v; K.render(); }, { 'aria-label': 'Who', class: 'input small' }),
+      h('div', { class: 'rp-days' }, DAYS.map((d, i) => h('button', { type: 'button', class: 'chip', 'aria-pressed': f.days.includes(i) ? 'true' : 'false', onclick: () => { f.days = f.days.includes(i) ? f.days.filter((x) => x !== i) : f.days.concat([i]); K.render(); } }, d))),
+      K.seg([['urgent', 'Off'], ['paid', 'Vacation']], f.kind, (v) => { f.kind = v; K.render(); }, { 'aria-label': 'Kind', class: 'seg small-seg' }),
+      h('button', { class: 'btn small primary', type: 'button', disabled: !f.person || !f.days.length, onclick: () => {
+        ui.whatIf = (ui.whatIf || []).filter((x) => !(x.person === f.person && f.days.some((d) => x.date === K.ymd(K.addDays(K.parseYmd(wk), d)))));
+        f.days.forEach((d) => ui.whatIf.push({ person: f.person, date: K.ymd(K.addDays(K.parseYmd(wk), d)), kind: f.kind }));
+        ui.wiForm = { person: '', days: [], kind: f.kind }; K.render();
+      } }, K.icon('plus'), 'Try it')));
+    if (wi.length) box.append(h('div', { class: 'rp-wi-list' }, wi.map((x) => h('span', { class: 'chip rp-wi-chip' }, K.personName(x.person) + ' · ' + K.prettyDate(x.date, { weekday: 'short' }) + (x.kind === 'paid' ? ' (vacation)' : ''),
+      h('button', { type: 'button', class: 'chip-x', 'aria-label': 'Remove', onclick: () => { ui.whatIf = ui.whatIf.filter((y) => y !== x); K.render(); } }, K.icon('close')))),
+      h('button', { class: 'btn small', type: 'button', onclick: () => { ui.whatIf = (ui.whatIf || []).filter((x) => !wi.includes(x)); K.render(); } }, 'Clear all')));
+    return box;
+  }
+
+  /* ---------- a month ahead: the drafts for the coming weeks, from every request already made ---------- */
+  function monthView(wk) {
+    const box = h('div', { class: 'rp-month' }, h('p', { class: 'hint' }, 'The next weeks as the generator sees them now, with every day off already asked for. They change as requests come in.'));
+    const first = wk < K.thisWeek() ? K.thisWeek() : wk;
+    for (let k = 0; k < 5; k++) {
+      const w = K.ymd(K.addDays(K.parseYmd(first), k * 7)), saved = D.weeks[w], r = K.rotaDraft(w, reqsFor(w));
+      const rows = saved && saved.rows ? saved.rows : r.rows, st = saved && saved.st ? saved.st : r.st, order = saved && saved.people ? saved.people : r.order;
+      const red = saved ? [] : r.issues.filter((x) => x.sev === 'red'), amber = saved ? [] : r.issues.filter((x) => x.sev === 'amber');
+      const mon = K.parseYmd(w);
+      box.append(h('section', { class: 'card rp-mweek' },
+        h('div', { class: 'rp-mh' }, h('b', null, range(w)),
+          saved ? h('span', { class: 'rp-pill ok' }, 'Saved') : red.length ? h('span', { class: 'rp-pill bad' }, red.length + (red.length === 1 ? ' hole' : ' holes')) : h('span', { class: 'rp-pill draft' }, 'Draft' + (amber.length ? ' · ' + amber.length + ' to look at' : '')),
+          h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = w; ui.rpTab = 'draft'; K.render(); window.scrollTo(0, 0); } }, 'Open')),
+        h('div', { class: 'rota-wrap' }, h('table', { class: 'rota rp-mini' },
+          h('thead', null, h('tr', null, h('th', null, ''), DAYS.map((d, i) => h('th', null, d.charAt(0) + d.charAt(1), h('small', null, String(K.addDays(mon, i).getDate())))))),
+          h('tbody', null, order.map((id) => h('tr', null, h('th', null, String(K.personName(id)).split(' ')[0]),
+            DAYS.map((d, i) => { const c = (rows[id] || [])[i] || '', sx = (st[id] || [])[i] || ''; return h('td', { class: K.codeClass(c) + (sx ? ' st-' + sx : '') + (c === (K.rotaPlan().lateCode || '2') && K.rotaPlan().periods ? ' lt' : '') }, c && !/^(0|X)$/i.test(c) ? (sx.indexOf('learn') === 0 ? 'L' : (STL[sx] || c).charAt(0)) : ''); })))))),
+        red.length ? h('p', { class: 'rp-mred' }, red.map((x) => x.text).join(' · ')) : null));
+    }
+    box.append(h('p', { class: 'hint' }, 'Letters: H Hot, C Cold, P Pass, F Filler, B Breakfast, L learning; italic is a late shift. Open a week to see its shifts and fix it.'));
     return box;
   }
   function use(wk, r) {
