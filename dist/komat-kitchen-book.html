@@ -1823,7 +1823,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .stdots { display: flex; gap: 3px; margin-top: 2px; }
 .stdots i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font: 800 .62rem/1 var(--sans); font-style: normal; color: var(--dot-ink); }
 .stdots .sd-hot { background: var(--dot-hot); } .stdots .sd-cold { background: var(--dot-cold); } .stdots .sd-pass { background: var(--dot-pass); }
-.rota tbody th .pn { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
+.rota tbody th .rname { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
 .rota tbody th .stdots { padding-bottom: 8px; }
 .rota tbody th .pname { padding: 8px 0 0; }
 .rp-sum b { display: flex; align-items: center; gap: 8px; }
@@ -1984,7 +1984,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 /* you, on the slate: your row and your shifts in yellow chalk */
 .slate .rota tr.me th, .slate .rota tr.me td:not(.br) { background: rgba(243, 211, 74, .09); }
 .slate .rota tr.me th, .slate .rota tr.me th .pname, .slate .rota tr.me td .mono { color: var(--chalk-yellow); }
-.slate .rota tr.me th .pname::after, .slate .rota tr.me th .pn::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
+.slate .rota tr.me th .pname::after, .slate .rota tr.me th .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
 .dc-me { display: block; margin-top: 1px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .7rem/1.1 "Neucha", var(--hand); color: var(--chalk-yellow); }
 .dc-me.draft { opacity: .75; font-style: italic; }
 .dc-me.lg { display: inline-block; margin: 0; padding: 4px 9px; border: 1.5px solid var(--chalk-yellow); border-radius: 6px; font-size: .88rem; }
@@ -1995,6 +1995,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .dc-evbox { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--steel); color: var(--on-steel); }
 .dc-evbox b { font: 700 1.25rem/1.1 var(--display); }
 .dc-evbox span { color: var(--steel-muted); font-size: .9rem; }
+
+.chalk-draft { justify-self: center; padding: 3px 12px; border: 1.5px dashed var(--chalk-yellow); border-radius: 999px; font: 400 .92rem/1.3 "Neucha", var(--hand); color: var(--chalk-yellow); text-align: center; }
+.slate .rota.draft td .mono { opacity: .9; }
+.slate .rota.draft tbody tr.me .rname { color: var(--chalk-yellow); }
+.slate .rota.draft tbody tr.me .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
 
 </style>
 <div id="app"></div>
@@ -7278,6 +7283,23 @@ window.KOMAT_PART_ART = [
       h('p', { class: 'chalk-sub' }, range(mon)));
     w.append(board);
     const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
+    /* a week still being planned: everyone sees the draft as it stands, and it moves as days off come in */
+    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady()) {
+      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), me0 = K.getMe(), reds = r.issues.filter((x) => x.sev === 'red').length;
+      board.append(h('p', { class: 'chalk-draft' }, 'Draft · it changes as days off come in' + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
+        h('div', { class: 'board-scroll' }, h('table', { class: 'rota draft' },
+          h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
+            const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
+            return h('th', { scope: 'col' }, h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } },
+              h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev' }, '★ ' + (ev[0].title || 'Event')) : null));
+          }))),
+          h('tbody', null, r.order.map((id) => h('tr', { class: id === me0 ? 'me' : '' }, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
+            K.DAYS.map((d, i) => { const c = r.rows[id][i] || ''; return h('td', { class: K.codeClass(c) }, h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c || '–'), K.stTag(r.st[id][i]))); })))))));
+      if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+      if (K.daysOffView) w.append(K.daysOffView());
+      w.append(legend());
+      return { body: body };
+    }
     if (!doc) {
       board.append(h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'chalk-acts' },
@@ -7331,7 +7353,7 @@ window.KOMAT_PART_ART = [
       h('tbody', null, people.map((id) => {
         const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
         return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : ''), 'aria-current': id === me ? 'true' : null },
-          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'pn' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
+          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
           K.DAYS.map((d, i) => {
             const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
             return h('td', { class: K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
@@ -7792,7 +7814,7 @@ window.KOMAT_PART_ART = [
     const mon = K.parseYmd(wk);
     box.append(h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
-      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'pn' }, K.personName(id)), K.stDots(id)),
+      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
           const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));

@@ -1816,7 +1816,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .stdots { display: flex; gap: 3px; margin-top: 2px; }
 .stdots i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font: 800 .62rem/1 var(--sans); font-style: normal; color: var(--dot-ink); }
 .stdots .sd-hot { background: var(--dot-hot); } .stdots .sd-cold { background: var(--dot-cold); } .stdots .sd-pass { background: var(--dot-pass); }
-.rota tbody th .pn { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
+.rota tbody th .rname { display: block; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; }
 .rota tbody th .stdots { padding-bottom: 8px; }
 .rota tbody th .pname { padding: 8px 0 0; }
 .rp-sum b { display: flex; align-items: center; gap: 8px; }
@@ -1977,7 +1977,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 /* you, on the slate: your row and your shifts in yellow chalk */
 .slate .rota tr.me th, .slate .rota tr.me td:not(.br) { background: rgba(243, 211, 74, .09); }
 .slate .rota tr.me th, .slate .rota tr.me th .pname, .slate .rota tr.me td .mono { color: var(--chalk-yellow); }
-.slate .rota tr.me th .pname::after, .slate .rota tr.me th .pn::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
+.slate .rota tr.me th .pname::after, .slate .rota tr.me th .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
 .dc-me { display: block; margin-top: 1px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .7rem/1.1 "Neucha", var(--hand); color: var(--chalk-yellow); }
 .dc-me.draft { opacity: .75; font-style: italic; }
 .dc-me.lg { display: inline-block; margin: 0; padding: 4px 9px; border: 1.5px solid var(--chalk-yellow); border-radius: 6px; font-size: .88rem; }
@@ -1988,3 +1988,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .dc-evbox { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--steel); color: var(--on-steel); }
 .dc-evbox b { font: 700 1.25rem/1.1 var(--display); }
 .dc-evbox span { color: var(--steel-muted); font-size: .9rem; }
+
+.chalk-draft { justify-self: center; padding: 3px 12px; border: 1.5px dashed var(--chalk-yellow); border-radius: 999px; font: 400 .92rem/1.3 "Neucha", var(--hand); color: var(--chalk-yellow); text-align: center; }
+.slate .rota.draft td .mono { opacity: .9; }
+.slate .rota.draft tbody tr.me .rname { color: var(--chalk-yellow); }
+.slate .rota.draft tbody tr.me .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }

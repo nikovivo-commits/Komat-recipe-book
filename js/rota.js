@@ -108,7 +108,7 @@
     const mon = K.parseYmd(wk);
     box.append(h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
-      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'pn' }, K.personName(id)), K.stDots(id)),
+      h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
           const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
