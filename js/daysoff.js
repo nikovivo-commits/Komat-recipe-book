@@ -142,6 +142,12 @@
     const r = K.rotaDraft(wk, K.requestsFor(wk));
     return r.rows[me] ? { rows: r.rows[me], st: r.st[me] || [], draft: true } : null;
   }
+  const evs = (ds) => (K.eventsOn ? K.eventsOn(ds).filter(K.isLive) : []);
+  K.dayEvents = evs;
+  function evLine(e) {
+    return h('div', { class: 'dc-evbox' }, h('b', null, '★ ' + (e.title || 'Event')),
+      h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
+  }
   const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', br: 'BR' };
   /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
      together (a vacation) is one long note across them */
@@ -164,7 +170,7 @@
         const d = K.addDays(mon, i), inMonth = d.getMonth() === m - 1, rs = (single[ds] || []).concat(runs.filter((x) => x.from <= i && x.to >= i).map((x) => x.r));
         strip.append(h('button', { type: 'button', style: { gridColumn: String(i + 1), gridRow: '1 / span ROWS' }, class: 'dc-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : ''),
           'aria-label': pretty(ds) + (rs.length ? ', off: ' + rs.map((r) => K.personName(r.person) + (r.kind === 'urgent' ? ' (urgent)' : '')).join(', ') : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
-          h('span', { class: 'dc-n' }, String(d.getDate())), (() => {
+          h('span', { class: 'dc-n' }, String(d.getDate())), evs(ds).map((e) => h('span', { class: 'dc-ev', title: e.title }, '★ ' + (e.title || 'Event'))), (() => {
             const c = my ? String(my.rows[i] || '').trim() : '';
             if (!c || /^(0|X)$/i.test(c)) return null;
             return h('span', { class: 'dc-me' + (my.draft ? ' draft' : ''), title: (my.draft ? 'Draft: ' : '') + 'you work ' + c + (my.st[i] ? ' on ' + (K.STL[my.st[i]] || my.st[i]) : '') }, c + (my.st[i] ? ' ' + (SHORT[my.st[i]] || '') : ''));
@@ -230,6 +236,7 @@
   K.SHEETS.dayoff = function (c) {
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
+    evs(ds).forEach((e) => body.push(evLine(e)));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
     body.push(h('h3', { class: 'off-h small' }, 'Days off'));
@@ -264,6 +271,7 @@
         h('details', { class: 'off-more', open: f.kind === 'unpaid' }, h('summary', null, 'More options'),
           h('button', { type: 'button', class: 'off-kbtn k-unpaid', 'aria-pressed': f.kind === 'unpaid' ? 'true' : 'false', onclick: () => { f.kind = 'unpaid'; K.render(); } }, 'Unpaid leave'))),
       h('p', { class: 'hint off-hint' }, hint),
+      (() => { const ev = []; for (let d = f.from; d <= (f.to || f.from) && ev.length < 3; d = K.ymd(K.addDays(K.parseYmd(d), 1))) evs(d).forEach((e) => ev.push(e)); return ev.length ? h('p', { class: 'banner warn' }, h('b', null, '★ Event: '), ev.map((e) => (e.title || 'Event') + ' on ' + pretty(e.date) + (+e.cooks ? ', needs ' + e.cooks + ' cooks' : '')).join('; ') + '. If the kitchen would be short, the head chef decides.') : null; })(),
       K.field('Why?', h('textarea', { class: 'input', rows: '2', maxlength: '300', value: f.note, placeholder: 'e.g. my sister’s wedding. The team sees this.', oninput: (e) => { f.note = e.target.value; } }), 'Optional, but it helps the team get behind it.'),
       h('button', { class: 'btn primary wide', type: 'submit', disabled: !f.person || ui.busy }, ui.busy ? 'Sending…' : 'Send'));
   }

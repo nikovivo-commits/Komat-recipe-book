@@ -43,7 +43,9 @@
     const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
-    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep };
+    const end = K.ymd(K.addDays(K.parseYmd(wk), 6));
+    const events = (D.events || []).filter((e) => K.isLive(e) && e.status !== 'pending' && e.date >= wk && e.date <= end && +e.cooks > 0).map((e) => ({ date: e.date, cooks: +e.cooks, title: e.title || 'Event' }));
+    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events };
   };
   K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
   K.rotaDraft = function (wk, requests) {
@@ -86,15 +88,16 @@
       return box;
     }
     const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), fx = withFixes(r, wk), f = fixes(wk);
-    const red = r.issues.filter((x) => x.sev === 'red' && !(x.day != null && Object.keys(f).some((id) => f[id][x.day] && f[id][x.day].st === (x.st || 'br'))));
+    const red = r.issues.filter((x) => x.sev === 'red' && !(x.day != null && Object.keys(f).some((id) => f[id][x.day] && (x.event ? !/^(0|X)$/i.test(f[id][x.day].code) : f[id][x.day].st === (x.st || 'br')))));
     const amber = r.issues.filter((x) => x.sev === 'amber'), info = r.issues.filter((x) => x.sev === 'info');
     if (red.length) {
       box.append(h('section', { class: 'rp-holes' }, h('h2', { class: 'block-title' }, K.icon('flag'), red.length + (red.length === 1 ? ' hole' : ' holes') + ' to fill'),
         h('p', { class: 'hint' }, 'The generator could not fill these. Pick who steps in, or leave it and sort it out with them.'),
         red.map((x) => h('div', { class: 'rp-hole' }, h('b', null, x.text),
           x.could && x.could.length ? h('div', { class: 'rp-could' }, x.could.map((c) => h('button', { class: 'btn small', type: 'button', onclick: () => {
-            const fid = (f[c.id] = f[c.id] || {}), code = x.st ? ((plan.people[c.id] || {}).code || '2') : plan.brCode;
-            fid[x.day] = { code: code, st: x.st || (fx.st[c.id] || [])[x.day] || 'br' };
+            const fid = (f[c.id] = f[c.id] || {}), pp = plan.people[c.id] || {};
+            if (x.event) fid[x.day] = { code: pp.code || '2', st: (pp.stations || [])[0] || 'prep' };
+            else fid[x.day] = { code: x.st ? pp.code || '2' : plan.brCode, st: x.st || (fx.st[c.id] || [])[x.day] || 'br' };
             K.render();
           } }, h('span', null, K.personName(c.id)), h('small', null, c.why))))
             : h('p', { class: 'hint' }, 'Nobody who can work there is free. This one is for you or the head chef.')))));

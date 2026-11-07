@@ -159,7 +159,7 @@
       if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { K.toast('Pick a date.'); return; }
       const id = e.id || 'e' + K.uid();
       const body = {
-        title: e.title.trim(), date: e.date, time: (e.time || '').trim(), kind: e.kind || '', guests: String(e.guests || '').trim(), contact: (e.contact || '').trim(),
+        title: e.title.trim(), date: e.date, time: (e.time || '').trim(), kind: e.kind || '', guests: String(e.guests || '').trim(), cooks: String(e.cooks || '').trim(), contact: (e.contact || '').trim(),
         menu: (e.menu || '').trim(), notes: (e.notes || '').trim(), status: e.status || 'confirmed',
         dishes: e.dishes.filter((d) => (d.name || '').trim() || d.link).map((d) => ({ name: (d.name || '').trim(), link: d.link || '', qty: String(d.qty || '').trim() })),
         tasks: e.tasks.filter((k) => (k.text || '').trim()).map((k) => ({ id: k.id || 't' + K.uid(), text: k.text.trim(), station: k.station || 'hot', before: +k.before || 0 })),
@@ -184,6 +184,7 @@
       h('div', { class: 'two' }, inp('Date', 'date', { type: 'date' }), inp('Time', 'time', { placeholder: 'e.g. 09:00–11:00' })),
       h('div', { class: 'two' }, K.field('Type', K.select(KINDS.map((x) => [x, x]).concat(KINDS.includes(e.kind) || !e.kind ? [] : [[e.kind, e.kind]]), e.kind || 'Group', (v) => { e.kind = v; }), null, 'ev-kind'),
         inp('Guests', 'guests', { inputmode: 'numeric', placeholder: '40' })),
+      K.field('Cooks needed in the kitchen', h('input', { class: 'input', id: 'ev-cooks', inputmode: 'numeric', value: e.cooks || '', placeholder: 'e.g. 5', oninput: (ev) => { e.cooks = ev.target.value.replace(/[^0-9]/g, ''); } }), 'The rota keeps at least this many cooks on that day, and days off that would go below it need the head chef’s OK.'),
       K.field('Status', K.select(STATUS, e.status || 'confirmed', (v) => { e.status = v; }), null, 'ev-status'),
       inp('Contact or organiser', 'contact', { placeholder: 'Optional' }),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Food'), h('p', { class: 'hint' }, 'Each dish, how many portions, and the recipe if it is in the book. Linked recipes open already scaled when their yield is in portions.'),

@@ -99,7 +99,8 @@
     const table = h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
         const dd = K.addDays(mon, i);
-        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1))];
+        const ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
+        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev', title: ev.map((e) => e.title).join(', ') }, '★ ' + (ev[0].title || 'Event')) : null];
         return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, K.SHEETS.dayoff ? h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } }, inner) : inner);
       }))),
       h('tbody', null, people.map((id) => {

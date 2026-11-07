@@ -1981,3 +1981,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .dc-me { display: block; margin-top: 1px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .7rem/1.1 "Neucha", var(--hand); color: var(--chalk-yellow); }
 .dc-me.draft { opacity: .75; font-style: italic; }
 .dc-me.lg { display: inline-block; margin: 0; padding: 4px 9px; border: 1.5px solid var(--chalk-yellow); border-radius: 6px; font-size: .88rem; }
+
+/* events on the slate */
+.dc-ev { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .68rem/1.2 "Neucha", var(--hand); color: #FFFFFF; text-decoration: underline wavy rgba(255, 255, 255, .5) 1px; text-underline-offset: 2px; }
+.th-ev { display: block !important; max-width: 5.5rem; margin: 2px auto 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .7rem/1.2 "Neucha", var(--hand); color: var(--chalk-yellow, var(--apron)); }
+.dc-evbox { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--steel); color: var(--on-steel); }
+.dc-evbox b { font: 700 1.25rem/1.1 var(--display); }
+.dc-evbox span { color: var(--steel-muted); font-size: .9rem; }

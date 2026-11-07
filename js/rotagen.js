@@ -12,7 +12,8 @@
      people    [{ id, name }] in the order the rota lists them
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
                paid and unpaid leave, once approved, also take that day out of the person's days for the week
-     keep      { id: [7 codes] } the rows of people filled in by hand (the week as it stands) */
+     keep      { id: [7 codes] } the rows of people filled in by hand (the week as it stands)
+     events    [{ date, cooks, title }] an event that needs at least that many cooks working that day */
 (function (root) {
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
@@ -51,6 +52,9 @@
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
     const places = (d) => { const out = []; STS.forEach((s) => { for (let k = 0; k < ((needs[s] || [])[d] || 0); k++) out.push(s); }); return out; };
     const placeList = [0, 1, 2, 3, 4, 5, 6].map(places);
+    /* events: the most cooks any event that day needs */
+    const minCooks = [0, 0, 0, 0, 0, 0, 0], evName = ['', '', '', '', '', '', ''];
+    (input.events || []).forEach((e) => { const d = dates.indexOf(e.date), n = +e.cooks || 0; if (d >= 0 && n > minCooks[d]) { minCooks[d] = n; evName[d] = e.title || 'the event'; } });
 
     /* ---------- one day: who stands where, given who works ---------- */
     function solveDay(d, work, special) {
@@ -105,7 +109,9 @@
           brCost = br ? W.brHand + (bestR - 1) * W.brRank : W.brUnfilled;
         }
       }
-      return { cost: best.cost + brCost, on: best.on, extras: best.extras, br: br };
+      const heads = auto.filter((id) => work[id][d]).length;
+      const evCost = minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0;
+      return { cost: best.cost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads };
     }
 
     /* ---------- one person's week: days short, wishes not met, days off split up ---------- */
@@ -217,19 +223,23 @@
         }
       }
     }
+    for (let d = 0; d < 7; d++) {
+      const heads = auto.filter((id) => best.st.work[id][d]).length;
+      if (minCooks[d] > heads) issues.push({ sev: 'red', day: d, event: true, text: DAY[d] + ': ' + evName[d] + ' needs ' + minCooks[d] + ' cooks, ' + heads + ' working' });
+    }
     /* a hole is for the head chef or the sous chef: who could step in, and what it costs them */
     const askedOff = {};
     (input.requests || []).forEach((r) => { const d = dates.indexOf(r.date); if (d >= 0 && r.kind !== 'urgent' && r.status !== 'refused') (askedOff[r.person] = askedOff[r.person] || {})[d] = true; });
     issues.forEach((x) => {
       if (x.sev !== 'red' || x.day == null) return;
-      const d = x.day, want = x.st || 'br';
-      x.could = auto.filter((id) => !(best.st.work[id][d] && !best.st.special[id][d] && best.ev.days[d].on[id]))
-        .filter((id) => (want === 'br' ? S(id).br : rank(id, want) >= 0) && !(setup[id].off || []).includes(d) && !(input.requests || []).some((r) => r.person === id && r.kind === 'urgent' && r.status !== 'refused' && dates.indexOf(r.date) === d))
+      const d = x.day, want = x.event ? 'any' : x.st || 'br';
+      x.could = auto.filter((id) => (x.event ? !best.st.work[id][d] : !(best.st.work[id][d] && !best.st.special[id][d] && best.ev.days[d].on[id])))
+        .filter((id) => (want === 'any' ? (S(id).stations || []).length : want === 'br' ? S(id).br : rank(id, want) >= 0) && !(setup[id].off || []).includes(d) && !(input.requests || []).some((r) => r.person === id && r.kind === 'urgent' && r.status !== 'refused' && dates.indexOf(r.date) === d))
         .map((id) => {
           const n = best.st.work[id].reduce((a, b) => a + b, 0), works = best.st.work[id][d];
           const why = works ? 'working that day on ' + (best.st.special[id][d] ? 'prep' : (best.ev.days[d].extras[id] || 'prep')) + ', could move'
             : askedOff[id] && askedOff[id][d] ? 'asked for this day off' : n >= (S(id).days || 0) ? 'off that day, would be ' + (n + 1) + ' days (usually ' + S(id).days + ')' : 'off that day';
-          return { id: id, why: why, score: (works ? 0 : 2) + (askedOff[id] && askedOff[id][d] ? 3 : 0) + (want === 'br' ? S(id).br : rank(id, want)) };
+          return { id: id, why: why, score: (works ? 0 : 2) + (askedOff[id] && askedOff[id][d] ? 3 : 0) + (want === 'any' ? 0 : want === 'br' ? S(id).br : rank(id, want)) };
         })
         .sort((a, b) => a.score - b.score).slice(0, 4).map((c) => ({ id: c.id, why: c.why }));
     });
