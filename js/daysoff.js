@@ -148,7 +148,7 @@
     return h('div', { class: 'dc-evbox' }, h('b', null, '★ ' + (e.title || 'Event')),
       h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
   }
-  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Float', br: 'BR' };
+  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Fill', br: 'BR' };
   /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
      together (a vacation) is one long note across them */
   function monthGrid(y, m) {
@@ -223,7 +223,7 @@
       if (/^(0|X)$/i.test(c)) { g.off.push({ id: id, c: c }); return; }
       (g[s] || g.other).push({ id: id, c: c });
     });
-    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['float', 'Floating'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
+    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['float', 'Filler'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
     const offReq = onDay(ds).filter(live);
     return h('section', { class: 'lineup' },
       h('div', { class: 'lineup-h' }, h('h3', null, 'Who’s on'), draft ? h('span', { class: 'lineup-draft' }, 'Draft, not final yet') : null),

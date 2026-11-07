@@ -7693,7 +7693,7 @@ window.KOMAT_PART_ART = [
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
         if (day.on[id]) { rows[id][d] = s.code || '2'; stOf[id][d] = day.on[id]; return; }
-        /* on top of the station's main cook: floating, helping wherever it is needed */
+        /* on top of the station's main cook: the filler, helping wherever it is needed */
         rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
       Object.keys(day.handOn || {}).forEach((id) => {
@@ -7756,7 +7756,7 @@ window.KOMAT_PART_ART = [
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Floating', br: 'Breakfast' };
+  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Filler', br: 'Breakfast' };
   K.STL = STL;
   const PLACES = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
 
@@ -8145,7 +8145,7 @@ window.KOMAT_PART_ART = [
     return h('div', { class: 'dc-evbox' }, h('b', null, '★ ' + (e.title || 'Event')),
       h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
   }
-  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Float', br: 'BR' };
+  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Fill', br: 'BR' };
   /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
      together (a vacation) is one long note across them */
   function monthGrid(y, m) {
@@ -8220,7 +8220,7 @@ window.KOMAT_PART_ART = [
       if (/^(0|X)$/i.test(c)) { g.off.push({ id: id, c: c }); return; }
       (g[s] || g.other).push({ id: id, c: c });
     });
-    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['float', 'Floating'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
+    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['float', 'Filler'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
     const offReq = onDay(ds).filter(live);
     return h('section', { class: 'lineup' },
       h('div', { class: 'lineup-h' }, h('h3', null, 'Who’s on'), draft ? h('span', { class: 'lineup-draft' }, 'Draft, not final yet') : null),

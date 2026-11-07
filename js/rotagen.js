@@ -236,7 +236,7 @@
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
         if (day.on[id]) { rows[id][d] = s.code || '2'; stOf[id][d] = day.on[id]; return; }
-        /* on top of the station's main cook: floating, helping wherever it is needed */
+        /* on top of the station's main cook: the filler, helping wherever it is needed */
         rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
       Object.keys(day.handOn || {}).forEach((id) => {

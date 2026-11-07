@@ -5,7 +5,7 @@
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Floating', br: 'Breakfast' };
+  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Filler', br: 'Breakfast' };
   K.STL = STL;
   const PLACES = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
 
