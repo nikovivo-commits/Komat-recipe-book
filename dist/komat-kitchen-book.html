@@ -1837,6 +1837,79 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rp-sum b { display: flex; align-items: center; gap: 8px; }
 .rp-sum b .stdots { margin-top: 0; }
 
+/* ---------- days off ---------- */
+.sched-tabs { position: relative; display: flex; align-items: center; gap: 8px; margin: 2px 0 14px; }
+.sched-seg { width: 100%; }
+.sched-seg button { flex: 1; min-height: 44px; font-size: 1rem; }
+.sched-badge { position: static; box-shadow: none; }
+.off { display: grid; gap: 16px; }
+.off-h { display: flex; align-items: center; gap: 10px; font: 700 1.5rem/1.05 var(--display); margin-bottom: 8px; }
+.off-count { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; background: var(--urgent); color: var(--urgent-ink); font: 800 .95rem var(--mono); }
+.off-wait { display: grid; gap: 10px; padding: 14px; border-radius: var(--r); background: var(--urgent-soft); border: 2px solid var(--urgent); }
+.off-cta { display: grid; gap: 6px; justify-items: start; }
+.off-face { --h: 20; display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: hsl(var(--h) 45% 42%); color: #fff; font: 800 .78rem var(--sans); letter-spacing: .02em; }
+.off-face.big { width: 46px; height: 46px; font-size: .98rem; }
+.off-card, .off-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.off-row { box-shadow: none; }
+.off-card.k-urgent, .off-row.k-urgent { border: 2px solid var(--urgent); }
+.off-card.k-paid, .off-row.k-paid { border-left: 5px solid var(--cold); }
+.off-card.s-waiting, .off-row.s-waiting { border-style: dashed; border-color: var(--todo); }
+.off-card.s-refused, .off-row.s-refused { opacity: .55; }
+.off-card-txt { display: grid; gap: 2px; min-width: 0; }
+.off-card-txt b { font-size: 1.02rem; }
+.off-when { font: 700 .92rem var(--mono); }
+.off-kind { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .86rem; font-weight: 600; }
+.off-bang { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--urgent); color: var(--urgent-ink); font: 900 .75rem/1 var(--sans); }
+.off-note { display: block; margin-top: 2px; font-style: italic; color: var(--ink); overflow-wrap: anywhere; }
+.off-note::before { content: "“"; } .off-note::after { content: "”"; }
+.off-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 480px) { .off-card, .off-row { grid-template-columns: auto minmax(0, 1fr); } .off-acts { grid-column: 1 / -1; justify-content: flex-start; } }
+.cal { padding: 12px; overflow: hidden; }
+.cal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.cal-title { flex: 1; min-width: 0; text-align: center; font: 700 clamp(1.5rem, 6vw, 2.1rem)/1 var(--display); text-transform: capitalize; }
+.cal-head .seg { margin-left: auto; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-dow { padding: 4px 0; text-align: center; font: 800 .68rem var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cal-day { display: grid; align-content: start; justify-items: start; gap: 3px; min-height: 64px; min-width: 0; padding: 5px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-align: left; }
+.cal-day.out { opacity: .4; }
+.cal-day.past { background: transparent; }
+.cal-day.today { border: 2px solid var(--apron); background: var(--apron-soft); }
+.cal-day.has-urgent { box-shadow: inset 0 -3px 0 var(--urgent); }
+.cal-n { font: 800 .9rem var(--mono); }
+.cal-day.today .cal-n { color: var(--apron); }
+.cal-offs { display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.off-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px; border-radius: 6px; font: 800 .62rem/1.3 var(--sans); background: var(--ready-soft); color: var(--ready); border: 1px solid transparent; }
+.off-chip b { font-weight: 900; }
+.off-chip.k-urgent { background: var(--urgent); color: var(--urgent-ink); }
+.off-chip.k-paid, .off-chip.k-unpaid { background: color-mix(in srgb, var(--cold) 18%, var(--surface)); color: var(--cold); }
+.off-chip.s-waiting { background: var(--todo-soft); color: var(--todo-ink); border: 1px dashed var(--todo); }
+.off-chip.k-urgent.s-waiting { background: var(--urgent); color: var(--urgent-ink); }
+.off-chip.lg { padding: 4px 10px; font-size: .78rem; gap: 6px; }
+.cal-more { font: 800 .62rem var(--sans); color: var(--muted); }
+.off-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.cal-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.ym { display: grid; gap: 4px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-align: left; }
+.ym b { font: 700 1rem/1 var(--display); }
+.ym-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.yd { display: block; aspect-ratio: 1; border-radius: 2px; background: var(--line); }
+.yd.blank { background: transparent; }
+.yd.o { background: var(--ready); } .yd.v { background: var(--cold); } .yd.w { background: var(--todo); } .yd.u { background: var(--urgent); }
+.yd.t { outline: 2px solid var(--apron); outline-offset: 1px; }
+.off-form { display: grid; gap: 2px; margin-top: 8px; padding-top: 14px; border-top: 2px solid var(--ink); }
+.off-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
+.off-kbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 800; }
+.off-kbtn b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: .85rem; }
+.off-kbtn.k-urgent b { background: var(--urgent); color: var(--urgent-ink); }
+.off-kbtn.k-paid b { background: var(--cold); color: #fff; }
+.off-kbtn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--ground); }
+.off-kbtn.k-urgent[aria-pressed="true"] { border-color: var(--urgent); background: var(--urgent); color: var(--urgent-ink); }
+.off-kbtn.k-urgent[aria-pressed="true"] b { background: var(--urgent-ink); color: var(--urgent); }
+.off-more { margin-top: 10px; }
+.off-more summary { cursor: pointer; color: var(--muted); font-weight: 700; font-size: .88rem; }
+.off-more .off-kbtn { margin-top: 8px; }
+.off-hint { margin: 6px 0 12px; }
+.off-form.k-urgent .off-hint { color: var(--urgent); font-weight: 700; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -3413,7 +3486,7 @@ window.KOMAT_PART_ART = [
     loaded: false, recipesSrc: [], recipes: [],
     branding: { logo: '', heroes: [], approve: '', pages: {} },
     checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
-    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, bugs: [], names: {}, noWrite: false,
+    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, dayoff: {}, bugs: [], names: {}, noWrite: false,
   });
 
   K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
@@ -4053,6 +4126,8 @@ window.KOMAT_PART_ART = [
     setting('rotaplan', (d) => { D.rotaplan = d ? K.clone(d) : null; });
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
+    /* days off asked for, from two months back (the year view shows what is coming) */
+    db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
     dateSubs();
     /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);
@@ -4942,6 +5017,7 @@ window.KOMAT_PART_ART = [
   function badge(tab) {
     if (K.mode === 'pending' || K.mode === 'none' || ui.auth) return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
+    if (tab === 'schedule' && K.me.admin && K.waitingDayoff) { const n = K.waitingCount(); return n ? h('span', { class: 'badge', 'aria-label': n + ' days off waiting' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
     return null;
   }
@@ -7110,6 +7186,12 @@ window.KOMAT_PART_ART = [
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
+    if (K.daysOffView) {
+      const nw = K.me.admin && K.waitingCount ? K.waitingCount() : 0;
+      w.append(h('div', { class: 'sched-tabs' }, K.seg([['rota', 'Rota'], ['off', 'Days off']], ui.schedTab || 'rota', (v) => { ui.schedTab = v; K.render(); }, { 'aria-label': 'Rota or days off', class: 'seg sched-seg' }),
+        nw ? h('span', { class: 'badge sched-badge', 'aria-label': nw + ' waiting' }, String(nw)) : null));
+      if (ui.schedTab === 'off') { w.append(K.daysOffView()); return { body: body }; }
+    }
     if (K.me.admin && K.V.rotaplan) w.append(h('div', { class: 'gen-cta' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator'),
       h('span', { class: 'hint' }, 'Draft this week from who works where and the days off asked for.')));
     if (!doc) {
@@ -7539,11 +7621,15 @@ window.KOMAT_PART_ART = [
 
   /* the draft for a week; worked out again only when something it depends on changes */
   let memo = { key: '', out: null };
-  K.rotaDraft = function (wk, requests) {
+  K.rotaInput = function (wk, requests) {
     const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
-    const input = { week: wk, plan: plan, people: people, requests: requests || [], keep: keep };
+    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep };
+  };
+  K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
+  K.rotaDraft = function (wk, requests) {
+    const input = K.rotaInput(wk, requests);
     const key = JSON.stringify(input);
     if (memo.key !== key) memo = { key: key, out: K.rotaGen(input) };
     return memo.out;
@@ -7703,6 +7789,214 @@ window.KOMAT_PART_ART = [
       h('p', { class: 'hint' }, 'Someone still learning Hot is only put there alone on a busy day if nobody else can.'),
       row('Weekend breakfast on', days(plan.brDays, (l) => set((p) => { p.brDays = l; }))),
       row('Breakfast cover code', h('input', { class: 'input small rp-code', value: plan.brCode, 'aria-label': 'Shift code for whoever covers breakfast', onchange: (e) => set((p) => { p.brCode = e.target.value.trim() || 'BR+P'; }) })));
+  }
+})();
+
+</script>
+<script>
+/* js/daysoff.js */
+/* Days off: a calendar the whole team shares. Anyone asks for a day off and says why; the team sees
+   it. A normal day off is accepted straight away when the week still works without them, otherwise
+   it waits for the head chef or the sous chef. Urgent ("I just can't") always goes in, in red, and
+   paid vacation and unpaid leave are always approved by hand. Each request is one document per
+   person per day in dayoff/<date>_<person>. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, D = K.D, ui = K.ui;
+  const KIND = { ask: 'Day off', urgent: 'Urgent', paid: 'Paid vacation', unpaid: 'Unpaid leave' };
+  const STATUS = { ok: 'Accepted', waiting: 'Waiting for approval', approved: 'Approved', refused: 'Refused' };
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  K.DAYOFF_KIND = KIND;
+
+  const all = () => Object.keys(D.dayoff || {}).map((k) => D.dayoff[k]);
+  const live = (r) => r.status !== 'refused';
+  const onDay = (ds) => all().filter((r) => r.date === ds).sort((a, b) => (a.at || 0) - (b.at || 0));
+  K.requestsFor = function (wk) {
+    const end = K.ymd(K.addDays(K.parseYmd(wk), 6));
+    return all().filter((r) => r.date >= wk && r.date <= end).map((r) => ({ person: r.person, date: r.date, kind: r.kind, status: r.status }));
+  };
+  K.waitingDayoff = () => all().filter((r) => r.status === 'waiting' && r.date >= K.day(0));
+  K.waitingCount = () => new Set(K.waitingDayoff().map((r) => r.group || r.id)).size;
+  /* a short name for the calendar: the first name, cut to 4 letters (Ani and Ali stay apart) */
+  const short = (id) => { const n = String(K.personName(id) || '?').trim().split(/\s+/)[0]; return n.length > 4 ? n.slice(0, 4) : n; };
+  const initials = (id) => String(K.personName(id) || '?').trim().split(/\s+/).map((w) => w.charAt(0)).join('').slice(0, 2).toUpperCase();
+  const hue = (id) => { let x = 0; for (const c of String(id)) x = (x * 31 + c.charCodeAt(0)) >>> 0; return x % 360; };
+  const face = (id, cls) => h('span', { class: 'off-face ' + (cls || ''), style: { '--h': hue(id) }, 'aria-hidden': 'true' }, initials(id));
+  const pretty = (ds) => K.prettyDate(ds, { weekday: 'short', day: 'numeric', month: 'short' });
+  const mondayOf = (ds) => K.ymd(K.mondayOf(K.parseYmd(ds)));
+  const kindIcon = (r) => (r.kind === 'urgent' ? '!' : r.kind === 'paid' ? '☀' : r.kind === 'unpaid' ? '–' : '');
+
+  /* ---------- what happens to a request ---------- */
+  function decide(person, dates, kind) {
+    if (kind === 'urgent') return 'ok';
+    if (kind === 'paid' || kind === 'unpaid') return 'waiting';
+    if (!K.rotaReady || !K.rotaReady()) return 'waiting';
+    const weeks = Array.from(new Set(dates.map(mondayOf)));
+    for (const wk of weeks) {
+      if (D.weeks[wk] && D.weeks[wk].final) return 'waiting';
+      const base = K.requestsFor(wk);
+      const mine = dates.filter((d) => mondayOf(d) === wk).map((d) => ({ person: person, date: d, kind: 'ask', status: 'ok' }));
+      const holes = (reqs) => K.rotaGen(K.rotaInput(wk, reqs)).issues.filter((x) => x.sev === 'red').length;
+      if (holes(base.filter((r) => !(r.person === person && dates.includes(r.date))).concat(mine)) > holes(base)) return 'waiting';
+    }
+    return 'ok';
+  }
+  function send(f) {
+    const person = f.person, from = f.from, to = f.to && f.to >= from ? f.to : from, dates = [];
+    for (let d = from; d <= to && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
+    const status = decide(person, dates, f.kind), group = dates.length > 1 ? 'g' + K.uid() : '', at = Date.now();
+    ui.busy = true; K.render();
+    Promise.all(dates.map((d) => {
+      const body = { date: d, person: person, uid: K.me.id || '', kind: f.kind, note: (f.note || '').trim().slice(0, 300), status: status, at: at, group: group };
+      D.dayoff[d + '_' + person] = Object.assign({ id: d + '_' + person }, body);
+      return K.db.doc('dayoff/' + d + '_' + person).set(body);
+    })).then(() => {
+      ui.busy = false; ui.sheet = null; ui.offForm = null; K.render();
+      const span = dates.length > 1 ? pretty(from) + ' – ' + pretty(to) : pretty(from);
+      if (status === 'ok') K.toast((f.kind === 'urgent' ? 'Urgent, noted: ' : 'Accepted: ') + span + (f.kind === 'urgent' ? '. The head chef sees it in red.' : '. Enjoy it.'), { tone: 'good' });
+      else K.toast('Sent for approval: ' + span + '. The head chef or sous chef decides.');
+    }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
+  }
+  function setStatus(rs, status) {
+    rs.forEach((r) => {
+      const body = Object.assign({}, r, { status: status, decidedBy: K.me.id || '', decidedAt: Date.now() });
+      delete body.id;
+      D.dayoff[r.id] = Object.assign({ id: r.id }, body);
+      K.db.doc('dayoff/' + r.id).set(body).catch(K.writeFailed);
+    });
+    K.render();
+    K.toast((status === 'refused' ? 'Refused: ' : 'Approved: ') + K.personName(rs[0].person) + ', ' + span(rs), { tone: status === 'refused' ? '' : 'good' });
+  }
+  function withdraw(rs) {
+    rs.forEach((r) => { delete D.dayoff[r.id]; K.db.doc('dayoff/' + r.id).delete().catch(K.writeFailed); });
+    K.render();
+    K.toast('Withdrawn: ' + span(rs));
+  }
+  const span = (rs) => { const d = rs.map((r) => r.date).sort(); return d.length > 1 ? pretty(d[0]) + ' – ' + pretty(d[d.length - 1]) : pretty(d[0]); };
+  /* a run of days asked for together shows as one request */
+  function grouped(list) {
+    const g = {}, out = [];
+    list.forEach((r) => { const k = r.group ? r.group : r.id; if (!g[k]) out.push(g[k] = []); g[k].push(r); });
+    return out.map((rs) => rs.sort((a, b) => (a.date < b.date ? -1 : 1)));
+  }
+  const mine = (r) => r.person === K.getMe() || (r.uid && r.uid === K.me.id);
+
+  /* ---------- the page ---------- */
+  K.daysOffView = function () {
+    const box = h('div', { class: 'off' }), me = K.getMe(), today = K.day(0);
+    /* waiting for the head chef */
+    if (K.me.admin) {
+      const wait = grouped(K.waitingDayoff());
+      if (wait.length) box.append(h('section', { class: 'off-wait' }, h('h2', { class: 'off-h' }, h('span', { class: 'off-count' }, String(wait.length)), 'Waiting for you'),
+        wait.map((rs) => card(rs, true))));
+    }
+    box.append(h('div', { class: 'off-cta' },
+      h('button', { class: 'btn primary big', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'),
+      h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it.')));
+    box.append(calendar());
+    box.append(h('div', { class: 'off-legend' }, [['ok', 'Day off'], ['urgent', 'Urgent'], ['paid', 'Paid vacation'], ['waiting', 'Waiting']].map((x) => h('span', { class: 'off-chip lg k-' + (x[0] === 'urgent' || x[0] === 'paid' ? x[0] : 'ask') + ' s-' + (x[0] === 'waiting' ? 'waiting' : 'ok') }, x[0] === 'urgent' ? h('b', null, '!') : null, x[1]))));
+    const my = grouped(all().filter((r) => mine(r) && r.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1)));
+    if (my.length) box.append(h('section', { class: 'off-mine' }, h('h2', { class: 'off-h' }, 'Your requests'), my.map((rs) => card(rs, false))));
+    if (me) {
+      const yr = String(new Date().getFullYear()), paid = all().filter((r) => r.person === me && r.kind === 'paid' && r.status === 'approved' && r.date.slice(0, 4) === yr).length;
+      if (paid) box.append(h('p', { class: 'hint' }, 'Paid vacation approved for you in ' + yr + ': ' + paid + (paid === 1 ? ' day.' : ' days.')));
+    }
+    return box;
+  };
+  function card(rs, forChef) {
+    const r = rs[0], urgent = r.kind === 'urgent';
+    return h('article', { class: 'off-card k-' + r.kind + ' s-' + r.status },
+      face(r.person, 'big'),
+      h('div', { class: 'off-card-txt' },
+        h('b', null, K.personName(r.person)),
+        h('span', { class: 'off-when' }, span(rs) + (rs.length > 1 ? ' · ' + rs.length + ' days' : '')),
+        h('span', { class: 'off-kind' }, urgent ? h('b', { class: 'off-bang' }, '!') : null, KIND[r.kind] + ' · ' + STATUS[r.status]),
+        r.note ? h('q', { class: 'off-note' }, r.note) : null),
+      h('div', { class: 'off-acts' },
+        forChef ? [h('button', { class: 'btn small primary', type: 'button', onclick: () => setStatus(rs, 'approved') }, 'Approve'), h('button', { class: 'btn small', type: 'button', onclick: () => setStatus(rs, 'refused') }, 'Refuse')]
+          : r.date >= K.day(0) ? h('button', { class: 'btn small', type: 'button', onclick: () => withdraw(rs) }, 'Withdraw') : null));
+  }
+
+  /* ---------- the calendar: a month, or the whole year at a glance ---------- */
+  function calendar() {
+    const year = !!ui.offYear, cur = ui.offMonth || K.day(0).slice(0, 7);
+    const [y, m] = cur.split('-').map(Number);
+    const move = (n) => { const d = new Date(y, m - 1 + (year ? n * 12 : n), 1); ui.offMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); K.render(); };
+    const title = year ? String(y) : new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const head = h('div', { class: 'cal-head' },
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Previous year' : 'Previous month', onclick: () => move(-1) }, K.icon('back')),
+      h('h2', { class: 'cal-title' }, title),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
+      K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
+    return h('section', { class: 'cal card' }, head, year ? yearGrid(y) : monthGrid(y, m));
+  }
+  function monthGrid(y, m) {
+    const first = new Date(y, m - 1, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = K.addDays(start, i), ds = K.ymd(d);
+      if (i >= 35 && d.getMonth() !== m - 1) break;
+      const rs = onDay(ds).filter(live), inMonth = d.getMonth() === m - 1;
+      cells.push(h('button', { type: 'button', class: 'cal-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : '') + (rs.some((r) => r.kind === 'urgent') ? ' has-urgent' : ''),
+        'aria-label': pretty(ds) + (rs.length ? ', ' + rs.length + ' off' : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
+        h('span', { class: 'cal-n' }, String(d.getDate())),
+        h('span', { class: 'cal-offs' }, rs.slice(0, 3).map((r) => h('span', { class: 'off-chip k-' + r.kind + ' s-' + r.status }, r.kind === 'urgent' ? h('b', null, '!') : null, short(r.person))),
+          rs.length > 3 ? h('span', { class: 'cal-more' }, '+' + (rs.length - 3)) : null)));
+    }
+    return h('div', { class: 'cal-grid' }, DAYS.map((d) => h('span', { class: 'cal-dow' }, d)), cells);
+  }
+  function yearGrid(y) {
+    return h('div', { class: 'cal-year' }, Array.from({ length: 12 }, (_, mi) => {
+      const first = new Date(y, mi, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
+      for (let i = 0; i < 42; i++) {
+        const d = K.addDays(start, i);
+        if (d.getMonth() !== mi) { cells.push(h('i', { class: 'yd blank' })); continue; }
+        const ds = K.ymd(d), rs = onDay(ds).filter(live);
+        const cls = rs.some((r) => r.kind === 'urgent') ? ' u' : rs.some((r) => r.status === 'waiting') ? ' w' : rs.some((r) => r.kind === 'paid' || r.kind === 'unpaid') ? ' v' : rs.length ? ' o' : '';
+        cells.push(h('i', { class: 'yd' + cls + (ds === today ? ' t' : ''), title: rs.length ? pretty(ds) + ': ' + rs.map((r) => K.personName(r.person)).join(', ') : null }));
+      }
+      return h('button', { type: 'button', class: 'ym', onclick: () => { ui.offYear = false; ui.offMonth = y + '-' + String(mi + 1).padStart(2, '0'); K.render(); } },
+        h('b', null, first.toLocaleDateString('en-GB', { month: 'short' })), h('span', { class: 'ym-grid' }, cells));
+    }));
+  }
+
+  /* ---------- one day: who is off, and asking for it ---------- */
+  function openAsk(ds) { ui.offForm = null; ui.sheet = { type: 'dayoff', date: ds, ask: true }; K.render(); }
+  K.SHEETS.dayoff = function (c) {
+    const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
+    const body = [];
+    if (rs.length) body.push(h('div', { class: 'off-day-list' }, rs.map((r) => h('div', { class: 'off-row k-' + r.kind + ' s-' + r.status },
+      face(r.person),
+      h('div', { class: 'off-card-txt' }, h('b', null, K.personName(r.person)),
+        h('span', { class: 'off-kind' }, r.kind === 'urgent' ? h('b', { class: 'off-bang' }, '!') : null, KIND[r.kind] + ' · ' + STATUS[r.status]),
+        r.note ? h('q', { class: 'off-note' }, r.note) : null),
+      K.me.admin && r.status === 'waiting' ? h('div', { class: 'off-acts' }, h('button', { class: 'btn small primary', type: 'button', onclick: () => setStatus([r], 'approved') }, 'Approve'), h('button', { class: 'btn small', type: 'button', onclick: () => setStatus([r], 'refused') }, 'Refuse'))
+        : (mine(r) || K.me.admin) && ds >= today ? h('button', { class: 'btn small', type: 'button', onclick: () => withdraw([r]) }, mine(r) ? 'Withdraw' : 'Remove') : null))));
+    else body.push(h('p', { class: 'none' }, 'Nobody has asked for this day off.'));
+    if (ds >= today) {
+      if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
+      else body.push(askForm(ds, me));
+    }
+    return K.sheet(K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' }), body, { wide: true });
+  };
+  function askForm(ds, me) {
+    const f = (ui.offForm = ui.offForm && ui.offForm.from === ds ? ui.offForm : { from: ds, to: ds, kind: 'ask', note: '', person: me || '' });
+    const people = (D.staff.people || []).map((p) => [p.id, p.name]);
+    const hint = { ask: 'Accepted straight away if the week still works without you. If not, the head chef or the sous chef decides.',
+      urgent: 'For something you cannot move. It goes straight in, in red, and the head chef sorts out the gap.',
+      paid: 'Paid vacation. The head chef or the sous chef approves it.', unpaid: 'Unpaid leave, the last resort. The head chef or the sous chef approves it.' }[f.kind];
+    return h('form', { class: 'off-form k-' + f.kind, onsubmit: (e) => { e.preventDefault(); if (!f.person || ui.busy) return; send(f); } },
+      h('h3', { class: 'off-h' }, 'Ask for a day off'),
+      K.me.admin ? K.field('Who', K.select([['', 'Pick a person']].concat(people), f.person, (v) => { f.person = v; K.render(); }, { class: 'input' })) : null,
+      h('div', { class: 'two tight' },
+        K.field('From', h('input', { class: 'input', type: 'date', value: f.from, min: K.day(0), onchange: (e) => { f.from = e.target.value || ds; if (f.to < f.from) f.to = f.from; ui.offForm = f; K.render(); } })),
+        K.field('Until', h('input', { class: 'input', type: 'date', value: f.to, min: f.from, onchange: (e) => { f.to = e.target.value || f.from; K.render(); } }))),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'What kind'),
+        h('div', { class: 'off-kinds' }, [['ask', 'Day off', ''], ['urgent', 'Urgent', '!'], ['paid', 'Paid vacation', '☀']].map((k) => h('button', { type: 'button', class: 'off-kbtn k-' + k[0], 'aria-pressed': f.kind === k[0] ? 'true' : 'false', onclick: () => { f.kind = k[0]; K.render(); } }, k[2] ? h('b', null, k[2]) : null, k[1]))),
+        h('details', { class: 'off-more', open: f.kind === 'unpaid' }, h('summary', null, 'More options'),
+          h('button', { type: 'button', class: 'off-kbtn k-unpaid', 'aria-pressed': f.kind === 'unpaid' ? 'true' : 'false', onclick: () => { f.kind = 'unpaid'; K.render(); } }, 'Unpaid leave'))),
+      h('p', { class: 'hint off-hint' }, hint),
+      K.field('Why?', h('textarea', { class: 'input', rows: '2', maxlength: '300', value: f.note, placeholder: 'e.g. my sister’s wedding. The team sees this.', oninput: (e) => { f.note = e.target.value; } }), 'Optional, but it helps the team get behind it.'),
+      h('button', { class: 'btn primary wide', type: 'submit', disabled: !f.person || ui.busy }, ui.busy ? 'Sending…' : 'Send'));
   }
 })();
 

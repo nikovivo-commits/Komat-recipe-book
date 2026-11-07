@@ -39,11 +39,15 @@
 
   /* the draft for a week; worked out again only when something it depends on changes */
   let memo = { key: '', out: null };
-  K.rotaDraft = function (wk, requests) {
+  K.rotaInput = function (wk, requests) {
     const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
-    const input = { week: wk, plan: plan, people: people, requests: requests || [], keep: keep };
+    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep };
+  };
+  K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
+  K.rotaDraft = function (wk, requests) {
+    const input = K.rotaInput(wk, requests);
     const key = JSON.stringify(input);
     if (memo.key !== key) memo = { key: key, out: K.rotaGen(input) };
     return memo.out;

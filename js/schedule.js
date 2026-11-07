@@ -47,6 +47,12 @@
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
+    if (K.daysOffView) {
+      const nw = K.me.admin && K.waitingCount ? K.waitingCount() : 0;
+      w.append(h('div', { class: 'sched-tabs' }, K.seg([['rota', 'Rota'], ['off', 'Days off']], ui.schedTab || 'rota', (v) => { ui.schedTab = v; K.render(); }, { 'aria-label': 'Rota or days off', class: 'seg sched-seg' }),
+        nw ? h('span', { class: 'badge sched-badge', 'aria-label': nw + ' waiting' }, String(nw)) : null));
+      if (ui.schedTab === 'off') { w.append(K.daysOffView()); return { body: body }; }
+    }
     if (K.me.admin && K.V.rotaplan) w.append(h('div', { class: 'gen-cta' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator'),
       h('span', { class: 'hint' }, 'Draft this week from who works where and the days off asked for.')));
     if (!doc) {
