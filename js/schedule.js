@@ -47,29 +47,30 @@
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
-    if (K.daysOffView) {
-      const nw = K.me.admin && K.waitingCount ? K.waitingCount() : 0;
-      w.append(h('div', { class: 'sched-tabs' }, K.seg([['rota', 'Rota'], ['off', 'Days off']], ui.schedTab || 'rota', (v) => { ui.schedTab = v; K.render(); }, { 'aria-label': 'Rota or days off', class: 'seg sched-seg' }),
-        nw ? h('span', { class: 'badge sched-badge', 'aria-label': nw + ' waiting' }, String(nw)) : null));
-      if (ui.schedTab === 'off') { w.append(K.daysOffView()); return { body: body }; }
-    }
-    if (K.me.admin && K.V.rotaplan) w.append(h('div', { class: 'gen-cta' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator'),
-      h('span', { class: 'hint' }, 'Draft this week from who works where and the days off asked for.')));
+    /* the week on the slate first, then the days-off calendar under it */
+    const board = h('section', { class: 'rota-wrap slate week-board' },
+      h('h2', { class: 'chalk-title' }, isNow ? 'This week' : wk > fc.wk ? (wk === K.ymd(K.addDays(K.parseYmd(fc.wk), 7)) ? 'Next week' : 'Week ahead') : 'Week before'),
+      h('p', { class: 'chalk-sub' }, range(mon)));
+    w.append(board);
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
     if (!doc) {
-      w.append(K.catRest('No schedule for this week yet', K.me.admin ? 'Start from last week and change what is different.' : 'The head chef has not posted it yet. Enjoy the quiet.',
-        K.me.admin ? h('div', { class: 'btns center' },
-          h('button', { class: 'btn primary', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
+      board.append(h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+        K.me.admin ? h('div', { class: 'chalk-acts' },
+          genLink(),
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null);
+      if (K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
     const people = doc.people || [], me = K.getMe();
 
-    /* my week */
+    /* my week (shown under the calendar) */
+    let mine = null;
     if (people.length) {
       const pick = locked() ? (me ? h('span', { class: 'mename' }, K.personName(me)) : null)
         : h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' }));
-      const mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
+      mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
       if (me && people.includes(me)) {
         const r = (doc.rows || {})[me] || [];
         /* the next shift first: when it is, its hours, and how many shifts this week */
@@ -92,18 +93,18 @@
         mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
           : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')));
       } else mine.append(h('p', { class: 'hint' }, 'Pick your name once and your shifts show here. This phone remembers it.'));
-      w.append(mine);
     }
 
     /* the grid */
     const table = h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
         const dd = K.addDays(mon, i);
-        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)));
+        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1))];
+        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, K.SHEETS.dayoff ? h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } }, inner) : inner);
       }))),
       h('tbody', null, people.map((id) => {
         const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
-        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : '') },
+        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : ''), 'aria-current': id === me ? 'true' : null },
           h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'pn' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
           K.DAYS.map((d, i) => {
             const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
@@ -111,8 +112,11 @@
               K.me.admin ? h('button', { type: 'button', 'aria-label': K.personName(id) + ', ' + d + ': ' + (c || 'empty'), onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, inner) : inner);
           }));
       })));
-    w.append(h('div', { class: 'rota-wrap card' }, table));
-    if (K.me.admin) w.append(h('p', { class: 'hint' }, 'Tap a cell to set a shift. Tap a name to rename, reorder or remove.'));
+    board.append(h('div', { class: 'board-scroll' }, table));
+    board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
+    if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    if (K.daysOffView) w.append(K.daysOffView());
+    if (mine) w.append(mine);
     if (K.me.admin) {
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
       w.append(K.field('Note for the team', note));

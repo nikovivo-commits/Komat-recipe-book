@@ -86,18 +86,15 @@
 
   /* ---------- the page ---------- */
   K.daysOffView = function () {
-    const box = h('div', { class: 'off' }), me = K.getMe(), today = K.day(0);
+    const box = h('div', { class: 'offpage' }), me = K.getMe(), today = K.day(0);
     /* waiting for the head chef */
     if (K.me.admin) {
       const wait = grouped(K.waitingDayoff());
       if (wait.length) box.append(h('section', { class: 'off-wait' }, h('h2', { class: 'off-h' }, h('span', { class: 'off-count' }, String(wait.length)), 'Waiting for you'),
         wait.map((rs) => card(rs, true))));
     }
-    box.append(h('div', { class: 'off-cta' },
-      h('button', { class: 'btn primary big', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'),
-      h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it.')));
     box.append(calendar());
-    box.append(h('div', { class: 'off-legend' }, [['ok', 'Day off'], ['urgent', 'Urgent'], ['paid', 'Paid vacation'], ['waiting', 'Waiting']].map((x) => h('span', { class: 'off-chip lg k-' + (x[0] === 'urgent' || x[0] === 'paid' ? x[0] : 'ask') + ' s-' + (x[0] === 'waiting' ? 'waiting' : 'ok') }, x[0] === 'urgent' ? h('b', null, '!') : null, x[1]))));
+    box.append(h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it. Tap a day to see who is on.'));
     const my = grouped(all().filter((r) => mine(r) && r.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1)));
     if (my.length) box.append(h('section', { class: 'off-mine' }, h('h2', { class: 'off-h' }, 'Your requests'), my.map((rs) => card(rs, false))));
     if (me) {
@@ -126,29 +123,72 @@
     const [y, m] = cur.split('-').map(Number);
     const move = (n) => { const d = new Date(y, m - 1 + (year ? n * 12 : n), 1); ui.offMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); K.render(); };
     const title = year ? String(y) : new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-    const head = h('div', { class: 'cal-head' },
+    const head = h('div', { class: 'dc-head' },
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Previous year' : 'Previous month', onclick: () => move(-1) }, K.icon('back')),
-      h('h2', { class: 'cal-title' }, title),
+      h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
       K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
-    return h('section', { class: 'cal card' }, head, year ? yearGrid(y) : monthGrid(y, m));
+    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+      h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
+    return h('section', { class: 'dcal slate' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+      h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
+  /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
+  function myWeek(ds7) {
+    const me = K.getMe(), wk = ds7[0], doc = D.weeks[wk];
+    if (!me) return null;
+    if (doc && doc.rows && doc.rows[me]) return { rows: doc.rows[me], st: (doc.st || {})[me] || [], draft: false };
+    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady()) return null;
+    const r = K.rotaDraft(wk, K.requestsFor(wk));
+    return r.rows[me] ? { rows: r.rows[me], st: r.st[me] || [], draft: true } : null;
+  }
+  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', br: 'BR' };
+  /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
+     together (a vacation) is one long note across them */
   function monthGrid(y, m) {
-    const first = new Date(y, m - 1, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
-    for (let i = 0; i < 42; i++) {
-      const d = K.addDays(start, i), ds = K.ymd(d);
-      if (i >= 35 && d.getMonth() !== m - 1) break;
-      const rs = onDay(ds).filter(live), inMonth = d.getMonth() === m - 1;
-      cells.push(h('button', { type: 'button', class: 'cal-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : '') + (rs.some((r) => r.kind === 'urgent') ? ' has-urgent' : ''),
-        'aria-label': pretty(ds) + (rs.length ? ', ' + rs.length + ' off' : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
-        h('span', { class: 'cal-n' }, String(d.getDate())),
-        h('span', { class: 'cal-offs' }, rs.slice(0, 3).map((r) => h('span', { class: 'off-chip k-' + r.kind + ' s-' + r.status }, r.kind === 'urgent' ? h('b', null, '!') : null, short(r.person))),
-          rs.length > 3 ? h('span', { class: 'cal-more' }, '+' + (rs.length - 3)) : null)));
+    const first = new Date(y, m - 1, 1), start = K.mondayOf(first), today = K.day(0), weeks = [];
+    for (let w = 0; w < 6; w++) {
+      const mon = K.addDays(start, w * 7);
+      if (w > 3 && mon.getMonth() !== m - 1) break;
+      const ds7 = [0, 1, 2, 3, 4, 5, 6].map((i) => K.ymd(K.addDays(mon, i)));
+      const reqs = all().filter((r) => live(r) && r.date >= ds7[0] && r.date <= ds7[6]);
+      /* runs: requests of one group that sit next to each other this week */
+      const runs = [], single = {};
+      grouped(reqs).forEach((rs) => {
+        if (rs.length < 2) { (single[rs[0].date] = single[rs[0].date] || []).push(rs[0]); return; }
+        let cur = null;
+        rs.forEach((r) => { const i = ds7.indexOf(r.date); if (cur && i === cur.to + 1) cur.to = i; else runs.push(cur = { r: r, from: i, to: i, n: 0 }); cur.n++; });
+      });
+      const strip = h('div', { class: 'dc-week' }), my = myWeek(ds7);
+      ds7.forEach((ds, i) => {
+        const d = K.addDays(mon, i), inMonth = d.getMonth() === m - 1, rs = (single[ds] || []).concat(runs.filter((x) => x.from <= i && x.to >= i).map((x) => x.r));
+        strip.append(h('button', { type: 'button', style: { gridColumn: String(i + 1), gridRow: '1 / span ROWS' }, class: 'dc-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : ''),
+          'aria-label': pretty(ds) + (rs.length ? ', off: ' + rs.map((r) => K.personName(r.person) + (r.kind === 'urgent' ? ' (urgent)' : '')).join(', ') : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
+          h('span', { class: 'dc-n' }, String(d.getDate())), (() => {
+            const c = my ? String(my.rows[i] || '').trim() : '';
+            if (!c || /^(0|X)$/i.test(c)) return null;
+            return h('span', { class: 'dc-me' + (my.draft ? ' draft' : ''), title: (my.draft ? 'Draft: ' : '') + 'you work ' + c + (my.st[i] ? ' on ' + (K.STL[my.st[i]] || my.st[i]) : '') }, c + (my.st[i] ? ' ' + (SHORT[my.st[i]] || '') : ''));
+          })()));
+      });
+      let row = 2;
+      ds7.forEach((ds, i) => (single[ds] || []).slice(0, 3).forEach((r, k) => strip.append(note(r, i + 1, 1, 2 + k))));
+      ds7.forEach((ds, i) => { if ((single[ds] || []).length > 3) strip.append(h('span', { class: 'dc-more', style: { gridColumn: String(i + 1), gridRow: '5' } }, '+' + ((single[ds] || []).length - 3))); });
+      runs.forEach((x) => { row = Math.max(row, 2 + Math.max.apply(null, [0].concat(ds7.slice(x.from, x.to + 1).map((ds) => Math.min(3, (single[ds] || []).length))))); strip.append(note(x.r, x.from + 1, x.to - x.from + 1, row++)); });
+      /* the day cells reach down past the last note, so a week is only as tall as what is in it */
+      let last = 1;
+      ds7.forEach((ds) => { last = Math.max(last, 1 + Math.min(3, (single[ds] || []).length) + ((single[ds] || []).length > 3 ? 1 : 0)); });
+      last = Math.max(last, row - 1, 2);
+      strip.querySelectorAll('.dc-day').forEach((el) => { el.style.gridRow = '1 / span ' + last; });
+      weeks.push(strip);
     }
-    return h('div', { class: 'cal-grid' }, DAYS.map((d) => h('span', { class: 'cal-dow' }, d)), cells);
+    return h('div', { class: 'dc-month' }, h('div', { class: 'dc-dows' }, DAYS.map((d) => h('span', { class: 'dc-dow' }, d))), weeks);
+  }
+  function note(r, col, span, row) {
+    return h('span', { class: 'dc-note k-' + r.kind + ' s-' + r.status + (span > 1 ? ' run' : ''), style: { gridColumn: col + ' / span ' + span, gridRow: String(row), '--tilt': ((hue(r.person + r.date) % 5) - 2) + 'deg' }, 'aria-hidden': 'true' },
+      r.kind === 'urgent' ? h('b', null, '!') : r.kind === 'paid' ? h('b', null, '☀') : null, short(r.person), span > 1 && r.note ? h('small', null, ' – ' + r.note) : span > 1 ? h('small', null, ' – ' + KIND[r.kind].toLowerCase()) : null);
   }
   function yearGrid(y) {
-    return h('div', { class: 'cal-year' }, Array.from({ length: 12 }, (_, mi) => {
+    return h('div', { class: 'dc-year' }, Array.from({ length: 12 }, (_, mi) => {
       const first = new Date(y, mi, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
       for (let i = 0; i < 42; i++) {
         const d = K.addDays(start, i);
@@ -163,10 +203,36 @@
   }
 
   /* ---------- one day: who is off, and asking for it ---------- */
+  /* who works where that day: the rota saved for the week, or the generator's draft until then */
+  K.dayLineup = function (ds) {
+    const wk = mondayOf(ds), i = Math.round((K.parseYmd(ds) - K.parseYmd(wk)) / 86400000), doc = D.weeks[wk];
+    let rows, st, order, draft = false;
+    if (doc && doc.rows) { rows = doc.rows; st = doc.st || {}; order = (doc.people || Object.keys(rows)).slice(); }
+    else if (K.rotaReady && K.rotaReady()) { const r = K.rotaDraft(wk, K.requestsFor(wk)); rows = r.rows; st = r.st; order = r.order; draft = true; }
+    else return null;
+    const g = { hot: [], cold: [], pass: [], learn: [], prep: [], br: [], other: [], off: [] };
+    order.forEach((id) => {
+      const c = String((rows[id] || [])[i] || '').trim(), s = (st[id] || [])[i] || '';
+      if (!c) return;
+      if (/^(0|X)$/i.test(c)) { g.off.push({ id: id, c: c }); return; }
+      (g[s] || g.other).push({ id: id, c: c });
+    });
+    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
+    const offReq = onDay(ds).filter(live);
+    return h('section', { class: 'lineup' },
+      h('div', { class: 'lineup-h' }, h('h3', null, 'Who’s on'), draft ? h('span', { class: 'lineup-draft' }, 'Draft, not final yet') : null),
+      h('div', { class: 'lineup-st' }, LAB.filter((l) => g[l[0]].length).map((l) => h('div', { class: 'lu-row lu-' + l[0] },
+        h('span', { class: 'lu-lab' }, l[1]),
+        h('span', { class: 'lu-who' }, g[l[0]].map((x) => h('span', { class: 'lu-p' }, face(x.id), h('b', null, K.personName(x.id)), h('span', { class: 'mono' }, x.c))))))),
+      g.off.length || offReq.length ? h('p', { class: 'lu-off' }, h('b', null, 'Off: '), Array.from(new Set(g.off.map((x) => x.id).concat(offReq.map((r) => r.person)))).map((id) => K.personName(id)).join(', ')) : null);
+  };
   function openAsk(ds) { ui.offForm = null; ui.sheet = { type: 'dayoff', date: ds, ask: true }; K.render(); }
   K.SHEETS.dayoff = function (c) {
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
+    const lu = K.dayLineup(ds);
+    if (lu) body.push(lu);
+    body.push(h('h3', { class: 'off-h small' }, 'Days off'));
     if (rs.length) body.push(h('div', { class: 'off-day-list' }, rs.map((r) => h('div', { class: 'off-row k-' + r.kind + ' s-' + r.status },
       face(r.person),
       h('div', { class: 'off-card-txt' }, h('b', null, K.personName(r.person)),

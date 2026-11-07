@@ -781,17 +781,9 @@ button.todo-main { cursor: pointer; }
 .events-grid { display: grid; gap: 22px; }
 @media (min-width: 1000px) { .events-grid { grid-template-columns: 420px minmax(0, 1fr); align-items: start; } .events-grid > div:first-child { position: sticky; top: 80px; } }
 .evlist { display: grid; gap: 12px; min-width: 0; }
-.cal { padding: 12px; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .cal-head h2 { font: 700 1.4rem/1 var(--display); }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
-.cal-dow { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 0; font-size: .72rem; font-weight: 800; color: var(--muted); }
 .cal-dow .daydot { width: 6px; height: 6px; box-shadow: none; }
-.cal-day { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 56px; padding: 4px; border-radius: 8px; border: 1.5px solid transparent; background: var(--surface-2); text-align: left; overflow: hidden; }
-.cal-day.out { opacity: .4; }
-.cal-day.today { border-color: var(--apron); }
 .cal-day.sel { background: var(--steel); color: var(--on-steel); }
-.cal-n { font-size: .8rem; font-weight: 700; }
 .cal-ev { display: block; padding: 1px 4px; border-radius: 4px; background: var(--apron); color: var(--apron-ink); font-size: .62rem; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-ev.more { background: transparent; color: inherit; }
 .evt { display: grid; gap: 12px; padding: 14px; }
@@ -1838,15 +1830,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rp-sum b .stdots { margin-top: 0; }
 
 /* ---------- days off ---------- */
-.sched-tabs { position: relative; display: flex; align-items: center; gap: 8px; margin: 2px 0 14px; }
-.sched-seg { width: 100%; }
-.sched-seg button { flex: 1; min-height: 44px; font-size: 1rem; }
-.sched-badge { position: static; box-shadow: none; }
-.off { display: grid; gap: 16px; }
+.offpage { display: grid; gap: 16px; }
 .off-h { display: flex; align-items: center; gap: 10px; font: 700 1.5rem/1.05 var(--display); margin-bottom: 8px; }
 .off-count { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; background: var(--urgent); color: var(--urgent-ink); font: 800 .95rem var(--mono); }
 .off-wait { display: grid; gap: 10px; padding: 14px; border-radius: var(--r); background: var(--urgent-soft); border: 2px solid var(--urgent); }
-.off-cta { display: grid; gap: 6px; justify-items: start; }
 .off-face { --h: 20; display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: hsl(var(--h) 45% 42%); color: #fff; font: 800 .78rem var(--sans); letter-spacing: .02em; }
 .off-face.big { width: 46px; height: 46px; font-size: .98rem; }
 .off-card, .off-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
@@ -1864,37 +1851,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .off-note::before { content: "“"; } .off-note::after { content: "”"; }
 .off-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 @media (max-width: 480px) { .off-card, .off-row { grid-template-columns: auto minmax(0, 1fr); } .off-acts { grid-column: 1 / -1; justify-content: flex-start; } }
-.cal { padding: 12px; overflow: hidden; }
-.cal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
-.cal-title { flex: 1; min-width: 0; text-align: center; font: 700 clamp(1.5rem, 6vw, 2.1rem)/1 var(--display); text-transform: capitalize; }
-.cal-head .seg { margin-left: auto; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-.cal-dow { padding: 4px 0; text-align: center; font: 800 .68rem var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.cal-day { display: grid; align-content: start; justify-items: start; gap: 3px; min-height: 64px; min-width: 0; padding: 5px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-align: left; }
-.cal-day.out { opacity: .4; }
-.cal-day.past { background: transparent; }
-.cal-day.today { border: 2px solid var(--apron); background: var(--apron-soft); }
-.cal-day.has-urgent { box-shadow: inset 0 -3px 0 var(--urgent); }
-.cal-n { font: 800 .9rem var(--mono); }
-.cal-day.today .cal-n { color: var(--apron); }
-.cal-offs { display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; }
-.off-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px; border-radius: 6px; font: 800 .62rem/1.3 var(--sans); background: var(--ready-soft); color: var(--ready); border: 1px solid transparent; }
-.off-chip b { font-weight: 900; }
-.off-chip.k-urgent { background: var(--urgent); color: var(--urgent-ink); }
-.off-chip.k-paid, .off-chip.k-unpaid { background: color-mix(in srgb, var(--cold) 18%, var(--surface)); color: var(--cold); }
-.off-chip.s-waiting { background: var(--todo-soft); color: var(--todo-ink); border: 1px dashed var(--todo); }
-.off-chip.k-urgent.s-waiting { background: var(--urgent); color: var(--urgent-ink); }
-.off-chip.lg { padding: 4px 10px; font-size: .78rem; gap: 6px; }
-.cal-more { font: 800 .62rem var(--sans); color: var(--muted); }
-.off-legend { display: flex; flex-wrap: wrap; gap: 6px; }
-.cal-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-.ym { display: grid; gap: 4px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-align: left; }
-.ym b { font: 700 1rem/1 var(--display); }
 .ym-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.yd { display: block; aspect-ratio: 1; border-radius: 2px; background: var(--line); }
 .yd.blank { background: transparent; }
-.yd.o { background: var(--ready); } .yd.v { background: var(--cold); } .yd.w { background: var(--todo); } .yd.u { background: var(--urgent); }
-.yd.t { outline: 2px solid var(--apron); outline-offset: 1px; }
 .off-form { display: grid; gap: 2px; margin-top: 8px; padding-top: 14px; border-top: 2px solid var(--ink); }
 .off-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
 .off-kbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 800; }
@@ -1909,6 +1867,127 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .off-more .off-kbtn { margin-top: 8px; }
 .off-hint { margin: 6px 0 12px; }
 .off-form.k-urgent .off-hint { color: var(--urgent); font-weight: 700; }
+
+/* the events calendar */
+.cal { padding: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal-dow { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 0; font-size: .72rem; font-weight: 800; color: var(--muted); }
+.cal-day { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 56px; padding: 4px; border-radius: 8px; border: 1.5px solid transparent; background: var(--surface-2); text-align: left; overflow: hidden; }
+.cal-day.out { opacity: .4; }
+.cal-day.today { border-color: var(--apron); }
+.cal-n { font-size: .8rem; font-weight: 700; }
+
+/* ---------- the slate: Schedule's chalkboard (one deliberate dark look in both themes) ---------- */
+.slate { --chalk: #EFEEE7; --chalk-dim: rgba(239, 238, 231, .6); --chalk-line: rgba(239, 238, 231, .2); --chalk-yellow: #F3D34A; --wood-a: #A3713F; --wood-b: #6B4223;
+  position: relative; color: var(--chalk); background-color: #1D2120;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"), radial-gradient(120% 70% at 25% 10%, rgba(255, 255, 255, .07), transparent 60%), radial-gradient(90% 60% at 80% 90%, rgba(255, 255, 255, .04), transparent 60%);
+  border: 9px solid var(--wood-b); border-image: linear-gradient(135deg, var(--wood-a), var(--wood-b) 35%, #92633A 65%, #5A361B) 1;
+  box-shadow: inset 0 0 36px rgba(0, 0, 0, .55), 0 12px 26px -14px rgba(0, 0, 0, .7); }
+.slate :focus-visible { outline-color: var(--chalk-yellow); }
+.chalk-title { margin: 6px 0 2px; text-align: center; font: 700 2.6rem/1 var(--hand); color: var(--chalk); text-shadow: 0 0 1px rgba(255, 255, 255, .5); }
+.chalk-title::before, .chalk-title::after { content: "\2261"; display: inline-block; margin: 0 12px; color: var(--chalk-yellow); font: 400 1.6rem/1 var(--sans); transform: translateY(-4px) rotate(-8deg); }
+.dcal { display: grid; gap: 10px; padding: 10px 8px 16px; }
+.dc-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px; }
+.dc-head .icon-btn { color: var(--chalk); }
+.dc-title { text-align: center; font: 700 2rem/1 var(--hand); color: var(--chalk); text-decoration: underline wavy var(--chalk-yellow) 1.5px; text-underline-offset: 7px; text-transform: capitalize; }
+.dc-head .seg { grid-column: 1 / -1; justify-self: center; background: rgba(255, 255, 255, .07); border-color: var(--chalk-line); }
+.dc-head .seg button { color: var(--chalk-dim); }
+.dc-head .seg button[aria-pressed="true"] { background: var(--chalk); color: #1D2120; }
+.dc-dows { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1.5px solid var(--chalk-line); }
+.dc-dow { padding: 4px 0; text-align: center; font: 400 .85rem/1 "Neucha", var(--hand); letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-dim); }
+.dc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 28px; grid-auto-rows: auto; min-height: 58px; padding-bottom: 4px; border-bottom: 1px solid var(--chalk-line); }
+.dc-day { z-index: 0; display: block; align-self: stretch; min-width: 0; padding: 3px 5px; border: 0; border-left: 1px solid var(--chalk-line); background: transparent; color: var(--chalk); text-align: left; }
+.dc-day:first-child { border-left: 0; }
+.dc-day:hover { background: rgba(255, 255, 255, .04); }
+.dc-day.out { opacity: .35; }
+.dc-day.past .dc-n { opacity: .55; }
+.dc-n { display: inline-grid; place-items: center; min-width: 26px; height: 24px; font: 400 1.05rem/1 "Neucha", var(--hand); }
+.dc-day.today .dc-n { border: 2px solid var(--chalk-yellow); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; color: var(--chalk-yellow); }
+.dc-note { --tilt: 0deg; position: relative; z-index: 1; pointer-events: none; align-self: start; min-width: 0; margin: 2px 2px 0; padding: 2px 4px 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  background: #F4D547; color: #2B2410; font: 400 .74rem/1.15 "Neucha", var(--hand); box-shadow: 0 2px 3px rgba(0, 0, 0, .45); transform: rotate(var(--tilt)); }
+.dc-note b { margin-right: 2px; font-weight: 900; }
+.dc-note small { font-size: .9em; opacity: .85; }
+.dc-note.run { transform: rotate(-.4deg); text-align: left; }
+.dc-note.k-urgent { background: #E44B36; color: #fff; }
+.dc-note.k-urgent::before { content: ""; position: absolute; top: 1px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FF9A8C, #8E1407); }
+.dc-note.k-paid, .dc-note.k-unpaid { background: #9BD7F0; color: #102C38; }
+.dc-note.k-unpaid { background: #C9CDD2; color: #22262A; }
+.dc-note.s-waiting { outline: 1.5px dashed rgba(0, 0, 0, .55); outline-offset: -3px; opacity: .9; }
+.dc-note.lg { display: inline-block; margin: 0; padding: 4px 9px; font-size: .9rem; }
+.dc-more { z-index: 1; pointer-events: none; padding-left: 6px; font: 400 .72rem "Neucha", var(--hand); color: var(--chalk-dim); }
+.dc-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; padding: 6px 0 2px; }
+.chalk-btn { justify-self: center; display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 24px; border: 2.5px solid var(--chalk-yellow); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: rgba(243, 211, 74, .08); color: var(--chalk-yellow); font: 700 1.6rem/1 var(--hand); }
+.chalk-btn .ico { width: 22px; height: 22px; }
+.chalk-btn:hover { background: rgba(243, 211, 74, .16); }
+.dc-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.ym { display: grid; gap: 4px; padding: 6px; border: 1px solid var(--chalk-line); border-radius: 6px; background: transparent; color: var(--chalk); text-align: left; }
+.ym b { font: 700 1.25rem/1 var(--hand); }
+.yd { display: block; aspect-ratio: 1; border-radius: 2px; background: rgba(239, 238, 231, .14); }
+.yd.o { background: #F4D547; } .yd.v { background: #9BD7F0; } .yd.w { background: transparent; box-shadow: inset 0 0 0 1px #F4D547; } .yd.u { background: #E44B36; }
+.yd.t { outline: 2px solid var(--chalk); outline-offset: 1px; }
+/* the rota on the slate */
+.rota-wrap.slate { padding: 4px; }
+.slate .rota { color: var(--chalk); }
+.slate .rota thead th { background: transparent; color: var(--chalk); border-bottom: 1.5px solid var(--chalk-line); font: 400 .95rem/1.1 "Neucha", var(--hand); letter-spacing: .04em; }
+.slate .rota thead th small { font: 400 .75rem "Neucha", var(--hand); color: var(--chalk-dim); opacity: 1; }
+.slate .rota thead th.now { background: transparent; color: var(--chalk-yellow); }
+.slate .rota thead th.now .dayhead > span:nth-child(2) { border-bottom: 2px solid var(--chalk-yellow); }
+.slate .rota th, .slate .rota td { border-bottom: 1px solid var(--chalk-line); }
+.slate .rota tbody th { background: transparent; color: var(--chalk); font: 700 1.3rem/1 var(--hand); }
+.slate .rota tbody th .pname { font: inherit; color: inherit; }
+.slate .rota td { color: var(--chalk); font-family: "Neucha", var(--hand); }
+.slate .rota td .mono { font: 400 1.15rem/1 "Neucha", var(--hand); }
+.slate .rota td.off { color: var(--chalk-dim); }
+.slate .rota td.off .mono { opacity: .5; }
+.slate .rota td.br { background: rgba(243, 211, 74, .1); color: var(--chalk-yellow); }
+.slate .rota td.other { color: #F2B8A6; }
+.slate .rota td.now { box-shadow: inset 2px 0 0 rgba(243, 211, 74, .55), inset -2px 0 0 rgba(243, 211, 74, .55); }
+.slate .rota tr.me th, .slate .rota tr.me td:not(.br) { background: rgba(255, 255, 255, .06); }
+.slate .rota td.fixed { box-shadow: inset 0 0 0 2px var(--chalk-yellow); }
+.slate .stag { font: 400 .72rem/1.1 "Neucha", var(--hand); letter-spacing: .02em; color: var(--chalk-dim); }
+.slate .stag.st-hot { color: #FF8A73; } .slate .stag.st-cold { color: #8FCBF2; } .slate .stag.st-pass { color: #D6D7D2; } .slate .stag.st-learn { color: #FFB59E; } .slate .stag.st-br { color: var(--chalk-yellow); }
+.rota td .cellin span { padding: 0; min-height: 0; }
+.rota td .cellin .stag { display: block; }
+.dayhead { display: block; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 0; }
+.dayhead > span, .dayhead > small { display: inline; }
+.dayhead > small { display: block; }
+/* who's on, in the day sheet */
+.lineup { display: grid; gap: 8px; padding: 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.lineup-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.lineup-h h3 { font: 700 1.4rem/1 var(--display); }
+.lineup-draft { padding: 2px 8px; border-radius: 999px; background: var(--todo-soft); color: var(--todo-ink); font-size: .78rem; font-weight: 800; }
+.lineup-st { display: grid; gap: 6px; }
+.lu-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 8px; align-items: center; padding: 6px 0 6px 10px; border-left: 4px solid var(--line); }
+.lu-hot { border-left-color: var(--dot-hot); } .lu-cold { border-left-color: var(--dot-cold); } .lu-pass { border-left-color: var(--dot-pass); } .lu-br { border-left-color: var(--todo); } .lu-learn { border-left-color: var(--hot); }
+.lu-lab { font-weight: 800; font-size: .88rem; }
+.lu-who { display: flex; flex-wrap: wrap; gap: 6px; }
+.lu-p { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+.lu-p .off-face { width: 26px; height: 26px; font-size: .66rem; }
+.lu-p .mono { color: var(--muted); font-size: .85rem; }
+.lu-off { color: var(--muted); font-size: .92rem; }
+.off-h.small { margin: 8px 0 0; font-size: 1.2rem; }
+
+.schedule { display: grid; gap: 16px; }
+.week-board { display: grid; gap: 6px; padding: 10px 6px 14px; overflow: hidden; }
+.chalk-sub { margin-top: -4px; text-align: center; font: 400 1.05rem/1 "Neucha", var(--hand); color: var(--chalk-dim); letter-spacing: .04em; }
+.board-scroll { overflow-x: auto; margin-top: 4px; }
+.chalk-empty { padding: 18px 8px 6px; text-align: center; font: 700 1.6rem/1.2 var(--hand); color: var(--chalk-dim); }
+.chalk-hint { text-align: center; font: 400 .9rem/1.3 "Neucha", var(--hand); color: var(--chalk-dim); }
+.chalk-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-top: 4px; }
+.chalk-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 2px solid var(--chalk-line); border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; background: transparent; color: var(--chalk); font: 700 1.35rem/1 var(--hand); }
+.chalk-link .ico { width: 20px; height: 20px; color: var(--chalk-yellow); }
+.chalk-link:hover { border-color: var(--chalk-yellow); }
+
+.slate .rota thead .daydot { display: none; }
+
+/* you, on the slate: your row and your shifts in yellow chalk */
+.slate .rota tr.me th, .slate .rota tr.me td:not(.br) { background: rgba(243, 211, 74, .09); }
+.slate .rota tr.me th, .slate .rota tr.me th .pname, .slate .rota tr.me td .mono { color: var(--chalk-yellow); }
+.slate .rota tr.me th .pname::after, .slate .rota tr.me th .pn::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
+.dc-me { display: block; margin-top: 1px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 .7rem/1.1 "Neucha", var(--hand); color: var(--chalk-yellow); }
+.dc-me.draft { opacity: .75; font-style: italic; }
+.dc-me.lg { display: inline-block; margin: 0; padding: 4px 9px; border: 1.5px solid var(--chalk-yellow); border-radius: 6px; font-size: .88rem; }
 
 </style>
 <div id="app"></div>
@@ -7186,29 +7265,30 @@ window.KOMAT_PART_ART = [
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
-    if (K.daysOffView) {
-      const nw = K.me.admin && K.waitingCount ? K.waitingCount() : 0;
-      w.append(h('div', { class: 'sched-tabs' }, K.seg([['rota', 'Rota'], ['off', 'Days off']], ui.schedTab || 'rota', (v) => { ui.schedTab = v; K.render(); }, { 'aria-label': 'Rota or days off', class: 'seg sched-seg' }),
-        nw ? h('span', { class: 'badge sched-badge', 'aria-label': nw + ' waiting' }, String(nw)) : null));
-      if (ui.schedTab === 'off') { w.append(K.daysOffView()); return { body: body }; }
-    }
-    if (K.me.admin && K.V.rotaplan) w.append(h('div', { class: 'gen-cta' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator'),
-      h('span', { class: 'hint' }, 'Draft this week from who works where and the days off asked for.')));
+    /* the week on the slate first, then the days-off calendar under it */
+    const board = h('section', { class: 'rota-wrap slate week-board' },
+      h('h2', { class: 'chalk-title' }, isNow ? 'This week' : wk > fc.wk ? (wk === K.ymd(K.addDays(K.parseYmd(fc.wk), 7)) ? 'Next week' : 'Week ahead') : 'Week before'),
+      h('p', { class: 'chalk-sub' }, range(mon)));
+    w.append(board);
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
     if (!doc) {
-      w.append(K.catRest('No schedule for this week yet', K.me.admin ? 'Start from last week and change what is different.' : 'The head chef has not posted it yet. Enjoy the quiet.',
-        K.me.admin ? h('div', { class: 'btns center' },
-          h('button', { class: 'btn primary', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'btn', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
+      board.append(h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+        K.me.admin ? h('div', { class: 'chalk-acts' },
+          genLink(),
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null);
+      if (K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
     const people = doc.people || [], me = K.getMe();
 
-    /* my week */
+    /* my week (shown under the calendar) */
+    let mine = null;
     if (people.length) {
       const pick = locked() ? (me ? h('span', { class: 'mename' }, K.personName(me)) : null)
         : h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' }));
-      const mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
+      mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
       if (me && people.includes(me)) {
         const r = (doc.rows || {})[me] || [];
         /* the next shift first: when it is, its hours, and how many shifts this week */
@@ -7231,18 +7311,18 @@ window.KOMAT_PART_ART = [
         mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
           : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')));
       } else mine.append(h('p', { class: 'hint' }, 'Pick your name once and your shifts show here. This phone remembers it.'));
-      w.append(mine);
     }
 
     /* the grid */
     const table = h('table', { class: 'rota' },
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
         const dd = K.addDays(mon, i);
-        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)));
+        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1))];
+        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, K.SHEETS.dayoff ? h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } }, inner) : inner);
       }))),
       h('tbody', null, people.map((id) => {
         const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
-        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : '') },
+        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : ''), 'aria-current': id === me ? 'true' : null },
           h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'pn' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
           K.DAYS.map((d, i) => {
             const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
@@ -7250,8 +7330,11 @@ window.KOMAT_PART_ART = [
               K.me.admin ? h('button', { type: 'button', 'aria-label': K.personName(id) + ', ' + d + ': ' + (c || 'empty'), onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, inner) : inner);
           }));
       })));
-    w.append(h('div', { class: 'rota-wrap card' }, table));
-    if (K.me.admin) w.append(h('p', { class: 'hint' }, 'Tap a cell to set a shift. Tap a name to rename, reorder or remove.'));
+    board.append(h('div', { class: 'board-scroll' }, table));
+    board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
+    if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    if (K.daysOffView) w.append(K.daysOffView());
+    if (mine) w.append(mine);
     if (K.me.admin) {
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
       w.append(K.field('Note for the team', note));
@@ -7620,7 +7703,7 @@ window.KOMAT_PART_ART = [
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
   /* the draft for a week; worked out again only when something it depends on changes */
-  let memo = { key: '', out: null };
+  const memo = new Map();
   K.rotaInput = function (wk, requests) {
     const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
@@ -7631,8 +7714,8 @@ window.KOMAT_PART_ART = [
   K.rotaDraft = function (wk, requests) {
     const input = K.rotaInput(wk, requests);
     const key = JSON.stringify(input);
-    if (memo.key !== key) memo = { key: key, out: K.rotaGen(input) };
-    return memo.out;
+    if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 12) memo.delete(memo.keys().next().value); }
+    return memo.get(key);
   };
   /* what the head chef changed by hand on top of the draft (filling a hole) */
   const fixes = (wk) => ((ui.rpFix = ui.rpFix || {})[wk] = (ui.rpFix || {})[wk] || {});
@@ -7883,18 +7966,15 @@ window.KOMAT_PART_ART = [
 
   /* ---------- the page ---------- */
   K.daysOffView = function () {
-    const box = h('div', { class: 'off' }), me = K.getMe(), today = K.day(0);
+    const box = h('div', { class: 'offpage' }), me = K.getMe(), today = K.day(0);
     /* waiting for the head chef */
     if (K.me.admin) {
       const wait = grouped(K.waitingDayoff());
       if (wait.length) box.append(h('section', { class: 'off-wait' }, h('h2', { class: 'off-h' }, h('span', { class: 'off-count' }, String(wait.length)), 'Waiting for you'),
         wait.map((rs) => card(rs, true))));
     }
-    box.append(h('div', { class: 'off-cta' },
-      h('button', { class: 'btn primary big', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'),
-      h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it.')));
     box.append(calendar());
-    box.append(h('div', { class: 'off-legend' }, [['ok', 'Day off'], ['urgent', 'Urgent'], ['paid', 'Paid vacation'], ['waiting', 'Waiting']].map((x) => h('span', { class: 'off-chip lg k-' + (x[0] === 'urgent' || x[0] === 'paid' ? x[0] : 'ask') + ' s-' + (x[0] === 'waiting' ? 'waiting' : 'ok') }, x[0] === 'urgent' ? h('b', null, '!') : null, x[1]))));
+    box.append(h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it. Tap a day to see who is on.'));
     const my = grouped(all().filter((r) => mine(r) && r.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1)));
     if (my.length) box.append(h('section', { class: 'off-mine' }, h('h2', { class: 'off-h' }, 'Your requests'), my.map((rs) => card(rs, false))));
     if (me) {
@@ -7923,29 +8003,72 @@ window.KOMAT_PART_ART = [
     const [y, m] = cur.split('-').map(Number);
     const move = (n) => { const d = new Date(y, m - 1 + (year ? n * 12 : n), 1); ui.offMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); K.render(); };
     const title = year ? String(y) : new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-    const head = h('div', { class: 'cal-head' },
+    const head = h('div', { class: 'dc-head' },
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Previous year' : 'Previous month', onclick: () => move(-1) }, K.icon('back')),
-      h('h2', { class: 'cal-title' }, title),
+      h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
       K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
-    return h('section', { class: 'cal card' }, head, year ? yearGrid(y) : monthGrid(y, m));
+    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+      h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
+    return h('section', { class: 'dcal slate' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+      h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
+  /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
+  function myWeek(ds7) {
+    const me = K.getMe(), wk = ds7[0], doc = D.weeks[wk];
+    if (!me) return null;
+    if (doc && doc.rows && doc.rows[me]) return { rows: doc.rows[me], st: (doc.st || {})[me] || [], draft: false };
+    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady()) return null;
+    const r = K.rotaDraft(wk, K.requestsFor(wk));
+    return r.rows[me] ? { rows: r.rows[me], st: r.st[me] || [], draft: true } : null;
+  }
+  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', br: 'BR' };
+  /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
+     together (a vacation) is one long note across them */
   function monthGrid(y, m) {
-    const first = new Date(y, m - 1, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
-    for (let i = 0; i < 42; i++) {
-      const d = K.addDays(start, i), ds = K.ymd(d);
-      if (i >= 35 && d.getMonth() !== m - 1) break;
-      const rs = onDay(ds).filter(live), inMonth = d.getMonth() === m - 1;
-      cells.push(h('button', { type: 'button', class: 'cal-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : '') + (rs.some((r) => r.kind === 'urgent') ? ' has-urgent' : ''),
-        'aria-label': pretty(ds) + (rs.length ? ', ' + rs.length + ' off' : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
-        h('span', { class: 'cal-n' }, String(d.getDate())),
-        h('span', { class: 'cal-offs' }, rs.slice(0, 3).map((r) => h('span', { class: 'off-chip k-' + r.kind + ' s-' + r.status }, r.kind === 'urgent' ? h('b', null, '!') : null, short(r.person))),
-          rs.length > 3 ? h('span', { class: 'cal-more' }, '+' + (rs.length - 3)) : null)));
+    const first = new Date(y, m - 1, 1), start = K.mondayOf(first), today = K.day(0), weeks = [];
+    for (let w = 0; w < 6; w++) {
+      const mon = K.addDays(start, w * 7);
+      if (w > 3 && mon.getMonth() !== m - 1) break;
+      const ds7 = [0, 1, 2, 3, 4, 5, 6].map((i) => K.ymd(K.addDays(mon, i)));
+      const reqs = all().filter((r) => live(r) && r.date >= ds7[0] && r.date <= ds7[6]);
+      /* runs: requests of one group that sit next to each other this week */
+      const runs = [], single = {};
+      grouped(reqs).forEach((rs) => {
+        if (rs.length < 2) { (single[rs[0].date] = single[rs[0].date] || []).push(rs[0]); return; }
+        let cur = null;
+        rs.forEach((r) => { const i = ds7.indexOf(r.date); if (cur && i === cur.to + 1) cur.to = i; else runs.push(cur = { r: r, from: i, to: i, n: 0 }); cur.n++; });
+      });
+      const strip = h('div', { class: 'dc-week' }), my = myWeek(ds7);
+      ds7.forEach((ds, i) => {
+        const d = K.addDays(mon, i), inMonth = d.getMonth() === m - 1, rs = (single[ds] || []).concat(runs.filter((x) => x.from <= i && x.to >= i).map((x) => x.r));
+        strip.append(h('button', { type: 'button', style: { gridColumn: String(i + 1), gridRow: '1 / span ROWS' }, class: 'dc-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : ''),
+          'aria-label': pretty(ds) + (rs.length ? ', off: ' + rs.map((r) => K.personName(r.person) + (r.kind === 'urgent' ? ' (urgent)' : '')).join(', ') : ''), onclick: () => { ui.sheet = { type: 'dayoff', date: ds }; K.render(); } },
+          h('span', { class: 'dc-n' }, String(d.getDate())), (() => {
+            const c = my ? String(my.rows[i] || '').trim() : '';
+            if (!c || /^(0|X)$/i.test(c)) return null;
+            return h('span', { class: 'dc-me' + (my.draft ? ' draft' : ''), title: (my.draft ? 'Draft: ' : '') + 'you work ' + c + (my.st[i] ? ' on ' + (K.STL[my.st[i]] || my.st[i]) : '') }, c + (my.st[i] ? ' ' + (SHORT[my.st[i]] || '') : ''));
+          })()));
+      });
+      let row = 2;
+      ds7.forEach((ds, i) => (single[ds] || []).slice(0, 3).forEach((r, k) => strip.append(note(r, i + 1, 1, 2 + k))));
+      ds7.forEach((ds, i) => { if ((single[ds] || []).length > 3) strip.append(h('span', { class: 'dc-more', style: { gridColumn: String(i + 1), gridRow: '5' } }, '+' + ((single[ds] || []).length - 3))); });
+      runs.forEach((x) => { row = Math.max(row, 2 + Math.max.apply(null, [0].concat(ds7.slice(x.from, x.to + 1).map((ds) => Math.min(3, (single[ds] || []).length))))); strip.append(note(x.r, x.from + 1, x.to - x.from + 1, row++)); });
+      /* the day cells reach down past the last note, so a week is only as tall as what is in it */
+      let last = 1;
+      ds7.forEach((ds) => { last = Math.max(last, 1 + Math.min(3, (single[ds] || []).length) + ((single[ds] || []).length > 3 ? 1 : 0)); });
+      last = Math.max(last, row - 1, 2);
+      strip.querySelectorAll('.dc-day').forEach((el) => { el.style.gridRow = '1 / span ' + last; });
+      weeks.push(strip);
     }
-    return h('div', { class: 'cal-grid' }, DAYS.map((d) => h('span', { class: 'cal-dow' }, d)), cells);
+    return h('div', { class: 'dc-month' }, h('div', { class: 'dc-dows' }, DAYS.map((d) => h('span', { class: 'dc-dow' }, d))), weeks);
+  }
+  function note(r, col, span, row) {
+    return h('span', { class: 'dc-note k-' + r.kind + ' s-' + r.status + (span > 1 ? ' run' : ''), style: { gridColumn: col + ' / span ' + span, gridRow: String(row), '--tilt': ((hue(r.person + r.date) % 5) - 2) + 'deg' }, 'aria-hidden': 'true' },
+      r.kind === 'urgent' ? h('b', null, '!') : r.kind === 'paid' ? h('b', null, '☀') : null, short(r.person), span > 1 && r.note ? h('small', null, ' – ' + r.note) : span > 1 ? h('small', null, ' – ' + KIND[r.kind].toLowerCase()) : null);
   }
   function yearGrid(y) {
-    return h('div', { class: 'cal-year' }, Array.from({ length: 12 }, (_, mi) => {
+    return h('div', { class: 'dc-year' }, Array.from({ length: 12 }, (_, mi) => {
       const first = new Date(y, mi, 1), start = K.mondayOf(first), today = K.day(0), cells = [];
       for (let i = 0; i < 42; i++) {
         const d = K.addDays(start, i);
@@ -7960,10 +8083,36 @@ window.KOMAT_PART_ART = [
   }
 
   /* ---------- one day: who is off, and asking for it ---------- */
+  /* who works where that day: the rota saved for the week, or the generator's draft until then */
+  K.dayLineup = function (ds) {
+    const wk = mondayOf(ds), i = Math.round((K.parseYmd(ds) - K.parseYmd(wk)) / 86400000), doc = D.weeks[wk];
+    let rows, st, order, draft = false;
+    if (doc && doc.rows) { rows = doc.rows; st = doc.st || {}; order = (doc.people || Object.keys(rows)).slice(); }
+    else if (K.rotaReady && K.rotaReady()) { const r = K.rotaDraft(wk, K.requestsFor(wk)); rows = r.rows; st = r.st; order = r.order; draft = true; }
+    else return null;
+    const g = { hot: [], cold: [], pass: [], learn: [], prep: [], br: [], other: [], off: [] };
+    order.forEach((id) => {
+      const c = String((rows[id] || [])[i] || '').trim(), s = (st[id] || [])[i] || '';
+      if (!c) return;
+      if (/^(0|X)$/i.test(c)) { g.off.push({ id: id, c: c }); return; }
+      (g[s] || g.other).push({ id: id, c: c });
+    });
+    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
+    const offReq = onDay(ds).filter(live);
+    return h('section', { class: 'lineup' },
+      h('div', { class: 'lineup-h' }, h('h3', null, 'Who’s on'), draft ? h('span', { class: 'lineup-draft' }, 'Draft, not final yet') : null),
+      h('div', { class: 'lineup-st' }, LAB.filter((l) => g[l[0]].length).map((l) => h('div', { class: 'lu-row lu-' + l[0] },
+        h('span', { class: 'lu-lab' }, l[1]),
+        h('span', { class: 'lu-who' }, g[l[0]].map((x) => h('span', { class: 'lu-p' }, face(x.id), h('b', null, K.personName(x.id)), h('span', { class: 'mono' }, x.c))))))),
+      g.off.length || offReq.length ? h('p', { class: 'lu-off' }, h('b', null, 'Off: '), Array.from(new Set(g.off.map((x) => x.id).concat(offReq.map((r) => r.person)))).map((id) => K.personName(id)).join(', ')) : null);
+  };
   function openAsk(ds) { ui.offForm = null; ui.sheet = { type: 'dayoff', date: ds, ask: true }; K.render(); }
   K.SHEETS.dayoff = function (c) {
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
+    const lu = K.dayLineup(ds);
+    if (lu) body.push(lu);
+    body.push(h('h3', { class: 'off-h small' }, 'Days off'));
     if (rs.length) body.push(h('div', { class: 'off-day-list' }, rs.map((r) => h('div', { class: 'off-row k-' + r.kind + ' s-' + r.status },
       face(r.person),
       h('div', { class: 'off-card-txt' }, h('b', null, K.personName(r.person)),

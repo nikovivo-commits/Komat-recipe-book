@@ -38,7 +38,7 @@
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
   /* the draft for a week; worked out again only when something it depends on changes */
-  let memo = { key: '', out: null };
+  const memo = new Map();
   K.rotaInput = function (wk, requests) {
     const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
@@ -49,8 +49,8 @@
   K.rotaDraft = function (wk, requests) {
     const input = K.rotaInput(wk, requests);
     const key = JSON.stringify(input);
-    if (memo.key !== key) memo = { key: key, out: K.rotaGen(input) };
-    return memo.out;
+    if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 12) memo.delete(memo.keys().next().value); }
+    return memo.get(key);
   };
   /* what the head chef changed by hand on top of the draft (filling a hole) */
   const fixes = (wk) => ((ui.rpFix = ui.rpFix || {})[wk] = (ui.rpFix || {})[wk] || {});
