@@ -29,6 +29,35 @@
   const mondayOf = (ds) => K.ymd(K.mondayOf(K.parseYmd(ds)));
   const kindIcon = (r) => (r.kind === 'urgent' ? '!' : r.kind === 'paid' ? '☀' : r.kind === 'unpaid' ? '–' : '');
 
+  /* ---------- cover points: earned for stepping in, spent on priority; they never run out ---------- */
+  const PRIORITY = 3;
+  const pts = () => Object.keys(D.points || {}).map((k) => D.points[k]);
+  K.pointsOf = (id) => pts().filter((p) => p.person === id).reduce((a, p) => a + (+p.n || 0), 0);
+  K.awardPoints = function (docId, body) {
+    const b = Object.assign({ at: Date.now(), by: K.me.id || '' }, body);
+    D.points[docId] = Object.assign({ id: docId }, b);
+    K.db.doc('points/' + docId).set(b).catch(K.writeFailed);
+    K.refresh();
+  };
+  K.removePoints = function (docId) {
+    if (!D.points[docId]) return;
+    delete D.points[docId];
+    K.db.doc('points/' + docId).delete().catch(K.writeFailed);
+    K.refresh();
+  };
+  /* a priority request withdrawn or refused: the points come back, and whoever gave way gets their day back */
+  const refund = (rs) => {
+    const r = rs[0];
+    if (!r || !r.priority) return;
+    K.removePoints('spend_' + r.date + '_' + r.person);
+    const dates = rs.map((x) => x.date);
+    all().filter((x) => x.bumpedBy === r.person && x.status === 'waiting' && dates.includes(x.date)).forEach((x) => {
+      const b = Object.assign({}, x, { status: 'ok' }); delete b.id; delete b.bumpedBy;
+      D.dayoff[x.id] = Object.assign({ id: x.id }, b);
+      K.db.doc('dayoff/' + x.id).set(b).catch(K.writeFailed);
+    });
+  };
+
   /* ---------- what happens to a request ---------- */
   function decide(person, dates, kind) {
     if (kind === 'urgent') return 'ok';
@@ -44,19 +73,44 @@
     }
     return 'ok';
   }
+  /* priority: whose plain day off on the same days could go back to waiting so this one fits (the latest asked first) */
+  function bumpFor(person, dates) {
+    if (!K.rotaReady || !K.rotaReady()) return null;
+    const out = [];
+    for (const wk of Array.from(new Set(dates.map(mondayOf)))) {
+      if (D.weeks[wk] && D.weeks[wk].final) return null;
+      const base = K.requestsFor(wk), mine = dates.filter((d) => mondayOf(d) === wk).map((d) => ({ person: person, date: d, kind: 'ask', status: 'ok' }));
+      const holes = (reqs) => K.rotaGen(K.rotaInput(wk, reqs)).issues.filter((x) => x.sev === 'red').length, h0 = holes(base);
+      if (holes(base.concat(mine)) <= h0) continue;
+      const rivals = all().filter((r) => r.person !== person && dates.includes(r.date) && mondayOf(r.date) === wk && r.kind === 'ask' && r.status === 'ok' && !r.priority).sort((a, b) => (b.at || 0) - (a.at || 0));
+      const found = rivals.find((r) => holes(base.map((x) => (x.person === r.person && x.date === r.date ? Object.assign({}, x, { status: 'waiting' }) : x)).concat(mine)) <= h0);
+      if (!found) return null;
+      out.push(found);
+    }
+    return out;
+  }
   function send(f) {
     const person = f.person, from = f.from, to = f.to && f.to >= from ? f.to : from, dates = [];
     for (let d = from; d <= to && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
-    const status = decide(person, dates, f.kind), group = dates.length > 1 ? 'g' + K.uid() : '', at = Date.now();
+    let status = decide(person, dates, f.kind), bumped = [];
+    const wantPrio = f.priority && f.kind === 'ask' && status === 'waiting' && K.pointsOf(person) >= PRIORITY;
+    if (wantPrio) { const b = bumpFor(person, dates); if (b) { status = 'ok'; bumped = b; } }
+    const prio = wantPrio && status === 'ok', group = dates.length > 1 ? 'g' + K.uid() : '', at = Date.now();
     ui.busy = true; K.render();
     Promise.all(dates.map((d) => {
       const body = { date: d, person: person, uid: K.me.id || '', kind: f.kind, note: (f.note || '').trim().slice(0, 300), status: status, at: at, group: group };
+      if (prio) body.priority = true;
       D.dayoff[d + '_' + person] = Object.assign({ id: d + '_' + person }, body);
       return K.db.doc('dayoff/' + d + '_' + person).set(body);
     })).then(() => {
       ui.busy = false; ui.sheet = null; ui.offForm = null; K.render();
       const span = dates.length > 1 ? pretty(from) + ' – ' + pretty(to) : pretty(from);
-      if (status === 'ok') K.toast((f.kind === 'urgent' ? 'Urgent, noted: ' : 'Accepted: ') + span + (f.kind === 'urgent' ? '. The head chef sees it in red.' : '. Enjoy it.'), { tone: 'good' });
+      if (prio) {
+        bumped.forEach((r) => { const b = Object.assign({}, r, { status: 'waiting', bumpedBy: person }); delete b.id; D.dayoff[r.id] = Object.assign({ id: r.id }, b); K.db.doc('dayoff/' + r.id).set(b).catch(K.writeFailed); });
+        K.awardPoints('spend_' + from + '_' + person, { person: person, n: -PRIORITY, kind: 'spend', date: from, reason: 'Priority for ' + span });
+        K.toast('Accepted with priority (' + PRIORITY + ' points): ' + span + '. ' + Array.from(new Set(bumped.map((r) => K.personName(r.person)))).join(', ') + '’s day off now waits for the head chef.', { tone: 'good' });
+      } else if (f.priority && wantPrio) K.toast('Sent for approval: ' + span + '. Priority could not make room, so no points were used.');
+      else if (status === 'ok') K.toast((f.kind === 'urgent' ? 'Urgent, noted: ' : 'Accepted: ') + span + (f.kind === 'urgent' ? '. The head chef sees it in red.' : '. Enjoy it.'), { tone: 'good' });
       else K.toast('Sent for approval: ' + span + '. The head chef or sous chef decides.');
     }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
   }
@@ -68,9 +122,11 @@
       K.db.doc('dayoff/' + r.id).set(body).catch(K.writeFailed);
     });
     K.render();
+    if (status === 'refused') refund(rs);
     K.toast((status === 'refused' ? 'Refused: ' : 'Approved: ') + K.personName(rs[0].person) + ', ' + span(rs), { tone: status === 'refused' ? '' : 'good' });
   }
   function withdraw(rs) {
+    refund(rs);
     rs.forEach((r) => { delete D.dayoff[r.id]; K.db.doc('dayoff/' + r.id).delete().catch(K.writeFailed); });
     K.render();
     K.toast('Withdrawn: ' + span(rs));
@@ -94,6 +150,7 @@
         wait.map((rs) => card(rs, true))));
     }
     box.append(calendar());
+    box.append(coverBoard());
     box.append(h('p', { class: 'hint' }, 'Everyone sees the calendar and your reason, so the team can plan around it. Tap a day to see who is on.'));
     const my = grouped(all().filter((r) => mine(r) && r.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1)));
     if (my.length) box.append(h('section', { class: 'off-mine' }, h('h2', { class: 'off-h' }, 'Your requests'), my.map((rs) => card(rs, false))));
@@ -103,6 +160,44 @@
     }
     return box;
   };
+  /* the cover board: who stepped in this month, and everyone's points */
+  function coverBoard() {
+    const month = K.day(0).slice(0, 7), me = K.getMe(), people = D.staff.people || [];
+    const got = {};
+    pts().forEach((p) => { if (+p.n > 0 && String(p.date || '').slice(0, 7) === month) got[p.person] = (got[p.person] || 0) + (+p.n); });
+    const rows = people.map((p) => ({ id: p.id, month: got[p.id] || 0, bal: K.pointsOf(p.id) })).filter((x) => x.month || x.bal || x.id === me)
+      .sort((a, b) => b.month - a.month || b.bal - a.bal);
+    const box = h('section', { class: 'cover-board slate' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
+      h('p', { class: 'chalk-sub' }, 'Points for stepping in · ' + new Date().toLocaleDateString('en-GB', { month: 'long' })));
+    if (!rows.length) box.append(h('p', { class: 'chalk-hint' }, 'No covers yet. Stepping in on a day off earns 3 points, 5 at short notice.'));
+    else box.append(h('ol', { class: 'cb-list' }, rows.map((x, i) => h('li', { class: x.id === me ? 'me' : '' },
+      h('span', { class: 'cb-rank' }, x.month ? String(i + 1) : '–'), face(x.id),
+      h('b', { class: 'cb-name' }, K.personName(x.id) + (x.id === me ? ' (you)' : '')),
+      h('span', { class: 'cb-month' }, x.month ? '+' + x.month + ' this month' : ''),
+      h('span', { class: 'cb-bal' }, '★ ' + x.bal)))));
+    if (me) {
+      const mine = pts().filter((p) => p.person === me).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 6);
+      if (mine.length) box.append(h('details', { class: 'cb-hist' }, h('summary', null, 'Your points'),
+        h('ul', null, mine.map((p) => h('li', null, h('b', null, (+p.n > 0 ? '+' : '') + p.n), ' ' + (p.reason || ''))))));
+    }
+    box.append(h('p', { class: 'chalk-hint' }, 'Spend ' + PRIORITY + ' to ask with priority for a day someone else already has off.'));
+    if (K.me.admin) {
+      const g = (ui.giveForm = ui.giveForm || { person: '', n: 1, reason: '' });
+      box.append(h('form', { class: 'cb-give', onsubmit: (e) => {
+        e.preventDefault();
+        if (!g.person || !(g.reason || '').trim()) { K.toast('Pick who and say why.'); return; }
+        K.awardPoints('bonus_' + K.uid(), { person: g.person, n: +g.n, kind: 'bonus', date: K.day(0), reason: g.reason.trim().slice(0, 120) });
+        K.toast('+' + g.n + ' for ' + K.personName(g.person), { tone: 'good' });
+        ui.giveForm = { person: '', n: 1, reason: '' }; K.render();
+      } },
+        h('b', { class: 'cb-give-h' }, 'Give points'),
+        K.select([['', 'Who']].concat(people.map((p) => [p.id, p.name])), g.person, (v) => { g.person = v; }, { class: 'input small', 'aria-label': 'Who' }),
+        K.select([1, 2, 3, 4, 5].map((n) => [n, '+' + n]), g.n, (v) => { g.n = +v; }, { class: 'input small', 'aria-label': 'How many' }),
+        h('input', { class: 'input small', value: g.reason, placeholder: 'Why, e.g. stayed late for the wedding', 'aria-label': 'Why', oninput: (e) => { g.reason = e.target.value; } }),
+        h('button', { class: 'chalk-link', type: 'submit' }, '★ Give')));
+    }
+    return box;
+  }
   function card(rs, forChef) {
     const r = rs[0], urgent = r.kind === 'urgent';
     return h('article', { class: 'off-card k-' + r.kind + ' s-' + r.status },
@@ -110,7 +205,7 @@
       h('div', { class: 'off-card-txt' },
         h('b', null, K.personName(r.person)),
         h('span', { class: 'off-when' }, span(rs) + (rs.length > 1 ? ' · ' + rs.length + ' days' : '')),
-        h('span', { class: 'off-kind' }, urgent ? h('b', { class: 'off-bang' }, '!') : null, KIND[r.kind] + ' · ' + STATUS[r.status]),
+        h('span', { class: 'off-kind' }, urgent ? h('b', { class: 'off-bang' }, '!') : null, KIND[r.kind] + ' · ' + STATUS[r.status] + (r.priority ? ' · ★ priority' : '') + (r.bumpedBy ? ' · gave way to ' + K.personName(r.bumpedBy) + '’s priority' : '')),
         r.note ? h('q', { class: 'off-note' }, r.note) : null),
       h('div', { class: 'off-acts' },
         forChef ? [h('button', { class: 'btn small primary', type: 'button', onclick: () => setStatus(rs, 'approved') }, 'Approve'), h('button', { class: 'btn small', type: 'button', onclick: () => setStatus(rs, 'refused') }, 'Refuse')]
@@ -273,6 +368,12 @@
           h('button', { type: 'button', class: 'off-kbtn k-unpaid', 'aria-pressed': f.kind === 'unpaid' ? 'true' : 'false', onclick: () => { f.kind = 'unpaid'; K.render(); } }, 'Unpaid leave'))),
       h('p', { class: 'hint off-hint' }, hint),
       (() => { const ev = []; for (let d = f.from; d <= (f.to || f.from) && ev.length < 3; d = K.ymd(K.addDays(K.parseYmd(d), 1))) evs(d).forEach((e) => ev.push(e)); return ev.length ? h('p', { class: 'banner warn' }, h('b', null, '★ Event: '), ev.map((e) => (e.title || 'Event') + ' on ' + pretty(e.date) + (+e.cooks ? ', needs ' + e.cooks + ' cooks' : '')).join('; ') + '. If the kitchen would be short, the head chef decides.') : null; })(),
+      (() => {
+        const have = f.person ? K.pointsOf(f.person) : 0;
+        if (f.kind !== 'ask' || have < PRIORITY) return f.kind === 'ask' && f.person ? h('p', { class: 'hint' }, '★ Cover points: ' + have + '. With ' + PRIORITY + ' you can ask with priority.') : null;
+        return h('label', { class: 'check off-prio' }, h('input', { type: 'checkbox', checked: !!f.priority, onchange: (e) => { f.priority = e.target.checked; } }),
+          h('span', null, h('b', null, '★ Use priority: ' + PRIORITY + ' points'), h('small', null, 'You have ' + have + '. If someone else already has this day off, you get it and theirs goes back to the head chef. Only used if it makes the difference.')));
+      })(),
       K.field('Why?', h('textarea', { class: 'input', rows: '2', maxlength: '300', value: f.note, placeholder: 'e.g. my sister’s wedding. The team sees this.', oninput: (e) => { f.note = e.target.value; } }), 'Optional, but it helps the team get behind it.'),
       h('button', { class: 'btn primary wide', type: 'submit', disabled: !f.person || ui.busy }, ui.busy ? 'Sending…' : 'Send'));
   }

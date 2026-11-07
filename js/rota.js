@@ -65,8 +65,15 @@
     const p = K.rotaPlan(), l = ((p.pins = p.pins || {})[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date)));
     l.push(pin);
     save(p);
+    /* covering a hole earns points: more at short notice (under 48 hours) */
+    if (K.awardPoints) {
+      const soon = K.parseYmd(pin.date).getTime() - Date.now() < 48 * 3600 * 1000;
+      K.awardPoints('pin_' + pin.date + '_' + pin.person, { person: pin.person, n: soon ? 5 : 3, kind: soon ? 'short' : 'cover', date: pin.date,
+        reason: 'Covered ' + (STL[pin.st] || pin.st) + ' on ' + K.prettyDate(pin.date, { weekday: 'short', day: 'numeric', month: 'short' }) + (soon ? ' at short notice' : '') });
+    }
   }
   function dropPin(wk, pin) {
+    if (K.removePoints) K.removePoints('pin_' + pin.date + '_' + pin.person);
     const p = K.rotaPlan();
     p.pins = p.pins || {};
     p.pins[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date));
@@ -189,6 +196,11 @@
     return box;
   }
   function use(wk, r) {
+    /* the covers the generator arranged earn points once the week is saved: someone on a day off or a backup station */
+    if (K.awardPoints) r.issues.filter((x) => x.sev === 'amber' && x.person && x.day != null && /\((last resort|emergency only)\)/.test(x.text)).forEach((x) => {
+      const date = K.ymd(K.addDays(K.parseYmd(wk), x.day));
+      if (!K.rotaPins(wk).some((p) => p.person === x.person && p.date === date)) K.awardPoints('auto_' + date + '_' + x.person, { person: x.person, n: 3, kind: 'cover', date: date, reason: x.text.replace(/ \((last resort|emergency only)\)/, '') });
+    });
     const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(r.rows), st = K.clone(r.st);
     (old.people || []).forEach((id) => { if (!people.includes(id)) { people.push(id); rows[id] = (old.rows || {})[id] || ['', '', '', '', '', '', '']; } });
     ui.rpConfirm = '';

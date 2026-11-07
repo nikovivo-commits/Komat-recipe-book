@@ -2035,3 +2035,26 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 
 .rp-could .btn.primary small { color: rgba(255, 255, 255, .8); }
 .rota.rp-mini td.lt { font-style: italic; font-weight: 600; }
+
+/* the cover board, on the slate */
+.cover-board { display: grid; gap: 8px; padding: 10px 12px 16px; }
+.cb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cb-list li { display: grid; grid-template-columns: 1.6rem auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 4px; border-bottom: 1px solid var(--chalk-line); }
+.cb-list li.me { background: rgba(243, 211, 74, .09); }
+.cb-list li.me .cb-name { color: var(--chalk-yellow); }
+.cb-rank { font: 700 1.3rem/1 var(--hand); color: var(--chalk-dim); text-align: center; }
+.cb-list li:first-child .cb-rank { color: var(--chalk-yellow); }
+.cb-list .off-face { width: 30px; height: 30px; font-size: .72rem; }
+.cb-name { font: 700 1.35rem/1 var(--hand); color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-month { font: 400 .85rem "Neucha", var(--hand); color: #A8E6B8; white-space: nowrap; }
+.cb-bal { font: 400 1.05rem "Neucha", var(--hand); color: var(--chalk-yellow); white-space: nowrap; }
+.cb-hist summary { cursor: pointer; font: 400 .95rem "Neucha", var(--hand); color: var(--chalk-dim); }
+.cb-hist ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 2px; font: 400 .9rem "Neucha", var(--hand); color: var(--chalk); }
+.cb-give { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding-top: 8px; border-top: 1.5px dashed var(--chalk-line); }
+.cb-give-h { grid-column: 1 / -1; font: 700 1.3rem/1 var(--hand); color: var(--chalk); }
+.cb-give .input { background: rgba(255, 255, 255, .06); border-color: var(--chalk-line); color: var(--chalk); }
+.cb-give input.input { grid-column: 1 / -1; }
+.cb-give .chalk-link { grid-column: 1 / -1; justify-self: center; }
+@media (max-width: 380px) { .cb-list li { grid-template-columns: 1.4rem auto minmax(0, 1fr) auto; } .cb-month { display: none; } }
+.off-prio { border-color: var(--todo); background: var(--todo-soft); }
+.off-prio span { display: grid; gap: 2px; }

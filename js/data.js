@@ -8,7 +8,7 @@
     loaded: false, recipesSrc: [], recipes: [],
     branding: { logo: '', heroes: [], approve: '', pages: {} },
     checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
-    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, dayoff: {}, bugs: [], names: {}, noWrite: false,
+    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, dayoff: {}, points: {}, bugs: [], names: {}, noWrite: false,
   });
 
   K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
@@ -648,6 +648,8 @@
     setting('rotaplan', (d) => { D.rotaplan = d ? K.clone(d) : null; });
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
+    /* cover points: earned for covering, spent on priority; they never run out, so all of them */
+    db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
     /* days off asked for, from two months back (the year view shows what is coming) */
     db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
     dateSubs();
