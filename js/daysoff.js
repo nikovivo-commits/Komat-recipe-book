@@ -146,7 +146,7 @@
   K.dayEvents = evs;
   function evLine(e) {
     return h('div', { class: 'dc-evbox' }, h('b', null, '★ ' + (e.title || 'Event')),
-      h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
+      h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' + (e.when === 'day' ? ' at lunch' : e.when === 'night' ? ' in the evening' : '') : '', +e.before ? e.before + ' cooks the day before' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
   }
   const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Fill', 'learn-pass': 'Learn P', 'learn-cold': 'Learn C', 'learn-hot': 'Learn', br: 'BR' };
   /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
@@ -237,6 +237,7 @@
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
     evs(ds).forEach((e) => body.push(evLine(e)));
+    body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); K.go('schedule'); setTimeout(() => { const b = document.querySelector('.week-board'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
     body.push(h('h3', { class: 'off-h small' }, 'Days off'));

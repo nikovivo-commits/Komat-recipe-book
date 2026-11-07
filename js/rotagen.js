@@ -16,15 +16,22 @@
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
                paid and unpaid leave, once approved, also take that day out of the person's days for the week
      keep      { id: [7 codes] } the rows of people filled in by hand (the week as it stands)
-     events    [{ date, cooks, title }] an event that needs at least that many cooks working that day
+     events    [{ date, cooks, when, before, title }] an event that needs at least that many cooks working that day
+               (when: 'day' counts lunch, 'night' counts the night, otherwise the whole day), and before: cooks the day before
      pins      [{ person, date, st, extra }] the head chef's word: this person works that day at that station
                (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one
-   A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can. */
+   A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can.
+
+   Lunch and night (plan.periods): a full shift (P) counts for lunch and night, a late shift (plan.lateCode, '2',
+   from 15:00) for night only. plan.lunch says how many each station needs at lunch; the night needs the places
+   in plan.needs plus, ideally, one filler on top. A person's late: n is how many of their days are late shifts.
+   Someone on a fixed week can cover stations at lunch on the days they work (lunch: ['hot']), and a prep day
+   (10:30) covers that person's station at lunch. */
 (function (root) {
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -66,18 +73,56 @@
     const lrnN = (id) => ((S(id) || {}).learn || []).length ? +(S(id).learnDays || 0) : 0;
     let LRN = {};
     const lrnOf = (id, d) => !!(LRN[id] && LRN[id][d]);
+    const PER = !!plan.periods, lunch = plan.lunch || {}, lateCode = plan.lateCode || '2';
+    const lateN = (id) => (PER && S(id).mode === 'auto' ? +(S(id).late || 0) : 0);
+    let LATE = {};
+    const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
+    /* lunch: which stations nobody covers, given who is where at night */
+    function lunchMiss(d, on, extras, work, special) {
+      const need = {};
+      STS.forEach((x) => { need[x] = (lunch[x] || [])[d] || 0; });
+      order.forEach((id) => {
+        const p = S(id);
+        if (p.mode !== 'fixed' || !(p.lunch || []).length || hardOff[id][d]) return;
+        const c = String((p.pattern || [])[d] || '').trim();
+        if (!c || OFF.test(c)) return;
+        p.lunch.forEach((x) => { if (need[x] > 0) need[x]--; });
+      });
+      auto.forEach((id) => { if (work[id][d] && special[id][d]) { const x = (S(id).stations || []).find((y) => STS.includes(y)); if (x && need[x] > 0) need[x]--; } });
+      Object.keys(on).forEach((id) => { if (!lateOf(id, d) && need[on[id]] > 0) need[on[id]]--; });
+      const spare = Object.keys(extras).filter((id) => !lateOf(id, d)), miss = [];
+      STS.forEach((x) => { while (need[x] > 0) { const k = spare.findIndex((id) => rank(id, x) >= 0); if (k >= 0) spare.splice(k, 1); else miss.push(x); need[x]--; } });
+      /* and enough hands at lunch: full shifts, prep days and whoever covers lunch on a fixed week */
+      const min = Math.max((plan.lunchMin || [])[d] || 0, minLunch[d]);
+      if (min) {
+        let n = auto.filter((id) => work[id][d] && (special[id][d] || !lateOf(id, d))).length;
+        order.forEach((id) => { const p = S(id), c = String((p.pattern || [])[d] || '').trim(); if (p.mode === 'fixed' && (p.lunch || []).length && !hardOff[id][d] && c && !OFF.test(c)) n++; });
+        for (; n < min; n++) miss.push('cook');
+      }
+      return miss;
+    }
     const S = (id) => setup[id];
     const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0) + (extraDays[id] || 0));
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
     const places = (d) => { const out = []; STS.forEach((s) => { for (let k = 0; k < ((needs[s] || [])[d] || 0); k++) out.push(s); }); return out; };
     const placeList = [0, 1, 2, 3, 4, 5, 6].map(places);
     /* events: the most cooks any event that day needs */
-    const minCooks = [0, 0, 0, 0, 0, 0, 0], evName = ['', '', '', '', '', '', ''];
-    (input.events || []).forEach((e) => { const d = dates.indexOf(e.date), n = +e.cooks || 0; if (d >= 0 && n > minCooks[d]) { minCooks[d] = n; evName[d] = e.title || 'the event'; } });
+    const minCooks = [0, 0, 0, 0, 0, 0, 0], evName = ['', '', '', '', '', '', ''], minLunch = [0, 0, 0, 0, 0, 0, 0], minNight = [0, 0, 0, 0, 0, 0, 0], evAt = ['', '', '', '', '', '', ''];
+    (input.events || []).forEach((e) => {
+      const d = dates.indexOf(e.date), n = +e.cooks || 0, b = +e.before || 0, t = e.title || 'the event';
+      if (d >= 0 && n) {
+        if (PER && e.when === 'day') { if (n > minLunch[d]) { minLunch[d] = n; evAt[d] = t; } }
+        else if (PER && e.when === 'night') { if (n > minNight[d]) { minNight[d] = n; evAt[d] = t; } }
+        else if (n > minCooks[d]) { minCooks[d] = n; evName[d] = t; }
+      }
+      const db = dates.indexOf(addDays(e.date, -1));
+      if (db >= 0 && b > minCooks[db]) { minCooks[db] = b; evName[db] = t + ' (prep, the day before)'; }
+    });
 
     /* ---------- one day: who stands where, given who works ---------- */
     function solveDay(d, work, special) {
       if (work.__lrn) LRN = work.__lrn;
+      if (work.__late) LATE = work.__late;
       const pins = auto.filter((id) => work[id][d] && pinned(id, d)), pl = placeList[d].slice();
       pins.forEach((id) => { const k = pl.indexOf(pin[id][d]); if (k >= 0) pl.splice(k, 1); });
       const here = auto.filter((id) => work[id][d] && !special[id][d] && !lrnOf(id, d) && !pinned(id, d));
@@ -100,6 +145,7 @@
             else { extras[id] = 'float'; c += W.extra; }
           });
           auto.forEach((id) => { if (work[id][d] && lrnOf(id, d)) { const x = S(id).learn[0]; extras[id] = 'learn-' + x; if (!teach(x)) c += W.noTeacher; } });
+          if (PER) c += lunchMiss(d, on, extras, work, special).length * W.lunchHole + (Object.keys(extras).length ? 0 : W.noFiller);
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;
         }
@@ -133,7 +179,7 @@
       let br = null, brCost = 0;
       if (brDays.includes(d)) {
         let bestR = Infinity;
-        auto.forEach((id) => { const r = S(id).br || 0; if (r && work[id][d] && !special[id][d] && r < bestR) { bestR = r; br = id; } });
+        auto.forEach((id) => { const r = S(id).br || 0; if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
         if (br) brCost = (bestR - 1) * W.brRank;
         else {
           order.forEach((id) => {
@@ -147,7 +193,8 @@
         }
       }
       const heads = auto.filter((id) => work[id][d]).length;
-      const evCost = minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0;
+      const nightHeads = auto.filter((id) => work[id][d] && !special[id][d]).length;
+      const evCost = (minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0) + (minNight[d] > nightHeads ? (minNight[d] - nightHeads) * W.unfilled : 0);
       return { cost: best.cost + handCost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads, handOn: handOn };
     }
 
@@ -158,6 +205,7 @@
       for (let d = 0; d < 7; d++) if (w[d] && wish[id][d]) c += W.wish;
       if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
+      if (lateN(id)) { let lt = 0, sp = 0; for (let d = 0; d < 7; d++) { if (w[d] && work.__late[id][d]) lt++; if (w[d] && special[id][d]) sp++; } c += Math.abs(Math.min(lateN(id), n - sp) - lt) * W.mix; }
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
       /* days off kept together only for whoever asked for it; filling the kitchen always comes first */
@@ -169,8 +217,8 @@
     const free = (id) => [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d]);
 
     function start() {
-      const work = {}, special = {}, lrn = {};
-      work.__lrn = lrn;
+      const work = {}, special = {}, lrn = {}, late = {};
+      work.__lrn = lrn; work.__late = late;
       auto.forEach((id) => {
         let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
@@ -182,6 +230,8 @@
         loose.slice(0, sn).forEach((d) => { special[id][d] = 1; });
         lrn[id] = [0, 0, 0, 0, 0, 0, 0];
         loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
+        late[id] = [0, 0, 0, 0, 0, 0, 0];
+        loose.slice(sn).slice(-Math.min(lateN(id), Math.max(0, loose.length - sn)) || loose.length).forEach((d) => { if (lateN(id)) late[id][d] = 1; });
       });
       return { work: work, special: special };
     }
@@ -199,7 +249,7 @@
       let st = start(), ev = evalAll(st);
       const ITER = 1800;
       for (let it = 0; it < ITER; it++) {
-        const id = auto[Math.floor(R() * auto.length)], w = st.work[id], sp = st.special[id], L = st.work.__lrn[id];
+        const id = auto[Math.floor(R() * auto.length)], w = st.work[id], sp = st.special[id], L = st.work.__lrn[id], LT = st.work.__late[id];
         const on = [], offd = [];
         for (let d = 0; d < 7; d++) { if (w[d]) { if (!pinned(id, d)) on.push(d); } else if (!hardOff[id][d]) offd.push(d); }
         const touched = [];
@@ -211,7 +261,14 @@
           const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
           sp[x] = 0; sp[y] = 1; touched.push(x, y);
           undo = () => { sp[x] = 1; sp[y] = 0; };
-        } else if (lrnN(id) && mv < 0.45) {
+        } else if (lateN(id) && mv < 0.4) {
+          /* swap which day is the late shift */
+          const a = on.filter((d) => LT[d]), b = on.filter((d) => !LT[d] && !sp[d]);
+          if (!a.length || !b.length) continue;
+          const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
+          LT[x] = 0; LT[y] = 1; touched.push(x, y);
+          undo = () => { LT[x] = 1; LT[y] = 0; };
+        } else if (lrnN(id) && mv < 0.55) {
           /* move a learning day, or drop one / add one back */
           const a = on.filter((d) => L[d]), b = on.filter((d) => !L[d] && !sp[d]);
           if (a.length && b.length && R() < 0.7) {
@@ -230,10 +287,10 @@
         } else {
           if (!on.length || !offd.length) continue;
           const x = on[Math.floor(R() * on.length)], y = offd[Math.floor(R() * offd.length)];
-          const wasSp = sp[x], wasL = L[x];
-          w[x] = 0; w[y] = 1; sp[x] = 0; sp[y] = wasSp; L[x] = 0; L[y] = wasL;
+          const wasSp = sp[x], wasL = L[x], wasLt = LT[x];
+          w[x] = 0; w[y] = 1; sp[x] = 0; sp[y] = wasSp; L[x] = 0; L[y] = wasL; LT[x] = 0; LT[y] = wasLt;
           touched.push(x, y);
-          undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; };
+          undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; LT[x] = wasLt; LT[y] = 0; };
         }
         const nd = touched.map((d) => solveDay(d, st.work, st.special)), np = personCost(id, st.work, st.special);
         const delta = touched.reduce((a, d, k) => a + nd[k].cost - ev.days[d].cost, 0) + np - ev.pc[id];
@@ -265,10 +322,16 @@
         const s = S(id);
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
-        if (day.on[id]) { rows[id][d] = s.code || '2'; stOf[id][d] = day.on[id]; return; }
+        if (day.on[id]) { rows[id][d] = lateOf(id, d) ? lateCode : s.code || '2'; stOf[id][d] = day.on[id]; return; }
         /* on top of the station's main cook: the filler, helping wherever it is needed */
-        rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
+        rows[id][d] = lateOf(id, d) ? lateCode : s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
+      if (PER) {
+        const lm = lunchMiss(d, day.on, day.extras, best.st.work, best.st.special), short = lm.filter((x) => x === 'cook').length;
+        lm.filter((x) => x !== 'cook').forEach((x) => issues.push({ sev: 'red', day: d, lunch: true, st: x, text: DAY[d] + ' lunch: nobody on ' + x }));
+        if (short) issues.push({ sev: 'red', day: d, lunch: true, text: DAY[d] + ' lunch: ' + short + (short === 1 ? ' cook' : ' cooks') + ' short (needs ' + Math.max((plan.lunchMin || [])[d] || 0, minLunch[d]) + (minLunch[d] > ((plan.lunchMin || [])[d] || 0) ? ' for ' + evAt[d] : '') + ')' });
+        if (!Object.keys(day.extras).length) issues.push({ sev: 'amber', day: d, text: DAY[d] + ' night: no filler, just one cook per station' });
+      }
       Object.keys(day.handOn || {}).forEach((id) => {
         rows[id][d] = S(id).coverCode || 'P'; stOf[id][d] = day.handOn[id];
         issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' covers ' + day.handOn[id] + ' on ' + DAY[d] + ' (last resort)' });
@@ -291,6 +354,8 @@
     for (let d = 0; d < 7; d++) {
       const heads = auto.filter((id) => best.st.work[id][d]).length;
       if (minCooks[d] > heads) issues.push({ sev: 'red', day: d, event: true, text: DAY[d] + ': ' + evName[d] + ' needs ' + minCooks[d] + ' cooks, ' + heads + ' working' });
+      const nh = auto.filter((id) => best.st.work[id][d] && !best.st.special[id][d]).length;
+      if (minNight[d] > nh) issues.push({ sev: 'red', day: d, event: true, text: DAY[d] + ' night: ' + evAt[d] + ' needs ' + minNight[d] + ' cooks, ' + nh + ' in' });
     }
     /* a hole is for the head chef or the sous chef: who could step in, and what it costs them */
     const askedOff = {};
@@ -298,6 +363,12 @@
     issues.forEach((x) => {
       if (x.sev !== 'red' || x.day == null) return;
       const d = x.day, want = x.event ? 'any' : x.st || 'br';
+      if (x.lunch) {
+        x.could = auto.filter((id) => (!x.st || rank(id, x.st) >= 0) && !hardOff[id][d] && (!best.st.work[id][d] || lateOf(id, d)))
+          .map((id) => ({ id: id, why: best.st.work[id][d] ? 'on a late shift that day, could come in at 11' : 'off that day', score: best.st.work[id][d] ? 0 : 2 }))
+          .sort((p, q) => p.score - q.score).slice(0, 4).map((c) => ({ id: c.id, why: c.why }));
+        return;
+      }
       x.could = auto.filter((id) => (x.event ? !best.st.work[id][d] : !(best.st.work[id][d] && !best.st.special[id][d] && best.ev.days[d].on[id])))
         .filter((id) => (want === 'any' ? (S(id).stations || []).length : want === 'br' ? S(id).br : rank(id, want) >= 0) && !(setup[id].off || []).includes(d) && !(input.requests || []).some((r) => r.person === id && r.kind === 'urgent' && r.status !== 'refused' && dates.indexOf(r.date) === d))
         .map((id) => {

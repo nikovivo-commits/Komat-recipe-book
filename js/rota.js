@@ -47,7 +47,8 @@
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
     const end = K.ymd(K.addDays(K.parseYmd(wk), 6));
-    const events = (D.events || []).filter((e) => K.isLive(e) && e.status !== 'pending' && e.date >= wk && e.date <= end && +e.cooks > 0).map((e) => ({ date: e.date, cooks: +e.cooks, title: e.title || 'Event' }));
+    const nextMon = K.ymd(K.addDays(K.parseYmd(wk), 7));
+    const events = (D.events || []).filter((e) => K.isLive(e) && e.status !== 'pending' && e.date >= wk && e.date <= nextMon && (+e.cooks > 0 || +e.before > 0)).map((e) => ({ date: e.date, cooks: e.date <= end ? +e.cooks || 0 : 0, when: e.when || '', before: +e.before || 0, title: e.title || 'Event' }));
     return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events, pins: pins };
   };
   K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
@@ -168,7 +169,7 @@
           K.seg([['auto', 'Generator'], ['fixed', 'Fixed week'], ['hand', 'By hand'], ['off', 'Not on the rota']], s.mode || 'off', (v) => set((p) => { person(p, id).mode = v; }), { 'aria-label': 'How ' + pp.name + ' is planned', class: 'seg small-seg' })));
       if (s.mode === 'auto') {
         const sts = s.stations || [];
-        card.append(
+        card.append(...[
           row('Stations', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['prep', 'Prep']].map((o) => {
             const i = sts.indexOf(o[0]);
             return h('button', { type: 'button', class: 'chip', 'aria-pressed': i >= 0 ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.stations || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.stations = l; }) },
@@ -184,6 +185,7 @@
           }))),
           (s.learn || []).length ? row('Learning days', K.select([0, 1, 2, 3].map((n) => [n, n ? n + ' a week' : 'None this week']), s.learnDays || 0, (v) => set((p) => { person(p, id).learnDays = +v; }), { 'aria-label': 'Learning days a week', class: 'input small' })) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
+          plan.periods ? row('Late shifts', K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week (from 15:00)' : 'None, all full']), s.late || 0, (v) => set((p) => { person(p, id).late = +v; }), { 'aria-label': 'Late shifts a week', class: 'input small' })) : null,
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; }))),
           row('Prep days', h('div', { class: 'rp-inline' },
@@ -193,12 +195,16 @@
           h('div', { class: 'rp-flags' },
             check('Learning Hot: not alone on busy days, learns next to a mentor when spare', !!s.learner, (v) => set((p) => { person(p, id).learner = v; })),
             check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; })),
-            check('Keep days off together when possible', !!s.together, (v) => set((p) => { person(p, id).together = v; }))));
+            check('Keep days off together when possible', !!s.together, (v) => set((p) => { person(p, id).together = v; })))].filter(Boolean));
       } else if (s.mode === 'fixed') {
-        card.append(row('Every week', h('div', { class: 'rp-pattern' }, DAYS.map((d, i) => h('label', null, h('span', null, d),
+        card.append(...[row('Every week', h('div', { class: 'rp-pattern' }, DAYS.map((d, i) => h('label', null, h('span', null, d),
           h('input', { class: 'input small mono', value: (s.pattern || [])[i] || '', 'aria-label': pp.name + ' ' + d, onchange: (e) => set((p) => { const q = person(p, id); q.pattern = (q.pattern || ['', '', '', '', '', '', '']).slice(); q.pattern[i] = e.target.value.trim(); }) }))))),
+        plan.periods ? row('Covers at lunch', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass']].map((o) => {
+          const on = (s.lunch || []).includes(o[0]);
+          return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.lunch || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.lunch = l; }) }, o[1]);
+        }))) : null,
         row('Station', K.select([['', 'None'], ['br', 'Breakfast'], ['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['prep', 'Prep']], s.patternSt || '', (v) => set((p) => { person(p, id).patternSt = v; }), { 'aria-label': 'Station', class: 'input small' })),
-        row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
+        row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; })))].filter(Boolean));
       } else if (s.mode === 'hand') {
         card.append(h('p', { class: 'hint' }, 'You fill this row yourself. The generator leaves it alone, unless a place would be empty.'),
           row('Can cover, last resort', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass']].map((o) => {
@@ -216,7 +222,7 @@
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
-    return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
+    return [st, (s.days || 0) + ' days' + (s.late ? ' (' + s.late + ' late)' : ''), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);
@@ -239,6 +245,14 @@
         h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Station')), DAYS.map((d) => h('th', { scope: 'col' }, d)))),
         h('tbody', null, PLACES.map((s) => h('tr', null, h('th', { scope: 'row' }, s[1]), DAYS.map((d, i) => h('td', null,
           K.select([0, 1, 2, 3].map((n) => [n, String(n)]), plan.needs[s[0]][i], (v) => set((p) => { p.needs[s[0]][i] = +v; }), { 'aria-label': s[1] + ' on ' + d, class: 'input small rp-n-in' })))))))),
+      h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, 'Lunch and night'),
+        check('Plan lunch and night separately: a full shift (P) counts for both, a late shift for the night only', !!plan.periods, (v) => set((p) => { p.periods = v; if (v && !Array.isArray(p.lunchMin)) p.lunchMin = [3, 3, 3, 3, 3, 3, 3]; }))),
+      plan.periods ? h('div', { class: 'rota-wrap card' }, h('table', { class: 'rota rp-ntable' },
+        h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Need')), DAYS.map((d) => h('th', { scope: 'col' }, d)))),
+        h('tbody', null, h('tr', null, h('th', { scope: 'row' }, 'Cooks at lunch'), DAYS.map((d, i) => h('td', null,
+          K.select([0, 1, 2, 3, 4, 5].map((n) => [n, String(n)]), (plan.lunchMin || [])[i] || 0, (v) => set((p) => { p.lunchMin = (p.lunchMin || [0, 0, 0, 0, 0, 0, 0]).slice(); p.lunchMin[i] = +v; }), { 'aria-label': 'Cooks at lunch on ' + d, class: 'input small rp-n-in' }))))))) : null,
+      plan.periods ? row('Late shift code', h('input', { class: 'input small rp-code', value: plan.lateCode || '2', 'aria-label': 'Shift code for a late shift', onchange: (e) => set((p) => { p.lateCode = e.target.value.trim() || '2'; }) })) : null,
+      plan.periods ? h('p', { class: 'hint' }, 'At night each station needs its cook and, ideally, one filler on top; a night without a filler is flagged.') : null,
       row('Busy days', days(plan.busy, (l) => set((p) => { p.busy = l; }))),
       h('p', { class: 'hint' }, 'Someone still learning Hot is only put there alone on a busy day if nobody else can.'),
       row('Weekend breakfast on', days(plan.brDays, (l) => set((p) => { p.brDays = l; }))),
