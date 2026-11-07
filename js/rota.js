@@ -28,10 +28,11 @@
      so the team sees where people can work but not the head chef's order of preference */
   K.stDots = function (id) {
     const s = (D.rotaplan && D.rotaplan.people || {})[id];
-    if (!s || s.mode !== 'auto') return null;
-    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
+    if (!s || (s.mode !== 'auto' && !(s.mode === 'hand' && (s.cover || []).length))) return null;
+    const list = s.mode === 'hand' ? s.cover || [] : s.stations || [];
+    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => list.includes(x[0]));
     if (!can.length) return null;
-    const em = (st) => (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
+    const em = (st) => s.mode === 'hand' || (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
     return h('span', { class: 'stdots', title: 'Can work: ' + can.map(lab).join(', ') },
       h('span', { class: 'sr' }, 'Can work ' + can.map(lab).join(', ')),
       can.map((x) => h('i', { class: 'sd-' + x[0] + (em(x[0]) ? ' em' : ''), 'aria-hidden': 'true' }, x[1])));
@@ -41,12 +42,13 @@
   /* the draft for a week; worked out again only when something it depends on changes */
   const memo = new Map();
   K.rotaInput = function (wk, requests) {
-    const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
+    const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {}, pins = ((plan.pins || {})[wk] || []).slice();
+    delete plan.pins;
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
     const end = K.ymd(K.addDays(K.parseYmd(wk), 6));
     const events = (D.events || []).filter((e) => K.isLive(e) && e.status !== 'pending' && e.date >= wk && e.date <= end && +e.cooks > 0).map((e) => ({ date: e.date, cooks: +e.cooks, title: e.title || 'Event' }));
-    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events };
+    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events, pins: pins };
   };
   K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
   K.rotaDraft = function (wk, requests) {
@@ -55,12 +57,20 @@
     if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 12) memo.delete(memo.keys().next().value); }
     return memo.get(key);
   };
-  /* what the head chef changed by hand on top of the draft (filling a hole) */
-  const fixes = (wk) => ((ui.rpFix = ui.rpFix || {})[wk] = (ui.rpFix || {})[wk] || {});
-  function withFixes(r, wk) {
-    const f = fixes(wk), rows = K.clone(r.rows), st = K.clone(r.st);
-    Object.keys(f).forEach((id) => { Object.keys(f[id]).forEach((d) => { if (!rows[id]) return; rows[id][d] = f[id][d].code; st[id][d] = f[id][d].st; }); });
-    return { rows: rows, st: st };
+  /* the head chef's word on a hole: this person works that day at that station. Saved with the setup, so every
+     phone's draft follows it, and the generator re-plans the rest of the week around it */
+  K.rotaPins = (wk) => ((K.rotaPlan().pins || {})[wk] || []);
+  function addPin(wk, pin) {
+    const p = K.rotaPlan(), l = ((p.pins = p.pins || {})[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date)));
+    l.push(pin);
+    save(p);
+  }
+  function dropPin(wk, pin) {
+    const p = K.rotaPlan();
+    p.pins = p.pins || {};
+    p.pins[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date));
+    if (!p.pins[wk].length) delete p.pins[wk];
+    save(p);
   }
 
   K.V.rotaplan = function () {
@@ -88,21 +98,28 @@
         h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.rpTab = 'team'; K.render(); } }, 'Open Team'))));
       return box;
     }
-    const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), fx = withFixes(r, wk), f = fixes(wk);
-    const red = r.issues.filter((x) => x.sev === 'red' && !(x.day != null && Object.keys(f).some((id) => f[id][x.day] && (x.event ? !/^(0|X)$/i.test(f[id][x.day].code) : f[id][x.day].st === (x.st || 'br')))));
+    const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), pins = K.rotaPins(wk), me = K.getMe(), mine = me && plan.people[me] && plan.people[me].mode === 'auto' ? plan.people[me] : null;
+    const red = r.issues.filter((x) => x.sev === 'red');
+    const dateOf = (d) => K.ymd(K.addDays(K.parseYmd(wk), d));
+    const stFor = (x, id) => (x.st && !x.event ? x.st : ((plan.people[id] || {}).stations || [])[0] || 'float');
     const amber = r.issues.filter((x) => x.sev === 'amber'), info = r.issues.filter((x) => x.sev === 'info');
     if (red.length) {
       box.append(h('section', { class: 'rp-holes' }, h('h2', { class: 'block-title' }, K.icon('flag'), red.length + (red.length === 1 ? ' hole' : ' holes') + ' to fill'),
-        h('p', { class: 'hint' }, 'The generator could not fill these. Pick who steps in, or leave it and sort it out with them.'),
-        red.map((x) => h('div', { class: 'rp-hole' }, h('b', null, x.text),
-          x.could && x.could.length ? h('div', { class: 'rp-could' }, x.could.map((c) => h('button', { class: 'btn small', type: 'button', onclick: () => {
-            const fid = (f[c.id] = f[c.id] || {}), pp = plan.people[c.id] || {};
-            if (x.event) fid[x.day] = { code: pp.code || '2', st: (pp.stations || [])[0] || 'prep' };
-            else fid[x.day] = { code: x.st ? pp.code || '2' : plan.brCode, st: x.st || (fx.st[c.id] || [])[x.day] || 'br' };
-            K.render();
-          } }, h('span', null, K.personName(c.id)), h('small', null, c.why))))
-            : h('p', { class: 'hint' }, 'Nobody who can work there is free. This one is for you or the head chef.')))));
+        h('p', { class: 'hint' }, 'The generator could not fill these. Pick who steps in and it re-plans the rest of the week around it.'),
+        red.map((x) => {
+          const canMe = mine && x.day != null && (!x.st || x.event || (mine.stations || []).includes(x.st)) && !(x.could || []).some((c) => c.id === me);
+          return h('div', { class: 'rp-hole' }, h('b', null, x.text),
+            canMe ? h('div', { class: 'rp-could' },
+              h('button', { class: 'btn small primary', type: 'button', onclick: () => addPin(wk, { person: me, date: dateOf(x.day), st: stFor(x, me) }) }, h('span', null, 'I’ll cover it'), h('small', null, 'and take another day off')),
+              h('button', { class: 'btn small', type: 'button', onclick: () => addPin(wk, { person: me, date: dateOf(x.day), st: stFor(x, me), extra: true }) }, h('span', null, 'I’ll cover it'), h('small', null, 'as an extra day'))) : null,
+            x.could && x.could.length ? h('div', { class: 'rp-could' }, x.could.map((c) => h('button', { class: 'btn small', type: 'button', onclick: () => addPin(wk, { person: c.id, date: dateOf(x.day), st: stFor(x, c.id) }) },
+              h('span', null, K.personName(c.id)), h('small', null, c.why))))
+              : canMe ? null : h('p', { class: 'hint' }, 'Nobody who can work there is free. This one is for you or the head chef.'));
+        })));
     } else box.append(h('p', { class: 'rp-ok' }, K.icon('check'), 'Every place is filled.'));
+    if (pins.length) box.append(h('section', { class: 'rp-pins' }, h('h2', { class: 'block-title' }, 'Your calls this week'),
+      pins.map((p) => h('div', { class: 'rp-pin' }, h('span', null, h('b', null, K.personName(p.person)), ' on ' + (STL[p.st] || p.st) + ', ' + K.prettyDate(p.date, { weekday: 'short', day: 'numeric' }) + (p.extra ? ' (extra day)' : '')),
+        h('button', { class: 'btn small', type: 'button', onclick: () => dropPin(wk, p) }, 'Undo')))));
     if (amber.length) box.append(h('section', { class: 'rp-warn' }, h('h2', { class: 'block-title' }, 'Worth a look'), h('ul', null, amber.map((x) => h('li', null, x.text)))));
     if (info.length) box.append(h('details', { class: 'rp-info' }, h('summary', null, info.length + ' small notes'), h('ul', null, info.map((x) => h('li', null, x.text)))));
 
@@ -111,19 +128,19 @@
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
       h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
-          const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
+          const c = r.rows[id][i] || '', s = r.st[id][i] || '', hand = pins.some((p) => p.person === id && p.date === dateOf(i));
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
         })))))));
     const has = !!D.weeks[wk];
     box.append(h('div', { class: 'rp-use' },
       ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace the rota already saved for ' + range(wk) + '?'),
-        h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r, fx) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
-        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r, fx); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
+        h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
+        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
       h('p', { class: 'hint' }, 'You can still change any cell on the Schedule afterwards.')));
     return box;
   }
-  function use(wk, r, fx) {
-    const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(fx.rows), st = K.clone(fx.st);
+  function use(wk, r) {
+    const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(r.rows), st = K.clone(r.st);
     (old.people || []).forEach((id) => { if (!people.includes(id)) { people.push(id); rows[id] = (old.rows || {})[id] || ['', '', '', '', '', '', '']; } });
     ui.rpConfirm = '';
     K.saveWeek(wk, { week: wk, people: people, rows: rows, st: st, note: old.note || '', updated: Date.now(), made: 'generator' });
@@ -178,7 +195,12 @@
         row('Station', K.select([['', 'None'], ['br', 'Breakfast'], ['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['prep', 'Prep']], s.patternSt || '', (v) => set((p) => { person(p, id).patternSt = v; }), { 'aria-label': 'Station', class: 'input small' })),
         row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
       } else if (s.mode === 'hand') {
-        card.append(h('p', { class: 'hint' }, 'You fill this row yourself. The generator leaves it alone.'), row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
+        card.append(h('p', { class: 'hint' }, 'You fill this row yourself. The generator leaves it alone, unless a place would be empty.'),
+          row('Can cover, last resort', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass']].map((o) => {
+            const on = (s.cover || []).includes(o[0]);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.cover || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.cover = l; }) }, on ? '! ' : '', o[1]);
+          }))),
+          row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
       }
       box.append(card);
     });
@@ -186,7 +208,7 @@
   }
   function summary(s) {
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
-    if (s.mode === 'hand') return 'Filled by hand' + (s.br ? ' · breakfast, choice ' + s.br : '');
+    if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',

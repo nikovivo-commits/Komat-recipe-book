@@ -2010,6 +2010,9 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .slate .stdots .sd-hot.em { color: #FF8A73; box-shadow: inset 0 0 0 1.5px #FF8A73; }
 .slate .stdots .sd-cold.em { color: #8FCBF2; box-shadow: inset 0 0 0 1.5px #8FCBF2; }
 
+.rp-pins { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 2px solid var(--apron); }
+.rp-pin { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -7468,12 +7471,15 @@ window.KOMAT_PART_ART = [
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
                paid and unpaid leave, once approved, also take that day out of the person's days for the week
      keep      { id: [7 codes] } the rows of people filled in by hand (the week as it stands)
-     events    [{ date, cooks, title }] an event that needs at least that many cooks working that day */
+     events    [{ date, cooks, title }] an event that needs at least that many cooks working that day
+     pins      [{ person, date, st, extra }] the head chef's word: this person works that day at that station
+               (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one
+   A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can. */
 (function (root) {
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { emergency: 2500, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -7502,8 +7508,18 @@ window.KOMAT_PART_ART = [
       else if (!isLeave && (r.kind === 'urgent' || r.status === 'ok' || r.status === 'approved')) hardOff[r.person][d] = 1; else wish[r.person][d] = 1;
     });
 
+    /* pins: the head chef says who works where on a day; it beats a day off */
+    const pin = {}, extraDays = {};
+    (input.pins || []).forEach((p) => {
+      const d = dates.indexOf(p.date), s = setup[p.person];
+      if (d < 0 || !s || s.mode !== 'auto') return;
+      (pin[p.person] = pin[p.person] || [])[d] = p.st || (s.stations || [])[0] || 'float';
+      hardOff[p.person][d] = 0; wish[p.person][d] = 0;
+      if (p.extra) extraDays[p.person] = (extraDays[p.person] || 0) + 1;
+    });
+    const pinned = (id, d) => !!(pin[id] && pin[id][d]);
     const S = (id) => setup[id];
-    const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0));
+    const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0) + (extraDays[id] || 0));
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
     const places = (d) => { const out = []; STS.forEach((s) => { for (let k = 0; k < ((needs[s] || [])[d] || 0); k++) out.push(s); }); return out; };
     const placeList = [0, 1, 2, 3, 4, 5, 6].map(places);
@@ -7513,17 +7529,19 @@ window.KOMAT_PART_ART = [
 
     /* ---------- one day: who stands where, given who works ---------- */
     function solveDay(d, work, special) {
-      const pl = placeList[d], here = auto.filter((id) => work[id][d] && !special[id][d]);
+      const pins = auto.filter((id) => work[id][d] && pinned(id, d)), pl = placeList[d].slice();
+      pins.forEach((id) => { const k = pl.indexOf(pin[id][d]); if (k >= 0) pl.splice(k, 1); });
+      const here = auto.filter((id) => work[id][d] && !special[id][d] && !pinned(id, d));
       let best = null;
       const pick = new Array(pl.length).fill(null), used = {};
       (function dfs(i, cost) {
         if (best && cost >= best.cost) return;
         if (i === pl.length) {
           let c = cost;
-          const on = {};
+          const on = {}, extras = {};
           pl.forEach((s, k) => { if (pick[k]) on[pick[k]] = s; });
-          const mentorOnHot = pl.some((s, k) => s === 'hot' && pick[k] && S(pick[k]).mentor);
-          const extras = {};
+          pins.forEach((id) => { if (STS.includes(pin[id][d])) on[id] = pin[id][d]; else extras[id] = pin[id][d]; });
+          const mentorOnHot = Object.keys(on).some((id) => on[id] === 'hot' && S(id).mentor);
           here.forEach((id) => {
             if (on[id]) return;
             if (S(id).learner && mentorOnHot && rank(id, 'hot') >= 0) extras[id] = 'learn';
@@ -7547,6 +7565,17 @@ window.KOMAT_PART_ART = [
         dfs(i + 1, cost + W.unfilled);
       })(0, 0);
 
+      /* a place still empty: someone filled in by hand who covers that station, as the very last resort */
+      const handOn = {};
+      let handCost = 0;
+      STS.forEach((s) => {
+        let miss = placeList[d].filter((x) => x === s).length - Object.keys(best.on).filter((id) => best.on[id] === s).length;
+        order.forEach((id) => {
+          const p = S(id);
+          if (miss <= 0 || p.mode !== 'hand' || !(p.cover || []).includes(s) || handOn[id] || hardOff[id][d] || /^(0|X)$/i.test(String((keep[id] || [])[d] || '').trim())) return;
+          handOn[id] = s; miss--; handCost += W.hand - W.unfilled;
+        });
+      });
       /* weekend breakfast: whoever works that day and covers it, in your order; people set by hand last */
       let br = null, brCost = 0;
       if (brDays.includes(d)) {
@@ -7556,7 +7585,7 @@ window.KOMAT_PART_ART = [
         else {
           order.forEach((id) => {
             const s = S(id);
-            if (s.mode === 'auto' || !s.br || hardOff[id][d]) return;
+            if (s.mode === 'auto' || !s.br || hardOff[id][d] || handOn[id]) return;
             const cell = String((s.mode === 'fixed' ? (s.pattern || [])[d] : (keep[id] || [])[d]) || '').trim();
             if (/^(0|X)$/i.test(cell)) return;
             if (s.br < bestR) { bestR = s.br; br = id; }
@@ -7566,7 +7595,7 @@ window.KOMAT_PART_ART = [
       }
       const heads = auto.filter((id) => work[id][d]).length;
       const evCost = minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0;
-      return { cost: best.cost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads };
+      return { cost: best.cost + handCost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads, handOn: handOn };
     }
 
     /* ---------- one person's week: days short, wishes not met, days off split up ---------- */
@@ -7588,12 +7617,14 @@ window.KOMAT_PART_ART = [
     function start() {
       const work = {}, special = {};
       auto.forEach((id) => {
-        const f = free(id).slice(), n = Math.min(target(id), f.length);
+        let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
+        f = f.filter((d) => pinned(id, d)).concat(f.filter((d) => !pinned(id, d)));
+        const n = Math.max(Math.min(target(id), f.length), f.filter((d) => pinned(id, d)).length);
         work[id] = [0, 0, 0, 0, 0, 0, 0]; special[id] = [0, 0, 0, 0, 0, 0, 0];
         f.slice(0, n).forEach((d) => { work[id][d] = 1; });
-        const sn = S(id).special && S(id).special.n ? Math.min(S(id).special.n, n) : 0;
-        f.slice(0, sn).forEach((d) => { special[id][d] = 1; });
+        const loose = f.slice(0, n).filter((d) => !pinned(id, d)), sn = S(id).special && S(id).special.n ? Math.min(S(id).special.n, loose.length) : 0;
+        loose.slice(0, sn).forEach((d) => { special[id][d] = 1; });
       });
       return { work: work, special: special };
     }
@@ -7613,7 +7644,7 @@ window.KOMAT_PART_ART = [
       for (let it = 0; it < ITER; it++) {
         const id = auto[Math.floor(R() * auto.length)], w = st.work[id], sp = st.special[id];
         const on = [], offd = [];
-        for (let d = 0; d < 7; d++) { if (w[d]) on.push(d); else if (!hardOff[id][d]) offd.push(d); }
+        for (let d = 0; d < 7; d++) { if (w[d]) { if (!pinned(id, d)) on.push(d); } else if (!hardOff[id][d]) offd.push(d); }
         const touched = [];
         let undo;
         const mv = R();
@@ -7665,8 +7696,12 @@ window.KOMAT_PART_ART = [
         /* on top of the station's main cook: floating, helping wherever it is needed */
         rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
+      Object.keys(day.handOn || {}).forEach((id) => {
+        rows[id][d] = S(id).coverCode || 'P'; stOf[id][d] = day.handOn[id];
+        issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' covers ' + day.handOn[id] + ' on ' + DAY[d] + ' (last resort)' });
+      });
       placeList[d].forEach((s) => {
-        const n = Object.keys(day.on).filter((id) => day.on[id] === s).length, need = placeList[d].filter((x) => x === s).length;
+        const n = Object.keys(day.on).filter((id) => day.on[id] === s).length + Object.keys(day.handOn || {}).filter((id) => day.handOn[id] === s).length, need = placeList[d].filter((x) => x === s).length;
         if (n < need && !issues.some((x) => x.day === d && x.st === s)) issues.push({ sev: 'red', day: d, st: s, text: DAY[d] + ': nobody on ' + s });
       });
       Object.keys(day.on).forEach((id) => { if (day.on[id] === 'hot' && S(id).learner && busy.includes(d)) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' is alone on Hot on ' + DAY[d] + ' (a busy day)' }); });
@@ -7744,10 +7779,11 @@ window.KOMAT_PART_ART = [
      so the team sees where people can work but not the head chef's order of preference */
   K.stDots = function (id) {
     const s = (D.rotaplan && D.rotaplan.people || {})[id];
-    if (!s || s.mode !== 'auto') return null;
-    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
+    if (!s || (s.mode !== 'auto' && !(s.mode === 'hand' && (s.cover || []).length))) return null;
+    const list = s.mode === 'hand' ? s.cover || [] : s.stations || [];
+    const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => list.includes(x[0]));
     if (!can.length) return null;
-    const em = (st) => (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
+    const em = (st) => s.mode === 'hand' || (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
     return h('span', { class: 'stdots', title: 'Can work: ' + can.map(lab).join(', ') },
       h('span', { class: 'sr' }, 'Can work ' + can.map(lab).join(', ')),
       can.map((x) => h('i', { class: 'sd-' + x[0] + (em(x[0]) ? ' em' : ''), 'aria-hidden': 'true' }, x[1])));
@@ -7757,12 +7793,13 @@ window.KOMAT_PART_ART = [
   /* the draft for a week; worked out again only when something it depends on changes */
   const memo = new Map();
   K.rotaInput = function (wk, requests) {
-    const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {};
+    const plan = K.rotaPlan(), doc = D.weeks[wk], keep = {}, pins = ((plan.pins || {})[wk] || []).slice();
+    delete plan.pins;
     if (doc) Object.keys(doc.rows || {}).forEach((id) => { keep[id] = doc.rows[id]; });
     const people = (D.staff.people || []).map((p) => ({ id: p.id, name: p.name }));
     const end = K.ymd(K.addDays(K.parseYmd(wk), 6));
     const events = (D.events || []).filter((e) => K.isLive(e) && e.status !== 'pending' && e.date >= wk && e.date <= end && +e.cooks > 0).map((e) => ({ date: e.date, cooks: +e.cooks, title: e.title || 'Event' }));
-    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events };
+    return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events, pins: pins };
   };
   K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
   K.rotaDraft = function (wk, requests) {
@@ -7771,12 +7808,20 @@ window.KOMAT_PART_ART = [
     if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 12) memo.delete(memo.keys().next().value); }
     return memo.get(key);
   };
-  /* what the head chef changed by hand on top of the draft (filling a hole) */
-  const fixes = (wk) => ((ui.rpFix = ui.rpFix || {})[wk] = (ui.rpFix || {})[wk] || {});
-  function withFixes(r, wk) {
-    const f = fixes(wk), rows = K.clone(r.rows), st = K.clone(r.st);
-    Object.keys(f).forEach((id) => { Object.keys(f[id]).forEach((d) => { if (!rows[id]) return; rows[id][d] = f[id][d].code; st[id][d] = f[id][d].st; }); });
-    return { rows: rows, st: st };
+  /* the head chef's word on a hole: this person works that day at that station. Saved with the setup, so every
+     phone's draft follows it, and the generator re-plans the rest of the week around it */
+  K.rotaPins = (wk) => ((K.rotaPlan().pins || {})[wk] || []);
+  function addPin(wk, pin) {
+    const p = K.rotaPlan(), l = ((p.pins = p.pins || {})[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date)));
+    l.push(pin);
+    save(p);
+  }
+  function dropPin(wk, pin) {
+    const p = K.rotaPlan();
+    p.pins = p.pins || {};
+    p.pins[wk] = (p.pins[wk] || []).filter((x) => !(x.person === pin.person && x.date === pin.date));
+    if (!p.pins[wk].length) delete p.pins[wk];
+    save(p);
   }
 
   K.V.rotaplan = function () {
@@ -7804,21 +7849,28 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.rpTab = 'team'; K.render(); } }, 'Open Team'))));
       return box;
     }
-    const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), fx = withFixes(r, wk), f = fixes(wk);
-    const red = r.issues.filter((x) => x.sev === 'red' && !(x.day != null && Object.keys(f).some((id) => f[id][x.day] && (x.event ? !/^(0|X)$/i.test(f[id][x.day].code) : f[id][x.day].st === (x.st || 'br')))));
+    const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), pins = K.rotaPins(wk), me = K.getMe(), mine = me && plan.people[me] && plan.people[me].mode === 'auto' ? plan.people[me] : null;
+    const red = r.issues.filter((x) => x.sev === 'red');
+    const dateOf = (d) => K.ymd(K.addDays(K.parseYmd(wk), d));
+    const stFor = (x, id) => (x.st && !x.event ? x.st : ((plan.people[id] || {}).stations || [])[0] || 'float');
     const amber = r.issues.filter((x) => x.sev === 'amber'), info = r.issues.filter((x) => x.sev === 'info');
     if (red.length) {
       box.append(h('section', { class: 'rp-holes' }, h('h2', { class: 'block-title' }, K.icon('flag'), red.length + (red.length === 1 ? ' hole' : ' holes') + ' to fill'),
-        h('p', { class: 'hint' }, 'The generator could not fill these. Pick who steps in, or leave it and sort it out with them.'),
-        red.map((x) => h('div', { class: 'rp-hole' }, h('b', null, x.text),
-          x.could && x.could.length ? h('div', { class: 'rp-could' }, x.could.map((c) => h('button', { class: 'btn small', type: 'button', onclick: () => {
-            const fid = (f[c.id] = f[c.id] || {}), pp = plan.people[c.id] || {};
-            if (x.event) fid[x.day] = { code: pp.code || '2', st: (pp.stations || [])[0] || 'prep' };
-            else fid[x.day] = { code: x.st ? pp.code || '2' : plan.brCode, st: x.st || (fx.st[c.id] || [])[x.day] || 'br' };
-            K.render();
-          } }, h('span', null, K.personName(c.id)), h('small', null, c.why))))
-            : h('p', { class: 'hint' }, 'Nobody who can work there is free. This one is for you or the head chef.')))));
+        h('p', { class: 'hint' }, 'The generator could not fill these. Pick who steps in and it re-plans the rest of the week around it.'),
+        red.map((x) => {
+          const canMe = mine && x.day != null && (!x.st || x.event || (mine.stations || []).includes(x.st)) && !(x.could || []).some((c) => c.id === me);
+          return h('div', { class: 'rp-hole' }, h('b', null, x.text),
+            canMe ? h('div', { class: 'rp-could' },
+              h('button', { class: 'btn small primary', type: 'button', onclick: () => addPin(wk, { person: me, date: dateOf(x.day), st: stFor(x, me) }) }, h('span', null, 'I’ll cover it'), h('small', null, 'and take another day off')),
+              h('button', { class: 'btn small', type: 'button', onclick: () => addPin(wk, { person: me, date: dateOf(x.day), st: stFor(x, me), extra: true }) }, h('span', null, 'I’ll cover it'), h('small', null, 'as an extra day'))) : null,
+            x.could && x.could.length ? h('div', { class: 'rp-could' }, x.could.map((c) => h('button', { class: 'btn small', type: 'button', onclick: () => addPin(wk, { person: c.id, date: dateOf(x.day), st: stFor(x, c.id) }) },
+              h('span', null, K.personName(c.id)), h('small', null, c.why))))
+              : canMe ? null : h('p', { class: 'hint' }, 'Nobody who can work there is free. This one is for you or the head chef.'));
+        })));
     } else box.append(h('p', { class: 'rp-ok' }, K.icon('check'), 'Every place is filled.'));
+    if (pins.length) box.append(h('section', { class: 'rp-pins' }, h('h2', { class: 'block-title' }, 'Your calls this week'),
+      pins.map((p) => h('div', { class: 'rp-pin' }, h('span', null, h('b', null, K.personName(p.person)), ' on ' + (STL[p.st] || p.st) + ', ' + K.prettyDate(p.date, { weekday: 'short', day: 'numeric' }) + (p.extra ? ' (extra day)' : '')),
+        h('button', { class: 'btn small', type: 'button', onclick: () => dropPin(wk, p) }, 'Undo')))));
     if (amber.length) box.append(h('section', { class: 'rp-warn' }, h('h2', { class: 'block-title' }, 'Worth a look'), h('ul', null, amber.map((x) => h('li', null, x.text)))));
     if (info.length) box.append(h('details', { class: 'rp-info' }, h('summary', null, info.length + ' small notes'), h('ul', null, info.map((x) => h('li', null, x.text)))));
 
@@ -7827,19 +7879,19 @@ window.KOMAT_PART_ART = [
       h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), DAYS.map((d, i) => h('th', { scope: 'col' }, h('span', null, d), h('small', null, K.addDays(mon, i).getDate() + '.' + (K.addDays(mon, i).getMonth() + 1)))))),
       h('tbody', null, r.order.map((id) => h('tr', null, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots(id)),
         DAYS.map((d, i) => {
-          const c = fx.rows[id][i] || '', s = fx.st[id][i] || '', hand = f[id] && f[id][i];
+          const c = r.rows[id][i] || '', s = r.st[id][i] || '', hand = pins.some((p) => p.person === id && p.date === dateOf(i));
           return h('td', { class: K.codeClass(c) + (hand ? ' fixed' : '') }, h('span', { class: 'mono' }, c || '–'), K.stTag(s));
         })))))));
     const has = !!D.weeks[wk];
     box.append(h('div', { class: 'rp-use' },
       ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace the rota already saved for ' + range(wk) + '?'),
-        h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r, fx) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
-        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r, fx); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
+        h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
+        : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
       h('p', { class: 'hint' }, 'You can still change any cell on the Schedule afterwards.')));
     return box;
   }
-  function use(wk, r, fx) {
-    const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(fx.rows), st = K.clone(fx.st);
+  function use(wk, r) {
+    const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(r.rows), st = K.clone(r.st);
     (old.people || []).forEach((id) => { if (!people.includes(id)) { people.push(id); rows[id] = (old.rows || {})[id] || ['', '', '', '', '', '', '']; } });
     ui.rpConfirm = '';
     K.saveWeek(wk, { week: wk, people: people, rows: rows, st: st, note: old.note || '', updated: Date.now(), made: 'generator' });
@@ -7894,7 +7946,12 @@ window.KOMAT_PART_ART = [
         row('Station', K.select([['', 'None'], ['br', 'Breakfast'], ['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['prep', 'Prep']], s.patternSt || '', (v) => set((p) => { person(p, id).patternSt = v; }), { 'aria-label': 'Station', class: 'input small' })),
         row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
       } else if (s.mode === 'hand') {
-        card.append(h('p', { class: 'hint' }, 'You fill this row yourself. The generator leaves it alone.'), row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
+        card.append(h('p', { class: 'hint' }, 'You fill this row yourself. The generator leaves it alone, unless a place would be empty.'),
+          row('Can cover, last resort', h('div', { class: 'rp-order' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass']].map((o) => {
+            const on = (s.cover || []).includes(o[0]);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.cover || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.cover = l; }) }, on ? '! ' : '', o[1]);
+          }))),
+          row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))));
       }
       box.append(card);
     });
@@ -7902,7 +7959,7 @@ window.KOMAT_PART_ART = [
   }
   function summary(s) {
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
-    if (s.mode === 'hand') return 'Filled by hand' + (s.br ? ' · breakfast, choice ' + s.br : '');
+    if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
