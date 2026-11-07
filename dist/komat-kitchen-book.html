@@ -2066,6 +2066,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .off-prio { border-color: var(--todo); background: var(--todo-soft); }
 .off-prio span { display: grid; gap: 2px; }
 
+/* names stay put when the rota scrolls sideways */
+.rota tbody th, .rota thead th:first-child { position: sticky; left: 0; z-index: 2; box-shadow: inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .25); }
+.slate .rota tbody th, .slate .rota thead th:first-child { background: #1D2120; box-shadow: inset -1px 0 0 var(--chalk-line), 8px 0 10px -8px rgba(0, 0, 0, .8); }
+.slate .rota tr.me th { background: linear-gradient(rgba(243, 211, 74, .09), rgba(243, 211, 74, .09)), #1D2120; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
