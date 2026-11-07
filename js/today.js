@@ -158,13 +158,13 @@
     const prev = K.mark(st, it.id) || {};
     K.vibrate(15);
     if (markReady(st, it)) return;
-    K.toast('Ready: ' + it.name, { tone: 'good', undo: () => K.setMark(st, it, { d: prev.d || 'do', u: !!prev.u }) });
+    K.toast('Ready: ' + K.trName(it.name, it.en), { tone: 'good', undo: () => K.setMark(st, it, { d: prev.d || 'do', u: !!prev.u }) });
   }
   function doneTask(st, it, id) {
     const before = id && D.prep[id] ? K.clone(D.prep[id]) : null;
     K.setPrep(st, it, 'done');
     K.vibrate(15);
-    K.toast('Done: ' + it.name, { tone: 'good', undo: () => {
+    K.toast('Done: ' + K.trName(it.name, it.en), { tone: 'good', undo: () => {
       if (!before) { K.setPrep(st, it, ''); return; }
       K.restorePrep(id, before);
     } });
@@ -234,7 +234,7 @@
           o.box ? K.doMark(false, o.kinds && o.kinds.length ? o.kinds : ['do'], o.kindHand) : null),
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           o.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
-          h('span', { class: 'todo-name' }, o.name),
+          h('span', { class: 'todo-name' }, K.trName(o.name, o.en)),
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -287,14 +287,14 @@
     const rows = [];
     reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
     evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
-      onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + k.name, { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
+      onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + K.trName(k.name), { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
     todoTasks.forEach((d) => {
       const it = { key: d.key, name: d.name, note: d.note || '' };
       rows.push(todoRow({
         name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
         meta: ['Task'],
         onUrgent: () => { K.setPrep(st, it, 'need', !d.urgent); },
-        onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + d.name, { undo: () => K.restorePrep(d._id, before) }); },
+        onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + K.trName(d.name), { undo: () => K.restorePrep(d._id, before) }); },
         onDone: () => doneTask(st, it, d._id),
         onNote: (t) => K.setPrepNote(d._id, t),
       }));
@@ -302,9 +302,9 @@
     doItems.forEach((it) => {
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
-        name: it.name, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
+        name: it.name, en: it.en, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
         box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
-        meta: [it.group],
+        meta: [K.trName(it.group, it.gen)],
         onUrgent: () => { K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
         onNote: (t) => K.setMark(st, it, { c: t }),
@@ -317,7 +317,7 @@
       const names = doneTasks.map((d) => d.name);
       todo.append(h('details', { class: 'donerow' }, h('summary', null, h('span', { class: 'dr-ok' }, K.icon('check')), h('b', null, doneTasks.length + ' done'),
         h('span', { class: 'dr-names' }, names.slice(0, 2).join(', ') + (names.length > 2 ? ', +' + (names.length - 2) : ''))),
-        h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, d.name),
+        h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, K.trName(d.name)),
           h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
     }
     left.append(todo);
@@ -408,10 +408,10 @@
     const secs = K.sections(st), doc = D.checks[K.checkId(st, day)], when = day ? 'tomorrow' : 'today';
     if (!secs.length) return h('div', { class: 'empty' }, h('strong', null, 'No list for ' + K.ST[st] + ' yet'), K.me.admin ? 'Tap Edit list to add dishes and their prep.' : 'The head chef has not set it up yet.');
     return h('div', { class: 'mep' + (day ? ' planning' : '') }, secs.map((sec) => h('section', { class: 'mep-sec' },
-      secs.length > 1 ? h('h3', { class: 'mep-title' }, sec.title) : null,
+      secs.length > 1 ? h('h3', { class: 'mep-title' }, K.trName(sec.title, sec.en)) : null,
       h('div', { class: 'mep-groups' }, sec.groups.map((g) => {
         const extra = ((doc && doc.extra && doc.extra[g.key]) || []).map((x) => Object.assign({ extra: true }, x));
-        let its = g.items.concat(extra).map((it) => Object.assign({ group: g.name, gkey: g.key }, it));
+        let its = g.items.concat(extra).map((it) => Object.assign({ group: g.name, gen: g.en, gkey: g.key }, it));
         const total = its.length, done = its.filter((it) => K.markState(st, it.id) === 'ok').length;
         const toMake = day ? its.filter((it) => K.markState(st, it.id, day) === 'do').length : 0;
         const open = day ? [] : its.filter((it) => K.markState(st, it.id) !== 'ok');
@@ -420,7 +420,7 @@
         const dish = groupDish(g.name, g.items);
         return h('div', { class: 'mep-group card' + (!day && total && done === total ? ' complete' : '') + (ui.glow === g.key ? ' glow' : '') },
           h('div', { class: 'mep-gname' },
-            dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, g.name) : h('b', null, g.name),
+            dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, K.trName(g.name, g.en)) : h('b', null, K.trName(g.name, g.en)),
             day ? (toMake ? h('span', { class: 'gcount tomake' }, toMake + ' to make') : null) : total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
             open.length > 1 ? h('button', { type: 'button', class: 'allready', onclick: (e) => allReady(st, open, e.currentTarget) }, K.icon('check'), 'All ready') : null,
             h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + (day || '') + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
@@ -446,7 +446,7 @@
       h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
         onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; ui.openRow = it.id; K.vibrate(8); } K.setMark(st, it, next === 'do' ? { d: 'do', k: '' } : { d: next }); } } }, s === 'do' ? K.doMark(wrote, K.markKind(st, it.id), (K.mark(st, it.id) || {}).hand) : s === 'ok' ? K.doneMark(((K.mark(st, it.id) || {}).k) || '', (K.mark(st, it.id) || {}).hand, pop) : ''),
       h('div', { class: 'mname' },
-        tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
+        tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
         note ? noteEl(note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
@@ -491,7 +491,7 @@
       h('div', { class: 'sw-in' },
         h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote, K.markKind(st, it.id, day), m.hand) : ''),
         h('div', { class: 'mname' },
-          tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, it.name) : h('span', null, it.name),
+          tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
           note ? noteEl(note, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
@@ -528,7 +528,7 @@
           h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
           h('div', { class: 'sw-in no-check' },
             h('div', { class: 'todo-main' }, x.d.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
-              h('span', { class: 'note-line tnote ' + K.inkClass(x.d.noteInk || K.myInk()) + ' ' + K.handClass(x.d.noteHand || K.myHand()) }, x.d.name), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
+              h('span', { class: 'note-line tnote ' + K.inkClass(x.d.noteInk || K.myInk()) + ' ' + K.handClass(x.d.noteHand || K.myHand()) }, K.trName(x.d.name)), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
               h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
             h('button', { class: 'sec-btn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
           { left: { run: () => K.removePrep(x.id), fold: true } })),
@@ -546,7 +546,9 @@
       L.secs.forEach((sec) => {
         sec.title = (sec.title || '').trim() || 'Mise en place';
         sec.groups = sec.groups.filter((g) => g.name.trim());
-        sec.groups.forEach((g) => { g.name = g.name.trim(); g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; return o; }); });
+        sec.groups.forEach((g) => { g.name = g.name.trim(); if (g.en && g.en.trim()) g.en = g.en.trim(); else delete g.en;
+        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim(); return o; }); });
+        if (sec.en && sec.en.trim()) sec.en = sec.en.trim(); else delete sec.en; delete sec.confirm;
       });
       n.stations[st] = { sections: L.secs };
       ui.listDraft = null;
@@ -556,21 +558,24 @@
     const top = K.subbar('Today', () => { ui.listDraft = null; K.go('today'); }, [h('button', { class: 'btn small primary', type: 'button', onclick: saveList }, 'Save list')], 'Edit ' + K.ST[st] + ' list');
     const w = h('div', { class: 'wrap page form' });
     w.append(h('h1', { class: 'rtitle' }, K.ST[st] + ' mise en place'),
-      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow.'),
+      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows.'),
       stationPicker());
     L.secs.forEach((sec, si) => {
       w.append(h('section', { class: 'lsec' },
         h('div', { class: 'xrow' }, h('input', { class: 'input big', id: 'ls' + si, value: sec.title, 'aria-label': 'Section title', oninput: (e) => { sec.title = e.target.value; } }),
           h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove section ' + sec.title, onclick: () => { if (!sec.confirm) { sec.confirm = true; K.render(); return; } L.secs.splice(si, 1); K.render(); } }, sec.confirm ? 'Sure?' : K.icon('trash'))),
+        h('input', { class: 'input small en-in', value: sec.en || '', placeholder: K.enName(sec.title) || 'In English', 'aria-label': 'Section title in English', oninput: (e) => { sec.en = e.target.value; } }),
         sec.groups.map((g, gi) => h('div', { class: 'lgroup card' },
           h('div', { class: 'xrow' }, h('input', { class: 'input strong', id: 'lg' + si + '-' + gi, value: g.name, placeholder: 'Dish or group', 'aria-label': 'Dish or group', oninput: (e) => { g.name = e.target.value; } }),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + g.name + ' up', disabled: gi === 0, onclick: () => { sec.groups.splice(gi - 1, 0, sec.groups.splice(gi, 1)[0]); K.render(); } }, K.icon('up')),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + g.name, onclick: () => { sec.groups.splice(gi, 1); K.render(); } }, K.icon('trash'))),
+          h('input', { class: 'input small en-in', value: g.en || '', placeholder: K.enName(g.name) || 'In English', 'aria-label': (g.name || 'Group') + ' in English', oninput: (e) => { g.en = e.target.value; } }),
           g.items.map((it, ii) => h('div', { class: 'litem' },
             h('input', { class: 'input', id: 'li' + si + '-' + gi + '-' + ii, value: it.name, placeholder: 'Item', 'aria-label': 'Item', oninput: (e) => { it.name = e.target.value; } }),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + it.name + ' up', disabled: ii === 0, onclick: () => { g.items.splice(ii - 1, 0, g.items.splice(ii, 1)[0]); K.render(); } }, K.icon('up')),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + it.name + ' down', disabled: ii === g.items.length - 1, onclick: () => { g.items.splice(ii + 1, 0, g.items.splice(ii, 1)[0]); K.render(); } }, K.icon('down')),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + it.name, onclick: () => { g.items.splice(ii, 1); K.render(); } }, K.icon('close')),
+            h('input', { class: 'input small en-in', value: it.en || '', placeholder: K.enName(it.name) || 'In English', 'aria-label': (it.name || 'Item') + ' in English', oninput: (e) => { it.en = e.target.value; } }),
             K.select(K.recipeOptions('No recipe linked').concat(it.link && !K.linkTarget(it.link) ? [[it.link, '(recipe was deleted)']] : []), it.link || '', (v) => { it.link = v; }, { class: 'input small linksel', 'aria-label': 'Recipe for ' + (it.name || 'item') }),
             it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null)),
           h('button', { class: 'btn small', type: 'button', onclick: () => { g.items.push({ id: 'i' + K.uid(), name: '' }); K.render(); } }, K.icon('plus'), 'Item'))),

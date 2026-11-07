@@ -166,8 +166,8 @@
     window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   K.langSwitch = function () {
-    return h('div', { class: 'langsw', role: 'group', 'aria-label': 'Recipe language' },
-      [['bg', 'БГ'], ['en', 'EN']].map((l) => h('button', { type: 'button', 'aria-pressed': K.lang === l[0] ? 'true' : 'false', title: l[0] === 'bg' ? 'Recipes in Bulgarian' : 'Recipes in English', onclick: () => K.setLang(l[0]) }, l[1])));
+    return h('div', { class: 'langsw', role: 'group', 'aria-label': 'Language' },
+      [['bg', 'БГ'], ['en', 'EN']].map((l) => h('button', { type: 'button', 'aria-pressed': K.lang === l[0] ? 'true' : 'false', title: l[0] === 'bg' ? 'Recipes and lists in Bulgarian' : 'Recipes and lists in English', onclick: () => K.setLang(l[0]) }, l[1])));
   };
   function header() {
     return h('header', { class: 'top over' }, h('div', { class: 'top-in' },

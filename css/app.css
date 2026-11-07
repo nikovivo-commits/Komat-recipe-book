@@ -1767,3 +1767,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pr-cols.pr-c3 { column-count: 3; column-gap: 16pt; }
 @media print { .pr-page { break-inside: avoid; } .pr-fit { width: 182mm; overflow: hidden; break-inside: avoid; } .pr-fit + .pr-fit, .pr-page + .pr-fit, .pr-fit + .pr-page { break-before: page; } }
 .pr-group.tasks { break-inside: auto; }
+.litem .en-in, .lgroup > .en-in { grid-column: 1 / -1; min-height: 38px; font-size: .9rem; }
+.en-in::placeholder { font-style: italic; }
