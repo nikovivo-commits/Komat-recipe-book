@@ -8,6 +8,7 @@
      plan      { people: { id: setup }, needs: { hot: [7], cold: [7], pass: [7] }, busy: [days], brDays: [days], brCode }
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
                  off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
+                 emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
                  pattern: [7 codes], patternSt: 'br' }
      people    [{ id, name }] in the order the rota lists them
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
@@ -18,7 +19,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 250, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { emergency: 2500, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -73,7 +74,7 @@
             if (on[id]) return;
             if (S(id).learner && mentorOnHot && rank(id, 'hot') >= 0) extras[id] = 'learn';
             else if (rank(id, 'prep') >= 0) extras[id] = 'prep';
-            else { extras[id] = 'prep'; c += W.extra; }
+            else { extras[id] = 'float'; c += W.extra; }
           });
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;
@@ -83,7 +84,7 @@
           if (used[id]) continue;
           const r = rank(id, s);
           if (r < 0) continue;
-          let c = r * W.rank;
+          let c = r * W.rank + ((S(id).emergency || []).includes(s) ? W.emergency : 0);
           if (s === 'hot' && S(id).learner && busy.includes(d)) c += W.learnerAlone;
           used[id] = 1; pick[i] = id;
           dfs(i + 1, cost + c);
@@ -207,8 +208,8 @@
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
         if (day.on[id]) { rows[id][d] = s.code || '2'; stOf[id][d] = day.on[id]; return; }
-        rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'prep';
-        if (stOf[id][d] === 'prep' && rank(id, 'prep') < 0) issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' is spare on ' + DAY[d] + ', put on prep' });
+        /* on top of the station's main cook: floating, helping wherever it is needed */
+        rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
       placeList[d].forEach((s) => {
         const n = Object.keys(day.on).filter((id) => day.on[id] === s).length, need = placeList[d].filter((x) => x === s).length;

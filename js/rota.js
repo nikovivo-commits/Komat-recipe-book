@@ -5,7 +5,7 @@
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', br: 'Breakfast' };
+  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Floating', br: 'Breakfast' };
   K.STL = STL;
   const PLACES = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
 
@@ -31,9 +31,10 @@
     if (!s || s.mode !== 'auto') return null;
     const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
     if (!can.length) return null;
-    return h('span', { class: 'stdots', title: 'Can work: ' + can.map((x) => STL[x[0]]).join(', ') },
-      h('span', { class: 'sr' }, 'Can work ' + can.map((x) => STL[x[0]]).join(', ')),
-      can.map((x) => h('i', { class: 'sd-' + x[0], 'aria-hidden': 'true' }, x[1])));
+    const em = (st) => (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
+    return h('span', { class: 'stdots', title: 'Can work: ' + can.map(lab).join(', ') },
+      h('span', { class: 'sr' }, 'Can work ' + can.map(lab).join(', ')),
+      can.map((x) => h('i', { class: 'sd-' + x[0] + (em(x[0]) ? ' em' : ''), 'aria-hidden': 'true' }, x[1])));
   };
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
@@ -156,6 +157,10 @@
             return h('button', { type: 'button', class: 'chip', 'aria-pressed': i >= 0 ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.stations || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.stations = l; }) },
               i >= 0 ? h('b', { class: 'rp-n' }, String(i + 1)) : null, o[1]);
           }))),
+          sts.filter((x) => x !== 'prep').length > 1 ? row('Only in an emergency', h('div', { class: 'rp-order' }, sts.filter((x) => x !== 'prep').slice(1).map((st) => {
+            const on = (s.emergency || []).includes(st);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.emergency || []).slice(), j = l.indexOf(st); if (j >= 0) l.splice(j, 1); else l.push(st); q.emergency = l; }) }, on ? '! ' : '', STL[st]);
+          }))) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; }))),
@@ -183,7 +188,7 @@
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
     if (s.mode === 'hand') return 'Filled by hand' + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
-    const st = (s.stations || []).map((x) => STL[x]).join(' → ') || 'no station yet';
+    const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }

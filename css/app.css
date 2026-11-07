@@ -1993,3 +1993,12 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .slate .rota.draft td .mono { opacity: .9; }
 .slate .rota.draft tbody tr.me .rname { color: var(--chalk-yellow); }
 .slate .rota.draft tbody tr.me .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
+
+.stag.st-float { color: var(--ready); } .slate .stag.st-float { color: #A8E6B8; }
+.lu-float { border-left-color: var(--ready); }
+
+.stdots i.em { background: transparent !important; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--muted); }
+.stdots .sd-hot.em { box-shadow: inset 0 0 0 1.5px var(--dot-hot); color: var(--dot-hot); }
+.stdots .sd-cold.em { box-shadow: inset 0 0 0 1.5px var(--dot-cold); color: var(--dot-cold); }
+.slate .stdots .sd-hot.em { color: #FF8A73; box-shadow: inset 0 0 0 1.5px #FF8A73; }
+.slate .stdots .sd-cold.em { color: #8FCBF2; box-shadow: inset 0 0 0 1.5px #8FCBF2; }

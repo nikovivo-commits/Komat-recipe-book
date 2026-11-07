@@ -2001,6 +2001,15 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .slate .rota.draft tbody tr.me .rname { color: var(--chalk-yellow); }
 .slate .rota.draft tbody tr.me .rname::after { content: " (you)"; font: 400 .8rem "Neucha", var(--hand); color: var(--chalk-dim); }
 
+.stag.st-float { color: var(--ready); } .slate .stag.st-float { color: #A8E6B8; }
+.lu-float { border-left-color: var(--ready); }
+
+.stdots i.em { background: transparent !important; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--muted); }
+.stdots .sd-hot.em { box-shadow: inset 0 0 0 1.5px var(--dot-hot); color: var(--dot-hot); }
+.stdots .sd-cold.em { box-shadow: inset 0 0 0 1.5px var(--dot-cold); color: var(--dot-cold); }
+.slate .stdots .sd-hot.em { color: #FF8A73; box-shadow: inset 0 0 0 1.5px #FF8A73; }
+.slate .stdots .sd-cold.em { color: #8FCBF2; box-shadow: inset 0 0 0 1.5px #8FCBF2; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -7406,7 +7415,7 @@ window.KOMAT_PART_ART = [
     const codes = QUICK.concat((D.codes.codes || []).map((x) => x.code)).filter((v, i, a) => a.indexOf(v) === i);
     return K.sheet(K.personName(c.id) + ' · ' + K.DAYS[c.i] + ' ' + K.addDays(K.parseYmd(c.wk), c.i).getDate(), [
       h('div', { class: 'quick' }, codes.map((v) => h('button', { type: 'button', class: 'codechip big ' + K.codeClass(v) + (String(cur).toUpperCase() === v.toUpperCase() ? ' on' : ''), title: K.codeLabel(v) || null, onclick: () => put(v) }, h('b', { class: 'mono' }, v)))),
-      K.STL ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'), K.seg([['', 'None']].concat(['hot', 'cold', 'pass', 'prep', 'learn', 'br'].map((s) => [s, K.STL[s]])), curSt, putSt, { 'aria-label': 'Station', class: 'seg small-seg st-seg' })) : null,
+      K.STL ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'), K.seg([['', 'None']].concat(['hot', 'cold', 'pass', 'float', 'prep', 'learn', 'br'].map((s) => [s, K.STL[s]])), curSt, putSt, { 'aria-label': 'Station', class: 'seg small-seg st-seg' })) : null,
       h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); put(document.getElementById('cellv').value.trim()); } },
         h('input', { class: 'input', id: 'cellv', value: cur, placeholder: 'Anything else, e.g. 10:30 or BR+4H', 'aria-label': 'Shift' }), h('button', { class: 'btn primary', type: 'submit' }, 'Set')),
       h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => put('') }, 'Clear'),
@@ -7453,6 +7462,7 @@ window.KOMAT_PART_ART = [
      plan      { people: { id: setup }, needs: { hot: [7], cold: [7], pass: [7] }, busy: [days], brDays: [days], brCode }
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
                  off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
+                 emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
                  pattern: [7 codes], patternSt: 'br' }
      people    [{ id, name }] in the order the rota lists them
      requests  [{ person, date, kind: 'ask' | 'urgent' | 'paid' | 'unpaid', status: 'ok' | 'waiting' | 'approved' | 'refused' }]
@@ -7463,7 +7473,7 @@ window.KOMAT_PART_ART = [
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 250, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { emergency: 2500, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -7518,7 +7528,7 @@ window.KOMAT_PART_ART = [
             if (on[id]) return;
             if (S(id).learner && mentorOnHot && rank(id, 'hot') >= 0) extras[id] = 'learn';
             else if (rank(id, 'prep') >= 0) extras[id] = 'prep';
-            else { extras[id] = 'prep'; c += W.extra; }
+            else { extras[id] = 'float'; c += W.extra; }
           });
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;
@@ -7528,7 +7538,7 @@ window.KOMAT_PART_ART = [
           if (used[id]) continue;
           const r = rank(id, s);
           if (r < 0) continue;
-          let c = r * W.rank;
+          let c = r * W.rank + ((S(id).emergency || []).includes(s) ? W.emergency : 0);
           if (s === 'hot' && S(id).learner && busy.includes(d)) c += W.learnerAlone;
           used[id] = 1; pick[i] = id;
           dfs(i + 1, cost + c);
@@ -7652,8 +7662,8 @@ window.KOMAT_PART_ART = [
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
         if (day.on[id]) { rows[id][d] = s.code || '2'; stOf[id][d] = day.on[id]; return; }
-        rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'prep';
-        if (stOf[id][d] === 'prep' && rank(id, 'prep') < 0) issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' is spare on ' + DAY[d] + ', put on prep' });
+        /* on top of the station's main cook: floating, helping wherever it is needed */
+        rows[id][d] = s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
       });
       placeList[d].forEach((s) => {
         const n = Object.keys(day.on).filter((id) => day.on[id] === s).length, need = placeList[d].filter((x) => x === s).length;
@@ -7711,7 +7721,7 @@ window.KOMAT_PART_ART = [
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', br: 'Breakfast' };
+  const STL = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Hot · learning', float: 'Floating', br: 'Breakfast' };
   K.STL = STL;
   const PLACES = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
 
@@ -7737,9 +7747,10 @@ window.KOMAT_PART_ART = [
     if (!s || s.mode !== 'auto') return null;
     const can = [['hot', 'H'], ['cold', 'C'], ['pass', 'P']].filter((x) => (s.stations || []).includes(x[0]));
     if (!can.length) return null;
-    return h('span', { class: 'stdots', title: 'Can work: ' + can.map((x) => STL[x[0]]).join(', ') },
-      h('span', { class: 'sr' }, 'Can work ' + can.map((x) => STL[x[0]]).join(', ')),
-      can.map((x) => h('i', { class: 'sd-' + x[0], 'aria-hidden': 'true' }, x[1])));
+    const em = (st) => (s.emergency || []).includes(st), lab = (x) => STL[x[0]] + (em(x[0]) ? ' (emergency only)' : '');
+    return h('span', { class: 'stdots', title: 'Can work: ' + can.map(lab).join(', ') },
+      h('span', { class: 'sr' }, 'Can work ' + can.map(lab).join(', ')),
+      can.map((x) => h('i', { class: 'sd-' + x[0] + (em(x[0]) ? ' em' : ''), 'aria-hidden': 'true' }, x[1])));
   };
   K.stTag = (st) => (st && STL[st] ? h('small', { class: 'stag st-' + st }, STL[st]) : null);
 
@@ -7862,6 +7873,10 @@ window.KOMAT_PART_ART = [
             return h('button', { type: 'button', class: 'chip', 'aria-pressed': i >= 0 ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.stations || []).slice(), j = l.indexOf(o[0]); if (j >= 0) l.splice(j, 1); else l.push(o[0]); q.stations = l; }) },
               i >= 0 ? h('b', { class: 'rp-n' }, String(i + 1)) : null, o[1]);
           }))),
+          sts.filter((x) => x !== 'prep').length > 1 ? row('Only in an emergency', h('div', { class: 'rp-order' }, sts.filter((x) => x !== 'prep').slice(1).map((st) => {
+            const on = (s.emergency || []).includes(st);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.emergency || []).slice(), j = l.indexOf(st); if (j >= 0) l.splice(j, 1); else l.push(st); q.emergency = l; }) }, on ? '! ' : '', STL[st]);
+          }))) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; }))),
@@ -7889,7 +7904,7 @@ window.KOMAT_PART_ART = [
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
     if (s.mode === 'hand') return 'Filled by hand' + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
-    const st = (s.stations || []).map((x) => STL[x]).join(' → ') || 'no station yet';
+    const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.days || 0) + ' days', (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
@@ -8073,7 +8088,7 @@ window.KOMAT_PART_ART = [
     return h('div', { class: 'dc-evbox' }, h('b', null, '★ ' + (e.title || 'Event')),
       h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : '', e.status === 'pending' ? 'not confirmed yet' : ''].filter(Boolean).join(' · ')));
   }
-  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', br: 'BR' };
+  const SHORT = { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', learn: 'Learn', float: 'Float', br: 'BR' };
   /* a month as week strips: one-day requests are sticky notes in their day, a run of days asked for
      together (a vacation) is one long note across them */
   function monthGrid(y, m) {
@@ -8141,14 +8156,14 @@ window.KOMAT_PART_ART = [
     if (doc && doc.rows) { rows = doc.rows; st = doc.st || {}; order = (doc.people || Object.keys(rows)).slice(); }
     else if (K.rotaReady && K.rotaReady()) { const r = K.rotaDraft(wk, K.requestsFor(wk)); rows = r.rows; st = r.st; order = r.order; draft = true; }
     else return null;
-    const g = { hot: [], cold: [], pass: [], learn: [], prep: [], br: [], other: [], off: [] };
+    const g = { hot: [], cold: [], pass: [], learn: [], prep: [], float: [], br: [], other: [], off: [] };
     order.forEach((id) => {
       const c = String((rows[id] || [])[i] || '').trim(), s = (st[id] || [])[i] || '';
       if (!c) return;
       if (/^(0|X)$/i.test(c)) { g.off.push({ id: id, c: c }); return; }
       (g[s] || g.other).push({ id: id, c: c });
     });
-    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
+    const LAB = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass'], ['br', 'Breakfast'], ['float', 'Floating'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['other', 'Also in']];
     const offReq = onDay(ds).filter(live);
     return h('section', { class: 'lineup' },
       h('div', { class: 'lineup-h' }, h('h3', null, 'Who’s on'), draft ? h('span', { class: 'lineup-draft' }, 'Draft, not final yet') : null),
