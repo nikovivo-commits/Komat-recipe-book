@@ -47,6 +47,8 @@
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule' });
     body.append(w);
+    if (K.me.admin && K.V.rotaplan) w.append(h('div', { class: 'gen-cta' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator'),
+      h('span', { class: 'hint' }, 'Draft this week from who works where and the days off asked for.')));
     if (!doc) {
       w.append(K.catRest('No schedule for this week yet', K.me.admin ? 'Start from last week and change what is different.' : 'The head chef has not posted it yet. Enjoy the quiet.',
         K.me.admin ? h('div', { class: 'btns center' },
@@ -78,7 +80,7 @@
           const c = r[i] || '', dd = K.addDays(mon, i);
           return h('div', { class: 'myday ' + K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
             h('span', { class: 'myday-d' }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), d, ' ', dd.getDate()),
-            h('b', { class: 'mono' }, c || '–'), K.codeLabel(c) ? h('small', null, K.codeLabel(c)) : null);
+            h('b', { class: 'mono' }, c || '–'), K.codeLabel(c) ? h('small', null, K.codeLabel(c)) : null, K.stTag ? K.stTag(((doc.st || {})[me] || [])[i]) : null);
         })));
       } else if (locked()) {
         mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
@@ -98,7 +100,7 @@
         return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : '') },
           h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : K.personName(id)),
           K.DAYS.map((d, i) => {
-            const c = r[i] || '', inner = h('span', { class: 'mono' }, c);
+            const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
             return h('td', { class: K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
               K.me.admin ? h('button', { type: 'button', 'aria-label': K.personName(id) + ', ' + d + ': ' + (c || 'empty'), onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, inner) : inner);
           }));
@@ -132,11 +134,13 @@
   K.SHEETS.cell = function (c) {
     const doc = D.weeks[c.wk];
     if (!doc) return null;
-    const cur = ((doc.rows || {})[c.id] || [])[c.i] || '';
+    const cur = ((doc.rows || {})[c.id] || [])[c.i] || '', curSt = ((doc.st || {})[c.id] || [])[c.i] || '';
+    const putSt = (v) => { const b = K.clone(doc); b.st = b.st || {}; b.st[c.id] = (b.st[c.id] || EMPTY()).slice(); b.st[c.id][c.i] = v; b.updated = Date.now(); K.saveWeek(c.wk, b); };
     const put = (v) => {
       const b = K.clone(doc);
       if (!b.rows[c.id]) b.rows[c.id] = EMPTY();
       b.rows[c.id][c.i] = v;
+      if (['0', 'X', ''].includes(String(v).trim().toUpperCase()) && b.st && b.st[c.id]) b.st[c.id][c.i] = '';
       b.updated = Date.now();
       ui.sheet = c.i < 6 ? { type: 'cell', wk: c.wk, id: c.id, i: c.i + 1 } : null;
       K.saveWeek(c.wk, b);
@@ -144,6 +148,7 @@
     const codes = QUICK.concat((D.codes.codes || []).map((x) => x.code)).filter((v, i, a) => a.indexOf(v) === i);
     return K.sheet(K.personName(c.id) + ' · ' + K.DAYS[c.i] + ' ' + K.addDays(K.parseYmd(c.wk), c.i).getDate(), [
       h('div', { class: 'quick' }, codes.map((v) => h('button', { type: 'button', class: 'codechip big ' + K.codeClass(v) + (String(cur).toUpperCase() === v.toUpperCase() ? ' on' : ''), title: K.codeLabel(v) || null, onclick: () => put(v) }, h('b', { class: 'mono' }, v)))),
+      K.STL ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Station'), K.seg([['', 'None']].concat(['hot', 'cold', 'pass', 'prep', 'learn', 'br'].map((s) => [s, K.STL[s]])), curSt, putSt, { 'aria-label': 'Station', class: 'seg small-seg st-seg' })) : null,
       h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); put(document.getElementById('cellv').value.trim()); } },
         h('input', { class: 'input', id: 'cellv', value: cur, placeholder: 'Anything else, e.g. 10:30 or BR+4H', 'aria-label': 'Shift' }), h('button', { class: 'btn primary', type: 'submit' }, 'Set')),
       h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => put('') }, 'Clear'),
