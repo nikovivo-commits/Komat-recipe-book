@@ -2063,3 +2063,5 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rota tbody th, .rota thead th:first-child { position: sticky; left: 0; z-index: 2; box-shadow: inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .25); }
 .slate .rota tbody th, .slate .rota thead th:first-child { background: #1D2120; box-shadow: inset -1px 0 0 var(--chalk-line), 8px 0 10px -8px rgba(0, 0, 0, .8); }
 .slate .rota tr.me th { background: linear-gradient(rgba(243, 211, 74, .09), rgba(243, 211, 74, .09)), #1D2120; }
+.litem .en-in, .lgroup > .en-in { grid-column: 1 / -1; min-height: 38px; font-size: .9rem; }
+.en-in::placeholder { font-style: italic; }

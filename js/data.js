@@ -53,6 +53,11 @@
   K.lang = K.store.get('lang', 'bg') === 'en' ? 'en' : 'bg';
   const TR = window.KOMAT_TR || {};
   K.tx = (t) => (t && TR[t]) || t;
+  /* a list name (to-do, mise en place) in the chosen language: the English typed in the list editor, else the
+     translation list; a name with no English yet stays as written */
+  const CYR = /[\u0400-\u04FF]/;
+  K.enName = (s) => { s = String(s || ''); return !CYR.test(s) ? s : TR[s] || TR[s.trim()] || TR[s.trim().toLowerCase()] || ''; };
+  K.trName = (s, en) => (K.lang !== 'en' ? String(s || '') : (en && String(en).trim()) || K.enName(s) || String(s || ''));
   function trPart(p, en) {
     const bag = [p.name, K.tx(p.name)];
     if (en) p.name = K.tx(p.name);
@@ -264,8 +269,8 @@
   K.checkItems = function (st, date) {
     const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
-      g.items.forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, link: it.link || '' }));
-      ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gkey: g.key, extra: true }));
+      g.items.forEach((it) => out.push({ id: it.id, name: it.name, en: it.en || '', group: g.name, gen: g.en || '', gkey: g.key, link: it.link || '' }));
+      ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gen: g.en || '', gkey: g.key, extra: true }));
     }));
     return out;
   };

@@ -777,5 +777,10 @@ window.KOMAT_TR = {
 "Телешко": "Veal",
 "Обедно": "Lunch",
 "Сосове": "Sauces",
-"Шефски пищови": "Chef's pistols"
+"Шефски пищови": "Chef's pistols",
+"Студена": "Cold",
+"Пейстри": "Pastry",
+"Топла": "Hot",
+"Пас": "Pass",
+"Листен микс": "Leaf mix"
 };

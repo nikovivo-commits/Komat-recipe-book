@@ -30,17 +30,17 @@
     const date = sheet;
     K.checkItems(st, date).forEach((it) => {
       if (K.markState(st, it.id, date) !== 'do' && !K.isUrgent(st, it.id, date)) return;
-      if (!byName[it.group]) groups.push(byName[it.group] = { name: it.group, items: [] });
+      if (!byName[it.group]) groups.push(byName[it.group] = { name: it.group, en: it.gen, items: [] });
       const m = K.mark(st, it.id, date) || {};
-      byName[it.group].items.push({ name: it.name, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand });
+      byName[it.group].items.push({ name: it.name, en: it.en, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand });
     });
     groups.forEach((g) => g.items.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)));
     /* the whole prep list, in the list's own order: marked rows carry their words, ready rows are struck */
     const all = [], allBy = {};
     K.checkItems(st, date).forEach((it) => {
       const m = K.mark(st, it.id, date) || {}, state = K.markState(st, it.id, date);
-      if (!allBy[it.group]) all.push(allBy[it.group] = { name: it.group, items: [] });
-      allBy[it.group].items.push({ name: it.name, note: m.c || '', urgent: K.isUrgent(st, it.id, date), written: state === 'do' || state === 'ok', done: state === 'ok', words: K.kindWords(K.kindsOf(m)), hand: m.hand });
+      if (!allBy[it.group]) all.push(allBy[it.group] = { name: it.group, en: it.gen, items: [] });
+      allBy[it.group].items.push({ name: it.name, en: it.en, note: m.c || '', urgent: K.isUrgent(st, it.id, date), written: state === 'do' || state === 'ok', done: state === 'ok', words: K.kindWords(K.kindsOf(m)), hand: m.hand });
     });
     return { sheet: sheet, tasks: tasks, groups: groups, all: all, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
   };
@@ -55,19 +55,19 @@
   /* A name in the language(s) chosen for the paper: lang is bg, both (Bulgarian with the English under it) or en.
      Text with no Cyrillic is already English. A name with no English yet stays as written. */
   const CYR = /[\u0400-\u04FF]/;
-  function words(s, lang) {
+  function words(s, lang, typed) {
     s = String(s || '');
-    const TR = window.KOMAT_TR || {}, en = !CYR.test(s) ? s : TR[s] || TR[s.toLowerCase()] || '';
+    const TR = window.KOMAT_TR || {}, en = (typed && String(typed).trim()) || (!CYR.test(s) ? s : TR[s] || TR[s.trim()] || TR[s.trim().toLowerCase()] || '');
     if (lang === 'en') return { main: en || s, sub: '' };
     return { main: s, sub: lang === 'both' && en && en !== s ? en : '' };
   }
   function line(x, lang) {
-    const w = words(x.name, lang);
+    const w = words(x.name, lang, x.en);
     return h('li', { class: (x.urgent && !x.done ? 'urg' : '') + (x.done ? ' done' : '') }, box(x),
       h('span', { class: 'pr-txt' }, x.urgent ? h('em', null, 'Urgent') : null, h('b', null, w.main), w.sub ? h('span', { class: 'pr-en' }, w.sub) : null,
         x.note ? h('span', { class: 'pr-note' }, x.note) : null, x.meta ? h('span', { class: 'pr-meta' }, x.meta) : null));
   }
-  function head3(name, lang) { const w = words(name, lang); return h('h3', null, w.main, w.sub ? h('span', { class: 'pr-en' }, ' · ' + w.sub) : null); }
+  function head3(name, lang, typed) { const w = words(name, lang, typed); return h('h3', null, w.main, w.sub ? h('span', { class: 'pr-en' }, ' · ' + w.sub) : null); }
   function page(st, n, full, lang) {
     const t = K.todoFor(st, n), marked = t.count - t.tasks.length;
     const groups = full ? t.all : t.groups, rows = t.tasks.length + groups.reduce((a, g) => a + g.items.length, 0), two = rows > 14, three = rows > 46;
@@ -82,7 +82,7 @@
       h('div', { class: 'pr-sec' }, h('h2', null, full ? 'Prep list' : 'To do', h('span', null, full ? marked + ' marked of ' + (rows - t.tasks.length) : String(rows))),
         h('div', { class: 'pr-cols' + (three ? ' pr-c3' : two ? ' pr-c2' : '') },
           t.tasks.length ? h('div', { class: 'pr-group tasks' }, h('h3', null, 'Tasks'), h('ul', null, t.tasks.map((x) => line(x, lang)))) : null,
-          groups.map((g) => h('div', { class: 'pr-group' }, head3(g.name, lang), h('ul', null, g.items.map((x) => line(x, lang))))))),
+          groups.map((g) => h('div', { class: 'pr-group' }, head3(g.name, lang, g.en), h('ul', null, g.items.map((x) => line(x, lang))))))),
       h('div', { class: 'pr-sec' }, h('h2', null, 'Also'), h('ul', { class: 'pr-blank' }, (full ? [0, 1, 2] : [0, 1, 2, 3, 4, 5]).map(() => h('li', null, box(), h('span', { class: 'pr-txt' }))))),
       h('footer', { class: 'pr-foot' },
         h('span', null, 'Cross out the box when it’s done, then in the app.'),
