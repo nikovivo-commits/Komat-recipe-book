@@ -782,5 +782,12 @@ window.KOMAT_TR = {
 "Пейстри": "Pastry",
 "Топла": "Hot",
 "Пас": "Pass",
-"Листен микс": "Leaf mix"
+"Листен микс": "Leaf mix",
+"Сусамов сос": "Sesame sauce",
+"нарязан див лук": "chopped wild onion",
+"Тиквено мляко": "Pumpkin milk",
+"Основа": "Base",
+"Мляко кашу": "Cashew milk",
+"шам тастък": "pistachios",
+"Крокмач с гъби": "Krokmach with mushrooms"
 };
