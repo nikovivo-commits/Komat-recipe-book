@@ -7,7 +7,7 @@
      week      'YYYY-MM-DD', the Monday
      plan      { people: { id: setup }, needs: { hot: [7], cold: [7], pass: [7] }, busy: [days], brDays: [days], brCode }
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
-                 off: [days], special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
+                 off: [days], avoid: [days] (off if at all possible: worked only to stop a hole), avoidMore: [days] (the same, even later), special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
                  emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
                  learn: ['pass'], learnDays: 1 (a station they are learning and how many days a week: on those days
                  they stand next to a teacher there, someone whose main station it is, instead of taking a place),
@@ -31,7 +31,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -74,7 +74,8 @@
     let LRN = {};
     const lrnOf = (id, d) => !!(LRN[id] && LRN[id][d]);
     const PER = !!plan.periods, lunch = plan.lunch || {}, lateCode = plan.lateCode || '2';
-    const lateN = (id) => (PER && S(id).mode === 'auto' ? +(S(id).late || 0) : 0);
+    /* a late shift is about two thirds of a full one: 3 lates and 2 full days make 4 full days */
+    const lateOK = (id) => PER && S(id).mode === 'auto' && !!S(id).late;
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
     /* lunch: which stations nobody covers, given who is where at night */
@@ -201,11 +202,12 @@
     /* ---------- one person's week: days short, wishes not met, days off split up ---------- */
     function personCost(id, work, special) {
       const s = S(id), w = work[id], n = w.reduce((a, b) => a + b, 0);
-      let c = Math.max(0, target(id) - n) * W.short;
-      for (let d = 0; d < 7; d++) if (w[d] && wish[id][d]) c += W.wish;
+      const lt = lateOK(id) ? w.reduce((a, b, d) => a + (b && work.__late[id][d] ? 1 : 0), 0) : 0;
+      let c = lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * W.lateDay : Math.max(0, target(id) - n) * W.short;
+      if (lt > 3) c += (lt - 3) * W.short; /* at most 3 late shifts a week */
+      for (let d = 0; d < 7; d++) { if (w[d] && wish[id][d]) c += W.wish; if (w[d] && (s.avoid || []).includes(d)) c += W.avoid; if (w[d] && (s.avoidMore || []).includes(d)) c += W.avoidMore; }
       if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
-      if (lateN(id)) { let lt = 0, sp = 0; for (let d = 0; d < 7; d++) { if (w[d] && work.__late[id][d]) lt++; if (w[d] && special[id][d]) sp++; } c += Math.abs(Math.min(lateN(id), n - sp) - lt) * W.mix; }
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
       /* days off kept together only for whoever asked for it; filling the kitchen always comes first */
@@ -222,8 +224,10 @@
       auto.forEach((id) => {
         let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
-        f = f.filter((d) => pinned(id, d)).concat(f.filter((d) => !pinned(id, d)));
-        const n = Math.max(Math.min(target(id), f.length), f.filter((d) => pinned(id, d)).length);
+        /* pinned days first, days off-if-possible last */
+        const av = (S(id).avoid || []).concat(S(id).avoidMore || []);
+        f = f.filter((d) => pinned(id, d)).concat(f.filter((d) => !pinned(id, d) && !av.includes(d)), f.filter((d) => !pinned(id, d) && av.includes(d)));
+        const n = Math.max(Math.min(target(id), f.filter((d) => pinned(id, d) || !av.includes(d)).length), f.filter((d) => pinned(id, d)).length);
         work[id] = [0, 0, 0, 0, 0, 0, 0]; special[id] = [0, 0, 0, 0, 0, 0, 0];
         f.slice(0, n).forEach((d) => { work[id][d] = 1; });
         const loose = f.slice(0, n).filter((d) => !pinned(id, d)), sn = S(id).special && S(id).special.n ? Math.min(S(id).special.n, loose.length) : 0;
@@ -231,7 +235,6 @@
         lrn[id] = [0, 0, 0, 0, 0, 0, 0];
         loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
         late[id] = [0, 0, 0, 0, 0, 0, 0];
-        loose.slice(sn).slice(-Math.min(lateN(id), Math.max(0, loose.length - sn)) || loose.length).forEach((d) => { if (lateN(id)) late[id][d] = 1; });
       });
       return { work: work, special: special };
     }
@@ -261,13 +264,33 @@
           const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
           sp[x] = 0; sp[y] = 1; touched.push(x, y);
           undo = () => { sp[x] = 1; sp[y] = 0; };
-        } else if (lateN(id) && mv < 0.4) {
-          /* swap which day is the late shift */
-          const a = on.filter((d) => LT[d]), b = on.filter((d) => !LT[d] && !sp[d]);
-          if (!a.length || !b.length) continue;
-          const x = a[Math.floor(R() * a.length)], y = b[Math.floor(R() * b.length)];
-          LT[x] = 0; LT[y] = 1; touched.push(x, y);
-          undo = () => { LT[x] = 1; LT[y] = 0; };
+        } else if (lateOK(id) && mv < 0.4) {
+          /* turn a day into a late shift or back, come in one more day on a late shift, or one day fewer */
+          const r2 = R(), pool = on.filter((d) => !sp[d]);
+          if (r2 < 0.45 && pool.length) {
+            const x = pool[Math.floor(R() * pool.length)], was = LT[x];
+            LT[x] = was ? 0 : 1; touched.push(x);
+            undo = () => { LT[x] = was; };
+          } else if (r2 < 0.75 && offd.length) {
+            const y = offd[Math.floor(R() * offd.length)];
+            w[y] = 1; LT[y] = 1; touched.push(y);
+            undo = () => { w[y] = 0; LT[y] = 0; };
+          } else if (on.length) {
+            const x = on[Math.floor(R() * on.length)], wasLt = LT[x], wasSp = sp[x], wasL = L[x];
+            w[x] = 0; LT[x] = 0; sp[x] = 0; L[x] = 0; touched.push(x);
+            undo = () => { w[x] = 1; LT[x] = wasLt; sp[x] = wasSp; L[x] = wasL; };
+          } else continue;
+        } else if (!lateOK(id) && mv < 0.5 && R() < 0.3) {
+          const n = w.reduce((a, b) => a + b, 0);
+          if (n < target(id) && offd.length && R() < 0.6) {
+            const y = offd[Math.floor(R() * offd.length)];
+            w[y] = 1; touched.push(y);
+            undo = () => { w[y] = 0; };
+          } else if (on.length) {
+            const x = on[Math.floor(R() * on.length)], wasSp = sp[x], wasL = L[x], wasLt = LT[x];
+            w[x] = 0; sp[x] = 0; L[x] = 0; LT[x] = 0; touched.push(x);
+            undo = () => { w[x] = 1; sp[x] = wasSp; L[x] = wasL; LT[x] = wasLt; };
+          } else continue;
         } else if (lrnN(id) && mv < 0.55) {
           /* move a learning day, or drop one / add one back */
           const a = on.filter((d) => L[d]), b = on.filter((d) => !L[d] && !sp[d]);
@@ -381,7 +404,10 @@
     });
     auto.forEach((id) => {
       const s = S(id), n = best.st.work[id].reduce((a, b) => a + b, 0);
-      if (n < target(id)) issues.push({ sev: 'amber', person: id, text: name(id) + ' gets ' + n + ' of ' + target(id) + ' days (not enough free days)' });
+      const lt = lateOK(id) ? best.st.work[id].reduce((a, b, d) => a + (b && best.st.work.__late[id][d] ? 1 : 0), 0) : 0, thirds = 3 * (n - lt) + 2 * lt;
+      const fmt = (t) => Math.floor(t / 3) + (t % 3 === 1 ? '⅓' : t % 3 === 2 ? '⅔' : '');
+      if (lateOK(id) ? thirds !== 3 * target(id) : n < target(id)) issues.push({ sev: 'amber', person: id, text: name(id) + ' gets ' + (lateOK(id) ? fmt(thirds) + ' of ' + target(id) + ' full days' : n + ' of ' + target(id) + ' days') + (thirds < 3 * target(id) ? ' (not enough free days)' : ' (more than usual)') });
+      for (let d = 0; d < 7; d++) if (best.st.work[id][d] && ((s.avoid || []).includes(d) || (s.avoidMore || []).includes(d)) && !pinned(id, d)) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' comes in on ' + DAY[d] + ', a day off if possible (last resort)' });
       for (let d = 0; d < 7; d++) if (best.st.work[id][d] && wish[id][d]) issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' but asked for it off (waiting for approval)' });
     });
     return { order: order, rows: rows, st: stOf, issues: issues, cost: best.ev.total };

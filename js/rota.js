@@ -185,9 +185,11 @@
           }))),
           (s.learn || []).length ? row('Learning days', K.select([0, 1, 2, 3].map((n) => [n, n ? n + ' a week' : 'None this week']), s.learnDays || 0, (v) => set((p) => { person(p, id).learnDays = +v; }), { 'aria-label': 'Learning days a week', class: 'input small' })) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
-          plan.periods ? row('Late shifts', K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week (from 15:00)' : 'None, all full']), s.late || 0, (v) => set((p) => { person(p, id).late = +v; }), { 'aria-label': 'Late shifts a week', class: 'input small' })) : null,
+          plan.periods ? h('div', { class: 'rp-flags' }, check('Can do late shifts (from 15:00): 3 lates count as 2 full days', !!s.late, (v) => set((p) => { person(p, id).late = v; }))) : null,
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
-          row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; }))),
+          row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
+          row('Off if possible', days(s.avoid || [], (l) => set((p) => { person(p, id).avoid = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoidMore = (p.people[id].avoidMore || []).filter((x) => !l.includes(x)); }))),
+          row('Really off, only for a hole', days(s.avoidMore || [], (l) => set((p) => { person(p, id).avoidMore = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
           row('Prep days', h('div', { class: 'rp-inline' },
             K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week' : 'None']), (s.special && s.special.n) || 0, (v) => set((p) => { const q = person(p, id); q.special = Object.assign({ code: '10:30' }, q.special, { n: +v }); }), { 'aria-label': 'Prep days a week', class: 'input small' }),
             s.special && s.special.n ? h('input', { class: 'input small rp-code', value: s.special.code || '10:30', 'aria-label': 'Shift on prep days', onchange: (e) => set((p) => { person(p, id).special.code = e.target.value.trim() || '10:30'; }) }) : null)),
@@ -222,7 +224,7 @@
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
-    return [st, (s.days || 0) + ' days' + (s.late ? ' (' + s.late + ' late)' : ''), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
+    return [st, (s.days || 0) + (s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);
