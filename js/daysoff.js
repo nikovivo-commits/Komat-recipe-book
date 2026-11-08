@@ -10,6 +10,9 @@
   const STATUS = { ok: 'Accepted', waiting: 'Waiting for approval', approved: 'Approved', refused: 'Refused' };
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   K.DAYOFF_KIND = KIND;
+  /* the calendar (asking for days off, cover points) is still being worked on: it is on only where the page
+     turns it on (window.KOMAT_CALENDAR = true, the test copy); elsewhere the rota shows without it */
+  K.calendarOn = window.KOMAT_CALENDAR === true;
 
   const all = () => Object.keys(D.dayoff || {}).map((k) => D.dayoff[k]);
   const live = (r) => r.status !== 'refused';
@@ -34,12 +37,14 @@
   const pts = () => Object.keys(D.points || {}).map((k) => D.points[k]);
   K.pointsOf = (id) => pts().filter((p) => p.person === id).reduce((a, p) => a + (+p.n || 0), 0);
   K.awardPoints = function (docId, body) {
+    if (!K.calendarOn) return Promise.resolve();
     const b = Object.assign({ at: Date.now(), by: K.me.id || '' }, body);
     D.points[docId] = Object.assign({ id: docId }, b);
     K.db.doc('points/' + docId).set(b).catch(K.writeFailed);
     K.refresh();
   };
   K.removePoints = function (docId) {
+    if (!K.calendarOn) return Promise.resolve();
     if (!D.points[docId]) return;
     delete D.points[docId];
     K.db.doc('points/' + docId).delete().catch(K.writeFailed);
@@ -335,6 +340,7 @@
     body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); K.go('schedule'); setTimeout(() => { const b = document.querySelector('.week-board'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
+    if (K.calendarOn) {
     body.push(h('h3', { class: 'off-h small' }, 'Days off'));
     if (rs.length) body.push(h('div', { class: 'off-day-list' }, rs.map((r) => h('div', { class: 'off-row k-' + r.kind + ' s-' + r.status },
       face(r.person),
@@ -347,6 +353,7 @@
     if (ds >= today) {
       if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
       else body.push(askForm(ds, me));
+    }
     }
     return K.sheet(K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' }), body, { wide: true });
   };

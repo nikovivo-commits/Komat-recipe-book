@@ -54,9 +54,9 @@
     w.append(board);
     const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
     /* a week still being planned: everyone sees the draft as it stands, and it moves as days off come in */
-    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady()) {
+    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
       const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), me0 = K.getMe(), reds = r.issues.filter((x) => x.sev === 'red').length;
-      board.append(h('p', { class: 'chalk-draft' }, 'Draft · it changes as days off come in' + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
+      board.append(h('p', { class: 'chalk-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
         h('div', { class: 'board-scroll' }, h('table', { class: 'rota draft' },
           h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
             const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
@@ -66,17 +66,17 @@
           h('tbody', null, r.order.map((id) => h('tr', { class: id === me0 ? 'me' : '' }, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
             K.DAYS.map((d, i) => { const c = r.rows[id][i] || ''; return h('td', { class: K.codeClass(c) }, h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c || '–'), K.stTag(r.st[id][i]))); })))))));
       if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
-      if (K.daysOffView) w.append(K.daysOffView());
+      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
     if (!doc) {
-      board.append(h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+      board.append(...[h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'chalk-acts' },
           genLink(),
           h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null);
-      if (K.daysOffView) w.append(K.daysOffView());
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null].filter(Boolean));
+      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
@@ -133,7 +133,7 @@
     board.append(h('div', { class: 'board-scroll' }, table));
     board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
     if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
-    if (K.daysOffView) w.append(K.daysOffView());
+    if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
     if (mine) w.append(mine);
     if (K.me.admin) {
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });

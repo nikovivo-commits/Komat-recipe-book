@@ -654,9 +654,9 @@
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */
-    db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
+    if (K.calendarOn) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
     /* days off asked for, from two months back (the year view shows what is coming) */
-    db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
+    if (K.calendarOn) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
     dateSubs();
     /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);

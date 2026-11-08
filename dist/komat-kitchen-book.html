@@ -4307,9 +4307,9 @@ window.KOMAT_PART_ART = [
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */
-    db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
+    if (K.calendarOn) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
     /* days off asked for, from two months back (the year view shows what is coming) */
-    db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
+    if (K.calendarOn) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
     dateSubs();
     /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);
@@ -5199,7 +5199,7 @@ window.KOMAT_PART_ART = [
   function badge(tab) {
     if (K.mode === 'pending' || K.mode === 'none' || ui.auth) return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
-    if (tab === 'schedule' && K.me.admin && K.waitingDayoff) { const n = K.waitingCount(); return n ? h('span', { class: 'badge', 'aria-label': n + ' days off waiting' }, String(n)) : null; }
+    if (tab === 'schedule' && K.me.admin && K.calendarOn && K.waitingDayoff) { const n = K.waitingCount(); return n ? h('span', { class: 'badge', 'aria-label': n + ' days off waiting' }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
     return null;
   }
@@ -7380,9 +7380,9 @@ window.KOMAT_PART_ART = [
     w.append(board);
     const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
     /* a week still being planned: everyone sees the draft as it stands, and it moves as days off come in */
-    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady()) {
+    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
       const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), me0 = K.getMe(), reds = r.issues.filter((x) => x.sev === 'red').length;
-      board.append(h('p', { class: 'chalk-draft' }, 'Draft · it changes as days off come in' + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
+      board.append(h('p', { class: 'chalk-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
         h('div', { class: 'board-scroll' }, h('table', { class: 'rota draft' },
           h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
             const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
@@ -7392,17 +7392,17 @@ window.KOMAT_PART_ART = [
           h('tbody', null, r.order.map((id) => h('tr', { class: id === me0 ? 'me' : '' }, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
             K.DAYS.map((d, i) => { const c = r.rows[id][i] || ''; return h('td', { class: K.codeClass(c) }, h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c || '–'), K.stTag(r.st[id][i]))); })))))));
       if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
-      if (K.daysOffView) w.append(K.daysOffView());
+      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
     if (!doc) {
-      board.append(h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+      board.append(...[h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'chalk-acts' },
           genLink(),
           h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null);
-      if (K.daysOffView) w.append(K.daysOffView());
+          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null].filter(Boolean));
+      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
@@ -7459,7 +7459,7 @@ window.KOMAT_PART_ART = [
     board.append(h('div', { class: 'board-scroll' }, table));
     board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
     if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
-    if (K.daysOffView) w.append(K.daysOffView());
+    if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
     if (mine) w.append(mine);
     if (K.me.admin) {
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
@@ -8304,6 +8304,9 @@ window.KOMAT_PART_ART = [
   const STATUS = { ok: 'Accepted', waiting: 'Waiting for approval', approved: 'Approved', refused: 'Refused' };
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   K.DAYOFF_KIND = KIND;
+  /* the calendar (asking for days off, cover points) is still being worked on: it is on only where the page
+     turns it on (window.KOMAT_CALENDAR = true, the test copy); elsewhere the rota shows without it */
+  K.calendarOn = window.KOMAT_CALENDAR === true;
 
   const all = () => Object.keys(D.dayoff || {}).map((k) => D.dayoff[k]);
   const live = (r) => r.status !== 'refused';
@@ -8328,12 +8331,14 @@ window.KOMAT_PART_ART = [
   const pts = () => Object.keys(D.points || {}).map((k) => D.points[k]);
   K.pointsOf = (id) => pts().filter((p) => p.person === id).reduce((a, p) => a + (+p.n || 0), 0);
   K.awardPoints = function (docId, body) {
+    if (!K.calendarOn) return Promise.resolve();
     const b = Object.assign({ at: Date.now(), by: K.me.id || '' }, body);
     D.points[docId] = Object.assign({ id: docId }, b);
     K.db.doc('points/' + docId).set(b).catch(K.writeFailed);
     K.refresh();
   };
   K.removePoints = function (docId) {
+    if (!K.calendarOn) return Promise.resolve();
     if (!D.points[docId]) return;
     delete D.points[docId];
     K.db.doc('points/' + docId).delete().catch(K.writeFailed);
@@ -8629,6 +8634,7 @@ window.KOMAT_PART_ART = [
     body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); K.go('schedule'); setTimeout(() => { const b = document.querySelector('.week-board'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
+    if (K.calendarOn) {
     body.push(h('h3', { class: 'off-h small' }, 'Days off'));
     if (rs.length) body.push(h('div', { class: 'off-day-list' }, rs.map((r) => h('div', { class: 'off-row k-' + r.kind + ' s-' + r.status },
       face(r.person),
@@ -8641,6 +8647,7 @@ window.KOMAT_PART_ART = [
     if (ds >= today) {
       if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
       else body.push(askForm(ds, me));
+    }
     }
     return K.sheet(K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' }), body, { wide: true });
   };
