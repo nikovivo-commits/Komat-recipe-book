@@ -129,7 +129,8 @@
           h('span', null, d), h('b', null, String(dd.getDate())), ev.length ? h('i', { class: 'sv-ev', title: ev.map((e) => e.title).join(', ') }, '★') : null));
     }));
     const rows = src.order.map((id) => {
-      const nm = h('span', { class: 'sv-name' }, K.personName(id));
+      /* the name, with the stations they can work under it: H red, C blue, P grey (outlined = emergency only) */
+      const nm = h('span', { class: 'sv-nmw' }, h('span', { class: 'sv-name' }, K.personName(id)), K.stDots ? K.stDots(id) : null);
       return h('tr', { class: id === me ? 'me' : null, 'aria-current': id === me ? 'true' : null },
         h('th', { scope: 'row', class: 'sv-nm' }, edit ? h('button', { type: 'button', class: 'sv-nb', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, nm) : nm),
         K.DAYS.map((d, i) => {

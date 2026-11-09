@@ -2278,3 +2278,7 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mv-txt { display: grid; gap: 3px; min-width: 0; }
 .mv-line { font: 600 .9rem var(--mono); }
 .mv-txt small { color: var(--muted); font-size: .8rem; }
+.sv-nmw { display: grid; gap: 2px; padding: 3px 0; }
+.sv-nmw .stdots { margin-top: 0; gap: 2px; }
+.sv-nmw .stdots i { width: 13px; height: 13px; border-radius: 3px; font-size: .52rem; }
+.sv-week tr.me .sv-nmw .stdots i.em { color: var(--sh-me-ink); }

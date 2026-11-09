@@ -2285,6 +2285,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .mv-txt { display: grid; gap: 3px; min-width: 0; }
 .mv-line { font: 600 .9rem var(--mono); }
 .mv-txt small { color: var(--muted); font-size: .8rem; }
+.sv-nmw { display: grid; gap: 2px; padding: 3px 0; }
+.sv-nmw .stdots { margin-top: 0; gap: 2px; }
+.sv-nmw .stdots i { width: 13px; height: 13px; border-radius: 3px; font-size: .52rem; }
+.sv-week tr.me .sv-nmw .stdots i.em { color: var(--sh-me-ink); }
 
 </style>
 <div id="app"></div>
@@ -7671,7 +7675,8 @@ window.KOMAT_PART_ART = [
           h('span', null, d), h('b', null, String(dd.getDate())), ev.length ? h('i', { class: 'sv-ev', title: ev.map((e) => e.title).join(', ') }, '★') : null));
     }));
     const rows = src.order.map((id) => {
-      const nm = h('span', { class: 'sv-name' }, K.personName(id));
+      /* the name, with the stations they can work under it: H red, C blue, P grey (outlined = emergency only) */
+      const nm = h('span', { class: 'sv-nmw' }, h('span', { class: 'sv-name' }, K.personName(id)), K.stDots ? K.stDots(id) : null);
       return h('tr', { class: id === me ? 'me' : null, 'aria-current': id === me ? 'true' : null },
         h('th', { scope: 'row', class: 'sv-nm' }, edit ? h('button', { type: 'button', class: 'sv-nb', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, nm) : nm),
         K.DAYS.map((d, i) => {
