@@ -2258,19 +2258,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .off-form input[type="date"] { min-width: 0; width: 100%; }
 .sheet-body { grid-template-columns: minmax(0, 1fr); }
 /* stations as colour, not words */
-.sv-line { grid-template-columns: minmax(0, 1fr); border-left: 6px solid transparent; }
-.svl-hot { background: var(--sh-hot); border-left-color: var(--sh-hot-ink); }
-.svl-cold { background: var(--sh-cold); border-left-color: var(--sh-cold-ink); }
-.svl-pass { background: var(--sh-pass); border-left-color: var(--sh-pass-ink); }
-.svl-br { background: var(--sh-br); border-left-color: var(--sh-br-ink); }
-.svl-prep { background: var(--surface); border-left-color: var(--muted); }
-.svl-float { background: var(--surface); border-left-color: var(--sh-fill); }
-.svl-learn { background: var(--sh-learn); border-left-color: var(--sh-hot-ink); }
-.svl-plain { background: var(--surface-2); border-left-color: var(--line); }
-.sv-lines { overflow: hidden; }
-.sv-line .sv-p { background: var(--surface); box-shadow: 0 1px 0 rgba(0, 0, 0, .06); }
-.sv-line .sv-p.me { background: var(--sh-me); }
-.sv-dayview .sv-key { padding: 0 2px; }
 .sv-next.svn-hot { background: var(--sh-hot); color: var(--sh-hot-ink); box-shadow: inset 0 0 0 1.5px var(--sh-hot-ink); }
 .sv-next.svn-cold { background: var(--sh-cold); color: var(--sh-cold-ink); box-shadow: inset 0 0 0 1.5px var(--sh-cold-ink); }
 .sv-next.svn-pass { background: var(--sh-pass); color: var(--sh-pass-ink); box-shadow: inset 0 0 0 1.5px var(--sh-pass-ink); }
