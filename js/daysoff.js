@@ -173,6 +173,52 @@
     Object.keys(D.points || {}).filter((k) => /^(unfair|event|auto)_/.test(k) && dates.includes(D.points[k].date) && !want[k]).forEach((k) => K.removePoints(k));
     Object.keys(want).forEach((k) => { const o = D.points[k]; if (!o || o.reason !== want[k].reason || (+o.n !== want[k].n && !o.wanted)) K.awardPoints(k, want[k]); });
   };
+  /* ---------- your week moved: who a request shifted, kept on the request itself ----------
+     moved: { person: [{ d: date, a: code before, as: station before, b: code after, bs: station after }] } */
+  function noteMoves(person, firstDate, before) {
+    const moved = {};
+    Object.keys(before).forEach((wk) => {
+      const r0 = before[wk], r1 = K.rotaDraft(wk, K.requestsFor(wk));
+      Object.keys(r1.rows).forEach((id) => {
+        if (id === person) return;
+        for (let i = 0; i < 7; i++) {
+          const a = String((r0.rows[id] || [])[i] || ''), b = String(r1.rows[id][i] || ''), as = ((r0.st[id] || [])[i]) || '', bs = (r1.st[id][i]) || '';
+          if (a !== b || as !== bs) (moved[id] = moved[id] || []).push({ d: K.ymd(K.addDays(K.parseYmd(wk), i)), a: a, as: as, b: b, bs: bs });
+        }
+      });
+    });
+    const id0 = firstDate + '_' + person, doc = D.dayoff[id0];
+    if (!doc || !Object.keys(moved).length) return;
+    doc.moved = moved;
+    const body = Object.assign({}, doc); delete body.id;
+    K.db.doc('dayoff/' + id0).set(body).catch(K.writeFailed);
+    K.refresh();
+  }
+  const shiftTxt = (c, st) => (!c || /^(0|X)$/i.test(c) ? 'off' : c + (st ? ' ' + (K.STL[st] || st) : ''));
+  /* what this phone's person has not seen yet: weeks moved by someone's request, days off taken with priority */
+  K.myMoves = function () {
+    const me = K.getMe();
+    if (!K.calendarOn || !me) return [];
+    const seen = K.store.get('movesSeen', []), today = K.day(0), out = [];
+    all().forEach((r) => {
+      if (r.moved && r.moved[me] && r.person !== me && !seen.includes('m_' + r.id)) {
+        const ch = r.moved[me].filter((x) => x.d >= today);
+        if (ch.length) out.push({ key: 'm_' + r.id, who: r.person, at: r.at || 0, title: K.personName(r.person) + '’s day off moved your week', lines: ch.map((x) => pretty(x.d) + ': ' + shiftTxt(x.a, x.as) + ' → ' + shiftTxt(x.b, x.bs)), note: 'In the draft. It can still change before the week is posted.' });
+      }
+      if (r.person === me && r.bumpedBy && r.status === 'waiting' && r.date >= today && !seen.includes('b_' + r.id)) out.push({ key: 'b_' + r.id, who: r.bumpedBy, at: r.at || 0, title: K.personName(r.bumpedBy) + ' used priority on your day off', lines: [pretty(r.date) + ': your day off now waits for the head chef'], note: 'You got 2 points for giving way.' });
+    });
+    return out.sort((a, b) => b.at - a.at);
+  };
+  K.movesBox = function () {
+    const list = K.myMoves();
+    if (!list.length) return null;
+    const seeAll = () => { K.store.set('movesSeen', K.store.get('movesSeen', []).concat(list.map((x) => x.key)).slice(-200)); K.render(); };
+    return h('section', { class: 'mv-box', 'aria-label': 'Changes to your week' },
+      h('div', { class: 'mv-head' }, h('b', null, list.length === 1 ? 'Your week changed' : list.length + ' changes to your week'), list.length > 1 ? h('button', { class: 'link-btn', type: 'button', onclick: seeAll }, 'Got them all') : null),
+      list.map((x) => h('article', { class: 'mv-card' }, face(x.who),
+        h('div', { class: 'mv-txt' }, h('b', null, x.title), x.lines.map((l) => h('span', { class: 'mv-line' }, l)), h('small', null, x.note)),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Got it', onclick: () => { K.store.set('movesSeen', K.store.get('movesSeen', []).concat([x.key]).slice(-200)); K.render(); } }, K.icon('close')))));
+  };
   function send(f) {
     const person = f.person, from = f.from, to = f.to && f.to >= from ? f.to : from, dates = [];
     for (let d = from; d <= to && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
@@ -185,6 +231,10 @@
     if (guar) status = 'ok';
     const prio = wantPrio && status === 'ok', group = dates.length > 1 ? 'g' + K.uid() : '', at = Date.now();
     ui.busy = true; K.render();
+    /* the drafts as they stand before this request, to tell anyone whose week it moves */
+    const draftWks = Array.from(new Set(dates.map(mondayOf))).filter((wk) => wk >= K.thisWeek() && !D.weeks[wk] && K.rotaReady && K.rotaReady());
+    const before = {};
+    draftWks.forEach((wk) => { before[wk] = K.rotaDraft(wk, K.requestsFor(wk)); });
     Promise.all(dates.map((d) => {
       const body = { date: d, person: person, uid: K.me.id || '', kind: f.kind, note: (f.note || '').trim().slice(0, 300), status: status, at: at, group: group };
       if (prio) body.priority = true;
@@ -205,6 +255,7 @@
       } else if (wantPrio) K.toast('Sent for approval: ' + span + '. Priority could not make room, so no points were used.');
       else if (status === 'ok') K.toast((f.kind === 'urgent' ? 'Urgent, noted: ' : 'Accepted: ') + span + (f.kind === 'urgent' ? '. The head chef sees it in red.' : '. Enjoy it.'), { tone: 'good' });
       else K.toast('Sent for approval: ' + span + '. The head chef or sous chef decides.');
+      noteMoves(person, dates[0], before);
     }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
   }
   function setStatus(rs, status) {

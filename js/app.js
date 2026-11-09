@@ -149,7 +149,7 @@
   function badge(tab) {
     if (K.mode === 'pending' || K.mode === 'none' || ui.auth) return null;
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
-    if (tab === 'schedule' && K.me.admin && K.calendarOn && K.waitingDayoff) { const n = K.waitingCount(); return n ? h('span', { class: 'badge', 'aria-label': n + ' days off waiting' }, String(n)) : null; }
+    if (tab === 'schedule' && K.calendarOn && K.waitingDayoff) { const n = (K.me.admin ? K.waitingCount() : 0) + (K.myMoves ? K.myMoves().length : 0); return n ? h('span', { class: 'badge', 'aria-label': n + (K.me.admin ? ' things waiting' : ' changes to your week') }, String(n)) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length; return n ? h('span', { class: 'badge dot', 'aria-label': 'Event today or tomorrow' }) : null; }
     return null;
   }

@@ -2270,3 +2270,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .clean .dc-me.lg[class*="svc-"] { padding: 4px 9px; font: 600 .74rem var(--sans); border: 0; }
 .dc-legme { display: inline-flex; align-items: center; gap: 3px; font-size: .78rem; color: var(--muted); }
 .clean .dc-legme .dc-me { margin: 0; }
+/* your week moved */
+.mv-box { display: grid; gap: 8px; padding: 12px; border-radius: var(--r); background: var(--pen-soft); box-shadow: inset 0 0 0 1.5px var(--pen); }
+.mv-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--pen); }
+.mv-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px; border-radius: 12px; background: var(--surface); }
+.mv-card .off-face { width: 32px; height: 32px; font-size: .74rem; }
+.mv-txt { display: grid; gap: 3px; min-width: 0; }
+.mv-line { font: 600 .9rem var(--mono); }
+.mv-txt small { color: var(--muted); font-size: .8rem; }

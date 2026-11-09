@@ -31,7 +31,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, move: 250, moveSt: 60 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -44,6 +44,10 @@
 
   function gen(input) {
     const week = input.week, plan = input.plan || {}, setup = plan.people || {}, keep = input.keep || {};
+    /* prev: the week as it stood (the draft before a request); changing someone's days or station from it costs a
+       little, so one request moves as few people as it has to */
+    const PREV = input.prev && input.prev.rows ? input.prev : null;
+    const prevWorks = (id, d) => { const r = PREV && PREV.rows[id]; if (!r) return null; const c = String(r[d] || '').trim(); return c && !/^(0|X)$/i.test(c) ? 1 : 0; };
     const needs = plan.needs || {}, busy = plan.busy || [], brDays = plan.brDays || [], brCode = plan.brCode || 'BR+P';
     const order = (input.people || []).map((p) => p.id).filter((id) => setup[id] && setup[id].mode && setup[id].mode !== 'off');
     const auto = order.filter((id) => setup[id].mode === 'auto');
@@ -151,6 +155,7 @@
           });
           auto.forEach((id) => { if (work[id][d] && lrnOf(id, d)) { const x = S(id).learn[0]; extras[id] = 'learn-' + x; if (!teach(x)) c += W.noTeacher; } });
           if (PER) c += lunchMiss(d, on, extras, work, special).length * W.lunchHole + (Object.keys(extras).length ? 0 : W.noFiller);
+          if (PER || PREV) { if (PREV) Object.keys(on).concat(Object.keys(extras)).forEach((id) => { const ps = ((PREV.st || {})[id] || [])[d]; if (ps && ps !== (on[id] || extras[id])) c += W.moveSt; }); }
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;
         }
@@ -209,6 +214,8 @@
     /* ---------- one person's week: days short, wishes not met, days off split up ---------- */
     function personCost(id, work, special) {
       const s = S(id), w = work[id], n = w.reduce((a, b) => a + b, 0);
+      let moved = 0;
+      if (PREV) for (let d = 0; d < 7; d++) { const pw = prevWorks(id, d); if (pw != null && pw !== w[d]) moved++; }
       const lt = lateOK(id) ? w.reduce((a, b, d) => a + (b && work.__late[id][d] ? 1 : 0), 0) : 0;
       let c = optsOf(id) ? 0 : lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * (s.late === 'rare' ? W.lateRare : W.lateDay) : Math.max(0, target(id) - n) * W.short;
       if (lt > 3) c += (lt - 3) * W.short; /* at most 3 late shifts a week */
@@ -227,6 +234,7 @@
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
       /* days off kept together only for whoever asked for it; filling the kitchen always comes first */
       if (blocks > 1 && s.together) c += (blocks - 1) * W.split;
+      c += moved * W.move;
       return c;
     }
 
@@ -244,6 +252,14 @@
           opt[id] = S(id).options.indexOf(wk0);
           work[id] = wk0.map((c) => (OFF.test(String(c || '0').trim() || '0') ? 0 : 1)); special[id] = wk0.map((c) => (isSp(id, c) ? 1 : 0));
           lrn[id] = [0, 0, 0, 0, 0, 0, 0]; late[id] = [0, 0, 0, 0, 0, 0, 0];
+          return;
+        }
+        if (PREV && PREV.rows[id]) {
+          const pr = PREV.rows[id].map((c) => String(c || '').trim()), lateC = String(plan.lateCode || '2');
+          work[id] = pr.map((c, d) => ((c && !/^(0|X)$/i.test(c) && !hardOff[id][d]) || pinned(id, d) ? 1 : 0));
+          special[id] = pr.map((c, d) => (work[id][d] && isSp(id, c) ? 1 : 0));
+          late[id] = pr.map((c, d) => (work[id][d] && lateOK(id) && c === lateC ? 1 : 0));
+          lrn[id] = pr.map((c, d) => (work[id][d] && /^learn-/.test(((PREV.st || {})[id] || [])[d] || '') && lrnN(id) ? 1 : 0));
           return;
         }
         let f = free(id).slice();

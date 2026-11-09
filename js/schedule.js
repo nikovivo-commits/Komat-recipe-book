@@ -75,6 +75,8 @@
     }
     const view = ui.schedView || K.store.get('schedView', 'week'), me = K.getMe();
     w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine'], ['month', 'Month']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day, your shifts or the month', class: 'seg sv-seg' }));
+    /* someone's request moved your week: told here until you say you have seen it */
+    if (K.movesBox) { const mv = K.movesBox(); if (mv) w.append(mv); }
     /* days off waiting for the chef: a nudge on every view, the requests themselves are in Month */
     const waiting = K.me.admin && K.calendarOn && K.waitingCount ? K.waitingCount() : 0;
     if (waiting && view !== 'month') w.append(h('button', { type: 'button', class: 'sv-wait', onclick: () => setView('month') }, h('b', null, String(waiting)), waiting === 1 ? 'day off waiting for you' : 'days off waiting for you', K.icon('next')));

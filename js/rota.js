@@ -52,11 +52,14 @@
     return { week: wk, plan: plan, people: people, requests: requests || [], keep: keep, events: events, pins: pins };
   };
   K.rotaReady = () => { const p = K.rotaPlan().people; return Object.keys(p).some((id) => p[id].mode === 'auto'); };
+  /* a draft starts from the week as it would be with nobody asking for anything (the same on every phone), and each
+     request moves only what it has to from there, so one day off does not reshuffle the whole team */
+  const gen = (input) => { const key = JSON.stringify(input); if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 24) memo.delete(memo.keys().next().value); } return memo.get(key); };
   K.rotaDraft = function (wk, requests) {
     const input = K.rotaInput(wk, requests);
-    const key = JSON.stringify(input);
-    if (!memo.has(key)) { memo.set(key, K.rotaGen(input)); if (memo.size > 12) memo.delete(memo.keys().next().value); }
-    return memo.get(key);
+    const base = gen(Object.assign({}, input, { requests: [] }));
+    if (!(requests || []).length) return base;
+    return gen(Object.assign({}, input, { prev: { rows: base.rows, st: base.st } }));
   };
   /* the head chef's word on a hole: this person works that day at that station. Saved with the setup, so every
      phone's draft follows it, and the generator re-plans the rest of the week around it */
