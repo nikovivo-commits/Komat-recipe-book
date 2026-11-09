@@ -7572,7 +7572,7 @@ window.KOMAT_PART_ART = [
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -7617,6 +7617,10 @@ window.KOMAT_PART_ART = [
     const PER = !!plan.periods, lunch = plan.lunch || {}, lateCode = plan.lateCode || '2';
     /* a late shift is about two thirds of a full one: 3 lates and 2 full days make 4 full days */
     const lateOK = (id) => PER && S(id).mode === 'auto' && !!S(id).late;
+    /* someone who offered set weeks (options: [[7 codes], ...]) gets one of them whole: the days and which are
+       special (10:30) come from the week picked; a week that clashes with a day they must have off is left out */
+    const optsOf = (id) => { const o = S(id).options; if (!Array.isArray(o) || !o.length) return null; const ok = o.filter((w) => Array.isArray(w) && w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
+    const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
     /* lunch: which stations nobody covers, given who is where at night */
@@ -7721,7 +7725,8 @@ window.KOMAT_PART_ART = [
       let br = null, brCost = 0;
       if (brDays.includes(d)) {
         let bestR = Infinity;
-        auto.forEach((id) => { const r = S(id).br || 0; if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
+        /* brOn: the weekend days someone would rather do the breakfast; on the other day they come after the rest */
+        auto.forEach((id) => { const on0 = S(id).brOn, r = (S(id).br || 0) && (S(id).br + (Array.isArray(on0) && on0.length && !on0.includes(d) ? 1.5 : 0)); if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
         if (br) brCost = (bestR - 1) * W.brRank;
         else {
           order.forEach((id) => {
@@ -7736,7 +7741,9 @@ window.KOMAT_PART_ART = [
       }
       const heads = auto.filter((id) => work[id][d]).length;
       const nightHeads = auto.filter((id) => work[id][d] && !special[id][d]).length;
-      const evCost = (minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0) + (minNight[d] > nightHeads ? (minNight[d] - nightHeads) * W.unfilled : 0);
+      /* a quiet day with more cooks than its stations and one filler: someone could be off instead */
+      const crowd = !busy.includes(d) && !minCooks[d] && !minNight[d] ? Math.max(0, heads - placeList[d].length - 1) * W.crowd : 0;
+      const evCost = crowd + (minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0) + (minNight[d] > nightHeads ? (minNight[d] - nightHeads) * W.unfilled : 0);
       return { cost: best.cost + handCost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads, handOn: handOn };
     }
 
@@ -7744,10 +7751,10 @@ window.KOMAT_PART_ART = [
     function personCost(id, work, special) {
       const s = S(id), w = work[id], n = w.reduce((a, b) => a + b, 0);
       const lt = lateOK(id) ? w.reduce((a, b, d) => a + (b && work.__late[id][d] ? 1 : 0), 0) : 0;
-      let c = lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * W.lateDay : Math.max(0, target(id) - n) * W.short;
+      let c = optsOf(id) ? 0 : lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * (s.late === 'rare' ? W.lateRare : W.lateDay) : Math.max(0, target(id) - n) * W.short;
       if (lt > 3) c += (lt - 3) * W.short; /* at most 3 late shifts a week */
       for (let d = 0; d < 7; d++) { if (w[d] && wish[id][d]) c += W.wish; if (w[d] && (s.avoid || []).includes(d)) c += W.avoid; if (w[d] && (s.avoidMore || []).includes(d)) c += W.avoidMore; }
-      if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
+      if (s.special && s.special.n && !optsOf(id)) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
@@ -7762,7 +7769,16 @@ window.KOMAT_PART_ART = [
     function start() {
       const work = {}, special = {}, lrn = {}, late = {};
       work.__lrn = lrn; work.__late = late;
+      const opt = {}; work.__opt = opt;
       auto.forEach((id) => {
+        const os = optsOf(id);
+        if (os) {
+          const k = Math.floor(R() * os.length), wk0 = os[k];
+          opt[id] = S(id).options.indexOf(wk0);
+          work[id] = wk0.map((c) => (OFF.test(String(c || '0').trim() || '0') ? 0 : 1)); special[id] = wk0.map((c) => (isSp(id, c) ? 1 : 0));
+          lrn[id] = [0, 0, 0, 0, 0, 0, 0]; late[id] = [0, 0, 0, 0, 0, 0, 0];
+          return;
+        }
         let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
         /* pinned days first, days off-if-possible last */
@@ -7799,6 +7815,17 @@ window.KOMAT_PART_ART = [
         const touched = [];
         let undo;
         const mv = R();
+        const os = optsOf(id);
+        if (os) {
+          if (os.length < 2) continue;
+          const O = st.work.__opt, was = O[id], wW = w.slice(), wS = sp.slice();
+          const k = os[Math.floor(R() * os.length)], ki = S(id).options.indexOf(k);
+          if (ki === was) continue;
+          for (let d = 0; d < 7; d++) { w[d] = OFF.test(String(k[d] || '0').trim() || '0') ? 0 : 1; sp[d] = isSp(id, k[d]) ? 1 : 0; if (w[d] !== wW[d] || sp[d] !== wS[d]) touched.push(d); }
+          O[id] = ki;
+          undo = () => { for (let d = 0; d < 7; d++) { w[d] = wW[d]; sp[d] = wS[d]; } O[id] = was; };
+          if (!touched.length) { undo(); continue; }
+        } else
         if (S(id).special && S(id).special.n && mv < 0.25) {
           const a = on.filter((d) => sp[d]), b = on.filter((d) => !sp[d] && !L[d]);
           if (!a.length || !b.length) continue;
@@ -8178,6 +8205,19 @@ window.KOMAT_PART_ART = [
   }
 
   /* ---------- who works where ---------- */
+  /* set weeks: the weeks someone offered (Mon to Sun, e.g. "P 10:30 0 P 10:30 0 0"); the generator uses one of them whole */
+  function setWeeks(s, save) {
+    const l = (s.options || []).map((w) => w.slice());
+    const parse = (t) => { const c = String(t || '').trim().split(/[\s,]+/).filter(Boolean); return c.length === 7 ? c : null; };
+    return h('div', { class: 'rp-weeks' },
+      l.map((w, i) => h('div', { class: 'xrow' },
+        h('input', { class: 'input small', value: w.join(' '), 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w.join(' '); return; } l[i] = c; save(l); } }),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove set week ' + (i + 1), onclick: () => { l.splice(i, 1); save(l); } }, K.icon('close')))),
+      h('div', { class: 'xrow' },
+        h('input', { class: 'input small', id: 'rp-newweek', placeholder: 'P 10:30 0 P 10:30 0 0', 'aria-label': 'Add a set week, Monday to Sunday' }),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c); save(l); } }, 'Add')),
+      l.length ? h('p', { class: 'hint' }, 'The draft uses one of these weeks whole, instead of picking the days.') : null);
+  }
   function team() {
     const plan = K.rotaPlan(), list = D.staff.people || [];
     const set = (fn) => { fn(plan); save(plan); };
@@ -8212,7 +8252,8 @@ window.KOMAT_PART_ART = [
           }))),
           (s.learn || []).length ? row('Learning days', K.select([0, 1, 2, 3].map((n) => [n, n ? n + ' a week' : 'None this week']), s.learnDays || 0, (v) => set((p) => { person(p, id).learnDays = +v; }), { 'aria-label': 'Learning days a week', class: 'input small' })) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
-          plan.periods ? h('div', { class: 'rp-flags' }, check('Can do late shifts (from 15:00): 3 lates count as 2 full days', !!s.late, (v) => set((p) => { person(p, id).late = v; }))) : null,
+          plan.periods ? row('Late shifts (from 15:00; 3 lates = 2 full days)', K.seg([['no', 'No'], ['rare', 'Only if needed'], ['yes', 'Yes']], s.late === 'rare' ? 'rare' : s.late ? 'yes' : 'no', (v) => set((p) => { person(p, id).late = v === 'yes' ? true : v === 'rare' ? 'rare' : false; }), { 'aria-label': 'Late shifts', class: 'seg small-seg' })) : null,
+          row('Set weeks', setWeeks(s, (l) => set((p) => { const q = person(p, id); if (l.length) q.options = l; else delete q.options; }))),
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
           row('Off if possible', days(s.avoid || [], (l) => set((p) => { person(p, id).avoid = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoidMore = (p.people[id].avoidMore || []).filter((x) => !l.includes(x)); }))),
@@ -8221,6 +8262,10 @@ window.KOMAT_PART_ART = [
             K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week' : 'None']), (s.special && s.special.n) || 0, (v) => set((p) => { const q = person(p, id); q.special = Object.assign({ code: '10:30' }, q.special, { n: +v }); }), { 'aria-label': 'Prep days a week', class: 'input small' }),
             s.special && s.special.n ? h('input', { class: 'input small rp-code', value: s.special.code || '10:30', 'aria-label': 'Shift on prep days', onchange: (e) => set((p) => { person(p, id).special.code = e.target.value.trim() || '10:30'; }) }) : null)),
           row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))),
+          s.br && (plan.brDays || []).length > 1 ? row('Breakfast best on', h('div', { class: 'rp-order' }, plan.brDays.map((d) => {
+            const on = (s.brOn || []).includes(d);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.brOn || []).slice(), j = l.indexOf(d); if (j >= 0) l.splice(j, 1); else l.push(d); if (l.length) q.brOn = l.sort(); else delete q.brOn; }) }, DAYS[d]);
+          }))) : null,
           h('div', { class: 'rp-flags' },
             check('Learning Hot: not alone on busy days, learns next to a mentor when spare', !!s.learner, (v) => set((p) => { person(p, id).learner = v; })),
             check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; })),
@@ -8251,7 +8296,7 @@ window.KOMAT_PART_ART = [
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
-    return [st, (s.days || 0) + (s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
+    return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);

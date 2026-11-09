@@ -211,6 +211,19 @@
   }
 
   /* ---------- who works where ---------- */
+  /* set weeks: the weeks someone offered (Mon to Sun, e.g. "P 10:30 0 P 10:30 0 0"); the generator uses one of them whole */
+  function setWeeks(s, save) {
+    const l = (s.options || []).map((w) => w.slice());
+    const parse = (t) => { const c = String(t || '').trim().split(/[\s,]+/).filter(Boolean); return c.length === 7 ? c : null; };
+    return h('div', { class: 'rp-weeks' },
+      l.map((w, i) => h('div', { class: 'xrow' },
+        h('input', { class: 'input small', value: w.join(' '), 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w.join(' '); return; } l[i] = c; save(l); } }),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove set week ' + (i + 1), onclick: () => { l.splice(i, 1); save(l); } }, K.icon('close')))),
+      h('div', { class: 'xrow' },
+        h('input', { class: 'input small', id: 'rp-newweek', placeholder: 'P 10:30 0 P 10:30 0 0', 'aria-label': 'Add a set week, Monday to Sunday' }),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c); save(l); } }, 'Add')),
+      l.length ? h('p', { class: 'hint' }, 'The draft uses one of these weeks whole, instead of picking the days.') : null);
+  }
   function team() {
     const plan = K.rotaPlan(), list = D.staff.people || [];
     const set = (fn) => { fn(plan); save(plan); };
@@ -245,7 +258,8 @@
           }))),
           (s.learn || []).length ? row('Learning days', K.select([0, 1, 2, 3].map((n) => [n, n ? n + ' a week' : 'None this week']), s.learnDays || 0, (v) => set((p) => { person(p, id).learnDays = +v; }), { 'aria-label': 'Learning days a week', class: 'input small' })) : null,
           row('Days a week', K.seg([1, 2, 3, 4, 5, 6, 7].map((n) => [n, String(n)]), s.days || 0, (v) => set((p) => { person(p, id).days = v; }), { 'aria-label': 'Days a week', class: 'seg small-seg' })),
-          plan.periods ? h('div', { class: 'rp-flags' }, check('Can do late shifts (from 15:00): 3 lates count as 2 full days', !!s.late, (v) => set((p) => { person(p, id).late = v; }))) : null,
+          plan.periods ? row('Late shifts (from 15:00; 3 lates = 2 full days)', K.seg([['no', 'No'], ['rare', 'Only if needed'], ['yes', 'Yes']], s.late === 'rare' ? 'rare' : s.late ? 'yes' : 'no', (v) => set((p) => { person(p, id).late = v === 'yes' ? true : v === 'rare' ? 'rare' : false; }), { 'aria-label': 'Late shifts', class: 'seg small-seg' })) : null,
+          row('Set weeks', setWeeks(s, (l) => set((p) => { const q = person(p, id); if (l.length) q.options = l; else delete q.options; }))),
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
           row('Off if possible', days(s.avoid || [], (l) => set((p) => { person(p, id).avoid = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoidMore = (p.people[id].avoidMore || []).filter((x) => !l.includes(x)); }))),
@@ -254,6 +268,10 @@
             K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week' : 'None']), (s.special && s.special.n) || 0, (v) => set((p) => { const q = person(p, id); q.special = Object.assign({ code: '10:30' }, q.special, { n: +v }); }), { 'aria-label': 'Prep days a week', class: 'input small' }),
             s.special && s.special.n ? h('input', { class: 'input small rp-code', value: s.special.code || '10:30', 'aria-label': 'Shift on prep days', onchange: (e) => set((p) => { person(p, id).special.code = e.target.value.trim() || '10:30'; }) }) : null)),
           row('Weekend breakfast', brPick(s, (v) => set((p) => { person(p, id).br = v; }))),
+          s.br && (plan.brDays || []).length > 1 ? row('Breakfast best on', h('div', { class: 'rp-order' }, plan.brDays.map((d) => {
+            const on = (s.brOn || []).includes(d);
+            return h('button', { type: 'button', class: 'chip', 'aria-pressed': on ? 'true' : 'false', onclick: () => set((p) => { const q = person(p, id), l = (q.brOn || []).slice(), j = l.indexOf(d); if (j >= 0) l.splice(j, 1); else l.push(d); if (l.length) q.brOn = l.sort(); else delete q.brOn; }) }, DAYS[d]);
+          }))) : null,
           h('div', { class: 'rp-flags' },
             check('Learning Hot: not alone on busy days, learns next to a mentor when spare', !!s.learner, (v) => set((p) => { person(p, id).learner = v; })),
             check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; })),
@@ -284,7 +302,7 @@
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on the rota';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
-    return [st, (s.days || 0) + (s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
+    return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);

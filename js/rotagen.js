@@ -31,7 +31,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -76,6 +76,10 @@
     const PER = !!plan.periods, lunch = plan.lunch || {}, lateCode = plan.lateCode || '2';
     /* a late shift is about two thirds of a full one: 3 lates and 2 full days make 4 full days */
     const lateOK = (id) => PER && S(id).mode === 'auto' && !!S(id).late;
+    /* someone who offered set weeks (options: [[7 codes], ...]) gets one of them whole: the days and which are
+       special (10:30) come from the week picked; a week that clashes with a day they must have off is left out */
+    const optsOf = (id) => { const o = S(id).options; if (!Array.isArray(o) || !o.length) return null; const ok = o.filter((w) => Array.isArray(w) && w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
+    const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
     /* lunch: which stations nobody covers, given who is where at night */
@@ -180,7 +184,8 @@
       let br = null, brCost = 0;
       if (brDays.includes(d)) {
         let bestR = Infinity;
-        auto.forEach((id) => { const r = S(id).br || 0; if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
+        /* brOn: the weekend days someone would rather do the breakfast; on the other day they come after the rest */
+        auto.forEach((id) => { const on0 = S(id).brOn, r = (S(id).br || 0) && (S(id).br + (Array.isArray(on0) && on0.length && !on0.includes(d) ? 1.5 : 0)); if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
         if (br) brCost = (bestR - 1) * W.brRank;
         else {
           order.forEach((id) => {
@@ -195,7 +200,9 @@
       }
       const heads = auto.filter((id) => work[id][d]).length;
       const nightHeads = auto.filter((id) => work[id][d] && !special[id][d]).length;
-      const evCost = (minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0) + (minNight[d] > nightHeads ? (minNight[d] - nightHeads) * W.unfilled : 0);
+      /* a quiet day with more cooks than its stations and one filler: someone could be off instead */
+      const crowd = !busy.includes(d) && !minCooks[d] && !minNight[d] ? Math.max(0, heads - placeList[d].length - 1) * W.crowd : 0;
+      const evCost = crowd + (minCooks[d] > heads ? (minCooks[d] - heads) * W.unfilled : 0) + (minNight[d] > nightHeads ? (minNight[d] - nightHeads) * W.unfilled : 0);
       return { cost: best.cost + handCost + brCost + evCost, on: best.on, extras: best.extras, br: br, heads: heads, handOn: handOn };
     }
 
@@ -203,10 +210,10 @@
     function personCost(id, work, special) {
       const s = S(id), w = work[id], n = w.reduce((a, b) => a + b, 0);
       const lt = lateOK(id) ? w.reduce((a, b, d) => a + (b && work.__late[id][d] ? 1 : 0), 0) : 0;
-      let c = lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * W.lateDay : Math.max(0, target(id) - n) * W.short;
+      let c = optsOf(id) ? 0 : lateOK(id) ? Math.abs(3 * target(id) - (3 * (n - lt) + 2 * lt)) / 3 * W.short + lt * (s.late === 'rare' ? W.lateRare : W.lateDay) : Math.max(0, target(id) - n) * W.short;
       if (lt > 3) c += (lt - 3) * W.short; /* at most 3 late shifts a week */
       for (let d = 0; d < 7; d++) { if (w[d] && wish[id][d]) c += W.wish; if (w[d] && (s.avoid || []).includes(d)) c += W.avoid; if (w[d] && (s.avoidMore || []).includes(d)) c += W.avoidMore; }
-      if (s.special && s.special.n) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
+      if (s.special && s.special.n && !optsOf(id)) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
       let blocks = 0;
       for (let d = 0; d < 7; d++) if (!w[d] && (d === 0 || w[d - 1])) blocks++;
@@ -221,7 +228,16 @@
     function start() {
       const work = {}, special = {}, lrn = {}, late = {};
       work.__lrn = lrn; work.__late = late;
+      const opt = {}; work.__opt = opt;
       auto.forEach((id) => {
+        const os = optsOf(id);
+        if (os) {
+          const k = Math.floor(R() * os.length), wk0 = os[k];
+          opt[id] = S(id).options.indexOf(wk0);
+          work[id] = wk0.map((c) => (OFF.test(String(c || '0').trim() || '0') ? 0 : 1)); special[id] = wk0.map((c) => (isSp(id, c) ? 1 : 0));
+          lrn[id] = [0, 0, 0, 0, 0, 0, 0]; late[id] = [0, 0, 0, 0, 0, 0, 0];
+          return;
+        }
         let f = free(id).slice();
         for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = f[i]; f[i] = f[j]; f[j] = t; }
         /* pinned days first, days off-if-possible last */
@@ -258,6 +274,17 @@
         const touched = [];
         let undo;
         const mv = R();
+        const os = optsOf(id);
+        if (os) {
+          if (os.length < 2) continue;
+          const O = st.work.__opt, was = O[id], wW = w.slice(), wS = sp.slice();
+          const k = os[Math.floor(R() * os.length)], ki = S(id).options.indexOf(k);
+          if (ki === was) continue;
+          for (let d = 0; d < 7; d++) { w[d] = OFF.test(String(k[d] || '0').trim() || '0') ? 0 : 1; sp[d] = isSp(id, k[d]) ? 1 : 0; if (w[d] !== wW[d] || sp[d] !== wS[d]) touched.push(d); }
+          O[id] = ki;
+          undo = () => { for (let d = 0; d < 7; d++) { w[d] = wW[d]; sp[d] = wS[d]; } O[id] = was; };
+          if (!touched.length) { undo(); continue; }
+        } else
         if (S(id).special && S(id).special.n && mv < 0.25) {
           const a = on.filter((d) => sp[d]), b = on.filter((d) => !sp[d] && !L[d]);
           if (!a.length || !b.length) continue;
