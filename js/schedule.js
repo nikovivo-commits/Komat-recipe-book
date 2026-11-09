@@ -195,7 +195,7 @@
     if (ni != null) {
       const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.prettyDate(day, { weekday: 'long', day: 'numeric', month: 'short' });
       const st = stAt(me, ni);
-      box.append(h('div', { class: 'sv-next' }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
+      box.append(h('div', { class: 'sv-next svn-' + kindOf(at(me, ni), st) }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
     }
     box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
       const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
