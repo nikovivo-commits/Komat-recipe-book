@@ -4123,24 +4123,9 @@ window.KOMAT_PART_ART = [
 
   /* ---------- mise en place checklists ---------- */
   K.sections = (st) => (D.checklists && D.checklists.stations && D.checklists.stations[st] && D.checklists.stations[st].sections) || [];
-  /* The sheet a station works from. It is not swapped by the clock: today's sheet stays up until the closing
-     cook finishes tomorrow's list (then it goes in the bin and the new one is up at once). If nobody closed
-     yesterday, yesterday's sheet stays up, unless tomorrow's list had already been written for today. */
-  const dayStart = (ds) => K.parseYmd(ds).getTime();
-  function sheetOff(st) {
-    const doc = (n) => D.checks[K.day(n) + '_' + st];
-    const closed = (n) => { const d = doc(n); return !!(d && d.closed && d.closed.at); };
-    const written = (n, before) => {
-      const d = doc(n), ok = (t) => !before || (t || 0) < before;
-      if (d && Object.keys(d.marks || {}).some((k) => ok(d.marks[k].t))) return true;
-      if (d && !before && Object.keys(d.extra || {}).some((k) => (d.extra[k] || []).length)) return true;
-      const pre = K.day(n) + '_day_';
-      return Object.keys(D.prep).some((id) => id.startsWith(pre) && D.prep[id].station === st && !/^(evt|auto)-/.test(D.prep[id].key || '') && ok(D.prep[id].leftAt || D.prep[id].at));
-    };
-    if (closed(0)) return 1;
-    if (!closed(-1) && written(-1) && !written(0, dayStart(K.day(0)))) return -1;
-    return 0;
-  }
+  /* The sheet a station works from is the calendar's: today's date until midnight, then the next day's
+     (a list written last night for today is already on today's date). Nothing is carried over by the clock. */
+  function sheetOff() { return 0; }
   K.sheetOff = sheetOff;
   K.sday = (st, n) => K.day(sheetOff(st) + (n || 0));
   K.checkId = (st, date) => (date || K.sday(st)) + '_' + st;
@@ -6762,7 +6747,7 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'sh-day' },
         h('div', { class: 'sh-date' }, h('span', { class: 'sh-k' + (tmr ? ' w' : '') }, tmr ? 'Writing tomorrow’s sheet' : 'Today’s sheet'),
           h('b', null, K.sheetDate(tmr ? K.sday(st, 1) : K.sday(st)))),
-        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : off < 0 ? 'Nobody closed yet, so it stays up' : 'Up until closing'))));
+        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : 'Up until midnight'))));
   }
   /* a section's heading line: title, count, a quiet hint or small controls on the right */
   function secHead(title, n, hint) {

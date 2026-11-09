@@ -85,7 +85,7 @@
       h('div', { class: 'sh-day' },
         h('div', { class: 'sh-date' }, h('span', { class: 'sh-k' + (tmr ? ' w' : '') }, tmr ? 'Writing tomorrow’s sheet' : 'Today’s sheet'),
           h('b', null, K.sheetDate(tmr ? K.sday(st, 1) : K.sday(st)))),
-        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : off < 0 ? 'Nobody closed yet, so it stays up' : 'Up until closing'))));
+        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : 'Up until midnight'))));
   }
   /* a section's heading line: title, count, a quiet hint or small controls on the right */
   function secHead(title, n, hint) {
