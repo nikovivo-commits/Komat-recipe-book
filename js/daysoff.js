@@ -317,10 +317,10 @@
       h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
       K.calendarOn ? K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }) : null);
-    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-legme' }, ['hot', 'cold', 'pass'].map((x) => h('span', { class: 'dc-me svc-' + x, 'aria-hidden': 'true' }, 'P')), ' your shifts') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
     /* with the calendar switched off the month still shows your shifts and the events, without days off */
-    if (!K.calendarOn) return h('section', { class: 'dcal clean' }, head, monthGrid(y, m), h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, h('span', { class: 'dc-ev lg' }, '★ Event')),
+    if (!K.calendarOn) return h('section', { class: 'dcal clean' }, head, monthGrid(y, m), h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-legme' }, ['hot', 'cold', 'pass'].map((x) => h('span', { class: 'dc-me svc-' + x, 'aria-hidden': 'true' }, 'P')), ' your shifts') : null, h('span', { class: 'dc-ev lg' }, '★ Event')),
       h('p', { class: 'chalk-hint' }, 'Tap a day to see who is on.'));
     return h('section', { class: 'dcal clean' }, head, year ? yearGrid(y) : monthGrid(y, m), legend,
       h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
@@ -365,7 +365,8 @@
           h('span', { class: 'dc-n' }, String(d.getDate())), evs(ds).map((e) => h('span', { class: 'dc-ev', title: e.title }, '★ ' + (e.title || 'Event'))), (() => {
             const c = my ? String(my.rows[i] || '').trim() : '';
             if (!c || /^(0|X)$/i.test(c)) return null;
-            return h('span', { class: 'dc-me' + (my.draft ? ' draft' : ''), title: (my.draft ? 'Draft: ' : '') + 'you work ' + c + (my.st[i] ? ' on ' + (K.STL[my.st[i]] || my.st[i]) : '') }, c + (my.st[i] ? ' ' + (SHORT[my.st[i]] || '') : ''));
+            const sk = my.st[i] ? (/^learn/.test(my.st[i]) ? 'learn' : my.st[i]) : /^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'plain';
+            return h('span', { class: 'dc-me svc-' + sk + (my.draft ? ' draft' : ''), title: (my.draft ? 'Draft: ' : '') + 'you work ' + c + (my.st[i] ? ' on ' + (K.STL[my.st[i]] || my.st[i]) : '') }, c);
           })()));
       });
       let row = 2;

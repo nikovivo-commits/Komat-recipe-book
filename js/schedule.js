@@ -172,9 +172,11 @@
     const evs = K.dayEvents ? K.dayEvents(ds) : [];
     return h('section', { class: 'sv-dayview' }, strip,
       h('h2', { class: 'sv-dtitle' }, K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' })),
+      stationKey(),
       evs.map((e) => h('div', { class: 'sv-evbox' }, h('b', null, '★ ' + (e.title || 'Event')), h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : ''].filter(Boolean).join(' · ')))),
-      h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
-        h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
+      /* one row per station, in its colour; the name of the station is there for screen readers only */
+      h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line svl-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]), title: o[1] },
+        h('span', { class: 'sr' }, o[1] + ': '),
         h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : ''), title: x.uf ? 'Not fair: ' + x.uf.why : null }, x.uf ? h('span', { class: 'uf-mini', 'aria-label': 'not fair: ' + x.uf.why }, K.icon('sad')) : null, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
         Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
       h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
@@ -193,15 +195,15 @@
     if (ni != null) {
       const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.prettyDate(day, { weekday: 'long', day: 'numeric', month: 'short' });
       const st = stAt(me, ni);
-      box.append(h('div', { class: 'sv-next' }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
+      box.append(h('div', { class: 'sv-next svn-' + kindOf(at(me, ni), st), title: st ? S[st] || st : null }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, h('span', { class: 'sr' }, st ? (S[st] || st) + ', ' : ''), at(me, ni) + (hoursOf(at(me, ni)) ? ' · ' + hoursOf(at(me, ni)) : ''))));
     }
     box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
       const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
       const mates = works(i) && st ? src.order.filter((id) => id !== me && works(i) && at(id, i) && !isOff(at(id, i)) && stAt(id, i) === st).map((id) => K.personName(id)) : [];
       return h('div', { class: 'sv-myday' + (k === 'off' || k === 'empty' ? ' off' : '') + (isNow && i === ti ? ' today' : '') },
         h('span', { class: 'sv-md' }, h('span', null, d), h('b', null, String(dd.getDate()))),
-        h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, k === 'off' || k === 'empty' ? 'off' : c),
-        h('span', { class: 'sv-mt' }, h('b', null, k === 'off' || k === 'empty' ? 'Day off' : [st ? S[st] || st : '', hoursOf(c)].filter(Boolean).join(' · ') || c),
+        h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : ''), title: st ? S[st] || st : null }, k === 'off' || k === 'empty' ? 'off' : c),
+        h('span', { class: 'sv-mt' }, h('b', null, k === 'off' || k === 'empty' ? 'Day off' : [h('span', { class: 'sr' }, st ? (S[st] || st) + ', ' : ''), hoursOf(c) || c]),
           mates.length ? h('small', null, 'with ' + mates.join(', ')) : null,
           ufAt(me, i) ? h('span', { class: 'uf-line' }, K.icon('sad'), 'Not fair: ' + ufAt(me, i).why + (K.calendarOn ? ' · +' + ufAt(me, i).n + ' points' : '')) : null));
     })),
