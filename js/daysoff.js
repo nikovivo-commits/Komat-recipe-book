@@ -30,6 +30,9 @@
   const face = (id, cls) => h('span', { class: 'off-face ' + (cls || ''), style: { '--h': hue(id) }, 'aria-hidden': 'true' }, initials(id));
   const pretty = (ds) => K.prettyDate(ds, { weekday: 'short', day: 'numeric', month: 'short' });
   const mondayOf = (ds) => K.ymd(K.mondayOf(K.parseYmd(ds)));
+  /* the week we are in is set: days off are asked from next Monday on (urgent still goes in; the chefs can do anything) */
+  const openFrom = () => K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7));
+  K.dayLocked = (ds) => ds < openFrom();
   const kindIcon = (r) => (r.kind === 'urgent' ? '!' : r.kind === 'paid' ? '☀' : r.kind === 'unpaid' ? '–' : '');
 
   /* ---------- cover points: earned for stepping in, spent on priority; they never run out ---------- */
@@ -220,6 +223,7 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Got it', onclick: () => { K.store.set('movesSeen', K.store.get('movesSeen', []).concat([x.key]).slice(-200)); K.render(); } }, K.icon('close')))));
   };
   function send(f) {
+    if (f.kind !== 'urgent' && !K.me.admin && f.from < openFrom()) { K.toast('This week is set. Days off are asked from ' + pretty(openFrom()) + ' on; for something you cannot move, send it as urgent.', { tone: 'bad' }); return; }
     const person = f.person, from = f.from, to = f.to && f.to >= from ? f.to : from, dates = [];
     for (let d = from; d <= to && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
     let status = decide(person, dates, f.kind), bumped = [];
@@ -368,13 +372,13 @@
       h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
       K.calendarOn ? K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }) : null);
-    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-legme' }, ['hot', 'cold', 'pass'].map((x) => h('span', { class: 'dc-me svc-' + x, 'aria-hidden': 'true' }, 'P')), ' your shifts') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+    const legend = h('div', { class: 'dc-legend' }, h('span', { class: 'dc-locklg' }, K.icon('lock'), 'This week is set'), K.getMe() ? h('span', { class: 'dc-legme' }, ['hot', 'cold', 'pass'].map((x) => h('span', { class: 'dc-me svc-' + x, 'aria-hidden': 'true' }, 'P')), ' your shifts') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
     /* with the calendar switched off the month still shows your shifts and the events, without days off */
     if (!K.calendarOn) return h('section', { class: 'dcal clean' }, head, monthGrid(y, m), h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-legme' }, ['hot', 'cold', 'pass'].map((x) => h('span', { class: 'dc-me svc-' + x, 'aria-hidden': 'true' }, 'P')), ' your shifts') : null, h('span', { class: 'dc-ev lg' }, '★ Event')),
       h('p', { class: 'chalk-hint' }, 'Tap a day to see who is on.'));
     return h('section', { class: 'dcal clean' }, head, year ? yearGrid(y) : monthGrid(y, m), legend,
-      h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
+      h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.me.admin ? K.ymd(K.addDays(new Date(), 1)) : openFrom()) }, K.icon('plus'), 'Ask for a day off'));
   }
   /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
   function myWeek(ds7) {
@@ -408,7 +412,8 @@
         let cur = null;
         rs.forEach((r) => { const i = ds7.indexOf(r.date); if (cur && i === cur.to + 1) cur.to = i; else runs.push(cur = { r: r, from: i, to: i, n: 0 }); cur.n++; });
       });
-      const strip = h('div', { class: 'dc-week' }), my = myWeek(ds7);
+      const set = ds7[6] < openFrom(), strip = h('div', { class: 'dc-week' + (set ? ' set' : '') + (ds7[0] === K.thisWeek() ? ' now' : '') }), my = myWeek(ds7);
+      if (ds7[0] === K.thisWeek()) strip.append(h('span', { class: 'dc-lock', title: 'This week is set', 'aria-label': 'This week is set' }, K.icon('lock')));
       ds7.forEach((ds, i) => {
         const d = K.addDays(mon, i), inMonth = d.getMonth() === m - 1, rs = (single[ds] || []).concat(runs.filter((x) => x.from <= i && x.to >= i).map((x) => x.r));
         strip.append(h('button', { type: 'button', style: { gridColumn: String(i + 1), gridRow: '1 / span ROWS' }, class: 'dc-day' + (inMonth ? '' : ' out') + (ds === today ? ' today' : '') + (ds < today ? ' past' : ''),
@@ -496,24 +501,29 @@
     else body.push(h('p', { class: 'none' }, 'Nobody has asked for this day off.'));
     if (ds >= today) {
       if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
+      else if (K.dayLocked(ds) && !K.me.admin) body.push(h('div', { class: 'off-lock' }, K.icon('lock'),
+        h('span', null, h('b', null, 'This week is set'), h('small', null, 'Days off are asked from ' + pretty(openFrom()) + ' on. For something you cannot move, send it as urgent: it goes straight in, in red.'))),
+        h('details', { class: 'off-urgent', open: !!(ui.offForm && ui.offForm.from === ds) }, h('summary', null, 'Something urgent?'), askForm(ds, me, true)));
       else body.push(askForm(ds, me));
     }
     }
     return K.sheet(K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' }), body, { wide: true });
   };
-  function askForm(ds, me) {
-    const f = (ui.offForm = ui.offForm && ui.offForm.from === ds ? ui.offForm : { from: ds, to: ds, kind: 'ask', note: '', person: me || '' });
+  function askForm(ds, me, urgentOnly) {
+    const f = (ui.offForm = ui.offForm && ui.offForm.from === ds ? ui.offForm : { from: ds, to: ds, kind: urgentOnly ? 'urgent' : 'ask', note: '', person: me || '' });
+    if (urgentOnly) f.kind = 'urgent';
+    const minDay = K.me.admin || urgentOnly ? K.day(0) : openFrom();
     const people = (D.staff.people || []).map((p) => [p.id, p.name]);
     const hint = { ask: 'Accepted straight away if the week still works without you. If not, the head chef or the sous chef decides.',
       urgent: 'For something you cannot move. It goes straight in, in red, and the head chef sorts out the gap.',
       paid: 'Paid vacation. The head chef or the sous chef approves it.', unpaid: 'Unpaid leave, the last resort. The head chef or the sous chef approves it.' }[f.kind];
     return h('form', { class: 'off-form k-' + f.kind, onsubmit: (e) => { e.preventDefault(); if (!f.person || ui.busy) return; send(f); } },
-      h('h3', { class: 'off-h' }, 'Ask for a day off'),
+      h('h3', { class: 'off-h' }, urgentOnly ? 'Urgent day off' : 'Ask for a day off'),
       K.me.admin ? K.field('Who', K.select([['', 'Pick a person']].concat(people), f.person, (v) => { f.person = v; K.render(); }, { class: 'input' })) : null,
       h('div', { class: 'two tight' },
-        K.field('From', h('input', { class: 'input', type: 'date', value: f.from, min: K.day(0), onchange: (e) => { f.from = e.target.value || ds; if (f.to < f.from) f.to = f.from; ui.offForm = f; K.render(); } })),
+        K.field('From', h('input', { class: 'input', type: 'date', value: f.from, min: minDay, max: urgentOnly ? K.ymd(K.addDays(K.parseYmd(openFrom()), -1)) : null, onchange: (e) => { f.from = e.target.value || ds; if (f.to < f.from) f.to = f.from; ui.offForm = f; K.render(); } })),
         K.field('Until', h('input', { class: 'input', type: 'date', value: f.to, min: f.from, onchange: (e) => { f.to = e.target.value || f.from; K.render(); } }))),
-      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'What kind'),
+      urgentOnly ? null : h('div', { class: 'field' }, h('span', { class: 'legend' }, 'What kind'),
         h('div', { class: 'off-kinds' }, [['ask', 'Day off', ''], ['urgent', 'Urgent', '!'], ['paid', 'Paid vacation', '☀']].map((k) => h('button', { type: 'button', class: 'off-kbtn k-' + k[0], 'aria-pressed': f.kind === k[0] ? 'true' : 'false', onclick: () => { f.kind = k[0]; K.render(); } }, k[2] ? h('b', null, k[2]) : null, k[1]))),
         h('details', { class: 'off-more', open: f.kind === 'unpaid' }, h('summary', null, 'More options'),
           h('button', { type: 'button', class: 'off-kbtn k-unpaid', 'aria-pressed': f.kind === 'unpaid' ? 'true' : 'false', onclick: () => { f.kind = 'unpaid'; K.render(); } }, 'Unpaid leave'))),

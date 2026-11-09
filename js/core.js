@@ -120,6 +120,7 @@
 
   /* ---------- icons (24px, stroke) ---------- */
   const P = {
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     sad: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.2c1.9-1.7 5.1-1.7 7 0"/><path d="M9 9.6h.01M15 9.6h.01" stroke-width="2.6"/>',
     book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20v3H6.5"/><path d="M9 7h7"/>',
     today: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 8.5h3M14 14.5h3"/>',

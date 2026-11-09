@@ -2282,3 +2282,16 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .sv-nmw .stdots { margin-top: 0; gap: 2px; }
 .sv-nmw .stdots i { width: 13px; height: 13px; border-radius: 3px; font-size: .52rem; }
 .sv-week tr.me .sv-nmw .stdots i.em { color: var(--sh-me-ink); }
+/* the week we are in is set */
+.dc-week { position: relative; }
+.dc-week.set .dc-day { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--surface-2) 6px 8px); }
+.dc-week.set .dc-day:not(.today) .dc-n { opacity: .6; }
+.dc-week.now { box-shadow: inset 0 0 0 1.5px var(--line); border-radius: 6px; }
+.dc-lock { position: absolute; top: -9px; right: -7px; z-index: 2; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--steel); color: var(--on-steel); pointer-events: none; }
+.dc-lock .ico svg, .dc-locklg .ico svg, .off-lock > .ico svg { width: 13px; height: 13px; stroke-width: 2.2; }
+.dc-locklg { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; background: var(--steel); color: var(--on-steel); font-size: .74rem; font-weight: 600; }
+.off-lock { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 14px; border-radius: 12px; background: var(--steel); color: var(--on-steel); }
+.off-lock > .ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--steel-2); }
+.off-lock span { display: grid; gap: 3px; }
+.off-lock small { color: var(--steel-muted); font-size: .86rem; line-height: 1.4; }
+.off-urgent summary { cursor: pointer; padding: 10px 2px; font-weight: 700; color: var(--urgent); }
