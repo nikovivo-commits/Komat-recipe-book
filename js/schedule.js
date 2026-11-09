@@ -90,10 +90,12 @@
     }
     if (src.draft) w.append(h('p', { class: 'sv-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (src.holes ? ' · ' + src.holes + (src.holes === 1 ? ' hole' : ' holes') : '')));
     const at = (id, i) => String(((src.rows[id] || [])[i]) || '').trim(), stAt = (id, i) => ((src.st[id] || [])[i]) || '';
+    /* not fair: a shift on a day that person should have had (asked off, fixed or kept day off, an extra day, a backup station) */
+    const uf = K.unfairWeek ? K.unfairWeek(wk, src.rows, src.st) : {}, ufAt = (id, i) => (uf[id] || {})[i] || null;
 
-    if (view === 'day') w.append(dayView(src, at, stAt, mon, isNow, ti, me));
-    else if (view === 'mine') w.append(mineView(src, at, stAt, mon, isNow, ti, me));
-    else w.append(weekView(src, at, stAt, mon, isNow, ti, me, wk));
+    if (view === 'day') w.append(dayView(src, at, stAt, mon, isNow, ti, me, ufAt));
+    else if (view === 'mine') w.append(mineView(src, at, stAt, mon, isNow, ti, me, ufAt));
+    else w.append(weekView(src, at, stAt, mon, isNow, ti, me, wk, ufAt));
 
     if (doc && doc.note && !K.me.admin) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
     if (K.me.admin) w.append(h('div', { class: 'btns sv-acts' }, genLink()));
@@ -116,7 +118,7 @@
   }
 
   /* Week: the whole team, every day */
-  function weekView(src, at, stAt, mon, isNow, ti, me, wk) {
+  function weekView(src, at, stAt, mon, isNow, ti, me, wk, ufAt) {
     const edit = K.me.admin && !src.draft;
     const head = h('tr', null, h('th', { scope: 'col', class: 'sv-nm' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
       const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
@@ -130,18 +132,22 @@
         h('th', { scope: 'row', class: 'sv-nm' }, edit ? h('button', { type: 'button', class: 'sv-nb', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, nm) : nm),
         K.DAYS.map((d, i) => {
           const c = at(id, i), k = kindOf(c, stAt(id, i)), txt = k === 'off' ? '–' : c;
-          const lab = K.personName(id) + ', ' + d + ': ' + (k === 'off' ? 'off' : c + (stAt(id, i) ? ', ' + (STN()[stAt(id, i)] || stAt(id, i)) : ''));
-          const blk = h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, txt);
+          const u = ufAt(id, i);
+          const lab = K.personName(id) + ', ' + d + ': ' + (k === 'off' ? 'off' : c + (stAt(id, i) ? ', ' + (STN()[stAt(id, i)] || stAt(id, i)) : '')) + (u ? '. Not fair: ' + u.why : '');
+          const blk = h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, txt, u ? h('span', { class: 'uf', title: 'Not fair: ' + u.why }, K.icon('sad')) : null);
           return h('td', { class: isNow && i === ti ? 'now' : null }, edit ? h('button', { type: 'button', class: 'sv-cb', 'aria-label': lab, onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, blk) : h('span', { 'aria-label': lab }, blk));
         }));
     });
-    return h('section', { class: 'sv-card' }, stationKey(),
+    const anyUf = src.order.some((id) => [0, 1, 2, 3, 4, 5, 6].some((i) => ufAt(id, i)));
+    const key = stationKey();
+    if (anyUf) key.append(h('span', { class: 'uf-k' }, K.icon('sad'), K.calendarOn ? 'Not fair · earns more' : 'Not fair'));
+    return h('section', { class: 'sv-card' }, key,
       h('table', { class: 'sv-week' }, h('thead', null, head), h('tbody', null, rows)),
       h('p', { class: 'sv-hint' }, edit ? 'Tap a day for who stands where. Tap a shift to change it, a name to rename or move it.' : 'Tap a day for who stands where.'));
   }
 
   /* Day: one day, station by station */
-  function dayView(src, at, stAt, mon, isNow, ti, me) {
+  function dayView(src, at, stAt, mon, isNow, ti, me, ufAt) {
     let di = ui.schedDay;
     if (di == null) di = isNow ? ti : 0;
     const strip = h('div', { class: 'sv-days', role: 'group', 'aria-label': 'Pick a day' }, K.DAYS.map((d, i) => {
@@ -158,7 +164,7 @@
       if (isOff(c)) { off.push(id); return; }
       if (/^BR\+/i.test(c)) add('br', { id: id, tag: 'until 16:00' });
       const k = st || (/^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'other');
-      add(k, { id: id, tag: k === 'other' ? c : c === 'P' || k === 'br' || /^BR\+/i.test(c) ? '' : c === '2' ? 'from 15:00' : c === '10:30' ? '10:30–19:00' : c });
+      add(k, { id: id, uf: ufAt(id, di), tag: k === 'other' ? c : c === 'P' || k === 'br' || /^BR\+/i.test(c) ? '' : c === '2' ? 'from 15:00' : c === '10:30' ? '10:30–19:00' : c });
       /* someone on a fixed week who also covers a station at lunch (breakfast cook on Hot) */
       (((plan[id] || {}).lunch) || []).forEach((x) => add(x, { id: id, tag: 'lunch' }));
     });
@@ -169,13 +175,13 @@
       evs.map((e) => h('div', { class: 'sv-evbox' }, h('b', null, '★ ' + (e.title || 'Event')), h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : ''].filter(Boolean).join(' · ')))),
       h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
         h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
-        h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : '') }, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
+        h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : ''), title: x.uf ? 'Not fair: ' + x.uf.why : null }, x.uf ? h('span', { class: 'uf-mini', 'aria-label': 'not fair: ' + x.uf.why }, K.icon('sad')) : null, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
         Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
       h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
   }
 
   /* Mine: your next shift, then your seven days and who you are with */
-  function mineView(src, at, stAt, mon, isNow, ti, me) {
+  function mineView(src, at, stAt, mon, isNow, ti, me, ufAt) {
     const box = h('section', { class: 'sv-mine' });
     if (!locked()) box.append(h('label', { class: 'mepick' }, h('span', { class: 'legend' }, 'I am'), K.select([['', 'Pick your name']].concat(src.order.map((id) => [id, K.personName(id)])), src.order.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' })));
     if (!me || !src.order.includes(me)) {
@@ -196,7 +202,8 @@
         h('span', { class: 'sv-md' }, h('span', null, d), h('b', null, String(dd.getDate()))),
         h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, k === 'off' || k === 'empty' ? 'off' : c),
         h('span', { class: 'sv-mt' }, h('b', null, k === 'off' || k === 'empty' ? 'Day off' : [st ? S[st] || st : '', hoursOf(c)].filter(Boolean).join(' · ') || c),
-          mates.length ? h('small', null, 'with ' + mates.join(', ')) : null));
+          mates.length ? h('small', null, 'with ' + mates.join(', ')) : null,
+          ufAt(me, i) ? h('span', { class: 'uf-line' }, K.icon('sad'), 'Not fair: ' + ufAt(me, i).why + (K.calendarOn ? ' · +' + ufAt(me, i).n + ' points' : '')) : null));
     })),
     h('p', { class: 'sv-sum' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week'));
     return box;

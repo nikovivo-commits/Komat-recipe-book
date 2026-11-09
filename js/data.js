@@ -524,6 +524,8 @@
   K.saveWeek = function (wk, body) {
     D.weeks[wk] = body;
     K.refresh(true);
+    /* the points that go with the week (not-fair shifts, event days) follow every change to it */
+    if (K.syncWeekPoints) K.syncWeekPoints(wk, body);
     return K.db.doc('schedules/' + wk).set(body).catch(writeFailed);
   };
   K.saveStaff = (n) => { D.staff = n; K.refresh(true); return K.db.doc('settings/staff').set(n).catch(writeFailed); };

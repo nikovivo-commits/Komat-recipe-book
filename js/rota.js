@@ -196,11 +196,7 @@
     return box;
   }
   function use(wk, r) {
-    /* the covers the generator arranged earn points once the week is saved: someone on a day off or a backup station */
-    if (K.awardPoints) r.issues.filter((x) => x.sev === 'amber' && x.person && x.day != null && /\((last resort|emergency only)\)/.test(x.text)).forEach((x) => {
-      const date = K.ymd(K.addDays(K.parseYmd(wk), x.day));
-      if (!K.rotaPins(wk).some((p) => p.person === x.person && p.date === date)) K.awardPoints('auto_' + date + '_' + x.person, { person: x.person, n: 3, kind: 'cover', date: date, reason: x.text.replace(/ \((last resort|emergency only)\)/, '') });
-    });
+    /* the points for the week (backup stations, days that were not fair, event days) come with saving it: K.saveWeek */
     const old = D.weeks[wk] || {}, people = r.order.slice(), rows = K.clone(r.rows), st = K.clone(r.st);
     (old.people || []).forEach((id) => { if (!people.includes(id)) { people.push(id); rows[id] = (old.rows || {})[id] || ['', '', '', '', '', '', '']; } });
     ui.rpConfirm = '';

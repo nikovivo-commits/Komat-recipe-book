@@ -33,12 +33,17 @@
   const kindIcon = (r) => (r.kind === 'urgent' ? '!' : r.kind === 'paid' ? '☀' : r.kind === 'unpaid' ? '–' : '');
 
   /* ---------- cover points: earned for stepping in, spent on priority; they never run out ---------- */
-  const PRIORITY = 3;
+  /* prices: priority on a taken day 3, a guaranteed day off 6, a guaranteed weekend (Fri+Sat or Sat+Sun) 8;
+     a thin day (one where you being off pushes someone onto a backup station or leaves the night without a filler)
+     costs 2 more. Savings stop at 20. */
+  const PRIORITY = 3, GUARANTEE = 6, WEEKEND = 8, THIN = 2, CAP = 20;
+  K.POINTS = { priority: PRIORITY, guarantee: GUARANTEE, weekend: WEEKEND, thin: THIN, cap: CAP };
   const pts = () => Object.keys(D.points || {}).map((k) => D.points[k]);
   K.pointsOf = (id) => pts().filter((p) => p.person === id).reduce((a, p) => a + (+p.n || 0), 0);
   K.awardPoints = function (docId, body) {
     if (!K.calendarOn) return Promise.resolve();
     const b = Object.assign({ at: Date.now(), by: K.me.id || '' }, body);
+    if (+b.n > 0) { const was = D.points[docId] && D.points[docId].person === b.person ? +D.points[docId].n || 0 : 0, room = Math.max(0, CAP - (K.pointsOf(b.person) - was)); if (+b.n > room) { b.wanted = +b.n; b.n = room; } }
     D.points[docId] = Object.assign({ id: docId }, b);
     K.db.doc('points/' + docId).set(b).catch(K.writeFailed);
     K.refresh();
@@ -53,9 +58,10 @@
   /* a priority request withdrawn or refused: the points come back, and whoever gave way gets their day back */
   const refund = (rs) => {
     const r = rs[0];
-    if (!r || !r.priority) return;
+    if (!r || !(r.priority || r.guaranteed)) return;
     K.removePoints('spend_' + r.date + '_' + r.person);
     const dates = rs.map((x) => x.date);
+    all().filter((x) => x.bumpedBy === r.person && dates.includes(x.date)).forEach((x) => K.removePoints('gaveway_' + x.date + '_' + x.person));
     all().filter((x) => x.bumpedBy === r.person && x.status === 'waiting' && dates.includes(x.date)).forEach((x) => {
       const b = Object.assign({}, x, { status: 'ok' }); delete b.id; delete b.bumpedBy;
       D.dayoff[x.id] = Object.assign({ id: x.id }, b);
@@ -94,27 +100,109 @@
     }
     return out;
   }
+  /* a thin day: you being off that day pushes someone onto a backup station, a protected day, or leaves a
+     night with no filler (the rota as it stands, with and without you) */
+  const thinMemo = new Map();
+  function thinDays(person, dates) {
+    if (!K.rotaReady || !K.rotaReady()) return [];
+    const key = person + '|' + dates.join(',') + '|' + JSON.stringify(Object.keys(D.dayoff).length) + '|' + JSON.stringify(D.rotaplan || {}).length;
+    if (thinMemo.has(key)) return thinMemo.get(key);
+    const out = [];
+    Array.from(new Set(dates.map(mondayOf))).forEach((wk) => {
+      const base = K.requestsFor(wk).filter((r) => !(r.person === person && dates.includes(r.date)));
+      const bad = (reqs) => { const g = K.rotaGen(K.rotaInput(wk, reqs)); const c = {}; g.issues.forEach((x) => { if (x.day != null && (x.sev === 'red' || /emergency only|last resort|no filler/.test(x.text))) c[x.day] = (c[x.day] || 0) + 1; }); return c; };
+      const a = bad(base), b = bad(base.concat(dates.filter((d) => mondayOf(d) === wk).map((d) => ({ person: person, date: d, kind: 'urgent', status: 'ok' }))));
+      dates.filter((d) => mondayOf(d) === wk).forEach((d) => { const i = Math.round((K.parseYmd(d) - K.parseYmd(wk)) / 86400000); if ((b[i] || 0) > (a[i] || 0)) out.push(d); });
+    });
+    thinMemo.set(key, out); if (thinMemo.size > 20) thinMemo.delete(thinMemo.keys().next().value);
+    return out;
+  }
+  /* what a request costs: priority 3 a day, a guarantee 6 a day (a weekend pair 8), 2 more for each thin day */
+  K.offPrice = function (person, dates, mode) {
+    const thin = thinDays(person, dates).length;
+    const wd = dates.map((d) => (K.parseYmd(d).getDay() + 6) % 7), weekend = dates.length === 2 && ((wd[0] === 4 && wd[1] === 5) || (wd[0] === 5 && wd[1] === 6));
+    const base = mode === 'priority' ? PRIORITY * dates.length : weekend ? WEEKEND : GUARANTEE * dates.length;
+    return { n: base + THIN * thin, thin: thin, weekend: weekend && mode === 'guarantee' };
+  };
+
+  /* ---------- not fair: working a day you should have had ----------
+     A shift is marked with a sad face, and earns more, when it lands on a day you asked off, on your fixed day
+     off, on a day you keep off, on a day off-if-possible you did not need to give up, as a day more than your
+     usual week, or on a backup station. */
+  const UNFAIR = { asked: 5, fixed: 5, kept: 4, ifpossible: 3, extra: 3, backup: 3 };
+  const WHY = { asked: 'you asked this day off', fixed: 'your usual day off', kept: 'a day you keep off', ifpossible: 'a day off if possible', extra: 'a day more than your usual week', backup: 'not your usual station' };
+  K.unfairWeek = function (wk, rows, st) {
+    const plan = K.rotaPlan ? K.rotaPlan() : { people: {} }, out = {};
+    const works = (c) => { c = String(c || '').trim(); return !!c && !/^(0|X)$/i.test(c); };
+    Object.keys(rows || {}).forEach((id) => {
+      const s = plan.people[id] || {}, row = rows[id] || [], sts = (st || {})[id] || [], marks = {};
+      const add = (i, k) => { if (!marks[i] || UNFAIR[k] > marks[i].n) marks[i] = { k: k, n: UNFAIR[k], why: WHY[k] }; };
+      for (let i = 0; i < 7; i++) {
+        if (!works(row[i])) continue;
+        const date = K.ymd(K.addDays(K.parseYmd(wk), i));
+        if (all().some((r) => r.person === id && r.date === date)) add(i, 'asked');
+        if (s.mode !== 'auto') continue;
+        if ((s.off || []).includes(i)) add(i, 'fixed');
+        if ((s.avoidMore || []).includes(i)) add(i, 'kept');
+        if (sts[i] && ((s.emergency || []).includes(sts[i]))) add(i, 'backup');
+      }
+      if (s.mode === 'auto') {
+        /* off-if-possible days: only the ones beyond what was needed to make up the week */
+        const free = [0, 1, 2, 3, 4, 5, 6].filter((d) => !(s.off || []).includes(d) && !(s.avoid || []).includes(d) && !(s.avoidMore || []).includes(d)).length;
+        let need = Math.max(0, (s.days || 0) - free);
+        for (let i = 0; i < 7; i++) if (works(row[i]) && (s.avoid || []).includes(i)) { if (need > 0) need--; else add(i, 'ifpossible'); }
+        /* a day more than usual: full shifts count 1, late shifts 2/3 */
+        const thirds = row.reduce((a, c) => a + (!works(c) ? 0 : String(c).trim() === String((D.rotaplan || {}).lateCode || '2') ? 2 : 3), 0);
+        if (s.days && !(s.options || []).length && thirds > 3 * s.days) { let last = -1; for (let i = 0; i < 7; i++) if (works(row[i])) last = i; if (last >= 0) add(last, 'extra'); }
+      } else if (s.mode === 'hand') {
+        for (let i = 0; i < 7; i++) if (works(row[i]) && sts[i] && (s.cover || []).includes(sts[i])) add(i, 'backup');
+      }
+      if (Object.keys(marks).length) out[id] = marks;
+    });
+    return out;
+  };
+  /* once a week is saved, the points that go with it: not-fair shifts and event days (2 for everyone working);
+     worked out again whenever the week changes, so a shift moved back takes its points with it */
+  K.syncWeekPoints = function (wk, doc) {
+    if (!K.calendarOn || !K.me.admin || !doc || !doc.rows) return;
+    const want = {}, uf = K.unfairWeek(wk, doc.rows, doc.st || {}), dates = [0, 1, 2, 3, 4, 5, 6].map((i) => K.ymd(K.addDays(K.parseYmd(wk), i)));
+    Object.keys(uf).forEach((id) => Object.keys(uf[id]).forEach((i) => { const m = uf[id][i], date = dates[+i]; want['unfair_' + date + '_' + id] = { person: id, n: m.n, kind: 'unfair', date: date, reason: 'Worked ' + pretty(date) + ': ' + m.why }; }));
+    dates.forEach((date, i) => (K.dayEvents ? K.dayEvents(date) : []).filter((e) => +e.cooks > 0 || e.status === 'confirmed').slice(0, 1).forEach((e) => {
+      Object.keys(doc.rows).forEach((id) => { const c = String(doc.rows[id][i] || '').trim(); if (c && !/^(0|X)$/i.test(c) && !/^BR$/i.test(c)) want['event_' + date + '_' + id] = { person: id, n: 2, kind: 'event', date: date, reason: (e.title || 'Event') + ', ' + pretty(date) }; });
+    }));
+    Object.keys(D.points || {}).filter((k) => /^(unfair|event|auto)_/.test(k) && dates.includes(D.points[k].date) && !want[k]).forEach((k) => K.removePoints(k));
+    Object.keys(want).forEach((k) => { const o = D.points[k]; if (!o || o.reason !== want[k].reason || (+o.n !== want[k].n && !o.wanted)) K.awardPoints(k, want[k]); });
+  };
   function send(f) {
     const person = f.person, from = f.from, to = f.to && f.to >= from ? f.to : from, dates = [];
     for (let d = from; d <= to && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
     let status = decide(person, dates, f.kind), bumped = [];
-    const wantPrio = f.priority && f.kind === 'ask' && status === 'waiting' && K.pointsOf(person) >= PRIORITY;
+    const mode = f.kind === 'ask' ? f.mode || (f.priority ? 'priority' : 'ask') : 'ask', price = mode === 'ask' ? 0 : K.offPrice(person, dates, mode).n;
+    const wantPrio = mode === 'priority' && status === 'waiting' && K.pointsOf(person) >= price;
     if (wantPrio) { const b = bumpFor(person, dates); if (b) { status = 'ok'; bumped = b; } }
+    /* a guarantee: the day goes in whatever the week looks like; whoever ends up covering earns for it */
+    const guar = mode === 'guarantee' && status === 'waiting' && K.pointsOf(person) >= price;
+    if (guar) status = 'ok';
     const prio = wantPrio && status === 'ok', group = dates.length > 1 ? 'g' + K.uid() : '', at = Date.now();
     ui.busy = true; K.render();
     Promise.all(dates.map((d) => {
       const body = { date: d, person: person, uid: K.me.id || '', kind: f.kind, note: (f.note || '').trim().slice(0, 300), status: status, at: at, group: group };
       if (prio) body.priority = true;
+      if (guar) body.guaranteed = true;
       D.dayoff[d + '_' + person] = Object.assign({ id: d + '_' + person }, body);
       return K.db.doc('dayoff/' + d + '_' + person).set(body);
     })).then(() => {
       ui.busy = false; ui.sheet = null; ui.offForm = null; K.render();
       const span = dates.length > 1 ? pretty(from) + ' – ' + pretty(to) : pretty(from);
       if (prio) {
-        bumped.forEach((r) => { const b = Object.assign({}, r, { status: 'waiting', bumpedBy: person }); delete b.id; D.dayoff[r.id] = Object.assign({ id: r.id }, b); K.db.doc('dayoff/' + r.id).set(b).catch(K.writeFailed); });
-        K.awardPoints('spend_' + from + '_' + person, { person: person, n: -PRIORITY, kind: 'spend', date: from, reason: 'Priority for ' + span });
-        K.toast('Accepted with priority (' + PRIORITY + ' points): ' + span + '. ' + Array.from(new Set(bumped.map((r) => K.personName(r.person)))).join(', ') + '’s day off now waits for the head chef.', { tone: 'good' });
-      } else if (f.priority && wantPrio) K.toast('Sent for approval: ' + span + '. Priority could not make room, so no points were used.');
+        bumped.forEach((r) => { const b = Object.assign({}, r, { status: 'waiting', bumpedBy: person }); delete b.id; D.dayoff[r.id] = Object.assign({ id: r.id }, b); K.db.doc('dayoff/' + r.id).set(b).catch(K.writeFailed);
+          K.awardPoints('gaveway_' + r.date + '_' + r.person, { person: r.person, n: 2, kind: 'gaveway', date: r.date, reason: 'Gave way to ' + K.personName(person) + ' on ' + pretty(r.date) }); });
+        K.awardPoints('spend_' + from + '_' + person, { person: person, n: -price, kind: 'spend', date: from, reason: 'Priority for ' + span });
+        K.toast('Accepted with priority (' + price + ' points): ' + span + '. ' + Array.from(new Set(bumped.map((r) => K.personName(r.person)))).join(', ') + '’s day off now waits for the head chef.', { tone: 'good' });
+      } else if (guar) {
+        K.awardPoints('spend_' + from + '_' + person, { person: person, n: -price, kind: 'spend', date: from, reason: 'Guaranteed ' + span });
+        K.toast('Guaranteed (' + price + ' points): ' + span + '. The head chef sorts out the cover.', { tone: 'good' });
+      } else if (wantPrio) K.toast('Sent for approval: ' + span + '. Priority could not make room, so no points were used.');
       else if (status === 'ok') K.toast((f.kind === 'urgent' ? 'Urgent, noted: ' : 'Accepted: ') + span + (f.kind === 'urgent' ? '. The head chef sees it in red.' : '. Enjoy it.'), { tone: 'good' });
       else K.toast('Sent for approval: ' + span + '. The head chef or sous chef decides.');
     }, (e) => { ui.busy = false; K.render(); K.writeFailed(e); });
@@ -175,7 +263,7 @@
       .sort((a, b) => b.month - a.month || b.bal - a.bal);
     const box = h('section', { class: 'cover-board clean' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
       h('p', { class: 'chalk-sub' }, 'Points for stepping in · ' + new Date().toLocaleDateString('en-GB', { month: 'long' })));
-    if (!rows.length) box.append(h('p', { class: 'chalk-hint' }, 'No covers yet. Stepping in on a day off earns 3 points, 5 at short notice.'));
+    if (!rows.length) box.append(h('p', { class: 'chalk-hint' }, 'No points yet. Covering a gap earns 3 (5 at short notice), a shift that is not fair 3–5, an event day 2, giving way 2.'));
     else box.append(h('ol', { class: 'cb-list' }, rows.map((x, i) => h('li', { class: x.id === me ? 'me' : '' },
       h('span', { class: 'cb-rank' }, x.month ? String(i + 1) : '–'), face(x.id),
       h('b', { class: 'cb-name' }, K.personName(x.id) + (x.id === me ? ' (you)' : '')),
@@ -186,7 +274,7 @@
       if (mine.length) box.append(h('details', { class: 'cb-hist' }, h('summary', null, 'Your points'),
         h('ul', null, mine.map((p) => h('li', null, h('b', null, (+p.n > 0 ? '+' : '') + p.n), ' ' + (p.reason || ''))))));
     }
-    box.append(h('p', { class: 'chalk-hint' }, 'Spend ' + PRIORITY + ' to ask with priority for a day someone else already has off.'));
+    box.append(h('p', { class: 'chalk-hint' }, 'Spend them when a day is already taken: priority ' + PRIORITY + ', a guaranteed day off ' + GUARANTEE + ', a guaranteed weekend ' + WEEKEND + ', +' + THIN + ' on a thin day. Savings stop at ' + CAP + '.'));
     if (K.me.admin) {
       const g = (ui.giveForm = ui.giveForm || { person: '', n: 1, reason: '' });
       box.append(h('form', { class: 'cb-give', onsubmit: (e) => {
@@ -380,10 +468,18 @@
       h('p', { class: 'hint off-hint' }, hint),
       (() => { const ev = []; for (let d = f.from; d <= (f.to || f.from) && ev.length < 3; d = K.ymd(K.addDays(K.parseYmd(d), 1))) evs(d).forEach((e) => ev.push(e)); return ev.length ? h('p', { class: 'banner warn' }, h('b', null, '★ Event: '), ev.map((e) => (e.title || 'Event') + ' on ' + pretty(e.date) + (+e.cooks ? ', needs ' + e.cooks + ' cooks' : '')).join('; ') + '. If the kitchen would be short, the head chef decides.') : null; })(),
       (() => {
-        const have = f.person ? K.pointsOf(f.person) : 0;
-        if (f.kind !== 'ask' || have < PRIORITY) return f.kind === 'ask' && f.person ? h('p', { class: 'hint' }, '★ Cover points: ' + have + '. With ' + PRIORITY + ' you can ask with priority.') : null;
-        return h('label', { class: 'check off-prio' }, h('input', { type: 'checkbox', checked: !!f.priority, onchange: (e) => { f.priority = e.target.checked; } }),
-          h('span', null, h('b', null, '★ Use priority: ' + PRIORITY + ' points'), h('small', null, 'You have ' + have + '. If someone else already has this day off, you get it and theirs goes back to the head chef. Only used if it makes the difference.')));
+        if (f.kind !== 'ask' || !f.person) return null;
+        const have = K.pointsOf(f.person), dates = [];
+        for (let d = f.from; d <= (f.to || f.from) && dates.length < 31; d = K.ymd(K.addDays(K.parseYmd(d), 1))) dates.push(d);
+        const pr = K.offPrice(f.person, dates, 'priority'), gu = K.offPrice(f.person, dates, 'guarantee'), mode = f.mode || 'ask';
+        const opt = (m, title, price, txt) => h('label', { class: 'off-opt' + (mode === m ? ' on' : '') + (price > have ? ' poor' : '') },
+          h('input', { type: 'radio', name: 'offmode', checked: mode === m, disabled: price > have, onchange: () => { f.mode = m; K.render(); } }),
+          h('span', null, h('b', null, title, price ? h('span', { class: 'off-price' }, '★ ' + price) : null), h('small', null, txt)));
+        return h('fieldset', { class: 'off-opts' }, h('legend', { class: 'legend' }, 'If the day is already taken · you have ★ ' + have),
+          opt('ask', 'Just ask', 0, 'Free. If the week cannot do without you, the head chef decides.'),
+          opt('priority', 'Priority', pr.n, 'If someone else has this day off, you get it and theirs goes back to the head chef. They get 2 points for giving way.' + (pr.thin ? ' Includes +' + THIN * pr.thin + ' for a thin day.' : '')),
+          opt('guarantee', gu.weekend ? 'Guaranteed weekend' : 'Guaranteed', gu.n, 'The day goes in, whatever the week looks like. Whoever covers earns for it.' + (gu.thin ? ' Includes +' + THIN * gu.thin + ' for a thin day.' : '')),
+          h('small', { class: 'hint' }, 'Points are only used if the day would otherwise wait for the head chef.'));
       })(),
       K.field('Why?', h('textarea', { class: 'input', rows: '2', maxlength: '300', value: f.note, placeholder: 'e.g. my sister’s wedding. The team sees this.', oninput: (e) => { f.note = e.target.value; } }), 'Optional, but it helps the team get behind it.'),
       h('button', { class: 'btn primary wide', type: 'submit', disabled: !f.person || ui.busy }, ui.busy ? 'Sending…' : 'Send'));
