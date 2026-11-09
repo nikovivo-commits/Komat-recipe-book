@@ -2073,6 +2073,169 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .litem .en-in, .lgroup > .en-in { grid-column: 1 / -1; min-height: 38px; font-size: .9rem; }
 .en-in::placeholder { font-style: italic; }
 
+/* ---------- schedule, the clean way: Week / Day / Mine ---------- */
+:root {
+  --sh-hot: #F6D9CF; --sh-hot-ink: #8E2A14; --sh-cold: #D6E5F2; --sh-cold-ink: #1F5480; --sh-pass: #DCDCD8; --sh-pass-ink: #262726;
+  --sh-br: #F7EBC4; --sh-br-ink: #5A4300; --sh-prep-ink: #3E413D; --sh-fill: #2E7A4E; --sh-fill-ink: #22603C;
+  --sh-learn: #FBEADF; --sh-learn-ink: #8E2A14; --sh-plain: #E9EAE6; --sh-me: #FFF3C4; --sh-me-ink: #5A4300; --sh-me-line: #E5B820;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --sh-hot: #4A2219; --sh-hot-ink: #F4B8A4; --sh-cold: #1C3248; --sh-cold-ink: #A9CDEE; --sh-pass: #34363A; --sh-pass-ink: #E3E4E0;
+  --sh-br: #3E3416; --sh-br-ink: #F1D98A; --sh-prep-ink: #C9CBC6; --sh-fill: #5DB583; --sh-fill-ink: #8FD3A9;
+  --sh-learn: #3A231A; --sh-learn-ink: #F4B8A4; --sh-plain: #2B2C2B; --sh-me: #3A3014; --sh-me-ink: #F3D98A; --sh-me-line: #B8921A;
+} }
+:root[data-theme="dark"] {
+  --sh-hot: #4A2219; --sh-hot-ink: #F4B8A4; --sh-cold: #1C3248; --sh-cold-ink: #A9CDEE; --sh-pass: #34363A; --sh-pass-ink: #E3E4E0;
+  --sh-br: #3E3416; --sh-br-ink: #F1D98A; --sh-prep-ink: #C9CBC6; --sh-fill: #5DB583; --sh-fill-ink: #8FD3A9;
+  --sh-learn: #3A231A; --sh-learn-ink: #F4B8A4; --sh-plain: #2B2C2B; --sh-me: #3A3014; --sh-me-ink: #F3D98A; --sh-me-line: #B8921A;
+}
+.sv { display: grid; gap: 12px; }
+.sv-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sv-seg button { padding: 0 8px; }
+.sv-card { padding: 8px 6px 10px; border-radius: var(--r); background: var(--surface); box-shadow: 0 1px 0 var(--line); min-width: 0; }
+.sv-empty { display: grid; gap: 10px; padding: 18px 14px; }
+.sv-empty p { margin: 0; font-weight: 600; }
+.sv-draft { justify-self: start; margin: 0; padding: 4px 12px; border-radius: 999px; border: 1.5px dashed var(--sh-me-line); color: var(--sh-me-ink); background: var(--sh-me); font-size: .86rem; font-weight: 600; }
+.sv-acts { margin-top: -2px; }
+.sv-key { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 2px 6px 8px; font-size: .76rem; color: var(--muted); }
+.sv-key span { display: inline-flex; align-items: center; gap: 5px; }
+.sv-key i, .sv-lab i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex: none; }
+/* the blocks */
+.svc { display: grid; place-items: center; min-height: 36px; border-radius: 7px; font: 700 .8rem/1 var(--mono); letter-spacing: -.02em; color: var(--ink); background: var(--sh-plain); white-space: nowrap; }
+.svc.long { font-size: .64rem; }
+.svc-hot { background: var(--sh-hot); color: var(--sh-hot-ink); }
+.svc-cold { background: var(--sh-cold); color: var(--sh-cold-ink); }
+.svc-pass { background: var(--sh-pass); color: var(--sh-pass-ink); }
+.svc-br { background: var(--sh-br); color: var(--sh-br-ink); }
+.svc-prep { background: var(--surface); color: var(--sh-prep-ink); box-shadow: inset 0 0 0 1.5px var(--muted); }
+.svc-float { background: var(--surface); color: var(--sh-fill-ink); box-shadow: inset 0 0 0 1.5px var(--sh-fill); }
+.svc-learn { background: var(--sh-learn); color: var(--sh-learn-ink); box-shadow: inset 0 0 0 1.5px var(--sh-hot-ink); }
+.svc-plain { background: var(--sh-plain); }
+.svc-off, .svc-empty { background: transparent; color: var(--muted); font-weight: 500; }
+.sv-key .svc-prep, .sv-lab .svc-prep { box-shadow: inset 0 0 0 1.5px var(--muted); }
+/* week */
+.sv-week { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0 3px; }
+.sv-week th, .sv-week td { padding: 0 1.5px; text-align: center; }
+.sv-week .sv-nm { width: 62px; padding-left: 4px; text-align: left; }
+.sv-week thead th { padding-bottom: 2px; vertical-align: bottom; }
+.sv-dh { display: grid; justify-items: center; gap: 1px; width: 100%; min-height: 44px; padding: 5px 0 4px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); }
+.sv-dh span { font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.sv-dh b { font: 700 .86rem/1.1 var(--mono); color: var(--ink); }
+.sv-dh .sv-ev { font-style: normal; font-size: .62rem; line-height: 1; color: var(--apron); }
+.sv-week th.now .sv-dh { background: var(--steel); color: var(--steel-muted); }
+.sv-week th.now .sv-dh b { color: var(--on-steel); }
+.sv-week td.now .svc:not(.svc-off):not(.svc-empty) { outline: 2px solid var(--ink); outline-offset: -1px; }
+.sv-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .9rem; }
+.sv-nb, .sv-cb { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: inherit; }
+.sv-nb { min-height: 36px; }
+.sv-week tr.me th, .sv-week tr.me td { background: var(--sh-me); }
+.sv-week tr.me th { border-radius: 9px 0 0 9px; }
+.sv-week tr.me td:last-child { border-radius: 0 9px 9px 0; }
+.sv-week tr.me .sv-name { color: var(--sh-me-ink); font-weight: 800; }
+.sv-hint { margin: 6px 6px 0; font-size: .8rem; color: var(--muted); }
+/* day */
+.sv-dayview { display: grid; gap: 10px; }
+.sv-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.sv-day { display: grid; justify-items: center; gap: 1px; min-height: 58px; padding: 7px 0 5px; border: 0; border-radius: 12px; background: var(--surface); box-shadow: 0 1px 0 var(--line); color: var(--ink); }
+.sv-day span { font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.sv-day b { font: 700 1rem/1.15 var(--mono); }
+.sv-day i { width: 6px; height: 6px; border-radius: 3px; }
+.sv-day i.on { background: var(--sh-me-line); }
+.sv-day.today { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.sv-day[aria-pressed="true"] { background: var(--steel); box-shadow: none; }
+.sv-day[aria-pressed="true"] span { color: var(--steel-muted); }
+.sv-day[aria-pressed="true"] b { color: var(--on-steel); }
+.sv-dtitle { margin: 2px 2px 0; font: 700 1.45rem/1.1 var(--display); }
+.sv-evbox { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--steel); color: var(--on-steel); }
+.sv-evbox span { color: var(--steel-muted); font-size: .9rem; }
+.sv-lines { display: grid; padding: 0; }
+.sv-line { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 52px; padding: 6px 14px; border-top: 1px solid var(--line); }
+.sv-line:first-child { border-top: 0; }
+.sv-lab { display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 600; color: var(--muted); }
+.sv-who { display: flex; flex-wrap: wrap; gap: 6px; }
+.sv-p { display: inline-flex; align-items: baseline; gap: 5px; padding: 6px 11px; border-radius: 999px; background: var(--surface-2); font-weight: 600; }
+.sv-p small { font: 500 .74rem var(--mono); color: var(--muted); }
+.sv-p.me { background: var(--sh-me); color: var(--sh-me-ink); box-shadow: inset 0 0 0 1.5px var(--sh-me-line); }
+.sv-none { margin: 0; padding: 14px; color: var(--muted); }
+.sv-off { margin: 0 4px; color: var(--muted); }
+.sv-off b { color: var(--ink); }
+/* mine */
+.sv-mine { display: grid; gap: 10px; }
+.sv-next { display: grid; gap: 3px; padding: 14px 16px; border-radius: var(--r); background: var(--sh-me); color: var(--sh-me-ink); box-shadow: inset 0 0 0 1.5px var(--sh-me-line); }
+.sv-next > span:first-child { font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.sv-next b { font: 700 1.6rem/1.1 var(--display); color: var(--ink); }
+.sv-mydays { display: grid; padding: 0; }
+.sv-myday { display: grid; grid-template-columns: 42px 58px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 56px; padding: 6px 14px; border-top: 1px solid var(--line); }
+.sv-myday:first-child { border-top: 0; }
+.sv-myday.off { opacity: .6; }
+.sv-myday.today .sv-md b { text-decoration: underline 2px var(--sh-me-line); text-underline-offset: 3px; }
+.sv-md { display: grid; gap: 1px; }
+.sv-md span { font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.sv-md b { font: 700 1rem/1.1 var(--mono); }
+.sv-mt { display: grid; gap: 2px; min-width: 0; }
+.sv-mt b { font-weight: 600; }
+.sv-mt small { color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-sum { margin: 0 4px; color: var(--muted); font-size: .88rem; }
+.sv-mine .mepick { display: flex; align-items: center; gap: 10px; }
+.sv-mine .mepick .input { flex: 1; min-width: 0; }
+.sv-codes summary { cursor: pointer; }
+
+/* ---------- days off and the cover board, the clean way (same structure, no chalk) ---------- */
+.clean { --chalk: var(--ink); --chalk-dim: var(--muted); --chalk-line: var(--line); --chalk-yellow: var(--sh-me-ink);
+  position: relative; border-radius: var(--r); background: var(--surface); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+.clean .chalk-title { margin: 4px 0 0; text-align: left; font: 700 1.45rem/1.1 var(--display); color: var(--ink); text-shadow: none; }
+.clean .chalk-title::before, .clean .chalk-title::after { content: none; }
+.clean .chalk-sub { margin: 0; text-align: left; font: 500 .86rem var(--sans); color: var(--muted); letter-spacing: 0; }
+.clean .chalk-hint { text-align: left; font: 400 .84rem/1.4 var(--sans); color: var(--muted); }
+.clean .chalk-btn { justify-self: stretch; justify-content: center; min-height: 48px; border: 0; border-radius: 12px; background: var(--steel); color: var(--on-steel); font: 700 1rem var(--sans); }
+.clean .chalk-btn:hover { background: var(--steel-2); }
+.clean .chalk-link { min-height: 44px; border: 1.5px solid var(--line); border-radius: 12px; font: 700 .95rem var(--sans); color: var(--ink); }
+.clean .chalk-link .ico { color: var(--sh-me-line); }
+.dcal.clean { padding: 12px 10px 14px; }
+.clean .dc-head { grid-template-columns: auto 1fr auto; }
+.clean .dc-title { text-decoration: none; font: 700 1.15rem/1.1 var(--sans); color: var(--ink); text-transform: capitalize; }
+.clean .dc-head .icon-btn { color: var(--ink); }
+.clean .dc-head .seg { background: var(--surface-2); border-color: var(--line); }
+.clean .dc-head .seg button { color: var(--muted); }
+.clean .dc-head .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
+.clean .dc-dow { font: 700 .66rem/1 var(--sans); letter-spacing: .06em; color: var(--muted); }
+.clean .dc-week { min-height: 54px; }
+.clean .dc-day { color: var(--ink); }
+.clean .dc-day:hover { background: var(--surface-2); }
+.clean .dc-n { font: 700 .86rem/1 var(--mono); }
+.clean .dc-day.today .dc-n { border: 0; border-radius: 8px; background: var(--steel); color: var(--on-steel); }
+.clean .dc-note { transform: none; margin: 1px 1px 0; padding: 2px 5px 3px; border-radius: 5px; box-shadow: none; background: var(--surface-2); color: var(--ink); font: 600 .7rem/1.2 var(--sans); }
+.clean .dc-note.run { transform: none; }
+.clean .dc-note.k-urgent { background: var(--urgent); color: var(--urgent-ink); }
+.clean .dc-note.k-urgent::before { content: none; }
+.clean .dc-note.k-paid { background: var(--sh-cold); color: var(--sh-cold-ink); }
+.clean .dc-note.k-unpaid { background: var(--sh-pass); color: var(--sh-pass-ink); }
+.clean .dc-note.s-waiting { outline: 1.5px dashed var(--sh-me-line); outline-offset: -1.5px; background: var(--sh-me); color: var(--sh-me-ink); opacity: 1; }
+.clean .dc-more { font: 600 .68rem var(--sans); color: var(--muted); }
+.clean .dc-me { font: 700 .62rem/1.15 var(--mono); color: var(--sh-me-ink); }
+.clean .dc-me.lg { border-color: var(--sh-me-line); background: var(--sh-me); font-size: .74rem; }
+.clean .dc-ev { font: 700 .64rem/1.2 var(--sans); color: var(--apron); text-decoration: none; }
+.clean .dc-legend { justify-content: flex-start; }
+.clean .ym { color: var(--ink); border-color: var(--line); }
+.clean .ym b { font: 700 .9rem/1 var(--sans); }
+.clean .yd { background: var(--surface-2); }
+.clean .yd.o { background: var(--muted); } .clean .yd.v { background: var(--cold); } .clean .yd.u { background: var(--urgent); } .clean .yd.w { background: transparent; box-shadow: inset 0 0 0 1.5px var(--sh-me-line); }
+.clean .yd.t { outline-color: var(--ink); }
+.cover-board.clean { padding: 12px 12px 14px; }
+.clean .cb-list li { border-bottom-color: var(--line); }
+.clean .cb-list li.me { background: var(--sh-me); border-radius: 8px; }
+.clean .cb-list li.me .cb-name { color: var(--sh-me-ink); }
+.clean .cb-rank { font: 700 .9rem/1 var(--mono); color: var(--muted); }
+.clean .cb-list li:first-child .cb-rank { color: var(--sh-me-ink); }
+.clean .cb-name { font: 600 1rem/1.1 var(--sans); color: var(--ink); }
+.clean .cb-month { font: 600 .8rem var(--sans); color: var(--ready); }
+.clean .cb-bal { font: 700 .9rem var(--mono); color: var(--sh-me-ink); }
+.clean .cb-hist summary { font: 600 .9rem var(--sans); color: var(--muted); }
+.clean .cb-hist ul { font: 400 .88rem var(--sans); color: var(--ink); }
+.clean .cb-give { border-top-color: var(--line); }
+.clean .cb-give-h { font: 700 1rem var(--sans); color: var(--ink); }
+.clean .cb-give .input { background: var(--surface); border-color: var(--line); color: var(--ink); }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -7362,6 +7525,23 @@ window.KOMAT_PART_ART = [
     if (wk !== K.thisWeek() && !D.weeks[wk]) return { wk: K.thisWeek(), idx: K.todayIdx() };
     return { wk: wk, idx: (d.getDay() + 6) % 7 };
   }
+  /* ---------- the page: one week, three ways to read it ----------
+     Week: everyone, every day, one block per shift coloured by station (it fits a phone without scrolling).
+     Day: one day, station by station, and who is off. Mine: your next shift, then your seven days. */
+  const HOURS = { P: '11:00–23:00', '2': '15:00–close', '1': 'first shift', '10:30': '10:30–19:00', BR: 'until 16:00', 'BR+P': 'breakfast, then until close' };
+  const isOff = (c) => /^(0|X)$/i.test(String(c || '').trim());
+  const hoursOf = (c) => { const lab = K.codeLabel(c), m = lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/); return m ? m[0].replace('-', '–') : HOURS[String(c).trim().toUpperCase()] || HOURS[String(c).trim()] || lab || ''; };
+  /* the colour a cell gets: its station, else breakfast or a plain shift for weeks without stations */
+  function kindOf(c, st) {
+    c = String(c || '').trim();
+    if (!c) return 'empty';
+    if (isOff(c)) return 'off';
+    if (st) return /^learn/.test(st) ? 'learn' : st;
+    return /^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'plain';
+  }
+  const STN = () => K.STL || { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', float: 'Filler', br: 'Breakfast', learn: 'Hot · learning' };
+  const setView = (v, day) => { ui.schedView = v; K.store.set('schedView', v); if (day != null) ui.schedDay = day; K.render(); };
+
   K.V.schedule = function () {
     const fc = focus(), wk = ui.week || fc.wk, mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === fc.wk, ti = fc.idx;
     const body = h('div', { class: 'page' });
@@ -7371,111 +7551,147 @@ window.KOMAT_PART_ART = [
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
         h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = focus().wk; K.render(); } }, 'This week'),
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
-    const w = h('div', { class: 'wrap schedule' });
+    const w = h('div', { class: 'wrap schedule sv' });
     body.append(w);
-    /* the week on the slate first, then the days-off calendar under it */
-    const board = h('section', { class: 'rota-wrap slate week-board' },
-      h('h2', { class: 'chalk-title' }, isNow ? 'This week' : wk > fc.wk ? (wk === K.ymd(K.addDays(K.parseYmd(fc.wk), 7)) ? 'Next week' : 'Week ahead') : 'Week before'),
-      h('p', { class: 'chalk-sub' }, range(mon)));
-    w.append(board);
-    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
-    /* a week still being planned: everyone sees the draft as it stands, and it moves as days off come in */
-    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
-      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), me0 = K.getMe(), reds = r.issues.filter((x) => x.sev === 'red').length;
-      board.append(h('p', { class: 'chalk-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
-        h('div', { class: 'board-scroll' }, h('table', { class: 'rota draft' },
-          h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
-            const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
-            return h('th', { scope: 'col' }, h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } },
-              h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev' }, '★ ' + (ev[0].title || 'Event')) : null));
-          }))),
-          h('tbody', null, r.order.map((id) => h('tr', { class: id === me0 ? 'me' : '' }, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
-            K.DAYS.map((d, i) => { const c = r.rows[id][i] || ''; return h('td', { class: K.codeClass(c) }, h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c || '–'), K.stTag(r.st[id][i]))); })))))));
-      if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
+
+    /* what the week holds: the saved rota, or for a week still being planned the generator's draft */
+    let src = null;
+    if (doc) src = { rows: doc.rows || {}, st: doc.st || {}, order: (doc.people || []).slice(), draft: false };
+    else if (wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
+      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []);
+      src = { rows: r.rows, st: r.st, order: r.order, draft: true, holes: r.issues.filter((x) => x.sev === 'red').length };
+    }
+    const view = ui.schedView || K.store.get('schedView', 'week'), me = K.getMe();
+    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day or your shifts', class: 'seg sv-seg' }));
+
+    if (!src) {
+      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+        K.me.admin ? h('div', { class: 'btns' }, genLink(),
+          h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
+          h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
       if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
-    if (!doc) {
-      board.append(...[h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
-        K.me.admin ? h('div', { class: 'chalk-acts' },
-          genLink(),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null].filter(Boolean));
-      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
-      w.append(legend());
-      return { body: body };
-    }
-    const people = doc.people || [], me = K.getMe();
+    if (src.draft) w.append(h('p', { class: 'sv-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (src.holes ? ' · ' + src.holes + (src.holes === 1 ? ' hole' : ' holes') : '')));
+    const at = (id, i) => String(((src.rows[id] || [])[i]) || '').trim(), stAt = (id, i) => ((src.st[id] || [])[i]) || '';
 
-    /* my week (shown under the calendar) */
-    let mine = null;
-    if (people.length) {
-      const pick = locked() ? (me ? h('span', { class: 'mename' }, K.personName(me)) : null)
-        : h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' }));
-      mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
-      if (me && people.includes(me)) {
-        const r = (doc.rows || {})[me] || [];
-        /* the next shift first: when it is, its hours, and how many shifts this week */
-        const works = (c) => ['p', 'br', 'other'].includes(K.codeClass(c));
-        const from = isNow ? ti : 0, ni = r.findIndex((c, i) => i >= from && works(c)), n = r.filter(works).length;
-        if (ni >= 0) {
-          const c = r[ni], lab = K.codeLabel(c), hrs = (lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/) || [''])[0].replace('-', '–');
-          const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
-          mine.append(h('div', { class: 'nextshift' }, h('span', { class: 'ns-k' }, 'Your next shift'),
-            h('b', { class: 'ns-when' }, when, hrs ? h('span', { class: 'mono' }, ' · ' + hrs) : h('span', { class: 'mono' }, ' · ' + c)),
-            h('span', { class: 'ns-n' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week')));
-        }
-        mine.append(h('div', { class: 'mydays' }, K.DAYS.map((d, i) => {
-          const c = r[i] || '', dd = K.addDays(mon, i);
-          return h('div', { class: 'myday ' + K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
-            h('span', { class: 'myday-d' }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), d, ' ', dd.getDate()),
-            h('b', { class: 'mono' }, c || '–'), K.codeLabel(c) ? h('small', null, K.codeLabel(c)) : null, K.stTag ? K.stTag(((doc.st || {})[me] || [])[i]) : null);
-        })));
-      } else if (locked()) {
-        mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
-          : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')));
-      } else mine.append(h('p', { class: 'hint' }, 'Pick your name once and your shifts show here. This phone remembers it.'));
-    }
+    if (view === 'day') w.append(dayView(src, at, stAt, mon, isNow, ti, me));
+    else if (view === 'mine') w.append(mineView(src, at, stAt, mon, isNow, ti, me));
+    else w.append(weekView(src, at, stAt, mon, isNow, ti, me, wk));
 
-    /* the grid */
-    const table = h('table', { class: 'rota' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
-        const dd = K.addDays(mon, i);
-        const ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
-        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev', title: ev.map((e) => e.title).join(', ') }, '★ ' + (ev[0].title || 'Event')) : null];
-        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, K.SHEETS.dayoff ? h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } }, inner) : inner);
-      }))),
-      h('tbody', null, people.map((id) => {
-        const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
-        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : ''), 'aria-current': id === me ? 'true' : null },
-          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
-          K.DAYS.map((d, i) => {
-            const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
-            return h('td', { class: K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
-              K.me.admin ? h('button', { type: 'button', 'aria-label': K.personName(id) + ', ' + d + ': ' + (c || 'empty'), onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, inner) : inner);
-          }));
-      })));
-    board.append(h('div', { class: 'board-scroll' }, table));
-    board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
-    if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    if (doc && doc.note && !K.me.admin) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
+    if (K.me.admin) w.append(h('div', { class: 'btns sv-acts' }, genLink()));
     if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
-    if (mine) w.append(mine);
-    if (K.me.admin) {
+    if (K.me.admin && doc) {
+      const people = doc.people || [];
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
       w.append(K.field('Note for the team', note));
       const notIn = D.staff.people.filter((p) => !people.includes(p.id));
       w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'People this week'),
         h('div', { class: 'btns' }, notIn.map((p) => h('button', { class: 'btn small', type: 'button', onclick: () => { const b = K.clone(doc); b.people.push(p.id); b.rows[p.id] = EMPTY(); b.updated = Date.now(); K.saveWeek(wk, b); } }, K.icon('plus'), p.name)),
           h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'person', wk: wk, name: '' }; K.render(); } }, K.icon('plus'), 'New person'))));
-    } else if (doc.note) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
+    }
     w.append(legend());
     return { body: body };
   };
 
+  function stationKey() {
+    return h('div', { class: 'sv-key', 'aria-hidden': 'true' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['float', 'Filler'], ['learn', 'Learning']].map((x) =>
+      h('span', null, h('i', { class: 'svc-' + x[0] }), x[1])));
+  }
+
+  /* Week: the whole team, every day */
+  function weekView(src, at, stAt, mon, isNow, ti, me, wk) {
+    const edit = K.me.admin && !src.draft;
+    const head = h('tr', null, h('th', { scope: 'col', class: 'sv-nm' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
+      const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
+      return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null },
+        h('button', { type: 'button', class: 'sv-dh', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => setView('day', i) },
+          h('span', null, d), h('b', null, String(dd.getDate())), ev.length ? h('i', { class: 'sv-ev', title: ev.map((e) => e.title).join(', ') }, '★') : null));
+    }));
+    const rows = src.order.map((id) => {
+      const nm = h('span', { class: 'sv-name' }, K.personName(id));
+      return h('tr', { class: id === me ? 'me' : null, 'aria-current': id === me ? 'true' : null },
+        h('th', { scope: 'row', class: 'sv-nm' }, edit ? h('button', { type: 'button', class: 'sv-nb', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, nm) : nm),
+        K.DAYS.map((d, i) => {
+          const c = at(id, i), k = kindOf(c, stAt(id, i)), txt = k === 'off' ? '–' : c;
+          const lab = K.personName(id) + ', ' + d + ': ' + (k === 'off' ? 'off' : c + (stAt(id, i) ? ', ' + (STN()[stAt(id, i)] || stAt(id, i)) : ''));
+          const blk = h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, txt);
+          return h('td', { class: isNow && i === ti ? 'now' : null }, edit ? h('button', { type: 'button', class: 'sv-cb', 'aria-label': lab, onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, blk) : h('span', { 'aria-label': lab }, blk));
+        }));
+    });
+    return h('section', { class: 'sv-card' }, stationKey(),
+      h('table', { class: 'sv-week' }, h('thead', null, head), h('tbody', null, rows)),
+      h('p', { class: 'sv-hint' }, edit ? 'Tap a day for who stands where. Tap a shift to change it, a name to rename or move it.' : 'Tap a day for who stands where.'));
+  }
+
+  /* Day: one day, station by station */
+  function dayView(src, at, stAt, mon, isNow, ti, me) {
+    let di = ui.schedDay;
+    if (di == null) di = isNow ? ti : 0;
+    const strip = h('div', { class: 'sv-days', role: 'group', 'aria-label': 'Pick a day' }, K.DAYS.map((d, i) => {
+      const dd = K.addDays(mon, i), mine = me && at(me, i) && !isOff(at(me, i));
+      return h('button', { type: 'button', class: 'sv-day' + (isNow && i === ti ? ' today' : ''), 'aria-pressed': i === di ? 'true' : 'false', onclick: () => { ui.schedDay = i; K.render(); } },
+        h('span', null, d), h('b', null, String(dd.getDate())), h('i', { class: mine ? 'on' : '', 'aria-label': mine ? 'you work' : null }));
+    }));
+    const ds = K.ymd(K.addDays(mon, di)), groups = {}, off = [];
+    const plan = K.rotaPlan ? K.rotaPlan().people || {} : {};
+    const add = (st, x) => { (groups[st] = groups[st] || []).push(x); };
+    src.order.forEach((id) => {
+      const c = at(id, di), st = stAt(id, di);
+      if (!c) return;
+      if (isOff(c)) { off.push(id); return; }
+      if (/^BR\+/i.test(c)) add('br', { id: id, tag: 'until 16:00' });
+      const k = st || (/^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'other');
+      add(k, { id: id, tag: k === 'other' ? c : c === 'P' || k === 'br' || /^BR\+/i.test(c) ? '' : c === '2' ? 'from 15:00' : c === '10:30' ? '10:30–19:00' : c });
+      /* someone on a fixed week who also covers a station at lunch (breakfast cook on Hot) */
+      (((plan[id] || {}).lunch) || []).forEach((x) => add(x, { id: id, tag: 'lunch' }));
+    });
+    const ORDER = [['br', 'Breakfast'], ['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['float', 'Filler'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['learn-hot', 'Learning Hot'], ['learn-cold', 'Learning Cold'], ['learn-pass', 'Learning Pass'], ['other', 'Also on']];
+    const evs = K.dayEvents ? K.dayEvents(ds) : [];
+    return h('section', { class: 'sv-dayview' }, strip,
+      h('h2', { class: 'sv-dtitle' }, K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' })),
+      evs.map((e) => h('div', { class: 'sv-evbox' }, h('b', null, '★ ' + (e.title || 'Event')), h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : ''].filter(Boolean).join(' · ')))),
+      h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
+        h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
+        h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : '') }, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
+        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
+      h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
+  }
+
+  /* Mine: your next shift, then your seven days and who you are with */
+  function mineView(src, at, stAt, mon, isNow, ti, me) {
+    const box = h('section', { class: 'sv-mine' });
+    if (!locked()) box.append(h('label', { class: 'mepick' }, h('span', { class: 'legend' }, 'I am'), K.select([['', 'Pick your name']].concat(src.order.map((id) => [id, K.personName(id)])), src.order.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' })));
+    if (!me || !src.order.includes(me)) {
+      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s rota.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
+      return box;
+    }
+    const S = STN(), from = isNow ? ti : 0, works = (i) => at(me, i) && !isOff(at(me, i));
+    const ni = [0, 1, 2, 3, 4, 5, 6].find((i) => i >= from && works(i)), n = [0, 1, 2, 3, 4, 5, 6].filter(works).length;
+    if (ni != null) {
+      const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.prettyDate(day, { weekday: 'long', day: 'numeric', month: 'short' });
+      const st = stAt(me, ni);
+      box.append(h('div', { class: 'sv-next' }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
+    }
+    box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
+      const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
+      const mates = works(i) && st ? src.order.filter((id) => id !== me && works(i) && at(id, i) && !isOff(at(id, i)) && stAt(id, i) === st).map((id) => K.personName(id)) : [];
+      return h('div', { class: 'sv-myday' + (k === 'off' || k === 'empty' ? ' off' : '') + (isNow && i === ti ? ' today' : '') },
+        h('span', { class: 'sv-md' }, h('span', null, d), h('b', null, String(dd.getDate()))),
+        h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, k === 'off' || k === 'empty' ? 'off' : c),
+        h('span', { class: 'sv-mt' }, h('b', null, k === 'off' || k === 'empty' ? 'Day off' : [st ? S[st] || st : '', hoursOf(c)].filter(Boolean).join(' · ') || c),
+          mates.length ? h('small', null, 'with ' + mates.join(', ')) : null));
+    })),
+    h('p', { class: 'sv-sum' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week'));
+    return box;
+  }
+
   function legend() {
     const list = D.codes.codes || [];
-    const box = h('section', { class: 'block codes-box' }, h('h2', { class: 'block-title' }, 'Shift codes'),
+    const box = h('details', { class: 'block codes-box sv-codes' }, h('summary', { class: 'block-title' }, 'Shift codes'),
       h('div', { class: 'codes' }, list.map((c, i) => h('div', { class: 'coderow' },
         h('span', { class: 'codechip ' + K.codeClass(c.code) }, h('b', { class: 'mono' }, c.code)),
         K.me.admin ? h('input', { class: 'input small', id: 'code' + i, value: c.label || '', 'aria-label': 'Meaning of ' + c.code, placeholder: 'What does it mean?', onchange: (e) => { const n = K.clone(D.codes); n.codes[i].label = e.target.value.trim(); K.saveCodes(n); } }) : h('span', null, c.label || '–'),
@@ -8527,7 +8743,7 @@ window.KOMAT_PART_ART = [
     pts().forEach((p) => { if (+p.n > 0 && String(p.date || '').slice(0, 7) === month) got[p.person] = (got[p.person] || 0) + (+p.n); });
     const rows = people.map((p) => ({ id: p.id, month: got[p.id] || 0, bal: K.pointsOf(p.id) })).filter((x) => x.month || x.bal || x.id === me)
       .sort((a, b) => b.month - a.month || b.bal - a.bal);
-    const box = h('section', { class: 'cover-board slate' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
+    const box = h('section', { class: 'cover-board clean' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
       h('p', { class: 'chalk-sub' }, 'Points for stepping in · ' + new Date().toLocaleDateString('en-GB', { month: 'long' })));
     if (!rows.length) box.append(h('p', { class: 'chalk-hint' }, 'No covers yet. Stepping in on a day off earns 3 points, 5 at short notice.'));
     else box.append(h('ol', { class: 'cb-list' }, rows.map((x, i) => h('li', { class: x.id === me ? 'me' : '' },
@@ -8585,7 +8801,7 @@ window.KOMAT_PART_ART = [
       K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
     const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
-    return h('section', { class: 'dcal slate' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+    return h('section', { class: 'dcal clean' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
       h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
   /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
@@ -8692,7 +8908,7 @@ window.KOMAT_PART_ART = [
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
     evs(ds).forEach((e) => body.push(evLine(e)));
-    body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); K.go('schedule'); setTimeout(() => { const b = document.querySelector('.week-board'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
+    body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); ui.schedView = 'week'; K.go('schedule'); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
     if (K.calendarOn) {

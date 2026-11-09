@@ -172,7 +172,7 @@
     pts().forEach((p) => { if (+p.n > 0 && String(p.date || '').slice(0, 7) === month) got[p.person] = (got[p.person] || 0) + (+p.n); });
     const rows = people.map((p) => ({ id: p.id, month: got[p.id] || 0, bal: K.pointsOf(p.id) })).filter((x) => x.month || x.bal || x.id === me)
       .sort((a, b) => b.month - a.month || b.bal - a.bal);
-    const box = h('section', { class: 'cover-board slate' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
+    const box = h('section', { class: 'cover-board clean' }, h('h2', { class: 'chalk-title' }, 'Cover board'),
       h('p', { class: 'chalk-sub' }, 'Points for stepping in · ' + new Date().toLocaleDateString('en-GB', { month: 'long' })));
     if (!rows.length) box.append(h('p', { class: 'chalk-hint' }, 'No covers yet. Stepping in on a day off earns 3 points, 5 at short notice.'));
     else box.append(h('ol', { class: 'cb-list' }, rows.map((x, i) => h('li', { class: x.id === me ? 'me' : '' },
@@ -230,7 +230,7 @@
       K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
     const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
-    return h('section', { class: 'dcal slate' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+    return h('section', { class: 'dcal clean' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
       h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
   /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
@@ -337,7 +337,7 @@
     const ds = c.date, rs = onDay(ds), today = K.day(0), me = K.getMe();
     const body = [];
     evs(ds).forEach((e) => body.push(evLine(e)));
-    body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); K.go('schedule'); setTimeout(() => { const b = document.querySelector('.week-board'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
+    body.push(h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; ui.week = mondayOf(ds); ui.schedView = 'week'; K.go('schedule'); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, K.icon('rota'), 'See the whole week, ' + pretty(mondayOf(ds)) + ' – ' + pretty(K.ymd(K.addDays(K.parseYmd(mondayOf(ds)), 6)))));
     const lu = K.dayLineup(ds);
     if (lu) body.push(lu);
     if (K.calendarOn) {

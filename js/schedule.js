@@ -36,6 +36,23 @@
     if (wk !== K.thisWeek() && !D.weeks[wk]) return { wk: K.thisWeek(), idx: K.todayIdx() };
     return { wk: wk, idx: (d.getDay() + 6) % 7 };
   }
+  /* ---------- the page: one week, three ways to read it ----------
+     Week: everyone, every day, one block per shift coloured by station (it fits a phone without scrolling).
+     Day: one day, station by station, and who is off. Mine: your next shift, then your seven days. */
+  const HOURS = { P: '11:00–23:00', '2': '15:00–close', '1': 'first shift', '10:30': '10:30–19:00', BR: 'until 16:00', 'BR+P': 'breakfast, then until close' };
+  const isOff = (c) => /^(0|X)$/i.test(String(c || '').trim());
+  const hoursOf = (c) => { const lab = K.codeLabel(c), m = lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/); return m ? m[0].replace('-', '–') : HOURS[String(c).trim().toUpperCase()] || HOURS[String(c).trim()] || lab || ''; };
+  /* the colour a cell gets: its station, else breakfast or a plain shift for weeks without stations */
+  function kindOf(c, st) {
+    c = String(c || '').trim();
+    if (!c) return 'empty';
+    if (isOff(c)) return 'off';
+    if (st) return /^learn/.test(st) ? 'learn' : st;
+    return /^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'plain';
+  }
+  const STN = () => K.STL || { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', float: 'Filler', br: 'Breakfast', learn: 'Hot · learning' };
+  const setView = (v, day) => { ui.schedView = v; K.store.set('schedView', v); if (day != null) ui.schedDay = day; K.render(); };
+
   K.V.schedule = function () {
     const fc = focus(), wk = ui.week || fc.wk, mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === fc.wk, ti = fc.idx;
     const body = h('div', { class: 'page' });
@@ -45,111 +62,147 @@
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
         h('button', { class: 'btn small ghost-light', type: 'button', disabled: isNow, onclick: () => { ui.week = focus().wk; K.render(); } }, 'This week'),
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
-    const w = h('div', { class: 'wrap schedule' });
+    const w = h('div', { class: 'wrap schedule sv' });
     body.append(w);
-    /* the week on the slate first, then the days-off calendar under it */
-    const board = h('section', { class: 'rota-wrap slate week-board' },
-      h('h2', { class: 'chalk-title' }, isNow ? 'This week' : wk > fc.wk ? (wk === K.ymd(K.addDays(K.parseYmd(fc.wk), 7)) ? 'Next week' : 'Week ahead') : 'Week before'),
-      h('p', { class: 'chalk-sub' }, range(mon)));
-    w.append(board);
-    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'chalk-link', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
-    /* a week still being planned: everyone sees the draft as it stands, and it moves as days off come in */
-    if (!doc && wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
-      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []), me0 = K.getMe(), reds = r.issues.filter((x) => x.sev === 'red').length;
-      board.append(h('p', { class: 'chalk-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (reds ? ' · ' + reds + (reds === 1 ? ' hole' : ' holes') : '')),
-        h('div', { class: 'board-scroll' }, h('table', { class: 'rota draft' },
-          h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
-            const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
-            return h('th', { scope: 'col' }, h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } },
-              h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev' }, '★ ' + (ev[0].title || 'Event')) : null));
-          }))),
-          h('tbody', null, r.order.map((id) => h('tr', { class: id === me0 ? 'me' : '' }, h('th', { scope: 'row' }, h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
-            K.DAYS.map((d, i) => { const c = r.rows[id][i] || ''; return h('td', { class: K.codeClass(c) }, h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c || '–'), K.stTag(r.st[id][i]))); })))))));
-      if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
+
+    /* what the week holds: the saved rota, or for a week still being planned the generator's draft */
+    let src = null;
+    if (doc) src = { rows: doc.rows || {}, st: doc.st || {}, order: (doc.people || []).slice(), draft: false };
+    else if (wk >= fc.wk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
+      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []);
+      src = { rows: r.rows, st: r.st, order: r.order, draft: true, holes: r.issues.filter((x) => x.sev === 'red').length };
+    }
+    const view = ui.schedView || K.store.get('schedView', 'week'), me = K.getMe();
+    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day or your shifts', class: 'seg sv-seg' }));
+
+    if (!src) {
+      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+        K.me.admin ? h('div', { class: 'btns' }, genLink(),
+          h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
+          h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
       if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
-    if (!doc) {
-      board.append(...[h('p', { class: 'chalk-empty' }, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
-        K.me.admin ? h('div', { class: 'chalk-acts' },
-          genLink(),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
-          h('button', { class: 'chalk-link', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null].filter(Boolean));
-      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
-      w.append(legend());
-      return { body: body };
-    }
-    const people = doc.people || [], me = K.getMe();
+    if (src.draft) w.append(h('p', { class: 'sv-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (src.holes ? ' · ' + src.holes + (src.holes === 1 ? ' hole' : ' holes') : '')));
+    const at = (id, i) => String(((src.rows[id] || [])[i]) || '').trim(), stAt = (id, i) => ((src.st[id] || [])[i]) || '';
 
-    /* my week (shown under the calendar) */
-    let mine = null;
-    if (people.length) {
-      const pick = locked() ? (me ? h('span', { class: 'mename' }, K.personName(me)) : null)
-        : h('label', { class: 'mepick' }, h('span', { class: 'sr' }, 'I am'), K.select([['', 'Pick your name']].concat(people.map((id) => [id, K.personName(id)])), people.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' }));
-      mine = h('section', { class: 'myweek card' }, h('div', { class: 'myweek-head' }, h('h2', { class: 'block-title' }, 'Your week'), pick));
-      if (me && people.includes(me)) {
-        const r = (doc.rows || {})[me] || [];
-        /* the next shift first: when it is, its hours, and how many shifts this week */
-        const works = (c) => ['p', 'br', 'other'].includes(K.codeClass(c));
-        const from = isNow ? ti : 0, ni = r.findIndex((c, i) => i >= from && works(c)), n = r.filter(works).length;
-        if (ni >= 0) {
-          const c = r[ni], lab = K.codeLabel(c), hrs = (lab.match(/\d{1,2}[:.]\d{2}\s*[–-]\s*\d{1,2}[:.]\d{2}/) || [''])[0].replace('-', '–');
-          const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.DAYS[ni] + ' ' + K.addDays(mon, ni).getDate();
-          mine.append(h('div', { class: 'nextshift' }, h('span', { class: 'ns-k' }, 'Your next shift'),
-            h('b', { class: 'ns-when' }, when, hrs ? h('span', { class: 'mono' }, ' · ' + hrs) : h('span', { class: 'mono' }, ' · ' + c)),
-            h('span', { class: 'ns-n' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week')));
-        }
-        mine.append(h('div', { class: 'mydays' }, K.DAYS.map((d, i) => {
-          const c = r[i] || '', dd = K.addDays(mon, i);
-          return h('div', { class: 'myday ' + K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
-            h('span', { class: 'myday-d' }, h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), d, ' ', dd.getDate()),
-            h('b', { class: 'mono' }, c || '–'), K.codeLabel(c) ? h('small', null, K.codeLabel(c)) : null, K.stTag ? K.stTag(((doc.st || {})[me] || [])[i]) : null);
-        })));
-      } else if (locked()) {
-        mine.append(h('p', { class: 'hint' }, me ? 'You are not on this week’s rota.'
-          : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')));
-      } else mine.append(h('p', { class: 'hint' }, 'Pick your name once and your shifts show here. This phone remembers it.'));
-    }
+    if (view === 'day') w.append(dayView(src, at, stAt, mon, isNow, ti, me));
+    else if (view === 'mine') w.append(mineView(src, at, stAt, mon, isNow, ti, me));
+    else w.append(weekView(src, at, stAt, mon, isNow, ti, me, wk));
 
-    /* the grid */
-    const table = h('table', { class: 'rota' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
-        const dd = K.addDays(mon, i);
-        const ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
-        const inner = [h('span', { class: 'daydot', style: { background: K.DAY_DOTS[i] }, 'aria-hidden': 'true' }), h('span', null, d), h('small', null, dd.getDate() + '.' + (dd.getMonth() + 1)), ev.length ? h('span', { class: 'th-ev', title: ev.map((e) => e.title).join(', ') }, '★ ' + (ev[0].title || 'Event')) : null];
-        return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null }, K.SHEETS.dayoff ? h('button', { type: 'button', class: 'dayhead', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.sheet = { type: 'dayoff', date: K.ymd(dd) }; K.render(); } }, inner) : inner);
-      }))),
-      h('tbody', null, people.map((id) => {
-        const r = (doc.rows || {})[id] || [], allOff = r.length && r.every((c) => ['0', 'X'].includes(String(c).trim().toUpperCase()));
-        return h('tr', { class: (id === me ? 'me ' : '') + (allOff ? 'alloff' : ''), 'aria-current': id === me ? 'true' : null },
-          h('th', { scope: 'row' }, K.me.admin ? h('button', { class: 'pname', type: 'button', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, K.personName(id)) : h('span', { class: 'rname' }, K.personName(id)), K.stDots ? K.stDots(id) : null),
-          K.DAYS.map((d, i) => {
-            const c = r[i] || '', stn = ((doc.st || {})[id] || [])[i] || '', inner = h('span', { class: 'cellin' }, h('span', { class: 'mono' }, c), K.stTag ? K.stTag(stn) : null);
-            return h('td', { class: K.codeClass(c) + (isNow && i === ti ? ' now' : '') },
-              K.me.admin ? h('button', { type: 'button', 'aria-label': K.personName(id) + ', ' + d + ': ' + (c || 'empty'), onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, inner) : inner);
-          }));
-      })));
-    board.append(h('div', { class: 'board-scroll' }, table));
-    board.append(h('p', { class: 'chalk-hint' }, K.me.admin ? 'Tap a day for who is on. Tap a cell to set a shift, a name to rename or reorder.' : 'Tap a day to see who is on.'));
-    if (K.me.admin) board.append(h('div', { class: 'chalk-acts' }, genLink()));
+    if (doc && doc.note && !K.me.admin) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
+    if (K.me.admin) w.append(h('div', { class: 'btns sv-acts' }, genLink()));
     if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
-    if (mine) w.append(mine);
-    if (K.me.admin) {
+    if (K.me.admin && doc) {
+      const people = doc.people || [];
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
       w.append(K.field('Note for the team', note));
       const notIn = D.staff.people.filter((p) => !people.includes(p.id));
       w.append(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'People this week'),
         h('div', { class: 'btns' }, notIn.map((p) => h('button', { class: 'btn small', type: 'button', onclick: () => { const b = K.clone(doc); b.people.push(p.id); b.rows[p.id] = EMPTY(); b.updated = Date.now(); K.saveWeek(wk, b); } }, K.icon('plus'), p.name)),
           h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'person', wk: wk, name: '' }; K.render(); } }, K.icon('plus'), 'New person'))));
-    } else if (doc.note) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
+    }
     w.append(legend());
     return { body: body };
   };
 
+  function stationKey() {
+    return h('div', { class: 'sv-key', 'aria-hidden': 'true' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['float', 'Filler'], ['learn', 'Learning']].map((x) =>
+      h('span', null, h('i', { class: 'svc-' + x[0] }), x[1])));
+  }
+
+  /* Week: the whole team, every day */
+  function weekView(src, at, stAt, mon, isNow, ti, me, wk) {
+    const edit = K.me.admin && !src.draft;
+    const head = h('tr', null, h('th', { scope: 'col', class: 'sv-nm' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
+      const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
+      return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null },
+        h('button', { type: 'button', class: 'sv-dh', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => setView('day', i) },
+          h('span', null, d), h('b', null, String(dd.getDate())), ev.length ? h('i', { class: 'sv-ev', title: ev.map((e) => e.title).join(', ') }, '★') : null));
+    }));
+    const rows = src.order.map((id) => {
+      const nm = h('span', { class: 'sv-name' }, K.personName(id));
+      return h('tr', { class: id === me ? 'me' : null, 'aria-current': id === me ? 'true' : null },
+        h('th', { scope: 'row', class: 'sv-nm' }, edit ? h('button', { type: 'button', class: 'sv-nb', onclick: () => { ui.sheet = { type: 'row', wk: wk, id: id }; K.render(); } }, nm) : nm),
+        K.DAYS.map((d, i) => {
+          const c = at(id, i), k = kindOf(c, stAt(id, i)), txt = k === 'off' ? '–' : c;
+          const lab = K.personName(id) + ', ' + d + ': ' + (k === 'off' ? 'off' : c + (stAt(id, i) ? ', ' + (STN()[stAt(id, i)] || stAt(id, i)) : ''));
+          const blk = h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, txt);
+          return h('td', { class: isNow && i === ti ? 'now' : null }, edit ? h('button', { type: 'button', class: 'sv-cb', 'aria-label': lab, onclick: () => { ui.sheet = { type: 'cell', wk: wk, id: id, i: i }; K.render(); } }, blk) : h('span', { 'aria-label': lab }, blk));
+        }));
+    });
+    return h('section', { class: 'sv-card' }, stationKey(),
+      h('table', { class: 'sv-week' }, h('thead', null, head), h('tbody', null, rows)),
+      h('p', { class: 'sv-hint' }, edit ? 'Tap a day for who stands where. Tap a shift to change it, a name to rename or move it.' : 'Tap a day for who stands where.'));
+  }
+
+  /* Day: one day, station by station */
+  function dayView(src, at, stAt, mon, isNow, ti, me) {
+    let di = ui.schedDay;
+    if (di == null) di = isNow ? ti : 0;
+    const strip = h('div', { class: 'sv-days', role: 'group', 'aria-label': 'Pick a day' }, K.DAYS.map((d, i) => {
+      const dd = K.addDays(mon, i), mine = me && at(me, i) && !isOff(at(me, i));
+      return h('button', { type: 'button', class: 'sv-day' + (isNow && i === ti ? ' today' : ''), 'aria-pressed': i === di ? 'true' : 'false', onclick: () => { ui.schedDay = i; K.render(); } },
+        h('span', null, d), h('b', null, String(dd.getDate())), h('i', { class: mine ? 'on' : '', 'aria-label': mine ? 'you work' : null }));
+    }));
+    const ds = K.ymd(K.addDays(mon, di)), groups = {}, off = [];
+    const plan = K.rotaPlan ? K.rotaPlan().people || {} : {};
+    const add = (st, x) => { (groups[st] = groups[st] || []).push(x); };
+    src.order.forEach((id) => {
+      const c = at(id, di), st = stAt(id, di);
+      if (!c) return;
+      if (isOff(c)) { off.push(id); return; }
+      if (/^BR\+/i.test(c)) add('br', { id: id, tag: 'until 16:00' });
+      const k = st || (/^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'other');
+      add(k, { id: id, tag: k === 'other' ? c : c === 'P' || k === 'br' || /^BR\+/i.test(c) ? '' : c === '2' ? 'from 15:00' : c === '10:30' ? '10:30–19:00' : c });
+      /* someone on a fixed week who also covers a station at lunch (breakfast cook on Hot) */
+      (((plan[id] || {}).lunch) || []).forEach((x) => add(x, { id: id, tag: 'lunch' }));
+    });
+    const ORDER = [['br', 'Breakfast'], ['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['float', 'Filler'], ['prep', 'Prep'], ['learn', 'Learning Hot'], ['learn-hot', 'Learning Hot'], ['learn-cold', 'Learning Cold'], ['learn-pass', 'Learning Pass'], ['other', 'Also on']];
+    const evs = K.dayEvents ? K.dayEvents(ds) : [];
+    return h('section', { class: 'sv-dayview' }, strip,
+      h('h2', { class: 'sv-dtitle' }, K.prettyDate(ds, { weekday: 'long', day: 'numeric', month: 'long' })),
+      evs.map((e) => h('div', { class: 'sv-evbox' }, h('b', null, '★ ' + (e.title || 'Event')), h('span', null, [e.time, e.guests ? e.guests + ' guests' : '', +e.cooks ? 'needs ' + e.cooks + ' cooks' : ''].filter(Boolean).join(' · ')))),
+      h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
+        h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
+        h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : '') }, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
+        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
+      h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
+  }
+
+  /* Mine: your next shift, then your seven days and who you are with */
+  function mineView(src, at, stAt, mon, isNow, ti, me) {
+    const box = h('section', { class: 'sv-mine' });
+    if (!locked()) box.append(h('label', { class: 'mepick' }, h('span', { class: 'legend' }, 'I am'), K.select([['', 'Pick your name']].concat(src.order.map((id) => [id, K.personName(id)])), src.order.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' })));
+    if (!me || !src.order.includes(me)) {
+      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s rota.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
+      return box;
+    }
+    const S = STN(), from = isNow ? ti : 0, works = (i) => at(me, i) && !isOff(at(me, i));
+    const ni = [0, 1, 2, 3, 4, 5, 6].find((i) => i >= from && works(i)), n = [0, 1, 2, 3, 4, 5, 6].filter(works).length;
+    if (ni != null) {
+      const day = K.ymd(K.addDays(mon, ni)), t0 = new Date(), when = day === K.ymd(t0) ? 'Today' : day === K.ymd(K.addDays(t0, 1)) ? 'Tomorrow' : K.prettyDate(day, { weekday: 'long', day: 'numeric', month: 'short' });
+      const st = stAt(me, ni);
+      box.append(h('div', { class: 'sv-next' }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
+    }
+    box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
+      const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
+      const mates = works(i) && st ? src.order.filter((id) => id !== me && works(i) && at(id, i) && !isOff(at(id, i)) && stAt(id, i) === st).map((id) => K.personName(id)) : [];
+      return h('div', { class: 'sv-myday' + (k === 'off' || k === 'empty' ? ' off' : '') + (isNow && i === ti ? ' today' : '') },
+        h('span', { class: 'sv-md' }, h('span', null, d), h('b', null, String(dd.getDate()))),
+        h('span', { class: 'svc svc-' + k + (c.length > 3 ? ' long' : '') }, k === 'off' || k === 'empty' ? 'off' : c),
+        h('span', { class: 'sv-mt' }, h('b', null, k === 'off' || k === 'empty' ? 'Day off' : [st ? S[st] || st : '', hoursOf(c)].filter(Boolean).join(' · ') || c),
+          mates.length ? h('small', null, 'with ' + mates.join(', ')) : null));
+    })),
+    h('p', { class: 'sv-sum' }, n + (n === 1 ? ' shift' : ' shifts') + ' this week'));
+    return box;
+  }
+
   function legend() {
     const list = D.codes.codes || [];
-    const box = h('section', { class: 'block codes-box' }, h('h2', { class: 'block-title' }, 'Shift codes'),
+    const box = h('details', { class: 'block codes-box sv-codes' }, h('summary', { class: 'block-title' }, 'Shift codes'),
       h('div', { class: 'codes' }, list.map((c, i) => h('div', { class: 'coderow' },
         h('span', { class: 'codechip ' + K.codeClass(c.code) }, h('b', { class: 'mono' }, c.code)),
         K.me.admin ? h('input', { class: 'input small', id: 'code' + i, value: c.label || '', 'aria-label': 'Meaning of ' + c.code, placeholder: 'What does it mean?', onchange: (e) => { const n = K.clone(D.codes); n.codes[i].label = e.target.value.trim(); K.saveCodes(n); } }) : h('span', null, c.label || '–'),
