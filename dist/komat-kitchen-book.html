@@ -2235,6 +2235,11 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .clean .cb-give { border-top-color: var(--line); }
 .clean .cb-give-h { font: 700 1rem var(--sans); color: var(--ink); }
 .clean .cb-give .input { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.sv-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sv-wait { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px dashed var(--sh-me-line); border-radius: 12px; background: var(--sh-me); color: var(--sh-me-ink); font-weight: 600; text-align: left; }
+.sv-wait b { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--urgent); color: var(--urgent-ink); font: 700 .85rem var(--mono); }
+.sv-wait .ico { margin-left: auto; }
+.clean .dc-ev.lg { display: inline-block; padding: 4px 9px; border-radius: 6px; background: var(--surface-2); }
 
 </style>
 <div id="app"></div>
@@ -7563,14 +7568,17 @@ window.KOMAT_PART_ART = [
       src = { rows: r.rows, st: r.st, order: r.order, draft: true, holes: r.issues.filter((x) => x.sev === 'red').length };
     }
     const view = ui.schedView || K.store.get('schedView', 'week'), me = K.getMe();
-    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day or your shifts', class: 'seg sv-seg' }));
+    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine'], ['month', 'Month']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day, your shifts or the month', class: 'seg sv-seg' }));
+    /* days off waiting for the chef: a nudge on every view, the requests themselves are in Month */
+    const waiting = K.me.admin && K.calendarOn && K.waitingCount ? K.waitingCount() : 0;
+    if (waiting && view !== 'month') w.append(h('button', { type: 'button', class: 'sv-wait', onclick: () => setView('month') }, h('b', null, String(waiting)), waiting === 1 ? 'day off waiting for you' : 'days off waiting for you', K.icon('next')));
+    if (view === 'month') { if (K.monthView) w.append(K.monthView()); return { body: body }; }
 
     if (!src) {
       w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'btns' }, genLink(),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
-      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
@@ -7583,7 +7591,6 @@ window.KOMAT_PART_ART = [
 
     if (doc && doc.note && !K.me.admin) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
     if (K.me.admin) w.append(h('div', { class: 'btns sv-acts' }, genLink()));
-    if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
     if (K.me.admin && doc) {
       const people = doc.people || [];
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });
@@ -8717,6 +8724,7 @@ window.KOMAT_PART_ART = [
   const mine = (r) => r.person === K.getMe() || (r.uid && r.uid === K.me.id);
 
   /* ---------- the page ---------- */
+  K.monthView = () => (K.calendarOn ? K.daysOffView() : calendar());
   K.daysOffView = function () {
     const box = h('div', { class: 'offpage' }), me = K.getMe(), today = K.day(0);
     /* waiting for the head chef */
@@ -8790,7 +8798,7 @@ window.KOMAT_PART_ART = [
 
   /* ---------- the calendar: a month, or the whole year at a glance ---------- */
   function calendar() {
-    const year = !!ui.offYear, cur = ui.offMonth || K.day(0).slice(0, 7);
+    const year = K.calendarOn && !!ui.offYear, cur = ui.offMonth || K.day(0).slice(0, 7);
     const [y, m] = cur.split('-').map(Number);
     const move = (n) => { const d = new Date(y, m - 1 + (year ? n * 12 : n), 1); ui.offMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); K.render(); };
     const title = year ? String(y) : new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
@@ -8798,10 +8806,13 @@ window.KOMAT_PART_ART = [
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Previous year' : 'Previous month', onclick: () => move(-1) }, K.icon('back')),
       h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
-      K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
-    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+      K.calendarOn ? K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }) : null);
+    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
-    return h('section', { class: 'dcal clean' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+    /* with the calendar switched off the month still shows your shifts and the events, without days off */
+    if (!K.calendarOn) return h('section', { class: 'dcal clean' }, head, monthGrid(y, m), h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, h('span', { class: 'dc-ev lg' }, '★ Event')),
+      h('p', { class: 'chalk-hint' }, 'Tap a day to see who is on.'));
+    return h('section', { class: 'dcal clean' }, head, year ? yearGrid(y) : monthGrid(y, m), legend,
       h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
   /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
@@ -8809,7 +8820,7 @@ window.KOMAT_PART_ART = [
     const me = K.getMe(), wk = ds7[0], doc = D.weeks[wk];
     if (!me) return null;
     if (doc && doc.rows && doc.rows[me]) return { rows: doc.rows[me], st: (doc.st || {})[me] || [], draft: false };
-    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady()) return null;
+    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady() || !(K.calendarOn || K.me.admin)) return null;
     const r = K.rotaDraft(wk, K.requestsFor(wk));
     return r.rows[me] ? { rows: r.rows[me], st: r.st[me] || [], draft: true } : null;
   }

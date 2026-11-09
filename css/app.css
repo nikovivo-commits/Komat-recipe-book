@@ -2228,3 +2228,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .clean .cb-give { border-top-color: var(--line); }
 .clean .cb-give-h { font: 700 1rem var(--sans); color: var(--ink); }
 .clean .cb-give .input { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.sv-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sv-wait { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px dashed var(--sh-me-line); border-radius: 12px; background: var(--sh-me); color: var(--sh-me-ink); font-weight: 600; text-align: left; }
+.sv-wait b { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--urgent); color: var(--urgent-ink); font: 700 .85rem var(--mono); }
+.sv-wait .ico { margin-left: auto; }
+.clean .dc-ev.lg { display: inline-block; padding: 4px 9px; border-radius: 6px; background: var(--surface-2); }

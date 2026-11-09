@@ -74,14 +74,17 @@
       src = { rows: r.rows, st: r.st, order: r.order, draft: true, holes: r.issues.filter((x) => x.sev === 'red').length };
     }
     const view = ui.schedView || K.store.get('schedView', 'week'), me = K.getMe();
-    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day or your shifts', class: 'seg sv-seg' }));
+    w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine'], ['month', 'Month']], view, (v) => setView(v), { 'aria-label': 'Show the week, one day, your shifts or the month', class: 'seg sv-seg' }));
+    /* days off waiting for the chef: a nudge on every view, the requests themselves are in Month */
+    const waiting = K.me.admin && K.calendarOn && K.waitingCount ? K.waitingCount() : 0;
+    if (waiting && view !== 'month') w.append(h('button', { type: 'button', class: 'sv-wait', onclick: () => setView('month') }, h('b', null, String(waiting)), waiting === 1 ? 'day off waiting for you' : 'days off waiting for you', K.icon('next')));
+    if (view === 'month') { if (K.monthView) w.append(K.monthView()); return { body: body }; }
 
     if (!src) {
       w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'btns' }, genLink(),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
-      if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
       w.append(legend());
       return { body: body };
     }
@@ -94,7 +97,6 @@
 
     if (doc && doc.note && !K.me.admin) w.append(h('div', { class: 'banner' }, h('b', null, 'Note: '), doc.note));
     if (K.me.admin) w.append(h('div', { class: 'btns sv-acts' }, genLink()));
-    if (K.calendarOn && K.daysOffView) w.append(K.daysOffView());
     if (K.me.admin && doc) {
       const people = doc.people || [];
       const note = h('textarea', { class: 'input', id: 'wknote', rows: '2', value: doc.note || '', placeholder: 'e.g. Stock count Monday 10:00', onchange: (e) => { const b = K.clone(doc); b.note = e.target.value; b.updated = Date.now(); K.saveWeek(wk, b); } });

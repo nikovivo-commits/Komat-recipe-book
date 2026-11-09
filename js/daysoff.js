@@ -146,6 +146,7 @@
   const mine = (r) => r.person === K.getMe() || (r.uid && r.uid === K.me.id);
 
   /* ---------- the page ---------- */
+  K.monthView = () => (K.calendarOn ? K.daysOffView() : calendar());
   K.daysOffView = function () {
     const box = h('div', { class: 'offpage' }), me = K.getMe(), today = K.day(0);
     /* waiting for the head chef */
@@ -219,7 +220,7 @@
 
   /* ---------- the calendar: a month, or the whole year at a glance ---------- */
   function calendar() {
-    const year = !!ui.offYear, cur = ui.offMonth || K.day(0).slice(0, 7);
+    const year = K.calendarOn && !!ui.offYear, cur = ui.offMonth || K.day(0).slice(0, 7);
     const [y, m] = cur.split('-').map(Number);
     const move = (n) => { const d = new Date(y, m - 1 + (year ? n * 12 : n), 1); ui.offMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); K.render(); };
     const title = year ? String(y) : new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
@@ -227,10 +228,13 @@
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Previous year' : 'Previous month', onclick: () => move(-1) }, K.icon('back')),
       h('h2', { class: 'dc-title' }, title),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': year ? 'Next year' : 'Next month', onclick: () => move(1) }, K.icon('next')),
-      K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }));
-    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, '2 Hot = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
+      K.calendarOn ? K.seg([[false, 'Month'], [true, 'Year']], year, (v) => { ui.offYear = v; K.render(); }, { 'aria-label': 'Show a month or the year', class: 'seg small-seg' }) : null);
+    const legend = h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, [['ask', 'ok', 'Day off'], ['urgent', 'ok', 'Urgent'], ['paid', 'approved', 'Paid vacation'], ['ask', 'waiting', 'Waiting']].map((x) =>
       h('span', { class: 'dc-note lg k-' + x[0] + ' s-' + x[1] }, x[0] === 'urgent' ? h('b', null, '!') : x[0] === 'paid' ? h('b', null, '☀') : null, x[2])));
-    return h('section', { class: 'dcal clean' }, h('h2', { class: 'chalk-title' }, 'Days off'), head, year ? yearGrid(y) : monthGrid(y, m), legend,
+    /* with the calendar switched off the month still shows your shifts and the events, without days off */
+    if (!K.calendarOn) return h('section', { class: 'dcal clean' }, head, monthGrid(y, m), h('div', { class: 'dc-legend' }, K.getMe() ? h('span', { class: 'dc-me lg' }, 'P Pass = your shift') : null, h('span', { class: 'dc-ev lg' }, '★ Event')),
+      h('p', { class: 'chalk-hint' }, 'Tap a day to see who is on.'));
+    return h('section', { class: 'dcal clean' }, head, year ? yearGrid(y) : monthGrid(y, m), legend,
       h('button', { class: 'chalk-btn', type: 'button', onclick: () => openAsk(K.ymd(K.addDays(new Date(), 1))) }, K.icon('plus'), 'Ask for a day off'));
   }
   /* my own shifts for a week: the saved rota, or the generator's draft for a week still being planned */
@@ -238,7 +242,7 @@
     const me = K.getMe(), wk = ds7[0], doc = D.weeks[wk];
     if (!me) return null;
     if (doc && doc.rows && doc.rows[me]) return { rows: doc.rows[me], st: (doc.st || {})[me] || [], draft: false };
-    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady()) return null;
+    if (wk < K.thisWeek() || !K.rotaReady || !K.rotaReady() || !(K.calendarOn || K.me.admin)) return null;
     const r = K.rotaDraft(wk, K.requestsFor(wk));
     return r.rows[me] ? { rows: r.rows[me], st: r.st[me] || [], draft: true } : null;
   }
