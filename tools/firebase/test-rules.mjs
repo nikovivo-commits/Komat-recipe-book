@@ -58,6 +58,28 @@ await expect('cook sends an order', true, () => setDoc(cook.d('orders/2026-10-26
 await expect('cook reports a problem', true, () => setDoc(cook.d('bugs/b1'), { text: 'Broken' }));
 await expect('cook adds a photo', true, () => setDoc(cook.d('blobs/p1/p/0'), { d: 'x' }).then(() => setDoc(cook.d('blobs/p1'), { n: 1 })));
 await expect('cook cannot read the kitchen code', false, () => getDoc(cook.d('private/join')));
+
+// days off and cover points
+await expect('cook asks for a day off', true, () => setDoc(cook.d('dayoff/2026-11-20_sam'), { date: '2026-11-20', person: 'sam', uid: C, kind: 'ask', status: 'ok', note: 'birthday', at: 1, group: '' }));
+await expect('cook cannot ask in someone else\'s name', false, () => setDoc(cook.d('dayoff/2026-11-21_bob'), { date: '2026-11-21', person: 'bob', uid: 'someone', kind: 'ask', status: 'ok', at: 1 }));
+await expect('cook cannot approve their own paid vacation', false, () => setDoc(cook.d('dayoff/2026-11-22_sam'), { date: '2026-11-22', person: 'sam', uid: C, kind: 'paid', status: 'approved', at: 1 }));
+await expect('head chef asks for a day off for anyone', true, () => setDoc(chef.d('dayoff/2026-11-21_bob'), { date: '2026-11-21', person: 'bob', uid: A, kind: 'ask', status: 'ok', at: 1 }));
+await expect('cook takes a day with priority: the other request goes back to waiting', true, () => updateDoc(cook.d('dayoff/2026-11-21_bob'), { status: 'waiting', bumpedBy: 'sam' }));
+await expect('...and it comes back when they withdraw', true, () => updateDoc(cook.d('dayoff/2026-11-21_bob'), { status: 'ok' }));
+await expect('cook cannot approve or refuse someone\'s day off', false, () => updateDoc(cook.d('dayoff/2026-11-21_bob'), { status: 'refused' }));
+await expect('cook cannot rewrite someone\'s reason', false, () => updateDoc(cook.d('dayoff/2026-11-21_bob'), { note: 'lazy' }));
+await expect('head chef approves', true, () => updateDoc(chef.d('dayoff/2026-11-21_bob'), { status: 'approved', decidedBy: A }));
+await expect('cook cannot delete someone else\'s request', false, () => deleteDoc(cook.d('dayoff/2026-11-21_bob')));
+await expect('cook withdraws their own request', true, () => deleteDoc(cook.d('dayoff/2026-11-20_sam')));
+await expect('cook reads the days off', true, () => getDocs(collection(cook.db, 'dayoff')));
+await expect('cook spends points on priority', true, () => setDoc(cook.d('points/spend_2026-11-21_sam'), { person: 'sam', n: -3, kind: 'spend', date: '2026-11-21', reason: 'Priority', at: 1 }));
+await expect('cook gives the 2 points for giving way', true, () => setDoc(cook.d('points/gaveway_2026-11-21_bob'), { person: 'bob', n: 2, kind: 'gaveway', date: '2026-11-21', reason: 'Gave way', at: 1 }));
+await expect('cook cannot give themselves points', false, () => setDoc(cook.d('points/bonus_x'), { person: 'sam', n: 5, kind: 'bonus', date: '2026-11-21', reason: 'me', at: 1 }));
+await expect('cook cannot fake a big "gave way"', false, () => setDoc(cook.d('points/gaveway_x'), { person: 'sam', n: 20, kind: 'gaveway', date: '2026-11-21', at: 1 }));
+await expect('cook cannot delete a bonus', false, () => setDoc(chef.d('points/bonus_y'), { person: 'sam', n: 3, kind: 'bonus', at: 1 }).then(() => deleteDoc(cook.d('points/bonus_y'))));
+await expect('head chef gives a bonus', true, () => setDoc(chef.d('points/bonus_z'), { person: 'sam', n: 3, kind: 'bonus', date: '2026-11-21', reason: 'stayed late', at: 1 }));
+await expect('cook reads the cover board', true, () => getDocs(collection(cook.db, 'points')));
+await expect('signed-out phone cannot read days off', false, () => getDocs(collection(nobody.db, 'dayoff')));
 await expect('cook cannot change the kitchen code', false, () => setDoc(cook.d('private/join'), { code: 'mine-123', at: 4 }));
 await expect('cook cannot make themselves head chef', false, () => updateDoc(cook.d('members/' + C), { role: 'admin' }));
 await expect('cook renames themselves', true, () => updateDoc(cook.d('members/' + C), { name: 'Sam K' }));

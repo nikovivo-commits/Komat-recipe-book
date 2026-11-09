@@ -212,15 +212,15 @@
   /* ---------- who works where ---------- */
   /* set weeks: the weeks someone offered (Mon to Sun, e.g. "P 10:30 0 P 10:30 0 0"); the generator uses one of them whole */
   function setWeeks(s, save) {
-    const l = (s.options || []).map((w) => w.slice());
+    const l = (s.options || []).map((w) => (Array.isArray(w) ? w.join(' ') : String(w)));
     const parse = (t) => { const c = String(t || '').trim().split(/[\s,]+/).filter(Boolean); return c.length === 7 ? c : null; };
     return h('div', { class: 'rp-weeks' },
       l.map((w, i) => h('div', { class: 'xrow' },
-        h('input', { class: 'input small', value: w.join(' '), 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w.join(' '); return; } l[i] = c; save(l); } }),
+        h('input', { class: 'input small', value: w, 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w; return; } l[i] = c.join(' '); save(l); } }),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove set week ' + (i + 1), onclick: () => { l.splice(i, 1); save(l); } }, K.icon('close')))),
       h('div', { class: 'xrow' },
         h('input', { class: 'input small', id: 'rp-newweek', placeholder: 'P 10:30 0 P 10:30 0 0', 'aria-label': 'Add a set week, Monday to Sunday' }),
-        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c); save(l); } }, 'Add')),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c.join(' ')); save(l); } }, 'Add')),
       l.length ? h('p', { class: 'hint' }, 'The draft uses one of these weeks whole, instead of picking the days.') : null);
   }
   function team() {

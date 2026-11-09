@@ -82,7 +82,11 @@
     const lateOK = (id) => PER && S(id).mode === 'auto' && !!S(id).late;
     /* someone who offered set weeks (options: [[7 codes], ...]) gets one of them whole: the days and which are
        special (10:30) come from the week picked; a week that clashes with a day they must have off is left out */
-    const optsOf = (id) => { const o = S(id).options; if (!Array.isArray(o) || !o.length) return null; const ok = o.filter((w) => Array.isArray(w) && w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
+    /* each set week is stored as text, "P 10:30 0 P 10:30 0 0" (the database cannot hold lists inside lists); older ones are lists */
+    const optRow = (w) => (Array.isArray(w) ? w.map(String) : String(w || '').trim().split(/[\s,]+/));
+    const allOpts = (id) => (S(id).options || []).map(optRow).filter((w) => w.length === 7);
+    const optIdx = (id, w) => allOpts(id).findIndex((x) => x.join() === w.join());
+    const optsOf = (id) => { const o = allOpts(id); if (!o.length) return null; const ok = o.filter((w) => w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
     const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
@@ -249,7 +253,7 @@
         const os = optsOf(id);
         if (os) {
           const k = Math.floor(R() * os.length), wk0 = os[k];
-          opt[id] = S(id).options.indexOf(wk0);
+          opt[id] = optIdx(id, wk0);
           work[id] = wk0.map((c) => (OFF.test(String(c || '0').trim() || '0') ? 0 : 1)); special[id] = wk0.map((c) => (isSp(id, c) ? 1 : 0));
           lrn[id] = [0, 0, 0, 0, 0, 0, 0]; late[id] = [0, 0, 0, 0, 0, 0, 0];
           return;
@@ -303,7 +307,7 @@
         if (os) {
           if (os.length < 2) continue;
           const O = st.work.__opt, was = O[id], wW = w.slice(), wS = sp.slice();
-          const k = os[Math.floor(R() * os.length)], ki = S(id).options.indexOf(k);
+          const k = os[Math.floor(R() * os.length)], ki = optIdx(id, k);
           if (ki === was) continue;
           for (let d = 0; d < 7; d++) { w[d] = OFF.test(String(k[d] || '0').trim() || '0') ? 0 : 1; sp[d] = isSp(id, k[d]) ? 1 : 0; if (w[d] !== wW[d] || sp[d] !== wS[d]) touched.push(d); }
           O[id] = ki;

@@ -656,9 +656,14 @@
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */
-    if (K.calendarOn) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
+    /* in the kitchen's own database the calendar switches itself on once its security rules let the team read
+       days off and points (until those rules are published it stays off, so nothing half-works) */
+    const calOk = () => { if (!K.calendarOn && K.mode === 'firebase' && D.calReady.dayoff && D.calReady.points) { K.calendarOn = true; K.refresh(true); } };
+    D.calReady = { dayoff: false, points: false };
+    const tryCal = K.calendarOn || K.mode === 'firebase';
+    if (tryCal) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; D.calReady.points = true; calOk(); K.refresh(); }, () => {});
     /* days off asked for, from two months back (the year view shows what is coming) */
-    if (K.calendarOn) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
+    if (tryCal) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; D.calReady.dayoff = true; calOk(); K.refresh(); }, () => {});
     dateSubs();
     /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);

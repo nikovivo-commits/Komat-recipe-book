@@ -53,6 +53,28 @@ service cloud.firestore {
       allow write: if (admin() && coll in ['recipes', 'settings', 'schedules', 'events'])
         || (member() && coll in ['checks', 'prep', 'orders', 'boards', 'bugs', 'blobs']);
     }
+    // days off: everyone sees them (and why). You ask for yourself; the head chef or sous chef can ask for anyone
+    // and is the only one who approves or refuses. Priority moves someone else's plain request between accepted
+    // and waiting (and back when it is withdrawn), and a request can note whose draft week it moved.
+    match /dayoff/{id} {
+      function fair(d) { return d.kind in ['ask', 'urgent', 'paid', 'unpaid'] && d.date is string && d.person is string && (!('note' in d) || (d.note is string && d.note.size() <= 300)); }
+      allow read: if member();
+      allow create: if fair(request.resource.data) && (admin()
+        || (member() && request.resource.data.uid == request.auth.uid && request.resource.data.status in ['ok', 'waiting']));
+      allow update: if fair(request.resource.data) && (admin()
+        || (member() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'bumpedBy', 'moved'])
+          && request.resource.data.status in ['ok', 'waiting'] && resource.data.status in ['ok', 'waiting']));
+      allow delete: if admin() || (member() && resource.data.uid == request.auth.uid);
+    }
+    // cover points: everyone sees them. A phone may only write what spending them leaves behind (a spend, up to 20,
+    // and up to 2 for whoever gave way); covers, bonuses and the points a saved week brings come from the chefs.
+    match /points/{id} {
+      allow read: if member();
+      allow create, update: if admin()
+        || (member() && request.resource.data.kind == 'spend' && request.resource.data.n is int && request.resource.data.n < 0 && request.resource.data.n >= -20)
+        || (member() && request.resource.data.kind == 'gaveway' && request.resource.data.n is int && request.resource.data.n >= 0 && request.resource.data.n <= 2);
+      allow delete: if admin() || (member() && resource.data.kind in ['spend', 'gaveway']);
+    }
     // photos and videos are stored in pieces under blobs/{id}/p/{n}
     match /blobs/{id}/p/{n} {
       allow read, write: if member();

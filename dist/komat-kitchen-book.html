@@ -4527,9 +4527,14 @@ window.KOMAT_PART_ART = [
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */
-    if (K.calendarOn) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; K.refresh(); }, () => {});
+    /* in the kitchen's own database the calendar switches itself on once its security rules let the team read
+       days off and points (until those rules are published it stays off, so nothing half-works) */
+    const calOk = () => { if (!K.calendarOn && K.mode === 'firebase' && D.calReady.dayoff && D.calReady.points) { K.calendarOn = true; K.refresh(true); } };
+    D.calReady = { dayoff: false, points: false };
+    const tryCal = K.calendarOn || K.mode === 'firebase';
+    if (tryCal) db.collection('points').onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.points = m; D.calReady.points = true; calOk(); K.refresh(); }, () => {});
     /* days off asked for, from two months back (the year view shows what is coming) */
-    if (K.calendarOn) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; K.refresh(); }, () => {});
+    if (tryCal) db.collection('dayoff').where('date', '>=', K.day(-62)).onSnapshot((s) => { const m = {}; s.docs.forEach((x) => { m[x.id] = Object.assign(K.clone(x.data()), { id: x.id }); }); D.dayoff = m; D.calReady.dayoff = true; calOk(); K.refresh(); }, () => {});
     dateSubs();
     /* the day turns over at midnight: follow it if the app stays open */
     setInterval(() => { if (K.day(0) !== subDay) { dateSubs(); K.refresh(true); } }, 60000);
@@ -7908,7 +7913,11 @@ window.KOMAT_PART_ART = [
     const lateOK = (id) => PER && S(id).mode === 'auto' && !!S(id).late;
     /* someone who offered set weeks (options: [[7 codes], ...]) gets one of them whole: the days and which are
        special (10:30) come from the week picked; a week that clashes with a day they must have off is left out */
-    const optsOf = (id) => { const o = S(id).options; if (!Array.isArray(o) || !o.length) return null; const ok = o.filter((w) => Array.isArray(w) && w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
+    /* each set week is stored as text, "P 10:30 0 P 10:30 0 0" (the database cannot hold lists inside lists); older ones are lists */
+    const optRow = (w) => (Array.isArray(w) ? w.map(String) : String(w || '').trim().split(/[\s,]+/));
+    const allOpts = (id) => (S(id).options || []).map(optRow).filter((w) => w.length === 7);
+    const optIdx = (id, w) => allOpts(id).findIndex((x) => x.join() === w.join());
+    const optsOf = (id) => { const o = allOpts(id); if (!o.length) return null; const ok = o.filter((w) => w.every((c, d) => OFF.test(String(c || '0').trim() || '0') || !hardOff[id][d])); return ok.length ? ok : null; };
     const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
@@ -8075,7 +8084,7 @@ window.KOMAT_PART_ART = [
         const os = optsOf(id);
         if (os) {
           const k = Math.floor(R() * os.length), wk0 = os[k];
-          opt[id] = S(id).options.indexOf(wk0);
+          opt[id] = optIdx(id, wk0);
           work[id] = wk0.map((c) => (OFF.test(String(c || '0').trim() || '0') ? 0 : 1)); special[id] = wk0.map((c) => (isSp(id, c) ? 1 : 0));
           lrn[id] = [0, 0, 0, 0, 0, 0, 0]; late[id] = [0, 0, 0, 0, 0, 0, 0];
           return;
@@ -8129,7 +8138,7 @@ window.KOMAT_PART_ART = [
         if (os) {
           if (os.length < 2) continue;
           const O = st.work.__opt, was = O[id], wW = w.slice(), wS = sp.slice();
-          const k = os[Math.floor(R() * os.length)], ki = S(id).options.indexOf(k);
+          const k = os[Math.floor(R() * os.length)], ki = optIdx(id, k);
           if (ki === was) continue;
           for (let d = 0; d < 7; d++) { w[d] = OFF.test(String(k[d] || '0').trim() || '0') ? 0 : 1; sp[d] = isSp(id, k[d]) ? 1 : 0; if (w[d] !== wW[d] || sp[d] !== wS[d]) touched.push(d); }
           O[id] = ki;
@@ -8523,15 +8532,15 @@ window.KOMAT_PART_ART = [
   /* ---------- who works where ---------- */
   /* set weeks: the weeks someone offered (Mon to Sun, e.g. "P 10:30 0 P 10:30 0 0"); the generator uses one of them whole */
   function setWeeks(s, save) {
-    const l = (s.options || []).map((w) => w.slice());
+    const l = (s.options || []).map((w) => (Array.isArray(w) ? w.join(' ') : String(w)));
     const parse = (t) => { const c = String(t || '').trim().split(/[\s,]+/).filter(Boolean); return c.length === 7 ? c : null; };
     return h('div', { class: 'rp-weeks' },
       l.map((w, i) => h('div', { class: 'xrow' },
-        h('input', { class: 'input small', value: w.join(' '), 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w.join(' '); return; } l[i] = c; save(l); } }),
+        h('input', { class: 'input small', value: w, 'aria-label': 'Set week ' + (i + 1) + ', Monday to Sunday', onchange: (e) => { const c = parse(e.target.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday, e.g. P 10:30 0 P 10:30 0 0', { tone: 'bad' }); e.target.value = w; return; } l[i] = c.join(' '); save(l); } }),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove set week ' + (i + 1), onclick: () => { l.splice(i, 1); save(l); } }, K.icon('close')))),
       h('div', { class: 'xrow' },
         h('input', { class: 'input small', id: 'rp-newweek', placeholder: 'P 10:30 0 P 10:30 0 0', 'aria-label': 'Add a set week, Monday to Sunday' }),
-        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c); save(l); } }, 'Add')),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const el = document.getElementById('rp-newweek'), c = parse(el && el.value); if (!c) { K.toast('Write 7 shifts, Monday to Sunday', { tone: 'bad' }); return; } l.push(c.join(' ')); save(l); } }, 'Add')),
       l.length ? h('p', { class: 'hint' }, 'The draft uses one of these weeks whole, instead of picking the days.') : null);
   }
   function team() {
