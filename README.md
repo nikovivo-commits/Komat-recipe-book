@@ -58,6 +58,8 @@ Setting it up (about 10 minutes, once):
 
 The planning sums have tests: `node --test tools/tests/plan.test.mjs`.
 
+To try new work before it goes live, `node tools/build-preview.mjs <out.html>` builds a one-page preview that always keeps everything on the device (no Firebase settings, no Claude database), starting from the built-in recipes and lists. Publish the `assets/` folder next to it.
+
 The rules are tested against the Firebase emulators: `cd tools/firebase && npm install && npm run emulators`, then `npm run test:rules` in another terminal.
 
 ### 2. Device-only site
