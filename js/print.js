@@ -32,7 +32,7 @@
       if (K.markState(st, it.id, date) !== 'do' && !K.isUrgent(st, it.id, date)) return;
       if (!byName[it.group]) groups.push(byName[it.group] = { name: it.group, en: it.gen, items: [] });
       const m = K.mark(st, it.id, date) || {};
-      byName[it.group].items.push({ name: it.name, en: it.en, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand, qty: K.markQty ? K.markQty(m) : '' });
+      byName[it.group].items.push({ name: it.name, en: it.en, note: K.markNote(st, it.id, date), urgent: K.isUrgent(st, it.id, date), words: K.kindWords(K.markKind(st, it.id, date)), written: true, hand: m.hand });
     });
     groups.forEach((g) => g.items.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0)));
     /* the whole prep list, in the list's own order: marked rows carry their words, ready rows are struck */
@@ -40,7 +40,7 @@
     K.checkItems(st, date).forEach((it) => {
       const m = K.mark(st, it.id, date) || {}, state = K.markState(st, it.id, date);
       if (!allBy[it.group]) all.push(allBy[it.group] = { name: it.group, en: it.gen, items: [] });
-      allBy[it.group].items.push({ name: it.name, en: it.en, note: m.c || '', urgent: K.isUrgent(st, it.id, date), written: state === 'do' || state === 'ok', done: state === 'ok', words: K.kindWords(K.kindsOf(m)), hand: m.hand, qty: state === 'do' && K.markQty ? K.markQty(m) : '' });
+      allBy[it.group].items.push({ name: it.name, en: it.en, note: m.c || '', urgent: K.isUrgent(st, it.id, date), written: state === 'do' || state === 'ok', done: state === 'ok', words: K.kindWords(K.kindsOf(m)), hand: m.hand });
     });
     return { sheet: sheet, tasks: tasks, groups: groups, all: all, count: tasks.length + groups.reduce((s, g) => s + g.items.length, 0) };
   };
@@ -64,7 +64,7 @@
   function line(x, lang) {
     const w = words(x.name, lang, x.en);
     return h('li', { class: (x.urgent && !x.done ? 'urg' : '') + (x.done ? ' done' : '') }, box(x),
-      h('span', { class: 'pr-txt' }, x.urgent ? h('em', null, 'Urgent') : null, h('b', null, w.main), x.qty ? h('span', { class: 'pr-qty ' + K.handClass(x.hand) }, x.qty) : null, w.sub ? h('span', { class: 'pr-en' }, w.sub) : null,
+      h('span', { class: 'pr-txt' }, x.urgent ? h('em', null, 'Urgent') : null, h('b', null, w.main), w.sub ? h('span', { class: 'pr-en' }, w.sub) : null,
         x.note ? h('span', { class: 'pr-note' }, x.note) : null, x.meta ? h('span', { class: 'pr-meta' }, x.meta) : null));
   }
   function head3(name, lang, typed) { const w = words(name, lang, typed); return h('h3', null, w.main, w.sub ? h('span', { class: 'pr-en' }, ' · ' + w.sub) : null); }

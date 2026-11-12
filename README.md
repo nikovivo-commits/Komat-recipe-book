@@ -13,7 +13,6 @@ The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each st
   - Editor (Settings → Add a recipe by hand, or Edit on a recipe): paste a whole ingredient list at once, reorder parts, add photos, plating photos and videos. In the Claude version you can also scan a paper recipe sheet.
 - **Today**: pick your station (Hot, Cold & pastry, Pass). Tap a mise en place row once for **DO**, twice for **ready**, or swipe it (right = ready, left = DO); **!** flags it urgent for the whole kitchen. The page opens with a greeting under the Komat rays, three tiles (mise en place, to-do, and tonight's event or what is urgent) and a card for an event today or tomorrow with the run of the evening and its dishes. Finishing a station shows a full-screen Ready for service. You get a to-do list (tap the circle or swipe right when done, swipe left to remove) with comments, notes left for tomorrow's shift, repeating tasks (like ordering bread on Sun/Tue/Thu), event prep, and a daily brief with urgent items, coming events and who's on. Every "Done" has an Undo.
   - **Print**: the small printer icon next to To do prints a black-and-white sheet with tick boxes and lines to write on, for today or tomorrow, one station or all three (one page each). Pick the language for the paper: Bulgarian, Bulgarian with the English under each line, or English only (lines with no English yet stay as written). On the stand-alone site; the Claude version cannot print.
-  - **Plan from covers**: the head chef gives a mise en place row a quantity per 10 covers in the list editor (Per 10 covers, with its unit). On the Tomorrow tab, type tomorrow's covers and tap Plan the list. A sheet shows, row by row, what the covers need, a box for what is already in the walk-in, and what to make (rounded up to 10 g or ml, 0.1 kg or L, or whole pieces and portions). Change any amount, then put it on the list: rows that need making are marked DO with the amount, written in your marker; rows with enough are left empty. Rows without a quantity stay as they are. The amount shows on the to-do, on the list and on the printed sheet, and the order check asks for the ingredients that amount needs (2 kg of a recipe that makes 500 g asks for four batches). Events with a guest count that day are named on the card as a reminder. One Undo puts the list back.
   - **Tomorrow's prep list**: from the closing hour (21:00 by default, set in Kitchen rules) the mise en place list switches to tomorrow. Whoever closes marks DO on what the next shift must make, and the morning shift finds it on its list and to-do. A Today / Tomorrow switch is always there. Every day turns over at midnight.
   - **Three tabs**: on a phone Today shows one list at a time: To do (with the count), Mise en place (ready / total) and Tomorrow. Done tasks fold into one "N done" row under the list. On a wide screen everything sits side by side.
   - **Which day is it?** Every list has a dated label: green "Today's sheet · Thu 29 Oct, until closing" or amber "Tomorrow's sheet · you are writing it". The list switches to tomorrow's sheet at the closing hour, and the date changes at midnight.
@@ -55,8 +54,6 @@ Setting it up (about 10 minutes, once):
 7. The empty book offers **Load a backup** (a backup file from the Claude version or the device-only site) or **Start with the built-in recipes**.
 8. Tell the team the address and the kitchen code. Settings → People and kitchen code shows who has joined.
 9. Anything prepared for you as a file (an event, a week of the rota, recipes) goes in with Settings → **Add from a file**, which adds it and changes nothing else. Settings → Backup → Import instead replaces the whole book.
-
-The planning sums have tests: `node --test tools/tests/plan.test.mjs`.
 
 The rules are tested against the Firebase emulators: `cd tools/firebase && npm install && npm run emulators`, then `npm run test:rules` in another terminal.
 
@@ -115,7 +112,6 @@ js/photos.js        page photos, galleries, photo viewer, quiet-state cat
 js/recipes.js       list, recipe pages, scaling, cook mode
 js/editor.js        recipe editor, recipe-sheet scanning, list sync
 js/today.js         Today, list editor
-js/plan.js          planning tomorrow's list from covers: the sums, the card and the plan sheet
 js/ordercheck.js    the order check
 js/orders.js        Orders
 js/schedule.js      Schedule
