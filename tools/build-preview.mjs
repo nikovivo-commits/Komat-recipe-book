@@ -36,8 +36,10 @@ const examples = `(function () {
 })();`;
 
 const badgeCss = `
-.preview-badge { position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); padding: 4px 9px; border-radius: 999px; background: var(--todo); color: var(--todo-ink); font: 800 .66rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
-@media (min-width: 900px) { .preview-badge { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); transform: none; } }`;
+/* phones: a small tab hanging from the top edge, above the header's buttons; wide screens: a pill bottom left */
+.preview-badge { position: fixed; z-index: 60; top: env(safe-area-inset-top, 0px); left: 50%; transform: translateX(-50%); padding: 3px 10px 4px; border-radius: 0 0 8px 8px; background: var(--todo); color: var(--todo-ink); font: 800 .58rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
+.preview-badge span { display: none; }
+@media (min-width: 900px) { .preview-badge { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); transform: none; padding: 4px 9px; border-radius: 999px; font-size: .66rem; } .preview-badge span { display: inline; } }`;
 
 const page = [
   '<meta charset="utf-8">',
@@ -48,7 +50,7 @@ const page = [
   `<link rel="stylesheet" href="${fonts}">`,
   `<style>\n${read('css/app.css')}\n${badgeCss}\n</style>`,
   '<div id="app"></div>',
-  '<div class="preview-badge" aria-hidden="true">Preview · stays in this browser</div>',
+  '<div class="preview-badge" aria-hidden="true">Preview<span> · stays in this browser</span></div>',
   "<script>window.K = { BUILD: 'preview' }; window.KOMAT_FIREBASE = null;</script>",
   ...scripts.map((s) => `<script>\n/* ${s} */\n${source(s)}\n</script>` + (s === 'data/settings.js' ? `\n<script>\n/* example quantities per 10 covers */\n${examples}\n</script>` : '')),
   '<script>\n/* a preview page cannot open the print dialog */\nK.canPrint = function () { return false; };\n</script>',

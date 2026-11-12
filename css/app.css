@@ -2432,3 +2432,42 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .parrow .input { min-height: 38px; }
 /* on paper: the amount next to the name, by pen */
 .pr-qty { font: 700 13pt/1 var(--hand); }
+
+/* ---------- Kitchen AI ---------- */
+/* a conversation over the book: the chef's words on steel, Claude's in plain text, its proposals as
+   pen-dashed drafts that turn solid once the chef has acted on them */
+.ai { display: grid; gap: 14px; min-width: 0; }
+.ai-log { display: grid; gap: 16px; min-width: 0; }
+.ai-intro p { margin: 0; color: var(--muted); }
+.ai-ex { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ai-ex .chip { min-height: 34px; padding: 6px 12px; font-size: .86rem; font-weight: 600; text-align: left; white-space: normal; line-height: 1.25; }
+.ai-me { justify-self: end; max-width: 85%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--steel); color: var(--on-steel); }
+.ai-me p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ai-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.ai-photos img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; }
+.ai-said { display: grid; gap: 10px; justify-items: start; max-width: 94%; min-width: 0; }
+.ai-st { margin: 0; color: var(--muted); font-size: .88rem; font-style: italic; }
+.ai-st::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--pen); vertical-align: middle; animation: aipulse 1.2s ease-in-out infinite; }
+@keyframes aipulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .ai-st::before { animation: none; } }
+.ai-txt { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ai-txt:empty { display: none; }
+.ai-card { display: grid; gap: 8px; width: 100%; min-width: 0; padding: 12px 14px; border: 1.5px dashed var(--pen); border-radius: var(--r-sm); background: var(--surface); }
+.ai-card.done { border-style: solid; border-color: var(--line); }
+.ai-card > b { font-size: .98rem; overflow-wrap: anywhere; }
+.ai-card ul { display: grid; gap: 2px; margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
+.ai-card .btn { justify-self: start; }
+.ai-done { display: inline-flex; align-items: center; gap: 6px; color: var(--ready); font-weight: 700; font-size: .9rem; }
+.ai-done .ico { width: 18px; height: 18px; }
+.ai-err { margin: 0; color: var(--urgent); font-size: .9rem; }
+.ai-compose { position: sticky; bottom: 0; z-index: 2; display: grid; gap: 8px; margin: 0 -18px; padding: 10px 18px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--ground); border-top: 1px solid var(--line); }
+.ai-row { display: flex; align-items: flex-end; gap: 8px; }
+.ai-in { flex: 1; min-width: 0; min-height: 46px; max-height: 160px; resize: none; }
+.ai-row .btn, .ai-row .icon-btn { min-height: 46px; flex: none; }
+.ai-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.ai-files .chip { min-height: 32px; font-size: .82rem; }
+.ai-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.ai-foot .hint { margin: 0; font-size: .8rem; }
+.ai-tier button { min-height: 32px; padding: 0 12px; font-size: .82rem; }
+/* while Kitchen AI is open its composer is at the bottom: toasts show at the top instead */
+body[data-sheet="ai"] .toast { top: calc(env(safe-area-inset-top, 0px) + 12px); bottom: auto; }

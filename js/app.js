@@ -101,6 +101,8 @@
     if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) { if (hadOverlay) s.classList.add('still'); app.append(s); } }
     if (ui.cook && K.V.cook) app.append(K.V.cook());
     document.body.classList.toggle('locked', !!(ui.sheet || ui.cook));
+    /* which sheet is up, so a toast can keep clear of it (Kitchen AI's composer sits where toasts go) */
+    document.body.dataset.sheet = ui.sheet ? ui.sheet.type : '';
     document.body.classList.toggle('cooking', !!ui.cook);
     window.scrollTo(0, toTop ? 0 : y);
     const nsb = document.querySelector('.sheet-body');
@@ -175,6 +177,7 @@
       h('button', { type: 'button', class: 'brand', 'aria-label': 'Komat recipes', onclick: () => K.go('recipes') }, brandMark()),
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
+      K.aiButton ? K.aiButton() : null,
       K.langSwitch(),
       h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Settings', onclick: () => { ui.sheet = { type: 'settings' }; render(); } }, K.icon('gear'))));
   }

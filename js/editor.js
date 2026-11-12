@@ -134,6 +134,30 @@
         h('span', null, 'I have double-checked the allergens', h('small', null, 'Until this is ticked the team sees "not yet checked".'))));
   }
 
+  /* put a recipe read by Claude (a scanned sheet, or Kitchen AI) into the open editor: the chef checks it and saves */
+  K.fillEdit = function (d) {
+    const e = ui.edit;
+    if (!e || !d || typeof d !== 'object') return;
+    const ings = (l) => (Array.isArray(l) ? l.map((i) => ({ q: String(i.q == null ? '' : i.q), u: String(i.u || ''), n: String(i.n || '') })) : []);
+    if (d.name) e.name = String(d.name);
+    if (d.category) e.category = String(d.category);
+    if (d.yieldQty != null && String(d.yieldQty).trim()) e.yieldQty = String(d.yieldQty).trim();
+    if (d.yieldUnit) e.yieldUnit = String(d.yieldUnit);
+    if (Array.isArray(d.ingredients) && d.ingredients.length) e.ingredients = ings(d.ingredients);
+    if (Array.isArray(d.steps) && d.steps.length) e.stepsText = d.steps.map(String).join('\n');
+    if (Array.isArray(d.components) && d.components.length) {
+      e.components = d.components.map((c) => editComp({ name: String((c && c.name) || ''), yieldQty: String(c && c.yieldQty != null ? c.yieldQty : ''), yieldUnit: String((c && c.yieldUnit) || ''),
+        ingredients: ings(c && c.ingredients), steps: Array.isArray(c && c.steps) ? c.steps.map(String) : [], notes: String((c && c.notes) || '') }));
+      e.components.forEach((c) => { c.open = false; });
+      e.type = 'dish';
+      if (!(Array.isArray(d.ingredients) && d.ingredients.length)) e.ingredients = [];
+    }
+    if (d.station && K.ST[d.station]) e.station = d.station;
+    if (d.plating) e.plating = String(d.plating);
+    if (d.notes) e.notes = String(d.notes);
+    if (Array.isArray(d.allergens)) e.allergens = d.allergens.filter((k) => K.AL[k]);
+    e.allergensChecked = false;
+  };
   /* ---------- scanning a recipe sheet ---------- */
   K.scanNew = function (cat) {
     K.startEdit(null, cat, 'recipe');
@@ -167,26 +191,8 @@
     if (!text) opts.images = files;
     K.sample.json(prompt, opts).then((d) => {
       if (!d || typeof d !== 'object') throw { code: 'bad' };
-      const e = ui.edit;
-      if (!e) return;
-      const ings = (l) => (Array.isArray(l) ? l.map((i) => ({ q: String(i.q == null ? '' : i.q), u: String(i.u || ''), n: String(i.n || '') })) : []);
-      if (d.name) e.name = String(d.name);
-      if (d.category) e.category = String(d.category);
-      if (d.yieldQty != null && String(d.yieldQty).trim()) e.yieldQty = String(d.yieldQty).trim();
-      if (d.yieldUnit) e.yieldUnit = String(d.yieldUnit);
-      if (Array.isArray(d.ingredients) && d.ingredients.length) e.ingredients = ings(d.ingredients);
-      if (Array.isArray(d.steps) && d.steps.length) e.stepsText = d.steps.map(String).join('\n');
-      if (Array.isArray(d.components) && d.components.length) {
-        e.components = d.components.map((c) => editComp({ name: String((c && c.name) || ''), yieldQty: String(c && c.yieldQty != null ? c.yieldQty : ''), yieldUnit: String((c && c.yieldUnit) || ''),
-          ingredients: ings(c && c.ingredients), steps: Array.isArray(c && c.steps) ? c.steps.map(String) : [], notes: String((c && c.notes) || '') }));
-        e.components.forEach((c) => { c.open = false; });
-        e.type = 'dish';
-        if (!(Array.isArray(d.ingredients) && d.ingredients.length)) e.ingredients = [];
-      }
-      if (d.plating) e.plating = String(d.plating);
-      if (d.notes) e.notes = String(d.notes);
-      if (Array.isArray(d.allergens)) e.allergens = d.allergens.filter((k) => K.AL[k]);
-      e.allergensChecked = false;
+      if (!ui.edit) return;
+      K.fillEdit(d);
       ui.scan = { state: 'done', fromText: !!text };
       K.render(true);
     }).catch((err) => {
