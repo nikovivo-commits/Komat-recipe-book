@@ -8,7 +8,7 @@
     loaded: false, recipesSrc: [], recipes: [],
     branding: { logo: '', heroes: [], approve: '', pages: {} },
     checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
-    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, dayoff: {}, points: {}, bugs: [], names: {}, noWrite: false,
+    staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, docs: null, dayoff: {}, points: {}, bugs: [], names: {}, noWrite: false,
   });
 
   K.STATIONS = [['hot', 'Hot'], ['cold', 'Cold & pastry'], ['pass', 'Pass']];
@@ -638,6 +638,7 @@
     setting('shiftcodes', (d) => { D.codes = d && Array.isArray(d.codes) ? K.clone(d) : { codes: [] }; });
     setting('kitchen', (d) => { D.kitchen = d ? K.clone(d) : null; });
     setting('rotaplan', (d) => { D.rotaplan = d ? K.clone(d) : null; });
+    setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */

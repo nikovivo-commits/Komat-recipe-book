@@ -113,6 +113,7 @@
     });
     sheet.style.cssText = '';
   }
+  K.fitOnePage = fitOnePage;
   K.printLang = () => { const v = K.store.get('printLang', 'both'); return v === 'bg' || v === 'en' ? v : 'both'; };
   K.printTodos = function (n, sts, full, lang) {
     const old = document.getElementById('printsheet');

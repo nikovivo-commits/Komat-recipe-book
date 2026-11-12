@@ -341,6 +341,8 @@
     if (order) left.append(h('button', { class: 'askorder sent tt-tmr', type: 'button', onclick: () => K.startStock(st, false) },
       K.icon('order'), h('span', { class: 'ask-txt' }, h('b', null, 'Order sent for ' + K.ST[st]), h('span', null, order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change')), K.icon('next')));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
+    /* the kitchen's printable documents, under everything else */
+    if (K.docsBox) w.append(K.docsBox());
     return { body: body, solid: true };
   };
 

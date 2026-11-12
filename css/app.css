@@ -2323,3 +2323,52 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pw-key i { display: inline-block; width: 10pt; height: 10pt; border: .5pt solid #999; }
 .pw-codes b { font-family: var(--mono); }
 @page week { size: A4 landscape; margin: 10mm; }
+/* ---------- documents at the bottom of Today ---------- */
+.docs-box { display: grid; gap: 10px; margin-top: 26px; padding-top: 18px; border-top: 2px solid var(--ink); }
+.docs-h { margin: 0; font: 700 1.5rem/1.1 var(--display); }
+.docs-list { display: grid; gap: 8px; }
+.doc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 60px; padding: 10px 14px; border: 0; border-radius: var(--r); background: var(--surface); box-shadow: 0 1px 0 var(--line); color: var(--ink); text-align: left; }
+.doc-ico { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--steel); color: var(--on-steel); }
+.doc-txt { display: grid; gap: 2px; min-width: 0; }
+.doc-txt b { font-weight: 700; }
+.doc-txt small { color: var(--muted); font-size: .84rem; }
+.docs-box > .btn { justify-self: start; }
+.doc-intro { margin: 0; color: var(--muted); }
+.doc-view { display: grid; gap: 12px; }
+.doc-sec h3 { margin: 0 0 4px; font: 800 .74rem/1.2 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.doc-sec ul { list-style: none; margin: 0; padding: 0; display: grid; }
+.doc-sec li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line); line-height: 1.35; }
+.doc-box { width: 18px; height: 18px; margin-top: 1px; border: 1.5px solid var(--ink); border-radius: 4px; }
+.doc-sign { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-weight: 600; }
+.doc-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.doc-pair textarea { font-size: .9rem; }
+/* on paper */
+.pr-doc .pr-head { align-items: flex-start; }
+.pr-doc .pd-sub { color: #555; font-style: italic; }
+.pd-sec { margin-top: 13pt; break-inside: avoid; }
+.pd-sec h2 { margin: 0; padding-bottom: 3pt; border-bottom: 1.2pt solid #000; font: 800 9pt/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+.pd-sec h2 span { color: #666; font-weight: 600; }
+.pd-sec ul { list-style: none; margin: 0; padding: 0; }
+.pd-sec li, .pd-sign p { display: grid; grid-template-columns: 18pt minmax(0, 1fr); gap: 8pt; align-items: start; padding: 5pt 0; border-bottom: .5pt solid #bdbdbd; break-inside: avoid; }
+.pd-box { width: 12pt; height: 12pt; margin-top: 1pt; border: 1pt solid #000; border-radius: 2pt; }
+.pd-txt { display: grid; gap: 1pt; font-size: 10.5pt; }
+.pd-txt b { font-weight: 500; }
+.pd-sign { margin-top: 18pt; padding: 8pt 10pt; border: 1.5pt solid #000; border-radius: 4pt; break-inside: avoid; }
+.pd-sign p { margin: 0; border-bottom: 0; }
+.pd-sign .pd-txt b { font-weight: 700; }
+.pd-lines { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18pt; margin-top: 14pt; font-size: 9.5pt; }
+.pd-lines span { display: flex; align-items: flex-end; gap: 6pt; white-space: nowrap; }
+.pd-lines i { flex: 1; border-bottom: 1pt solid #000; height: 14pt; }
+.pd-foot { margin-top: 16pt; padding-top: 5pt; border-top: 1pt solid #000; font: 800 7.5pt/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; text-align: center; }
+/* one sheet, even in two languages */
+.pr-doc .pr-logo { height: 38pt; }
+.pr-doc .pr-title h1 { margin: 4pt 0 2pt; font-size: 22pt; }
+.pr-doc .pr-title p { font-size: 8.5pt; }
+.pr-doc .pr-head { padding-bottom: 8pt; }
+.pd-sec { margin-top: 9pt; }
+.pd-sec li { padding: 3pt 0; }
+.pd-txt { font-size: 9.8pt; line-height: 1.25; }
+.pd-txt .pr-en { font-size: 7.8pt; }
+.pd-sign { margin-top: 12pt; padding: 6pt 9pt; }
+.pd-lines { margin-top: 10pt; }
+.pd-foot { margin-top: 10pt; }
