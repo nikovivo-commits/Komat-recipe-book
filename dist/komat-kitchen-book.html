@@ -1802,6 +1802,10 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .rp-row { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 10px; align-items: center; }
 @media (max-width: 560px) { .rp-row { grid-template-columns: 1fr; gap: 4px; } }
 .rp-order, .rp-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-first { display: grid; gap: 4px; margin-top: 8px; }
+.rp-firstlist { margin: 0; padding-left: 22px; display: grid; gap: 2px; }
+.rp-firstlist li { min-height: 36px; }
+.rp-firstlist li > span { display: inline-block; min-width: 9em; padding: 6px 0; }
 .rp-days .chip { min-height: 34px; padding: 0 10px; }
 .rp-n { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: -4px; border-radius: 50%; background: var(--apron); color: var(--apron-ink); font: 800 .72rem var(--mono); }
 .chip[aria-pressed="true"] .rp-n { background: var(--ground); color: var(--ink); }
@@ -8094,6 +8098,9 @@ window.KOMAT_PART_ART = [
     const S = (id) => setup[id];
     const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0) + (extraDays[id] || 0));
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
+    /* who goes on a station first, across people (plan.order.hot = ['a', 'b']): listed people in that order, then the rest by their own station order */
+    const ORDER = plan.order || {};
+    const stRank = (id, st) => { const r = rank(id, st), o = ORDER[st]; if (r < 0 || !o || !o.length) return r; const j = o.indexOf(id); return j >= 0 ? j : o.length + r; };
     const places = (d) => { const out = []; STS.forEach((s) => { for (let k = 0; k < ((needs[s] || [])[d] || 0); k++) out.push(s); }); return out; };
     const placeList = [0, 1, 2, 3, 4, 5, 6].map(places);
     /* events: the most cooks any event that day needs */
@@ -8145,7 +8152,7 @@ window.KOMAT_PART_ART = [
         const s = pl[i];
         for (const id of here) {
           if (used[id]) continue;
-          const r = rank(id, s);
+          const r = stRank(id, s);
           if (r < 0) continue;
           const em = (S(id).emergency || []).includes(s);
           let c = r * W.rank + (em ? W.emergency + (busy.includes(d) ? W.busyEmergency : 0) : 0);
@@ -8794,6 +8801,22 @@ window.KOMAT_PART_ART = [
     return h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: on, onchange: (e) => onpick(e.target.checked) }), h('span', null, label));
   }
 
+  /* ---------- who goes on a station first ---------- */
+  function firstOrder(plan, pl, set) {
+    const st = pl[0], names = {}, can = [];
+    (D.staff.people || []).forEach((p) => { names[p.id] = p.name; const q = plan.people[p.id] || {}; if (q.mode === 'auto' && (q.stations || []).includes(st)) can.push(p.id); });
+    const rk = (id) => { const q = plan.people[id], r = q.stations.indexOf(st); return r + ((q.emergency || []).includes(st) ? 50 : 0); };
+    const o = ((plan.order || {})[st] || []).filter((id) => can.includes(id));
+    const list = o.concat(can.filter((id) => !o.includes(id)).sort((a, b) => rk(a) - rk(b)));
+    if (list.length < 2) return null;
+    const up = (i) => set((p) => { const l = list.slice(); [l[i - 1], l[i]] = [l[i], l[i - 1]]; p.order = Object.assign({}, p.order, { [st]: l }); });
+    return h('div', { class: 'rp-first' }, h('b', null, pl[1]),
+      h('ol', { class: 'rp-firstlist' }, list.map((id, i) => {
+        const em = (plan.people[id].emergency || []).includes(st);
+        return h('li', null, h('span', null, names[id] || id, em ? h('span', { class: 'muted' }, ' · emergency') : null),
+          i ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Move ' + (names[id] || id) + ' up on ' + pl[1], onclick: () => up(i) }, '↑') : null);
+      })));
+  }
   /* ---------- what each station needs ---------- */
   function needsView() {
     const plan = K.rotaPlan(), set = (fn) => { fn(plan); save(plan); };
@@ -8811,6 +8834,9 @@ window.KOMAT_PART_ART = [
           K.select([0, 1, 2, 3, 4, 5].map((n) => [n, String(n)]), (plan.lunchMin || [])[i] || 0, (v) => set((p) => { p.lunchMin = (p.lunchMin || [0, 0, 0, 0, 0, 0, 0]).slice(); p.lunchMin[i] = +v; }), { 'aria-label': 'Cooks at lunch on ' + d, class: 'input small rp-n-in' }))))))) : null,
       plan.periods ? row('Late shift code', h('input', { class: 'input small rp-code', value: plan.lateCode || '2', 'aria-label': 'Shift code for a late shift', onchange: (e) => set((p) => { p.lateCode = e.target.value.trim() || '2'; }) })) : null,
       plan.periods ? h('p', { class: 'hint' }, 'At night each station needs its cook and, ideally, one filler on top; a night without a filler is flagged.') : null,
+      h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, 'Who goes first'),
+        h('p', { class: 'hint' }, 'When more than one person could take a station, the one higher up gets it. Tap ↑ to move someone up.'),
+        PLACES.map((pl) => firstOrder(plan, pl, set))),
       row('Busy days', days(plan.busy, (l) => set((p) => { p.busy = l; }))),
       h('p', { class: 'hint' }, 'Someone still learning Hot is only put there alone on a busy day if nobody else can.'),
       row('Weekend breakfast on', days(plan.brDays, (l) => set((p) => { p.brDays = l; }))),

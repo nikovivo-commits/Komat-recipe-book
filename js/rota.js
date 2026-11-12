@@ -316,6 +316,22 @@
     return h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: on, onchange: (e) => onpick(e.target.checked) }), h('span', null, label));
   }
 
+  /* ---------- who goes on a station first ---------- */
+  function firstOrder(plan, pl, set) {
+    const st = pl[0], names = {}, can = [];
+    (D.staff.people || []).forEach((p) => { names[p.id] = p.name; const q = plan.people[p.id] || {}; if (q.mode === 'auto' && (q.stations || []).includes(st)) can.push(p.id); });
+    const rk = (id) => { const q = plan.people[id], r = q.stations.indexOf(st); return r + ((q.emergency || []).includes(st) ? 50 : 0); };
+    const o = ((plan.order || {})[st] || []).filter((id) => can.includes(id));
+    const list = o.concat(can.filter((id) => !o.includes(id)).sort((a, b) => rk(a) - rk(b)));
+    if (list.length < 2) return null;
+    const up = (i) => set((p) => { const l = list.slice(); [l[i - 1], l[i]] = [l[i], l[i - 1]]; p.order = Object.assign({}, p.order, { [st]: l }); });
+    return h('div', { class: 'rp-first' }, h('b', null, pl[1]),
+      h('ol', { class: 'rp-firstlist' }, list.map((id, i) => {
+        const em = (plan.people[id].emergency || []).includes(st);
+        return h('li', null, h('span', null, names[id] || id, em ? h('span', { class: 'muted' }, ' · emergency') : null),
+          i ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Move ' + (names[id] || id) + ' up on ' + pl[1], onclick: () => up(i) }, '↑') : null);
+      })));
+  }
   /* ---------- what each station needs ---------- */
   function needsView() {
     const plan = K.rotaPlan(), set = (fn) => { fn(plan); save(plan); };
@@ -333,6 +349,9 @@
           K.select([0, 1, 2, 3, 4, 5].map((n) => [n, String(n)]), (plan.lunchMin || [])[i] || 0, (v) => set((p) => { p.lunchMin = (p.lunchMin || [0, 0, 0, 0, 0, 0, 0]).slice(); p.lunchMin[i] = +v; }), { 'aria-label': 'Cooks at lunch on ' + d, class: 'input small rp-n-in' }))))))) : null,
       plan.periods ? row('Late shift code', h('input', { class: 'input small rp-code', value: plan.lateCode || '2', 'aria-label': 'Shift code for a late shift', onchange: (e) => set((p) => { p.lateCode = e.target.value.trim() || '2'; }) })) : null,
       plan.periods ? h('p', { class: 'hint' }, 'At night each station needs its cook and, ideally, one filler on top; a night without a filler is flagged.') : null,
+      h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, 'Who goes first'),
+        h('p', { class: 'hint' }, 'When more than one person could take a station, the one higher up gets it. Tap ↑ to move someone up.'),
+        PLACES.map((pl) => firstOrder(plan, pl, set))),
       row('Busy days', days(plan.busy, (l) => set((p) => { p.busy = l; }))),
       h('p', { class: 'hint' }, 'Someone still learning Hot is only put there alone on a busy day if nobody else can.'),
       row('Weekend breakfast on', days(plan.brDays, (l) => set((p) => { p.brDays = l; }))),

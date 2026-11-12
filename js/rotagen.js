@@ -117,6 +117,9 @@
     const S = (id) => setup[id];
     const target = (id) => Math.max(0, (S(id).days || 0) - (leave[id] || 0) + (extraDays[id] || 0));
     const rank = (id, st) => (S(id).stations || []).indexOf(st);
+    /* who goes on a station first, across people (plan.order.hot = ['a', 'b']): listed people in that order, then the rest by their own station order */
+    const ORDER = plan.order || {};
+    const stRank = (id, st) => { const r = rank(id, st), o = ORDER[st]; if (r < 0 || !o || !o.length) return r; const j = o.indexOf(id); return j >= 0 ? j : o.length + r; };
     const places = (d) => { const out = []; STS.forEach((s) => { for (let k = 0; k < ((needs[s] || [])[d] || 0); k++) out.push(s); }); return out; };
     const placeList = [0, 1, 2, 3, 4, 5, 6].map(places);
     /* events: the most cooks any event that day needs */
@@ -168,7 +171,7 @@
         const s = pl[i];
         for (const id of here) {
           if (used[id]) continue;
-          const r = rank(id, s);
+          const r = stRank(id, s);
           if (r < 0) continue;
           const em = (S(id).emergency || []).includes(s);
           let c = r * W.rank + (em ? W.emergency + (busy.includes(d) ? W.busyEmergency : 0) : 0);
