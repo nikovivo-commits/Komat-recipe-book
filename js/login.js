@@ -29,7 +29,7 @@
     } },
       h('h2', { class: 'login-title' }, 'Join the kitchen'),
       h('p', { class: 'muted' }, signedIn ? 'Signed in as ' + u.email + ', but not part of this kitchen yet. Join with the kitchen code.' : 'Your name and the kitchen code from the head chef. You only do this once on this phone.'),
-      K.field('Your name', input('name', { autocomplete: 'given-name', maxlength: 40, enterkeyhint: 'next', placeholder: 'First name' }), 'As it is on the rota, so your shifts find you.'),
+      K.field('Your name', input('name', { autocomplete: 'given-name', maxlength: 40, enterkeyhint: 'next', placeholder: 'First name' }), 'As it is on The Brigade, so your shifts find you.'),
       K.field('Kitchen code', input('code', { autocomplete: 'off', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'go', class: 'input big mono' })),
       msg(),
       submit('Join', 'Joining…'),
@@ -91,7 +91,7 @@
     const top = h('section', { class: 'hero photo login-hero' }, K.photoLayer('assets/photos/theme/today.jpg'), K.rays('ph-rays'),
       h('div', { class: 'wrap hero-in' }, h('span', { class: 'login-mark' }, logo()),
         h('h1', { class: 'hero-title' }, 'The kitchen ', h('em', null, 'book')),
-        h('p', { class: 'hero-sub' }, 'Recipes, mise en place, orders and the rota, shared with the whole team.')));
+        h('p', { class: 'hero-sub' }, 'Recipes, mise en place, orders and The Brigade, shared with the whole team.')));
     let card;
     if (a === 'chef') card = chefForm();
     else if (a === 'setup') card = setupForm();
@@ -131,13 +131,13 @@
           return h('li', { class: 'person' },
             h('span', { class: 'p-name' }, h('b', null, p.name || 'No name'), me ? h('span', { class: 'muted' }, ' (you)') : null),
             h('span', { class: 'codechip' + (p.role === 'dev' ? ' dev' : K.Fire.FULL.includes(p.role) ? ' chef' : '') }, K.Fire.roleName(p.role) + (isOwner ? ' · owner' : '')),
-            staff.length ? h('label', { class: 'p-rota' }, h('span', { class: 'muted' }, 'On the rota as'),
+            staff.length ? h('label', { class: 'p-rota' }, h('span', { class: 'muted' }, 'On The Brigade as'),
               K.select((rid ? [] : [['', 'Not linked']]).concat(staff.map((s) => [s.id, s.name])), rid, (v) => {
                 const s = staff.find((x) => x.id === v);
                 /* let go of the picker so the list redraws with the new name straight away */
                 if (document.activeElement) document.activeElement.blur();
                 if (s) K.Fire.renameMember(p.id, s.name).then(() => K.toast(s.name + '’s week now shows their shifts'), K.writeFailed);
-              }, { class: 'input small', 'aria-label': 'On the rota as' })) : null,
+              }, { class: 'input small', 'aria-label': 'On The Brigade as' })) : null,
             /* your own title can change, but never to one without the full rights */
             me && K.Fire.FULL.includes(p.role) ? h('span', { class: 'btns' },
               K.select(K.Fire.ROLES.filter((r) => K.Fire.FULL.includes(r[0])), p.role, (v) => { if (document.activeElement) document.activeElement.blur(); K.Fire.setRole(p.id, v).then(() => K.toast('You are now ' + K.Fire.roleName(v).toLowerCase()), K.writeFailed); }, { class: 'input small role-pick', 'aria-label': 'Your title' })) : null,
@@ -148,6 +148,6 @@
                 S.confirm = ''; K.Fire.remove(p.id).then(() => K.toast(p.name + ' removed'), K.writeFailed);
               } }, sure ? 'Tap again to remove' : 'Remove')) : null);
         })),
-        h('p', { class: 'hint' }, 'Sous chefs, head chefs and devs can change recipes, lists, the rota, events and settings; a dev is whoever builds and looks after the app. Remove people who have left the team.'))), { wide: true });
+        h('p', { class: 'hint' }, 'Sous chefs, head chefs and devs can change recipes, lists, The Brigade, events and settings; a dev is whoever builds and looks after the app. Remove people who have left the team.'))), { wide: true });
   };
 })();

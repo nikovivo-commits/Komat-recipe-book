@@ -36,11 +36,11 @@
         } }, ui.cleaning ? 'Clearing…' : 'Clear')));
     }
     if ((K.mode === 'firebase' || K.mode === 'local') && K.me.admin) {
-      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Add from a file'), h('span', { class: 'muted' }, 'An event, a week of the rota or recipes sent to you as a file. Adds them and changes nothing else.')),
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Add from a file'), h('span', { class: 'muted' }, 'An event, a week of The Brigade or recipes sent to you as a file. Adds them and changes nothing else.')),
         h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => K.importBackup({ keep: true }) }, K.icon('plus'), ui.backupBusy ? 'Adding…' : 'Add')));
     }
     if (K.mode === 'firebase' && K.me.admin) {
-      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, rota and events to a file, or load one back. Loading replaces them for everyone.')),
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, The Brigade and events to a file, or load one back. Loading replaces them for everyone.')),
         h('div', { class: 'btns' },
           h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: exportBackup }, K.icon('download'), 'Export'),
           h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
@@ -80,7 +80,7 @@
     return Object.keys(map).reduce((p, id) => p.then(() => fetch(map[id]).then((r) => r.blob()).then((b) => K.assets.put(id, b))), Promise.resolve());
   }
   /* what a file added, in words: "1 event", "2 recipes and a week of the rota" */
-  const WHAT = { events: ['event', 'events', 'events'], schedules: ['week of the rota', 'weeks of the rota', 'schedule'], recipes: ['recipe', 'recipes', 'recipes'], settings: ['setting', 'settings', 'recipes'] };
+  const WHAT = { events: ['event', 'events', 'events'], schedules: ['week of The Brigade', 'weeks of The Brigade', 'schedule'], recipes: ['recipe', 'recipes', 'recipes'], settings: ['setting', 'settings', 'recipes'] };
   function added(docs) {
     const n = {};
     Object.keys(docs).forEach((p) => { const c = p.split('/')[0]; n[c] = (n[c] || 0) + 1; });
@@ -205,7 +205,7 @@
   };
 
   /* ---------- problem reports ---------- */
-  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'Schedule', events: 'Events', brand: 'Branding' };
+  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
   K.SHEETS.bug = function (B) {
     const where = (VIEW_NAMES[ui.view] || ui.view) + (ui.view === 'today' || ui.view === 'stock' ? ' · ' + K.ST[K.getStation()] : '') + (ui.view === 'recipe' && K.find(ui.id) ? ' · ' + K.find(ui.id).name : '');
     const send = () => {

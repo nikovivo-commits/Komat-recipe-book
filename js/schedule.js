@@ -67,7 +67,7 @@
   K.V.schedule = function () {
     const fc = focus(), wk = ui.week || fc.wk, mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === fc.wk, ti = fc.idx;
     const body = h('div', { class: 'page' });
-    body.append(K.pageHead('Schedule', null, h('div', { class: 'phead-side' },
+    body.append(K.pageHead('The Brigade', null, h('div', { class: 'phead-side' },
       h('p', { class: 'psub' }, range(mon) + (isNow ? ' · this week' : '')),
       h('div', { class: 'weeknav' },
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
@@ -75,7 +75,7 @@
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule sv' });
     body.append(w);
-    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Brigade generator') : null);
 
     /* what the week holds: the saved rota, or for a week still being planned the generator's draft */
     let src = null;
@@ -112,7 +112,7 @@
     }
 
     if (!src) {
-      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'Nothing on The Brigade for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'btns' }, genLink(),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
@@ -162,7 +162,7 @@
     const page = h('section', { class: 'pr-page pr-week' },
       h('header', { class: 'pr-head' },
         h('img', { class: 'pr-logo', src: 'assets/brand/logo-black.png', alt: 'Komat' }),
-        h('div', { class: 'pr-title' }, h('span', { class: 'pr-kicker' }, src.draft ? 'Schedule · draft, not final' : 'Schedule'),
+        h('div', { class: 'pr-title' }, h('span', { class: 'pr-kicker' }, src.draft ? 'The Brigade · draft, not final' : 'The Brigade'),
           h('h1', null, fmt(mon) + ' – ' + fmt(end)), doc.note ? h('p', null, doc.note) : null)),
       table,
       h('div', { class: 'pw-foot' },
@@ -241,7 +241,7 @@
       h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
         h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
         h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : ''), title: x.uf ? 'Not fair: ' + x.uf.why : null }, x.uf ? h('span', { class: 'uf-mini', 'aria-label': 'not fair: ' + x.uf.why }, K.icon('sad')) : null, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
-        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
+        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on The Brigade this day.')),
       h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
   }
 
@@ -250,7 +250,7 @@
     const box = h('section', { class: 'sv-mine' });
     if (!locked()) box.append(h('label', { class: 'mepick' }, h('span', { class: 'legend' }, 'I am'), K.select([['', 'Pick your name']].concat(src.order.map((id) => [id, K.personName(id)])), src.order.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' })));
     if (!me || !src.order.includes(me)) {
-      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s rota.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
+      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s Brigade.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on The Brigade. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
       return box;
     }
     const S = STN(), from = isNow ? ti : 0, works = (i) => at(me, i) && !isOff(at(me, i));

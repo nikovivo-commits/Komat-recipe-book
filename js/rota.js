@@ -91,7 +91,7 @@
   K.V.rotaplan = function () {
     if (!K.me.admin) { ui.view = 'schedule'; return K.V.schedule(); }
     const wk = ui.rpWeek || nextWeek(), tab = ui.rpTab || 'draft';
-    const top = K.subbar('Schedule', () => K.go('schedule'), [], 'Rota generator');
+    const top = K.subbar('The Brigade', () => K.go('schedule'), [], 'Brigade generator');
     const w = h('div', { class: 'wrap page rplan' });
     w.append(h('div', { class: 'rp-head' },
       h('div', { class: 'weeknav' },
@@ -151,10 +151,10 @@
     const has = !!D.weeks[wk];
     if (wi.length) { box.append(h('p', { class: 'banner warn' }, h('b', null, 'What if is on. '), 'This draft includes days off you are only trying out, so it cannot be used. Clear them to use the real draft.')); return box; }
     box.append(h('div', { class: 'rp-use' },
-      ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace the rota already saved for ' + range(wk) + '?'),
+      ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace The Brigade already saved for ' + range(wk) + '?'),
         h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
         : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
-      h('p', { class: 'hint' }, 'You can still change any cell on the Schedule afterwards.')));
+      h('p', { class: 'hint' }, 'You can still change any cell on The Brigade afterwards.')));
     return box;
   }
   function whatIfBox(wk, plan) {
@@ -206,7 +206,7 @@
     K.saveWeek(wk, { week: wk, people: people, rows: rows, st: st, note: old.note || '', updated: Date.now(), made: 'generator' });
     ui.week = wk;
     K.go('schedule');
-    K.toast('Rota for ' + range(wk) + ' saved', { tone: 'good' });
+    K.toast('The Brigade for ' + range(wk) + ' saved', { tone: 'good' });
   }
 
   /* ---------- who works where ---------- */
@@ -227,7 +227,7 @@
     const plan = K.rotaPlan(), list = D.staff.people || [];
     const set = (fn) => { fn(plan); save(plan); };
     const box = h('div', { class: 'rp-team' }, h('p', { class: 'hint' }, 'Tap the stations in your order: 1 is where you would rather have them, then the alternatives. Stations not tapped are ones they cannot work.'));
-    if (!list.length) box.append(h('p', { class: 'none' }, 'Add people on the Schedule first.'));
+    if (!list.length) box.append(h('p', { class: 'none' }, 'Add people on The Brigade first.'));
     list.forEach((pp) => {
       const s = plan.people[pp.id] || { mode: 'off' }, id = pp.id;
       if (ui.rpOpen !== id) {
@@ -238,7 +238,7 @@
       const card = h('section', { class: 'card rp-person' + (s.mode === 'off' || !s.mode ? ' is-off' : '') },
         h('div', { class: 'rp-ph' }, h('h3', null, pp.name), h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpOpen = ''; K.render(); } }, 'Done')),
         h('div', null,
-          K.seg([['auto', 'Generator'], ['fixed', 'Fixed week'], ['hand', 'By hand'], ['off', 'Not on the rota']], s.mode || 'off', (v) => set((p) => { person(p, id).mode = v; }), { 'aria-label': 'How ' + pp.name + ' is planned', class: 'seg small-seg' })));
+          K.seg([['auto', 'Generator'], ['fixed', 'Fixed week'], ['hand', 'By hand'], ['off', 'Not on The Brigade']], s.mode || 'off', (v) => set((p) => { person(p, id).mode = v; }), { 'aria-label': 'How ' + pp.name + ' is planned', class: 'seg small-seg' })));
       if (s.mode === 'auto') {
         const sts = s.stations || [];
         card.append(...[
@@ -299,7 +299,7 @@
   function summary(s) {
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
-    if (s.mode !== 'auto') return 'Not on the rota';
+    if (s.mode !== 'auto') return 'Not on The Brigade';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');

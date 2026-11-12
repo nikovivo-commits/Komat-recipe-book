@@ -507,7 +507,7 @@
         : (mine(r) || K.me.admin) && ds >= today ? h('button', { class: 'btn small', type: 'button', onclick: () => withdraw([r]) }, mine(r) ? 'Withdraw' : 'Remove') : null))));
     else body.push(h('p', { class: 'none' }, 'Nobody has asked for this day off.'));
     if (ds >= today) {
-      if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
+      if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to The Brigade yet, so you cannot ask from this phone. Pick your name on The Brigade tab, or ask the head chef to link it.'));
       else if (K.dayLocked(ds) && !K.me.admin) body.push(h('div', { class: 'off-lock' }, K.icon('lock'),
         h('span', null, h('b', null, 'This week is set'), h('small', null, 'Days off are asked from ' + pretty(openFrom()) + ' on. For something you cannot move, send it as urgent: it goes straight in, in red.'))),
         h('details', { class: 'off-urgent', open: !!(ui.offForm && ui.offForm.from === ds) }, h('summary', null, 'Something urgent?'), askForm(ds, me, true)));

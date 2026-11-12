@@ -5321,15 +5321,15 @@ window.KOMAT_PART_ART = [
     const taken = {};
     if (K.mode === 'firebase') Object.keys(K.D.members || {}).forEach((id) => { if (id !== K.me.id) { const r = K.rotaIdFor((K.D.members[id] || {}).name || ''); if (r) taken[r] = true; } });
     const pick = (x) => {
-      const done = () => { K.ui.sheet = null; K.ui.whoAsked = true; K.render(); K.toast('Hi ' + x.name.split(' ')[0] + '. Your shifts are on Schedule.', { tone: 'good' }); };
+      const done = () => { K.ui.sheet = null; K.ui.whoAsked = true; K.render(); K.toast('Hi ' + x.name.split(' ')[0] + '. Your shifts are on The Brigade.', { tone: 'good' }); };
       if (K.mode === 'firebase') K.Fire.rename(x.name).then(done, K.writeFailed); else { K.store.set('me', x.id); done(); }
     };
-    return K.sheet('Who are you on the rota?', h('div', { class: 'whoami' },
+    return K.sheet('Who are you on The Brigade?', h('div', { class: 'whoami' },
       h('p', { class: 'muted' }, 'Pick your name as it is on the schedule. Your week, your shifts and the name on what you write come from it.'),
-      h('div', { class: 'who-grid', role: 'radiogroup', 'aria-label': 'Your name on the rota' }, ppl.map((x) => h('button', {
+      h('div', { class: 'who-grid', role: 'radiogroup', 'aria-label': 'Your name on The Brigade' }, ppl.map((x) => h('button', {
         type: 'button', role: 'radio', class: 'who-opt', 'aria-checked': mine === x.id ? 'true' : 'false', disabled: taken[x.id] && mine !== x.id ? true : null, onclick: () => pick(x),
       }, h('b', null, x.name), taken[x.id] && mine !== x.id ? h('small', null, 'already taken') : null))),
-      h('button', { class: 'btn wide', type: 'button', onclick: () => { K.ui.sheet = null; K.ui.whoAsked = true; K.store.set('notOnRota', true); K.render(); } }, 'I’m not on the rota')));
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { K.ui.sheet = null; K.ui.whoAsked = true; K.store.set('notOnRota', true); K.render(); } }, 'I’m not on The Brigade')));
   };
   K.whoPrompt = function () {
     if (K.ui.sheet || K.ui.cook || K.ui.whoAsked || K.ui.auth || K.store.get('notOnRota', false)) return false;
@@ -5370,7 +5370,7 @@ window.KOMAT_PART_ART = [
   };
   const ui = K.ui;
 
-  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Whiteboard', 'board'], ['schedule', 'Schedule', 'rota'], ['events', 'Events', 'event']];
+  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Whiteboard', 'board'], ['schedule', 'Brigade', 'rota'], ['events', 'Events', 'event']];
   const TAB_OF = { recipe: 'recipes', edit: 'recipes', brand: 'recipes', stock: 'today', lists: 'today', rotaplan: 'schedule' };
 
   /* ---------- navigation ---------- */
@@ -5645,7 +5645,7 @@ window.KOMAT_PART_ART = [
   const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule-rota', events: 'events' };
   /* the recipe book opens on a different dish each day */
   const DAILY = ['recipes', 'salmon', 'soup', 'chocolate', 'cauliflower', 'fishcakes', 'sandwiches', 'herring'];
-  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Whiteboard'], ['schedule', 'Schedule'], ['events', 'Events']];
+  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Whiteboard'], ['schedule', 'The Brigade'], ['events', 'Events']];
 
   K.defaultPagePhoto = function (tab) {
     if (tab === 'recipes') {
@@ -7702,7 +7702,7 @@ window.KOMAT_PART_ART = [
   K.V.schedule = function () {
     const fc = focus(), wk = ui.week || fc.wk, mon = K.parseYmd(wk), doc = D.weeks[wk], isNow = wk === fc.wk, ti = fc.idx;
     const body = h('div', { class: 'page' });
-    body.append(K.pageHead('Schedule', null, h('div', { class: 'phead-side' },
+    body.append(K.pageHead('The Brigade', null, h('div', { class: 'phead-side' },
       h('p', { class: 'psub' }, range(mon) + (isNow ? ' · this week' : '')),
       h('div', { class: 'weeknav' },
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Previous week', onclick: () => { ui.week = K.ymd(K.addDays(mon, -7)); K.render(); } }, K.icon('back')),
@@ -7710,7 +7710,7 @@ window.KOMAT_PART_ART = [
         h('button', { class: 'icon-btn on-dark', type: 'button', 'aria-label': 'Next week', onclick: () => { ui.week = K.ymd(K.addDays(mon, 7)); K.render(); } }, K.icon('next')))), 'schedule'));
     const w = h('div', { class: 'wrap schedule sv' });
     body.append(w);
-    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Rota generator') : null);
+    const genLink = () => (K.me.admin && K.V.rotaplan ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpWeek = wk > K.thisWeek() ? wk : K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)); ui.rpTab = 'draft'; K.go('rotaplan'); } }, K.icon('rota'), 'Brigade generator') : null);
 
     /* what the week holds: the saved rota, or for a week still being planned the generator's draft */
     let src = null;
@@ -7747,7 +7747,7 @@ window.KOMAT_PART_ART = [
     }
 
     if (!src) {
-      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
+      w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'Nothing on The Brigade for this week yet.' : 'The head chef has not posted this week yet.'),
         K.me.admin ? h('div', { class: 'btns' }, genLink(),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, true) }, 'Copy the week before'),
           h('button', { class: 'btn small', type: 'button', onclick: () => newWeekFrom(wk, false) }, 'Start a blank week')) : null));
@@ -7797,7 +7797,7 @@ window.KOMAT_PART_ART = [
     const page = h('section', { class: 'pr-page pr-week' },
       h('header', { class: 'pr-head' },
         h('img', { class: 'pr-logo', src: 'assets/brand/logo-black.png', alt: 'Komat' }),
-        h('div', { class: 'pr-title' }, h('span', { class: 'pr-kicker' }, src.draft ? 'Schedule · draft, not final' : 'Schedule'),
+        h('div', { class: 'pr-title' }, h('span', { class: 'pr-kicker' }, src.draft ? 'The Brigade · draft, not final' : 'The Brigade'),
           h('h1', null, fmt(mon) + ' – ' + fmt(end)), doc.note ? h('p', null, doc.note) : null)),
       table,
       h('div', { class: 'pw-foot' },
@@ -7876,7 +7876,7 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'sv-card sv-lines' }, ORDER.filter((o) => groups[o[0]]).map((o) => h('div', { class: 'sv-line' },
         h('span', { class: 'sv-lab' }, h('i', { class: 'svc-' + (/^learn/.test(o[0]) ? 'learn' : o[0] === 'other' ? 'plain' : o[0]) }), o[1]),
         h('span', { class: 'sv-who' }, groups[o[0]].map((x) => h('span', { class: 'sv-p' + (x.id === me ? ' me' : ''), title: x.uf ? 'Not fair: ' + x.uf.why : null }, x.uf ? h('span', { class: 'uf-mini', 'aria-label': 'not fair: ' + x.uf.why }, K.icon('sad')) : null, K.personName(x.id), x.tag ? h('small', null, x.tag) : null))))),
-        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on the rota this day.')),
+        Object.keys(groups).length ? null : h('p', { class: 'sv-none' }, 'Nobody is on The Brigade this day.')),
       h('p', { class: 'sv-off' }, h('b', null, 'Off: '), off.length ? off.map((id) => K.personName(id)).join(', ') : 'nobody'));
   }
 
@@ -7885,7 +7885,7 @@ window.KOMAT_PART_ART = [
     const box = h('section', { class: 'sv-mine' });
     if (!locked()) box.append(h('label', { class: 'mepick' }, h('span', { class: 'legend' }, 'I am'), K.select([['', 'Pick your name']].concat(src.order.map((id) => [id, K.personName(id)])), src.order.includes(me) ? me : '', (v) => { K.store.set('me', v); K.render(); }, { id: 'mesel', class: 'input' })));
     if (!me || !src.order.includes(me)) {
-      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s rota.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on the rota. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
+      box.append(h('p', { class: 'hint' }, locked() ? (me ? 'You are not on this week’s Brigade.' : 'Your kitchen name, “' + (K.me.name || '') + '”, does not match anyone on The Brigade. ' + (K.me.admin ? 'Link it in Settings → People and kitchen code.' : 'Ask the head chef to link it in Settings.')) : 'Pick your name once and your shifts show here. This phone remembers it.'));
       return box;
     }
     const S = STN(), from = isNow ? ti : 0, works = (i) => at(me, i) && !isOff(at(me, i));
@@ -8567,7 +8567,7 @@ window.KOMAT_PART_ART = [
   K.V.rotaplan = function () {
     if (!K.me.admin) { ui.view = 'schedule'; return K.V.schedule(); }
     const wk = ui.rpWeek || nextWeek(), tab = ui.rpTab || 'draft';
-    const top = K.subbar('Schedule', () => K.go('schedule'), [], 'Rota generator');
+    const top = K.subbar('The Brigade', () => K.go('schedule'), [], 'Brigade generator');
     const w = h('div', { class: 'wrap page rplan' });
     w.append(h('div', { class: 'rp-head' },
       h('div', { class: 'weeknav' },
@@ -8627,10 +8627,10 @@ window.KOMAT_PART_ART = [
     const has = !!D.weeks[wk];
     if (wi.length) { box.append(h('p', { class: 'banner warn' }, h('b', null, 'What if is on. '), 'This draft includes days off you are only trying out, so it cannot be used. Clear them to use the real draft.')); return box; }
     box.append(h('div', { class: 'rp-use' },
-      ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace the rota already saved for ' + range(wk) + '?'),
+      ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace The Brigade already saved for ' + range(wk) + '?'),
         h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
         : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
-      h('p', { class: 'hint' }, 'You can still change any cell on the Schedule afterwards.')));
+      h('p', { class: 'hint' }, 'You can still change any cell on The Brigade afterwards.')));
     return box;
   }
   function whatIfBox(wk, plan) {
@@ -8682,7 +8682,7 @@ window.KOMAT_PART_ART = [
     K.saveWeek(wk, { week: wk, people: people, rows: rows, st: st, note: old.note || '', updated: Date.now(), made: 'generator' });
     ui.week = wk;
     K.go('schedule');
-    K.toast('Rota for ' + range(wk) + ' saved', { tone: 'good' });
+    K.toast('The Brigade for ' + range(wk) + ' saved', { tone: 'good' });
   }
 
   /* ---------- who works where ---------- */
@@ -8703,7 +8703,7 @@ window.KOMAT_PART_ART = [
     const plan = K.rotaPlan(), list = D.staff.people || [];
     const set = (fn) => { fn(plan); save(plan); };
     const box = h('div', { class: 'rp-team' }, h('p', { class: 'hint' }, 'Tap the stations in your order: 1 is where you would rather have them, then the alternatives. Stations not tapped are ones they cannot work.'));
-    if (!list.length) box.append(h('p', { class: 'none' }, 'Add people on the Schedule first.'));
+    if (!list.length) box.append(h('p', { class: 'none' }, 'Add people on The Brigade first.'));
     list.forEach((pp) => {
       const s = plan.people[pp.id] || { mode: 'off' }, id = pp.id;
       if (ui.rpOpen !== id) {
@@ -8714,7 +8714,7 @@ window.KOMAT_PART_ART = [
       const card = h('section', { class: 'card rp-person' + (s.mode === 'off' || !s.mode ? ' is-off' : '') },
         h('div', { class: 'rp-ph' }, h('h3', null, pp.name), h('button', { class: 'btn small', type: 'button', onclick: () => { ui.rpOpen = ''; K.render(); } }, 'Done')),
         h('div', null,
-          K.seg([['auto', 'Generator'], ['fixed', 'Fixed week'], ['hand', 'By hand'], ['off', 'Not on the rota']], s.mode || 'off', (v) => set((p) => { person(p, id).mode = v; }), { 'aria-label': 'How ' + pp.name + ' is planned', class: 'seg small-seg' })));
+          K.seg([['auto', 'Generator'], ['fixed', 'Fixed week'], ['hand', 'By hand'], ['off', 'Not on The Brigade']], s.mode || 'off', (v) => set((p) => { person(p, id).mode = v; }), { 'aria-label': 'How ' + pp.name + ' is planned', class: 'seg small-seg' })));
       if (s.mode === 'auto') {
         const sts = s.stations || [];
         card.append(...[
@@ -8775,7 +8775,7 @@ window.KOMAT_PART_ART = [
   function summary(s) {
     if (s.mode === 'fixed') return 'Same every week: ' + (s.pattern || []).map((c, i) => c && !/^(0|X)$/i.test(c) ? DAYS[i] : '').filter(Boolean).join(' ') + (s.br ? ' · breakfast ' + s.br + '.' : '');
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
-    if (s.mode !== 'auto') return 'Not on the rota';
+    if (s.mode !== 'auto') return 'Not on The Brigade';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
     return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
@@ -9327,7 +9327,7 @@ window.KOMAT_PART_ART = [
         : (mine(r) || K.me.admin) && ds >= today ? h('button', { class: 'btn small', type: 'button', onclick: () => withdraw([r]) }, mine(r) ? 'Withdraw' : 'Remove') : null))));
     else body.push(h('p', { class: 'none' }, 'Nobody has asked for this day off.'));
     if (ds >= today) {
-      if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to the rota yet, so you cannot ask from this phone. Pick your name on the Rota tab, or ask the head chef to link it.'));
+      if (!me && !K.me.admin) body.push(h('p', { class: 'hint' }, 'Your name is not linked to The Brigade yet, so you cannot ask from this phone. Pick your name on The Brigade tab, or ask the head chef to link it.'));
       else if (K.dayLocked(ds) && !K.me.admin) body.push(h('div', { class: 'off-lock' }, K.icon('lock'),
         h('span', null, h('b', null, 'This week is set'), h('small', null, 'Days off are asked from ' + pretty(openFrom()) + ' on. For something you cannot move, send it as urgent: it goes straight in, in red.'))),
         h('details', { class: 'off-urgent', open: !!(ui.offForm && ui.offForm.from === ds) }, h('summary', null, 'Something urgent?'), askForm(ds, me, true)));
@@ -9567,7 +9567,7 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'two' },
         K.field('Cooks needed on the day', h('input', { class: 'input', id: 'ev-cooks', inputmode: 'numeric', value: e.cooks || '', placeholder: 'e.g. 5', oninput: (ev) => { e.cooks = ev.target.value.replace(/[^0-9]/g, ''); } })),
         K.field('When', K.select([['', 'All day'], ['day', 'At lunch'], ['night', 'In the evening']], e.when || '', (v) => { e.when = v; }), null, 'ev-when')),
-      K.field('Cooks the day before', h('input', { class: 'input', id: 'ev-before', inputmode: 'numeric', value: e.before || '', placeholder: 'e.g. 4, for the prep', oninput: (ev) => { e.before = ev.target.value.replace(/[^0-9]/g, ''); } }), 'The rota keeps at least these many cooks; days off that would go below it need the head chef’s OK.'),
+      K.field('Cooks the day before', h('input', { class: 'input', id: 'ev-before', inputmode: 'numeric', value: e.before || '', placeholder: 'e.g. 4, for the prep', oninput: (ev) => { e.before = ev.target.value.replace(/[^0-9]/g, ''); } }), 'The Brigade keeps at least these many cooks; days off that would go below it need the head chef’s OK.'),
       K.field('Status', K.select(STATUS, e.status || 'confirmed', (v) => { e.status = v; }), null, 'ev-status'),
       inp('Contact or organiser', 'contact', { placeholder: 'Optional' }),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Food'), h('p', { class: 'hint' }, 'Each dish, how many portions, and the recipe if it is in the book. Linked recipes open already scaled when their yield is in portions.'),
@@ -9624,11 +9624,11 @@ window.KOMAT_PART_ART = [
         } }, ui.cleaning ? 'Clearing…' : 'Clear')));
     }
     if ((K.mode === 'firebase' || K.mode === 'local') && K.me.admin) {
-      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Add from a file'), h('span', { class: 'muted' }, 'An event, a week of the rota or recipes sent to you as a file. Adds them and changes nothing else.')),
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Add from a file'), h('span', { class: 'muted' }, 'An event, a week of The Brigade or recipes sent to you as a file. Adds them and changes nothing else.')),
         h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => K.importBackup({ keep: true }) }, K.icon('plus'), ui.backupBusy ? 'Adding…' : 'Add')));
     }
     if (K.mode === 'firebase' && K.me.admin) {
-      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, rota and events to a file, or load one back. Loading replaces them for everyone.')),
+      rows.push(h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Backup'), h('span', { class: 'muted' }, 'Save the recipes, lists, The Brigade and events to a file, or load one back. Loading replaces them for everyone.')),
         h('div', { class: 'btns' },
           h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: exportBackup }, K.icon('download'), 'Export'),
           h('button', { class: 'btn small', type: 'button', disabled: !!ui.backupBusy, onclick: () => {
@@ -9668,7 +9668,7 @@ window.KOMAT_PART_ART = [
     return Object.keys(map).reduce((p, id) => p.then(() => fetch(map[id]).then((r) => r.blob()).then((b) => K.assets.put(id, b))), Promise.resolve());
   }
   /* what a file added, in words: "1 event", "2 recipes and a week of the rota" */
-  const WHAT = { events: ['event', 'events', 'events'], schedules: ['week of the rota', 'weeks of the rota', 'schedule'], recipes: ['recipe', 'recipes', 'recipes'], settings: ['setting', 'settings', 'recipes'] };
+  const WHAT = { events: ['event', 'events', 'events'], schedules: ['week of The Brigade', 'weeks of The Brigade', 'schedule'], recipes: ['recipe', 'recipes', 'recipes'], settings: ['setting', 'settings', 'recipes'] };
   function added(docs) {
     const n = {};
     Object.keys(docs).forEach((p) => { const c = p.split('/')[0]; n[c] = (n[c] || 0) + 1; });
@@ -9793,7 +9793,7 @@ window.KOMAT_PART_ART = [
   };
 
   /* ---------- problem reports ---------- */
-  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'Schedule', events: 'Events', brand: 'Branding' };
+  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
   K.SHEETS.bug = function (B) {
     const where = (VIEW_NAMES[ui.view] || ui.view) + (ui.view === 'today' || ui.view === 'stock' ? ' · ' + K.ST[K.getStation()] : '') + (ui.view === 'recipe' && K.find(ui.id) ? ' · ' + K.find(ui.id).name : '');
     const send = () => {

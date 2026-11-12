@@ -1,7 +1,7 @@
 {
   "name": "Komat Kitchen Book",
   "short_name": "Komat",
-  "description": "Recipes, daily mise en place, orders, the rota and events for the Komat kitchen.",
+  "description": "Recipes, daily mise en place, orders, The Brigade and events for the Komat kitchen.",
   "start_url": "./#recipes",
   "display": "standalone",
   "background_color": "#111111",

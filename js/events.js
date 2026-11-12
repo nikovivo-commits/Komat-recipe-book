@@ -187,7 +187,7 @@
       h('div', { class: 'two' },
         K.field('Cooks needed on the day', h('input', { class: 'input', id: 'ev-cooks', inputmode: 'numeric', value: e.cooks || '', placeholder: 'e.g. 5', oninput: (ev) => { e.cooks = ev.target.value.replace(/[^0-9]/g, ''); } })),
         K.field('When', K.select([['', 'All day'], ['day', 'At lunch'], ['night', 'In the evening']], e.when || '', (v) => { e.when = v; }), null, 'ev-when')),
-      K.field('Cooks the day before', h('input', { class: 'input', id: 'ev-before', inputmode: 'numeric', value: e.before || '', placeholder: 'e.g. 4, for the prep', oninput: (ev) => { e.before = ev.target.value.replace(/[^0-9]/g, ''); } }), 'The rota keeps at least these many cooks; days off that would go below it need the head chef’s OK.'),
+      K.field('Cooks the day before', h('input', { class: 'input', id: 'ev-before', inputmode: 'numeric', value: e.before || '', placeholder: 'e.g. 4, for the prep', oninput: (ev) => { e.before = ev.target.value.replace(/[^0-9]/g, ''); } }), 'The Brigade keeps at least these many cooks; days off that would go below it need the head chef’s OK.'),
       K.field('Status', K.select(STATUS, e.status || 'confirmed', (v) => { e.status = v; }), null, 'ev-status'),
       inp('Contact or organiser', 'contact', { placeholder: 'Optional' }),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Food'), h('p', { class: 'hint' }, 'Each dish, how many portions, and the recipe if it is in the book. Linked recipes open already scaled when their yield is in portions.'),

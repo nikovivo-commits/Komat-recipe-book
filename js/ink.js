@@ -96,15 +96,15 @@
     const taken = {};
     if (K.mode === 'firebase') Object.keys(K.D.members || {}).forEach((id) => { if (id !== K.me.id) { const r = K.rotaIdFor((K.D.members[id] || {}).name || ''); if (r) taken[r] = true; } });
     const pick = (x) => {
-      const done = () => { K.ui.sheet = null; K.ui.whoAsked = true; K.render(); K.toast('Hi ' + x.name.split(' ')[0] + '. Your shifts are on Schedule.', { tone: 'good' }); };
+      const done = () => { K.ui.sheet = null; K.ui.whoAsked = true; K.render(); K.toast('Hi ' + x.name.split(' ')[0] + '. Your shifts are on The Brigade.', { tone: 'good' }); };
       if (K.mode === 'firebase') K.Fire.rename(x.name).then(done, K.writeFailed); else { K.store.set('me', x.id); done(); }
     };
-    return K.sheet('Who are you on the rota?', h('div', { class: 'whoami' },
+    return K.sheet('Who are you on The Brigade?', h('div', { class: 'whoami' },
       h('p', { class: 'muted' }, 'Pick your name as it is on the schedule. Your week, your shifts and the name on what you write come from it.'),
-      h('div', { class: 'who-grid', role: 'radiogroup', 'aria-label': 'Your name on the rota' }, ppl.map((x) => h('button', {
+      h('div', { class: 'who-grid', role: 'radiogroup', 'aria-label': 'Your name on The Brigade' }, ppl.map((x) => h('button', {
         type: 'button', role: 'radio', class: 'who-opt', 'aria-checked': mine === x.id ? 'true' : 'false', disabled: taken[x.id] && mine !== x.id ? true : null, onclick: () => pick(x),
       }, h('b', null, x.name), taken[x.id] && mine !== x.id ? h('small', null, 'already taken') : null))),
-      h('button', { class: 'btn wide', type: 'button', onclick: () => { K.ui.sheet = null; K.ui.whoAsked = true; K.store.set('notOnRota', true); K.render(); } }, 'I’m not on the rota')));
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { K.ui.sheet = null; K.ui.whoAsked = true; K.store.set('notOnRota', true); K.render(); } }, 'I’m not on The Brigade')));
   };
   K.whoPrompt = function () {
     if (K.ui.sheet || K.ui.cook || K.ui.whoAsked || K.ui.auth || K.store.get('notOnRota', false)) return false;
