@@ -7727,7 +7727,7 @@ window.KOMAT_PART_ART = [
     const waiting = K.me.admin && K.calendarOn && K.waitingCount ? K.waitingCount() : 0;
     if (waiting && view !== 'month') w.append(h('button', { type: 'button', class: 'sv-wait', onclick: () => setView('month') }, h('b', null, String(waiting)), waiting === 1 ? 'day off waiting for you' : 'days off waiting for you', K.icon('next')));
     if (view === 'month') {
-      /* the week as it stands so far, at a glance (next week to start with), and the calendar under it */
+      /* the calendar, and under everything the week as it stands so far (next week to start with) */
       const nextWk = K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)), pw = ui.prevWk || nextWk, pmon = K.parseYmd(pw), ps = srcFor(pw, fc.wk);
       const move = (n) => { ui.prevWk = K.ymd(K.addDays(pmon, 7 * n)); K.render(); };
       const title = pw === K.thisWeek() ? 'This week' : pw === nextWk ? 'Next week' : 'Week of ' + range(pmon);
@@ -7741,8 +7741,8 @@ window.KOMAT_PART_ART = [
         const puf = K.unfairWeek ? K.unfairWeek(pw, ps.rows, ps.st) : {};
         prev.append(weekView(ps, pat, pst, pmon, pw === fc.wk, fc.idx, me, pw, (id, i) => (puf[id] || {})[i] || null));
       } else prev.append(h('p', { class: 'sv-none' }, 'Nothing planned for this week yet.'));
-      w.append(prev);
       if (K.monthView) w.append(K.monthView());
+      w.append(prev);
       return { body: body };
     }
 
