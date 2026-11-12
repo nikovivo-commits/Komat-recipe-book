@@ -50,6 +50,17 @@
     if (st) return /^learn/.test(st) ? 'learn' : st;
     return /^BR\b/i.test(c) && !/\+/.test(c) ? 'br' : 'plain';
   }
+  /* what a week holds: the saved rota, or for a week still being planned the generator's draft (chefs always see
+     the draft; the team too once the calendar is on) */
+  function srcFor(wk, fromWk) {
+    const d = D.weeks[wk];
+    if (d) return { rows: d.rows || {}, st: d.st || {}, order: (d.people || []).slice(), draft: false };
+    if (wk >= fromWk && K.rotaReady && K.rotaReady() && (K.calendarOn || K.me.admin)) {
+      const r = K.rotaDraft(wk, K.requestsFor ? K.requestsFor(wk) : []);
+      return { rows: r.rows, st: r.st, order: r.order, draft: true, holes: r.issues.filter((x) => x.sev === 'red').length };
+    }
+    return null;
+  }
   const STN = () => K.STL || { hot: 'Hot', cold: 'Cold', pass: 'Pass', prep: 'Prep', float: 'Filler', br: 'Breakfast', learn: 'Hot · learning' };
   const setView = (v, day) => { ui.schedView = v; K.store.set('schedView', v); if (day != null) ui.schedDay = day; K.render(); };
 
@@ -80,7 +91,25 @@
     /* days off waiting for the chef: a nudge on every view, the requests themselves are in Month */
     const waiting = K.me.admin && K.calendarOn && K.waitingCount ? K.waitingCount() : 0;
     if (waiting && view !== 'month') w.append(h('button', { type: 'button', class: 'sv-wait', onclick: () => setView('month') }, h('b', null, String(waiting)), waiting === 1 ? 'day off waiting for you' : 'days off waiting for you', K.icon('next')));
-    if (view === 'month') { if (K.monthView) w.append(K.monthView()); return { body: body }; }
+    if (view === 'month') {
+      /* the week as it stands so far, at a glance (next week to start with), and the calendar under it */
+      const nextWk = K.ymd(K.addDays(K.parseYmd(K.thisWeek()), 7)), pw = ui.prevWk || nextWk, pmon = K.parseYmd(pw), ps = srcFor(pw, fc.wk);
+      const move = (n) => { ui.prevWk = K.ymd(K.addDays(pmon, 7 * n)); K.render(); };
+      const title = pw === K.thisWeek() ? 'This week' : pw === nextWk ? 'Next week' : 'Week of ' + range(pmon);
+      const prev = h('section', { class: 'sv-preview' },
+        h('div', { class: 'sv-prevhead' },
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Week before', onclick: () => move(-1) }, K.icon('back')),
+          h('div', null, h('h2', null, title), h('span', null, range(pmon) + (ps && ps.draft ? ' · so far, it can still change' : ''))),
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Week after', onclick: () => move(1) }, K.icon('next'))));
+      if (ps) {
+        const pat = (id, i) => String(((ps.rows[id] || [])[i]) || '').trim(), pst = (id, i) => ((ps.st[id] || [])[i]) || '';
+        const puf = K.unfairWeek ? K.unfairWeek(pw, ps.rows, ps.st) : {};
+        prev.append(weekView(ps, pat, pst, pmon, pw === fc.wk, fc.idx, me, pw, (id, i) => (puf[id] || {})[i] || null));
+      } else prev.append(h('p', { class: 'sv-none' }, 'Nothing planned for this week yet.'));
+      w.append(prev);
+      if (K.monthView) w.append(K.monthView());
+      return { body: body };
+    }
 
     if (!src) {
       w.append(h('section', { class: 'sv-card sv-empty' }, h('p', null, K.me.admin ? 'No rota for this week yet.' : 'The head chef has not posted this week yet.'),
@@ -157,7 +186,7 @@
     const head = h('tr', null, h('th', { scope: 'col', class: 'sv-nm' }, h('span', { class: 'sr' }, 'Person')), K.DAYS.map((d, i) => {
       const dd = K.addDays(mon, i), ev = K.dayEvents ? K.dayEvents(K.ymd(dd)) : [];
       return h('th', { scope: 'col', class: isNow && i === ti ? 'now' : null },
-        h('button', { type: 'button', class: 'sv-dh', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => setView('day', i) },
+        h('button', { type: 'button', class: 'sv-dh', 'aria-label': 'Who is on ' + d + ' ' + dd.getDate(), onclick: () => { ui.week = wk; setView('day', i); } },
           h('span', null, d), h('b', null, String(dd.getDate())), ev.length ? h('i', { class: 'sv-ev', title: ev.map((e) => e.title).join(', ') }, '★') : null));
     }));
     const rows = src.order.map((id) => {

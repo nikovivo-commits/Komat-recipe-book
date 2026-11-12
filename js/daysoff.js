@@ -146,14 +146,21 @@
         if (all().some((r) => r.person === id && r.date === date)) add(i, 'asked');
         if (s.mode !== 'auto') continue;
         if ((s.off || []).includes(i)) add(i, 'fixed');
-        if ((s.avoidMore || []).includes(i)) add(i, 'kept');
         if (sts[i] && ((s.emergency || []).includes(sts[i]))) add(i, 'backup');
       }
       if (s.mode === 'auto') {
         /* off-if-possible days: only the ones beyond what was needed to make up the week */
-        const free = [0, 1, 2, 3, 4, 5, 6].filter((d) => !(s.off || []).includes(d) && !(s.avoid || []).includes(d) && !(s.avoidMore || []).includes(d)).length;
-        let need = Math.max(0, (s.days || 0) - free);
-        for (let i = 0; i < 7; i++) if (works(row[i]) && (s.avoid || []).includes(i)) { if (need > 0) need--; else add(i, 'ifpossible'); }
+        /* preset days off: only the ones beyond what was needed to make up the week, after the days they asked off */
+        const asked = (d) => all().some((r) => r.person === id && r.date === K.ymd(K.addDays(K.parseYmd(wk), d)) && r.status !== 'refused');
+        const av = (s.avoid || []).filter((d) => !asked(d)), am = (s.avoidMore || []).filter((d) => !asked(d) && !av.includes(d));
+        const free = [0, 1, 2, 3, 4, 5, 6].filter((d) => !(s.off || []).includes(d) && !asked(d) && !av.includes(d) && !am.includes(d)).length;
+        const need = Math.max(0, (s.days || 0) - free);
+        let needA = Math.min(need, av.length), needM = Math.min(am.length, need - needA);
+        for (let i = 0; i < 7; i++) {
+          if (!works(row[i])) continue;
+          if (av.includes(i)) { if (needA > 0) needA--; else add(i, 'ifpossible'); }
+          if (am.includes(i)) { if (needM > 0) needM--; else add(i, 'kept'); }
+        }
         /* a day more than usual: full shifts count 1, late shifts 2/3 */
         const thirds = row.reduce((a, c) => a + (!works(c) ? 0 : String(c).trim() === String((D.rotaplan || {}).lateCode || '2') ? 2 : 3), 0);
         if (s.days && !(s.options || []).length && thirds > 3 * s.days) { let last = -1; for (let i = 0; i < 7; i++) if (works(row[i])) last = i; if (last >= 0) add(last, 'extra'); }

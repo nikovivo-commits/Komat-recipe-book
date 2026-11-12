@@ -31,7 +31,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, move: 250, moveSt: 60 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, move: 250, moveSt: 60 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -216,6 +216,13 @@
     }
 
     /* ---------- one person's week: days short, wishes not met, days off split up ---------- */
+    /* how many of someone's preset days off they must work this week to make up their days */
+    function presetNeed(id) {
+      const s = S(id), av = (s.avoid || []).filter((d) => !hardOff[id][d]), am = (s.avoidMore || []).filter((d) => !hardOff[id][d] && !av.includes(d));
+      const freeN = [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d] && !av.includes(d) && !am.includes(d)).length;
+      const need = Math.max(0, target(id) - freeN), a = Math.min(need, av.length);
+      return { av: av, am: am, a: a, m: Math.min(am.length, need - a) };
+    }
     function personCost(id, work, special) {
       const s = S(id), w = work[id], n = w.reduce((a, b) => a + b, 0);
       let moved = 0;
@@ -225,12 +232,14 @@
       if (lt > 3) c += (lt - 3) * W.short; /* at most 3 late shifts a week */
       /* days off-if-possible: when the other days cannot make up their week, the ones needed cost only a little,
          so the generator picks among them by what the kitchen needs (Wed or Sun) instead of leaving them short */
-      const av = (s.avoid || []).filter((d) => !hardOff[id][d]), freeN = [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d] && !av.includes(d) && !(s.avoidMore || []).includes(d)).length;
-      let need = Math.max(0, target(id) - freeN);
+      /* the days someone asked off come first: when those and their usual days off leave too few days for their
+         week, their preset days give way (off-if-possible ones before the ones they really keep off) */
+      const pd = presetNeed(id);
+      let needA = pd.a, needM = pd.m;
       for (let d = 0; d < 7; d++) {
         if (w[d] && wish[id][d]) c += W.wish;
-        if (w[d] && av.includes(d)) { if (need > 0) { need--; c += W.avoidNeeded; } else c += W.avoid; }
-        if (w[d] && (s.avoidMore || []).includes(d)) c += W.avoidMore;
+        if (w[d] && pd.av.includes(d)) { if (needA > 0) { needA--; c += W.avoidNeeded; } else c += W.avoid; }
+        if (w[d] && pd.am.includes(d)) { if (needM > 0) { needM--; c += W.avoidMoreNeeded; } else c += W.avoidMore; }
       }
       if (s.special && s.special.n && !optsOf(id)) c += Math.abs(Math.min(s.special.n, n) - special[id].reduce((a, b) => a + b, 0)) * W.special;
       if (lrnN(id)) c += Math.max(0, Math.min(lrnN(id), n) - (work.__lrn[id] || []).reduce((a, b) => a + (b ? 1 : 0), 0)) * W.learnMiss;
@@ -272,7 +281,7 @@
         const av = (S(id).avoid || []).concat(S(id).avoidMore || []);
         const avm = S(id).avoidMore || [];
         f = f.filter((d) => pinned(id, d)).concat(f.filter((d) => !pinned(id, d) && !av.includes(d)), f.filter((d) => !pinned(id, d) && av.includes(d) && !avm.includes(d)), f.filter((d) => !pinned(id, d) && avm.includes(d)));
-        const n = Math.max(Math.min(target(id), f.filter((d) => pinned(id, d) || !(S(id).avoidMore || []).includes(d)).length), f.filter((d) => pinned(id, d)).length);
+        const n = Math.max(Math.min(target(id), f.length), f.filter((d) => pinned(id, d)).length);
         work[id] = [0, 0, 0, 0, 0, 0, 0]; special[id] = [0, 0, 0, 0, 0, 0, 0];
         f.slice(0, n).forEach((d) => { work[id][d] = 1; });
         const loose = f.slice(0, n).filter((d) => !pinned(id, d)), sn = S(id).special && S(id).special.n ? Math.min(S(id).special.n, loose.length) : 0;
@@ -468,10 +477,11 @@
         if (got < want) issues.push({ sev: 'amber', person: id, text: name(id) + ': ' + (got ? 'only ' + got + ' of ' + want : 'no') + ' ' + s.learn[0] + ' learning day' + (want - got === 1 && !got ? '' : 's') + ' this week (nobody spare to cover their own station)' });
       }
       {
-        const av = (s.avoid || []).filter((d) => !hardOff[id][d]), freeN = [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d] && !av.includes(d) && !(s.avoidMore || []).includes(d)).length;
-        let need = Math.max(0, target(id) - freeN);
+        const pd = presetNeed(id);
+        let needA = pd.a, needM = pd.m;
         for (let d = 0; d < 7; d++) if (best.st.work[id][d] && ((s.avoid || []).includes(d) || (s.avoidMore || []).includes(d)) && !pinned(id, d)) {
-          if (av.includes(d) && need > 0) { need--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week (of the days off if possible, the kitchen needs this one most)' }); }
+          if (pd.av.includes(d) && needA > 0) { needA--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week (of the days off if possible, the kitchen needs this one most)' }); }
+          else if (pd.am.includes(d) && needM > 0) { needM--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week: the days they asked off come first' }); }
           else issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' comes in on ' + DAY[d] + ', a day off if possible (last resort)' });
         }
       }

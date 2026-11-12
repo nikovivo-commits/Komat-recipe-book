@@ -2372,3 +2372,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pd-sign { margin-top: 12pt; padding: 6pt 9pt; }
 .pd-lines { margin-top: 10pt; }
 .pd-foot { margin-top: 10pt; }
+/* Month: the week so far, above the calendar */
+.sv-preview { display: grid; gap: 8px; }
+.sv-prevhead { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; text-align: center; }
+.sv-prevhead h2 { margin: 0; font: 700 1.3rem/1.1 var(--display); }
+.sv-prevhead span { display: block; color: var(--muted); font-size: .84rem; }
