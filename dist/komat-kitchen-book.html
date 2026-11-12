@@ -2389,6 +2389,57 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .sv-prevhead h2 { margin: 0; font: 700 1.3rem/1.1 var(--display); }
 .sv-prevhead span { display: block; color: var(--muted); font-size: .84rem; }
 
+/* ---------- planning tomorrow from covers ---------- */
+/* the card over tomorrow's list: covers in, plan out */
+.plancard { display: grid; gap: 6px; padding: 12px 14px; }
+.plancard.planned { border-color: var(--ready); }
+.pc-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px auto; gap: 8px; align-items: center; }
+.pc-k { font: 800 1rem/1.15 var(--sans); }
+.pc-cov { min-height: 46px; text-align: center; font-size: 1.25rem; font-weight: 800; padding: 0 6px; }
+.pc-note { margin: 0; color: var(--muted); font-size: .86rem; }
+.pc-note.ev { display: flex; gap: 6px; align-items: flex-start; color: var(--ink); }
+.pc-note.ev .ico { width: 18px; height: 18px; flex: none; }
+.plancard.empty { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.plancard.empty p { margin: 0; font-size: .9rem; color: var(--muted); }
+.plancard.empty b { color: var(--ink); }
+@media (max-width: 380px) { .pc-row { grid-template-columns: minmax(0, 1fr) 72px; } .pc-row .btn { grid-column: 1 / -1; } .plancard.empty { grid-template-columns: minmax(0, 1fr); } }
+/* the amount written on a DO row, in the hand and ink of whoever planned it */
+.mqty { justify-self: start; color: var(--pen); font: var(--hand-w, 700) 1.2rem/1 var(--hand); transform: rotate(-1.5deg); white-space: nowrap; }
+.todo-main > .mqty { display: block; margin: 1px 0 2px; }
+/* the plan sheet: one line per row with a quantity */
+.plan { display: grid; gap: 14px; }
+.pl-top { display: grid; gap: 4px; }
+.pl-top .field { margin: 0; }
+.pl-cov { max-width: 140px; font-size: 1.5rem; font-weight: 800; text-align: center; }
+.pl-top .hint { margin: 0; }
+.pl-list { display: grid; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: var(--surface); }
+.pl-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 116px 116px; gap: 6px; align-items: center; padding: 8px 10px; border-top: 1px solid var(--line); }
+.pl-row:first-child { border-top: 0; }
+.pl-head { background: var(--surface-2); color: var(--muted); font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding-top: 6px; padding-bottom: 6px; }
+.pl-head span:not(:first-child) { text-align: center; }
+.pl-name { display: grid; gap: 1px; min-width: 0; }
+.pl-name b { font-size: .96rem; overflow-wrap: anywhere; }
+.pl-name small { color: var(--muted); font-size: .76rem; }
+.pl-need { text-align: center; font-size: .86rem; color: var(--muted); }
+.pl-cell { position: relative; display: block; }
+.pl-in { width: 100%; min-height: 42px; padding: 0 22px 0 6px; text-align: right; font-size: .95rem; }
+.pl-cell.long .pl-in { padding-right: 62px; }
+.pl-cell i { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .7rem; font-style: normal; pointer-events: none; }
+.pl-row [id^="pl-make-"] { font-weight: 800; color: var(--pen); }
+.pl-row.zero .pl-name b, .pl-row.zero [id^="pl-make-"] { color: var(--muted); }
+/* phones: the name on its own line, Need / Have / Make share the width under it */
+@media (max-width: 480px) {
+  .pl-row { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; }
+  .pl-row .pl-name { grid-column: 1 / -1; }
+  .pl-head span:first-child { display: none; }
+}
+/* the list editor: how much 10 covers need */
+.parrow { grid-column: 1 / -1; display: grid; grid-template-columns: auto 88px 104px; gap: 6px; align-items: center; justify-content: start; }
+.parrow label { color: var(--muted); font-size: .85rem; font-weight: 700; }
+.parrow .input { min-height: 38px; }
+/* on paper: the amount next to the name, by pen */
+.pr-qty { font: 700 13pt/1 var(--hand); }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -4149,7 +4200,8 @@ window.KOMAT_PART_ART = [
     }
     return houseIngs[k] || null;
   }
-  function addIng(map, g, used, depth) {
+  /* f: how many batches of the recipe are being made (1 when the amount to make is not known) */
+  function addIng(map, g, used, depth, f) {
     const raw = g.o || g.n, o = orderable(raw);
     if (!o) {
       const sub = (depth || 0) < 2 ? houseRecipe(ordKey(raw)) : null;
@@ -4158,7 +4210,7 @@ window.KOMAT_PART_ART = [
     }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
     if (!map[o.key].u && !depth && g.u) map[o.key].u = g.u;
-    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
+    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, f || 1) : '');
     if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
   }
   /* a whole dish: its parts' ingredients plus the assembly lines that are not one of its parts */
@@ -4168,17 +4220,18 @@ window.KOMAT_PART_ART = [
   }
   /* what a mise en place row is made from: its linked recipe, else a recipe with the same name */
   K.recipeFor = function (item) {
+    /* yq / yu: how much one batch makes, to scale the order to the amount being made */
     const lk = K.linkTarget(item.link);
-    if (lk) return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients };
+    if (lk) { const y = lk.ci >= 0 ? lk.r.components[lk.ci] : lk.r; return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients, yq: y.yieldQty, yu: y.yieldUnit }; }
     let hit = null;
     D.recipes.forEach((r) => {
-      if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients }; });
+      if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients, yq: c.yieldQty, yu: c.yieldUnit }; });
     });
     if (hit) return hit;
     D.recipes.forEach((r) => {
       if (hit) return;
-      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients };
-      else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients }; });
+      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients, yq: r.yieldQty, yu: r.yieldUnit };
+      else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients, yq: c.yieldQty, yu: c.yieldUnit }; });
     });
     return hit;
   };
@@ -4190,8 +4243,11 @@ window.KOMAT_PART_ART = [
     basics = new Set((K.kitchen().basics || []).map(ordKey));
     const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
     toMake.forEach((it) => {
-      const r = K.recipeFor(it);
-      if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, it.name)); else unlinked.push(it.name);
+      const r = K.recipeFor(it), m = K.mark(st, it.id, day) || {};
+      /* a row planned from covers carries its amount: the order asks for that much, not for one batch */
+      const f = r && K.planFactor ? K.planFactor(m.q, m.qu, r.yq, r.yu) : 0;
+      const used = it.name + (f ? ' (' + K.fmtPlan(m.q, m.qu) + ')' : '');
+      if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, used, 0, f)); else unlinked.push(it.name);
     });
     const kc = K.kitchen(), pinned = [], skip = {}, wd = K.kitchenNow().getDay();
     (kc.repeats || []).forEach((rp) => {
@@ -4215,6 +4271,13 @@ window.KOMAT_PART_ART = [
   K.sheetOff = sheetOff;
   K.sday = (st, n) => K.day(sheetOff(st) + (n || 0));
   K.checkId = (st, date) => (date || K.sday(st)) + '_' + st;
+  /* a whole sheet as written when its document has to be made again; keeps the covers it was planned for */
+  function sheetDoc(doc, day, st, more) {
+    const o = Object.assign({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {} }, more || {}, { at: Date.now() });
+    if (doc.plan) o.plan = doc.plan;
+    if (doc.closed && !o.closed) o.closed = doc.closed;
+    return o;
+  }
   /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
   K.planningTomorrow = function () {
     const f = K.ui.listFor;
@@ -4225,7 +4288,7 @@ window.KOMAT_PART_ART = [
   K.checkItems = function (st, date) {
     const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
-      g.items.forEach((it) => out.push({ id: it.id, name: it.name, en: it.en || '', group: g.name, gen: g.en || '', gkey: g.key, link: it.link || '' }));
+      g.items.forEach((it) => out.push({ id: it.id, name: it.name, en: it.en || '', group: g.name, gen: g.en || '', gkey: g.key, link: it.link || '', par: it.par && it.par.q > 0 ? it.par : null }));
       ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gen: g.en || '', gkey: g.key, extra: true }));
     }));
     return out;
@@ -4264,34 +4327,37 @@ window.KOMAT_PART_ART = [
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
     body.marks[it.id] = m;
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => { if (prev === undefined) delete doc.marks[it.id]; else doc.marks[it.id] = prev; K.refresh(true); writeFailed(e); });
   };
-  /* patch several rows at once (All ready): [{it, patch}], one write */
-  K.setMarks = function (st, list, date) {
-    if (!list.length) return Promise.resolve();
+  /* patch several rows at once (All ready, a plan from covers): [{it, patch}], one write.
+     more: other fields of the sheet written with them, e.g. {plan: {...}} */
+  K.setMarks = function (st, list, date, more) {
+    if (!list.length && !more) return Promise.resolve();
     const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
-    const prevs = {}, body = { marks: {}, at: Date.now() };
+    const prevs = {}, body = { marks: {}, at: Date.now() }, prevMore = {};
+    if (more) Object.keys(more).forEach((k) => { prevMore[k] = doc[k]; doc[k] = more[k]; body[k] = more[k]; });
     list.forEach((x) => {
       const prev = doc.marks[x.it.id] ? K.clone(doc.marks[x.it.id]) : undefined;
       prevs[x.it.id] = prev;
       const m = Object.assign({}, prev || {}, x.patch, { n: x.it.name, t: Date.now(), by: K.me.id || '' });
       if ('d' in x.patch && K.myInk) m.ink = K.myInk() || 'blue';
-      if ('d' in x.patch && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
+      if ('d' in x.patch && !('u' in x.patch) && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
       doc.marks[x.it.id] = m;
       body.marks[x.it.id] = m;
     });
     K.refresh(true);
     const ref = K.db.doc('checks/' + id);
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => {
       Object.keys(prevs).forEach((k) => { if (prevs[k] === undefined) delete doc.marks[k]; else doc.marks[k] = prevs[k]; });
+      Object.keys(prevMore).forEach((k) => { if (prevMore[k] === undefined) delete doc[k]; else doc[k] = prevMore[k]; });
       K.refresh(true); writeFailed(e);
     });
   };
@@ -4313,7 +4379,7 @@ window.KOMAT_PART_ART = [
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), patch = { extra: {}, at: Date.now() };
     patch.extra[gkey] = list;
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     return ref.update(patch).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)))
       .catch((e) => { doc.extra[gkey] = old; K.refresh(true); writeFailed(e); });
   }
@@ -4324,7 +4390,7 @@ window.KOMAT_PART_ART = [
     doc.closed = c;
     const ref = K.db.doc('checks/' + id);
     return ref.update({ closed: c, at: Date.now() }).catch((e) => (e && e.code === 'invalid_argument'
-      ? ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
+      ? ref.set(sheetDoc(doc, day, st, { closed: c })) : Promise.reject(e)));
   };
   K.saveChecklists = function (n, msg) {
     D.checklists = n;
@@ -6984,6 +7050,7 @@ window.KOMAT_PART_ART = [
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           o.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
           h('span', { class: 'todo-name' }, K.trName(o.name, o.en)),
+          o.qty || null,
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -7052,7 +7119,7 @@ window.KOMAT_PART_ART = [
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, en: it.en, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
+        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink, qty: K.qtyTag(m),
         meta: [K.trName(it.group, it.gen)],
         onUrgent: () => { K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
@@ -7082,6 +7149,8 @@ window.KOMAT_PART_ART = [
     /* ===== Tomorrow ===== */
     const order = K.orderFor(st), cl = K.closedInfo(st);
     left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed', editBtn())));
+    const pc = K.planCard && K.planCard(st, tday);
+    if (pc) left.append(pc);
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -7199,6 +7268,7 @@ window.KOMAT_PART_ART = [
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
+        s === 'do' ? K.qtyTag(K.mark(st, it.id)) : null,
         note ? noteEl(note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!'),
@@ -7236,7 +7306,8 @@ window.KOMAT_PART_ART = [
     const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
     const wrote = ui.wrote === it.id;
     if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
-    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v }, day); };
+    /* "enough" by hand also rubs out an amount the plan wrote, so a later DO starts clean */
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v, q: null, qu: null }, day); };
     const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
@@ -7244,6 +7315,7 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
+          s ? K.qtyTag(m) : null,
           note ? noteEl(note, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
@@ -7287,6 +7359,18 @@ window.KOMAT_PART_ART = [
   }
 
   /* ---------- the head chef's list editor ---------- */
+  /* how much of a row 10 covers need, for planning tomorrow from covers; empty = marked by hand */
+  function parField(it, key) {
+    const lk = K.linkTarget(it.link), y = lk ? (lk.ci >= 0 ? lk.r.components[lk.ci] : lk.r) : null;
+    const yu = y && K.UNITS.includes(y.yieldUnit) ? y.yieldUnit : '';
+    if (!it.par) it.par = { q: '', u: yu || 'kg' };
+    return h('div', { class: 'parrow' },
+      h('label', { for: 'lp' + key }, 'Per 10 covers'),
+      h('input', { class: 'input small mono', id: 'lp' + key, type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '–', value: it.par.q == null ? '' : String(it.par.q),
+        'aria-label': 'How much of ' + (it.name || 'this item') + ' 10 covers need', oninput: (e) => { it.par.q = e.target.value; } }),
+      K.select(K.UNITS.map((u) => [u, u]).concat(it.par.u && !K.UNITS.includes(it.par.u) ? [[it.par.u, it.par.u]] : []), it.par.u || 'kg', (v) => { it.par.u = v; },
+        { class: 'input small parunit', 'aria-label': 'Unit for ' + (it.name || 'this item') }));
+  }
   K.V.lists = function () {
     const st = K.getStation();
     if (!ui.listDraft || ui.listDraft.st !== st) ui.listDraft = { st: st, secs: K.clone(K.sections(st)) };
@@ -7298,7 +7382,8 @@ window.KOMAT_PART_ART = [
         sec.title = (sec.title || '').trim() || 'Mise en place';
         sec.groups = sec.groups.filter((g) => g.name.trim());
         sec.groups.forEach((g) => { g.name = g.name.trim(); if (g.en && g.en.trim()) g.en = g.en.trim(); else delete g.en;
-        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim(); return o; }); });
+        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim();
+          const q = K.parseQty(i.par && i.par.q); if (q > 0) o.par = { q: Math.round(q * 1000) / 1000, u: (i.par.u || '').trim() }; return o; }); });
         if (sec.en && sec.en.trim()) sec.en = sec.en.trim(); else delete sec.en; delete sec.confirm;
       });
       n.stations[st] = { sections: L.secs };
@@ -7309,7 +7394,7 @@ window.KOMAT_PART_ART = [
     const top = K.subbar('Today', () => { ui.listDraft = null; K.go('today'); }, [h('button', { class: 'btn small primary', type: 'button', onclick: saveList }, 'Save list')], 'Edit ' + K.ST[st] + ' list');
     const w = h('div', { class: 'wrap page form' });
     w.append(h('h1', { class: 'rtitle' }, K.ST[st] + ' mise en place'),
-      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows.'),
+      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows. Per 10 covers is how much of a row 10 covers need: give it one and tomorrow’s list can be planned from the covers. Leave it empty for rows you mark by hand.'),
       stationPicker());
     L.secs.forEach((sec, si) => {
       w.append(h('section', { class: 'lsec' },
@@ -7328,13 +7413,172 @@ window.KOMAT_PART_ART = [
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + it.name, onclick: () => { g.items.splice(ii, 1); K.render(); } }, K.icon('close')),
             h('input', { class: 'input small en-in', value: it.en || '', placeholder: K.enName(it.name) || 'In English', 'aria-label': (it.name || 'Item') + ' in English', oninput: (e) => { it.en = e.target.value; } }),
             K.select(K.recipeOptions('No recipe linked').concat(it.link && !K.linkTarget(it.link) ? [[it.link, '(recipe was deleted)']] : []), it.link || '', (v) => { it.link = v; }, { class: 'input small linksel', 'aria-label': 'Recipe for ' + (it.name || 'item') }),
-            it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null)),
+            it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null,
+            parField(it, si + '-' + gi + '-' + ii))),
           h('button', { class: 'btn small', type: 'button', onclick: () => { g.items.push({ id: 'i' + K.uid(), name: '' }); K.render(); } }, K.icon('plus'), 'Item'))),
         h('button', { class: 'btn small', type: 'button', onclick: () => { sec.groups.push({ key: 'g' + K.uid(), name: '', items: [] }); K.render(); } }, K.icon('plus'), 'Dish or group')));
     });
     w.append(h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { L.secs.push({ title: 'New section', groups: [] }); K.render(); } }, K.icon('plus'), 'Section')));
     return { top: top, body: w, tabs: false, bar: h('button', { class: 'btn primary wide', type: 'button', onclick: saveList }, K.icon('check'), 'Save list') };
   };
+})();
+
+</script>
+<script>
+/* js/plan.js */
+/* Planning tomorrow from covers. The head chef gives a mise en place row a quantity per 10 covers
+   in the list editor. Whoever writes tomorrow's list types the covers, says what is already in the
+   walk-in, checks the amounts and puts them on the list: each row that needs making is marked DO
+   with how much to make. A plain calculator the chef checks before anything changes, not a forecast.
+   Rows without a quantity stay as they are and are marked by hand, as before. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, D = K.D, ui = K.ui;
+
+  /* ---------- the sums ---------- */
+  const tidy = (n) => Math.round(n * 1000) / 1000;
+  /* amounts are rounded up to what a cook would weigh out: 10 g or ml, 0.1 kg or L, whole pieces and portions */
+  K.planStep = (u) => { const x = String(u || '').trim().toLowerCase(); return x === 'g' || x === 'ml' ? 10 : x === 'kg' || x === 'l' ? 0.1 : 1; };
+  /* how much the covers need: the quantity per 10 covers, times covers / 10 */
+  K.planNeed = (par, covers) => (par && +par.q > 0 && covers > 0 ? tidy(+par.q * covers / 10) : 0);
+  /* what to make: what is needed less what is already there, rounded up to the step; never below nothing */
+  K.planMake = (need, have, u) => {
+    const left = tidy(need - (have > 0 ? have : 0)), step = K.planStep(u);
+    return left <= 0 ? 0 : tidy(Math.ceil(tidy(left / step)) * step);
+  };
+  K.fmtPlan = (q, u) => K.fmtQty(String(q), u || '', 1);
+  /* in the plan sheet every number stays in the row's own unit, so Need, Have and Make line up */
+  const inUnit = (q, u) => K.fmtNum(q) + (u ? ' ' + u : '');
+  /* how many batches of a recipe an amount is (0 when the units can't be compared): 4.5 L of a recipe
+     that makes 1.5 L is 3 batches; 2 kg of one that makes 500 g is 4 */
+  K.planFactor = (q, qu, yq, yu) => {
+    q = +q; const y = K.parseQty(yq);
+    if (!(q > 0) || !(y > 0)) return 0;
+    const a = K.unitInfo(qu), b = K.unitInfo(yu);
+    if (a && b) return a[0] === b[0] ? tidy((q * a[1]) / (y * b[1])) : 0;
+    const one = (u) => String(u || '').trim().toLowerCase().replace(/s$/, '');
+    return !a && !b && one(qu) === one(yu) ? tidy(q / y) : 0;
+  };
+  /* a number typed on a phone: 4,5 and 4.5 are the same; empty is nothing */
+  const num = (v) => { const n = K.parseQty(v); return n > 0 ? n : 0; };
+
+  /* ---------- reading the plan ---------- */
+  K.planOf = (st, day) => { const d = D.checks[K.checkId(st, day)]; return d && d.plan && d.plan.covers > 0 ? d.plan : null; };
+  /* the covers already planned for a day on any station: the whole kitchen cooks for the same covers */
+  K.coversFor = (day) => {
+    let c = null;
+    K.STATIONS.forEach((s) => { const p = K.planOf(s[0], day); if (c == null && p && p.covers > 0) c = p.covers; });
+    return c;
+  };
+  K.parRows = (st, day) => K.checkItems(st, day).filter((it) => it.par);
+  /* the amount written on a DO row, e.g. "4.6 L" */
+  K.markQty = (m) => (m && (m.d === 'do' || m.d === 'urg') && m.q > 0 ? K.fmtPlan(m.q, m.qu) : '');
+  K.qtyTag = (m) => { const q = K.markQty(m); return q ? h('span', { class: 'mqty ' + K.inkClass(m.ink) + ' ' + K.handClass(m.hand) }, q) : null; };
+  const eventsOn = (day) => (D.events || []).filter((e) => e.date === day && K.isLive(e) && +e.guests > 0);
+
+  /* ---------- the card at the top of tomorrow's list ---------- */
+  K.planCard = function (st, day) {
+    const rows = K.parRows(st, day), p = K.planOf(st, day);
+    if (!rows.length) {
+      if (!K.me.admin) return null;
+      return h('div', { class: 'plancard card tt-tmr empty' },
+        h('p', null, h('b', null, 'Plan from covers. '), 'Give rows a quantity per 10 covers and this list fills itself in from tomorrow’s covers.'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit'), 'Set quantities'));
+    }
+    const key = st + '|' + day, typed = ui.planCovers && ui.planCovers.key === key ? ui.planCovers.v : null;
+    const start = typed != null ? typed : p ? String(p.covers) : String(K.coversFor(day) || '');
+    const open = () => {
+      const v = (document.getElementById('pc-cov') || {}).value;
+      const cov = Math.round(num(v));
+      if (!cov) { K.toast('Type how many covers first.'); const el = document.getElementById('pc-cov'); if (el) el.focus(); return; }
+      const have = {};
+      ((p && p.have) || []).forEach((x) => { if (x && x.id) have[x.id] = String(x.n); });
+      ui.planCovers = null;
+      ui.sheet = { type: 'plan', st: st, day: day, covers: String(cov), have: have, over: {} };
+      K.render();
+    };
+    const evs = eventsOn(day);
+    return h('form', { class: 'plancard card tt-tmr' + (p ? ' planned' : ''), onsubmit: (e) => { e.preventDefault(); open(); } },
+      h('div', { class: 'pc-row' },
+        h('label', { class: 'pc-k', for: 'pc-cov' }, 'Covers tomorrow'),
+        h('input', { class: 'input pc-cov mono', id: 'pc-cov', type: 'text', inputmode: 'numeric', autocomplete: 'off', enterkeyhint: 'go', value: start,
+          oninput: (e) => { ui.planCovers = { key: key, v: e.target.value }; } }),
+        h('button', { class: 'btn ' + (p ? '' : 'primary'), type: 'submit' }, p ? 'Plan again' : 'Plan the list')),
+      h('p', { class: 'pc-note' }, p
+        ? 'Planned for ' + p.covers + ' covers' + (K.nameOf(p.by) ? ' by ' + K.nameOf(p.by) : '') + ' at ' + K.hm(p.at) + '.'
+        : rows.length + (rows.length === 1 ? ' row has' : ' rows have') + ' a quantity per 10 covers. You check the amounts before they go on the list.'),
+      evs.length ? h('p', { class: 'pc-note ev' }, K.icon('event'), evs.map((e) => (e.title || 'Event') + ': ' + e.guests + ' guests').join(' · ') + '. Add them if they eat from this prep.') : null);
+  };
+
+  /* ---------- the plan: covers, what's there, what to make ---------- */
+  function calc(S) {
+    const cov = num(S.covers);
+    return K.parRows(S.st, S.day).map((it) => {
+      const need = K.planNeed(it.par, cov), have = num(S.have[it.id]), auto = K.planMake(need, have, it.par.u);
+      const over = S.over[it.id], make = over != null && String(over).trim() !== '' ? tidy(num(over)) : auto;
+      return { it: it, u: it.par.u || '', need: need, have: have, auto: auto, make: make, over: over != null && String(over).trim() !== '' };
+    });
+  }
+  /* typing changes the numbers in place: no redraw, so the phone keyboard stays up */
+  function recount(S) {
+    const rows = calc(S);
+    rows.forEach((x) => {
+      const need = document.getElementById('pl-need-' + x.it.id), mk = document.getElementById('pl-make-' + x.it.id);
+      if (need) need.textContent = x.need ? inUnit(x.need, x.u) : '–';
+      if (mk && !x.over && mk !== document.activeElement) mk.value = x.auto ? K.fmtNum(x.auto) : '';
+      if (mk) mk.closest('.pl-row').classList.toggle('zero', !x.make);
+    });
+    const go = document.getElementById('pl-go'), n = rows.filter((x) => x.make > 0).length;
+    if (go) { go.disabled = !num(S.covers); go.lastChild.textContent = goWords(n, rows.length); }
+  }
+  const goWords = (n, all) => (n ? 'Put ' + n + ' on tomorrow’s list' : all ? 'Nothing to make: put it on the list' : 'Put it on the list');
+
+  K.SHEETS.plan = function (S) {
+    const rows = calc(S), all = K.checkItems(S.st, S.day).length, n = rows.filter((x) => x.make > 0).length;
+    const field = (id, val, label, on) => h('input', { class: 'input pl-in mono', id: id, type: 'text', inputmode: 'decimal', autocomplete: 'off', value: val, 'aria-label': label, oninput: (e) => { on(e.target.value); recount(S); } });
+    const body = h('form', { class: 'plan', onsubmit: (e) => { e.preventDefault(); apply(S); } },
+      h('div', { class: 'pl-top' },
+        K.field('Covers', h('input', { class: 'input big mono pl-cov', id: 'pl-cov', type: 'text', inputmode: 'numeric', autocomplete: 'off', value: S.covers,
+          oninput: (e) => { S.covers = e.target.value; recount(S); } })),
+        h('p', { class: 'hint' }, K.ST[S.st] + ' · ' + K.sheetDate(S.day) + '. ', h('b', null, 'Need'), ' comes from the covers. Type what’s already in the walk-in under ', h('b', null, 'Have'), '. Change ', h('b', null, 'Make'), ' if you know better.')),
+      h('div', { class: 'pl-list', role: 'table', 'aria-label': 'Amounts for tomorrow' },
+        h('div', { class: 'pl-row pl-head', role: 'row' }, h('span', { role: 'columnheader' }, 'Item'), h('span', { role: 'columnheader' }, 'Need'), h('span', { role: 'columnheader' }, 'Have'), h('span', { role: 'columnheader' }, 'Make')),
+        rows.map((x) => h('div', { class: 'pl-row' + (x.make ? '' : ' zero'), role: 'row' },
+          h('span', { class: 'pl-name', role: 'cell' }, h('b', null, K.trName(x.it.name, x.it.en)),
+            h('small', null, inUnit(x.it.par.q, x.u) + ' per 10 covers · ' + K.trName(x.it.group, x.it.gen))),
+          h('span', { class: 'pl-need mono', role: 'cell', id: 'pl-need-' + x.it.id }, x.need ? inUnit(x.need, x.u) : '–'),
+          h('span', { class: 'pl-cell' + (x.u.length > 3 ? ' long' : ''), role: 'cell' }, field('pl-have-' + x.it.id, S.have[x.it.id] || '', 'Have of ' + x.it.name + ', in ' + (x.u || 'units'), (v) => { S.have[x.it.id] = v; }), h('i', null, x.u)),
+          h('span', { class: 'pl-cell' + (x.u.length > 3 ? ' long' : ''), role: 'cell' }, field('pl-make-' + x.it.id, x.over ? S.over[x.it.id] : x.auto ? K.fmtNum(x.auto) : '', 'Make of ' + x.it.name + ', in ' + (x.u || 'units'), (v) => { S.over[x.it.id] = v; }), h('i', null, x.u))))),
+      all > rows.length ? h('p', { class: 'hint' }, (all - rows.length) + (all - rows.length === 1 ? ' row has' : ' rows have') + ' no quantity per 10 covers. ' + (all - rows.length === 1 ? 'It stays' : 'They stay') + ' as ' + (all - rows.length === 1 ? 'it is' : 'they are') + ': mark by hand.') : null,
+      h('button', { class: 'btn primary wide', id: 'pl-go', type: 'submit', disabled: !num(S.covers) }, K.icon('check'), h('span', null, goWords(n, rows.length))));
+    if (!S.focused) { S.focused = true; setTimeout(() => { const el = document.getElementById('pl-have-' + (rows[0] && rows[0].it.id)); if (el && !matchMedia('(pointer: coarse)').matches) el.focus({ preventScroll: true }); }, 60); }
+    return K.sheet('Plan from covers', body, { wide: true });
+  };
+
+  /* every row with a quantity is written: DO with its amount, or nothing when there is enough.
+     A note on the row stays. Undo puts every row and the old plan back */
+  function apply(S) {
+    const cov = Math.round(num(S.covers));
+    if (!cov) return;
+    const rows = calc(S), st = S.st, day = S.day, hand = (K.myHand && K.myHand()) || 'caveat';
+    const before = rows.map((x) => ({ it: x.it, m: K.clone(K.mark(st, x.it.id, day) || {}) })), oldPlan = K.clone(K.planOf(st, day));
+    const list = rows.map((x) => {
+      const m = K.mark(st, x.it.id, day) || {};
+      return { it: x.it, patch: x.make > 0
+        ? { d: 'do', k: m.d === 'do' ? m.k || '' : '', q: x.make, qu: x.u, hand: hand }
+        : { d: '', q: null, qu: null } };
+    });
+    const have = rows.filter((x) => x.have > 0).map((x) => ({ id: x.it.id, n: x.have }));
+    const n = rows.filter((x) => x.make > 0).length;
+    ui.sheet = null;
+    K.vibrate([10, 30, 10]);
+    K.setMarks(st, list, day, { plan: { covers: cov, have: have, at: Date.now(), by: K.me.id || '' } });
+    K.toast(n ? n + ' to make for ' + cov + ' covers' : 'Enough of everything for ' + cov + ' covers', { tone: 'good', undo: () => {
+      K.setMarks(st, before.map((x) => ({ it: x.it, patch: { d: x.m.d || '', u: !!x.m.u, k: x.m.k || '', q: x.m.q > 0 ? x.m.q : null, qu: x.m.qu || null } })), day,
+        { plan: oldPlan || { covers: 0, have: [], at: 0, by: '' } });
+    } });
+    K.render();
+  }
 })();
 
 </script>

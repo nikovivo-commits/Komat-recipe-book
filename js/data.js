@@ -178,7 +178,8 @@
     }
     return houseIngs[k] || null;
   }
-  function addIng(map, g, used, depth) {
+  /* f: how many batches of the recipe are being made (1 when the amount to make is not known) */
+  function addIng(map, g, used, depth, f) {
     const raw = g.o || g.n, o = orderable(raw);
     if (!o) {
       const sub = (depth || 0) < 2 ? houseRecipe(ordKey(raw)) : null;
@@ -187,7 +188,7 @@
     }
     if (!map[o.key]) map[o.key] = { name: o.name, usedIn: [] };
     if (!map[o.key].u && !depth && g.u) map[o.key].u = g.u;
-    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, 1) : '');
+    const label = used + (!depth && K.parseQty(g.q) > 0 ? ' · ' + K.fmtQty(g.q, g.u, f || 1) : '');
     if (!map[o.key].usedIn.some((u) => u.split(' · ')[0].toLowerCase() === String(used).toLowerCase())) map[o.key].usedIn.push(label);
   }
   /* a whole dish: its parts' ingredients plus the assembly lines that are not one of its parts */
@@ -197,17 +198,18 @@
   }
   /* what a mise en place row is made from: its linked recipe, else a recipe with the same name */
   K.recipeFor = function (item) {
+    /* yq / yu: how much one batch makes, to scale the order to the amount being made */
     const lk = K.linkTarget(item.link);
-    if (lk) return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients };
+    if (lk) { const y = lk.ci >= 0 ? lk.r.components[lk.ci] : lk.r; return { name: lk.name, ingredients: lk.ci < 0 && lk.r.type === 'dish' ? dishIngs(lk.r) : lk.ingredients, yq: y.yieldQty, yu: y.yieldUnit }; }
     let hit = null;
     D.recipes.forEach((r) => {
-      if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients }; });
+      if (!hit && r.type === 'dish' && K.nameMatch(r.name, item.group, true)) r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name, true)) hit = { name: c.name, ingredients: c.ingredients, yq: c.yieldQty, yu: c.yieldUnit }; });
     });
     if (hit) return hit;
     D.recipes.forEach((r) => {
       if (hit) return;
-      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients };
-      else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients }; });
+      if (K.nameMatch(r.name, item.name)) hit = { name: r.name, ingredients: r.type === 'dish' ? dishIngs(r) : r.ingredients, yq: r.yieldQty, yu: r.yieldUnit };
+      else r.components.forEach((c) => { if (!hit && K.nameMatch(c.name, item.name)) hit = { name: c.name, ingredients: c.ingredients, yq: c.yieldQty, yu: c.yieldUnit }; });
     });
     return hit;
   };
@@ -219,8 +221,11 @@
     basics = new Set((K.kitchen().basics || []).map(ordKey));
     const toMake = K.checkItems(st, day).filter((it) => K.markState(st, it.id, day) === 'do' || K.isUrgent(st, it.id, day));
     toMake.forEach((it) => {
-      const r = K.recipeFor(it);
-      if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, it.name)); else unlinked.push(it.name);
+      const r = K.recipeFor(it), m = K.mark(st, it.id, day) || {};
+      /* a row planned from covers carries its amount: the order asks for that much, not for one batch */
+      const f = r && K.planFactor ? K.planFactor(m.q, m.qu, r.yq, r.yu) : 0;
+      const used = it.name + (f ? ' (' + K.fmtPlan(m.q, m.qu) + ')' : '');
+      if (r && r.ingredients.length) r.ingredients.forEach((g) => addIng(map, g, used, 0, f)); else unlinked.push(it.name);
     });
     const kc = K.kitchen(), pinned = [], skip = {}, wd = K.kitchenNow().getDay();
     (kc.repeats || []).forEach((rp) => {
@@ -244,6 +249,13 @@
   K.sheetOff = sheetOff;
   K.sday = (st, n) => K.day(sheetOff(st) + (n || 0));
   K.checkId = (st, date) => (date || K.sday(st)) + '_' + st;
+  /* a whole sheet as written when its document has to be made again; keeps the covers it was planned for */
+  function sheetDoc(doc, day, st, more) {
+    const o = Object.assign({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {} }, more || {}, { at: Date.now() });
+    if (doc.plan) o.plan = doc.plan;
+    if (doc.closed && !o.closed) o.closed = doc.closed;
+    return o;
+  }
   /* the list shows today, or tomorrow's prep list once the closing hour comes (or when switched by hand) */
   K.planningTomorrow = function () {
     const f = K.ui.listFor;
@@ -254,7 +266,7 @@
   K.checkItems = function (st, date) {
     const out = [], d = D.checks[K.checkId(st, date)];
     K.sections(st).forEach((sec) => sec.groups.forEach((g) => {
-      g.items.forEach((it) => out.push({ id: it.id, name: it.name, en: it.en || '', group: g.name, gen: g.en || '', gkey: g.key, link: it.link || '' }));
+      g.items.forEach((it) => out.push({ id: it.id, name: it.name, en: it.en || '', group: g.name, gen: g.en || '', gkey: g.key, link: it.link || '', par: it.par && it.par.q > 0 ? it.par : null }));
       ((d && d.extra && d.extra[g.key]) || []).forEach((it) => out.push({ id: it.id, name: it.name, group: g.name, gen: g.en || '', gkey: g.key, extra: true }));
     }));
     return out;
@@ -293,34 +305,37 @@
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), body = { marks: {}, at: Date.now() };
     body.marks[it.id] = m;
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => { if (prev === undefined) delete doc.marks[it.id]; else doc.marks[it.id] = prev; K.refresh(true); writeFailed(e); });
   };
-  /* patch several rows at once (All ready): [{it, patch}], one write */
-  K.setMarks = function (st, list, date) {
-    if (!list.length) return Promise.resolve();
+  /* patch several rows at once (All ready, a plan from covers): [{it, patch}], one write.
+     more: other fields of the sheet written with them, e.g. {plan: {...}} */
+  K.setMarks = function (st, list, date, more) {
+    if (!list.length && !more) return Promise.resolve();
     const day = date || K.sday(st), id = K.checkId(st, day);
     let doc = D.checks[id];
     const fresh = !doc;
     if (!doc) doc = D.checks[id] = { date: day, station: st, marks: {}, extra: {} };
     doc.marks = doc.marks || {};
-    const prevs = {}, body = { marks: {}, at: Date.now() };
+    const prevs = {}, body = { marks: {}, at: Date.now() }, prevMore = {};
+    if (more) Object.keys(more).forEach((k) => { prevMore[k] = doc[k]; doc[k] = more[k]; body[k] = more[k]; });
     list.forEach((x) => {
       const prev = doc.marks[x.it.id] ? K.clone(doc.marks[x.it.id]) : undefined;
       prevs[x.it.id] = prev;
       const m = Object.assign({}, prev || {}, x.patch, { n: x.it.name, t: Date.now(), by: K.me.id || '' });
       if ('d' in x.patch && K.myInk) m.ink = K.myInk() || 'blue';
-      if ('d' in x.patch && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
+      if ('d' in x.patch && !('u' in x.patch) && (x.patch.d === 'ok' || x.patch.d === '')) m.u = false;
       doc.marks[x.it.id] = m;
       body.marks[x.it.id] = m;
     });
     K.refresh(true);
     const ref = K.db.doc('checks/' + id);
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks, extra: doc.extra || {}, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     const p = fresh ? full() : ref.update(body).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)));
     return p.catch((e) => {
       Object.keys(prevs).forEach((k) => { if (prevs[k] === undefined) delete doc.marks[k]; else doc.marks[k] = prevs[k]; });
+      Object.keys(prevMore).forEach((k) => { if (prevMore[k] === undefined) delete doc[k]; else doc[k] = prevMore[k]; });
       K.refresh(true); writeFailed(e);
     });
   };
@@ -342,7 +357,7 @@
     K.refresh(true);
     const ref = K.db.doc('checks/' + id), patch = { extra: {}, at: Date.now() };
     patch.extra[gkey] = list;
-    const full = () => ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra, at: Date.now() });
+    const full = () => ref.set(sheetDoc(doc, day, st));
     return ref.update(patch).catch((e) => (e && e.code === 'invalid_argument' ? full() : Promise.reject(e)))
       .catch((e) => { doc.extra[gkey] = old; K.refresh(true); writeFailed(e); });
   }
@@ -353,7 +368,7 @@
     doc.closed = c;
     const ref = K.db.doc('checks/' + id);
     return ref.update({ closed: c, at: Date.now() }).catch((e) => (e && e.code === 'invalid_argument'
-      ? ref.set({ date: day, station: st, marks: doc.marks || {}, extra: doc.extra || {}, closed: c, at: Date.now() }) : Promise.reject(e)));
+      ? ref.set(sheetDoc(doc, day, st, { closed: c })) : Promise.reject(e)));
   };
   K.saveChecklists = function (n, msg) {
     D.checklists = n;

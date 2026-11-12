@@ -235,6 +235,7 @@
         h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
           o.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
           h('span', { class: 'todo-name' }, K.trName(o.name, o.en)),
+          o.qty || null,
           o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
           h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
             o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
@@ -303,7 +304,7 @@
       const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
       rows.push(todoRow({
         name: it.name, en: it.en, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
-        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
+        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink, qty: K.qtyTag(m),
         meta: [K.trName(it.group, it.gen)],
         onUrgent: () => { K.setMark(st, it, { u: !u }); },
         onDone: () => doneMark(st, it),
@@ -333,6 +334,8 @@
     /* ===== Tomorrow ===== */
     const order = K.orderFor(st), cl = K.closedInfo(st);
     left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed', editBtn())));
+    const pc = K.planCard && K.planCard(st, tday);
+    if (pc) left.append(pc);
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
@@ -450,6 +453,7 @@
       h('div', { class: 'mname' },
         tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
         it.extra ? h('span', { class: 'xtag' }, 'today') : null,
+        s === 'do' ? K.qtyTag(K.mark(st, it.id)) : null,
         note ? noteEl(note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
       it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
       h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!'),
@@ -487,7 +491,8 @@
     const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
     const wrote = ui.wrote === it.id;
     if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
-    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v }, day); };
+    /* "enough" by hand also rubs out an amount the plan wrote, so a later DO starts clean */
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v, q: null, qu: null }, day); };
     const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
       h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
       h('div', { class: 'sw-in' },
@@ -495,6 +500,7 @@
         h('div', { class: 'mname' },
           tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
           it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
+          s ? K.qtyTag(m) : null,
           note ? noteEl(note, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
         it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
         h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
@@ -538,6 +544,18 @@
   }
 
   /* ---------- the head chef's list editor ---------- */
+  /* how much of a row 10 covers need, for planning tomorrow from covers; empty = marked by hand */
+  function parField(it, key) {
+    const lk = K.linkTarget(it.link), y = lk ? (lk.ci >= 0 ? lk.r.components[lk.ci] : lk.r) : null;
+    const yu = y && K.UNITS.includes(y.yieldUnit) ? y.yieldUnit : '';
+    if (!it.par) it.par = { q: '', u: yu || 'kg' };
+    return h('div', { class: 'parrow' },
+      h('label', { for: 'lp' + key }, 'Per 10 covers'),
+      h('input', { class: 'input small mono', id: 'lp' + key, type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '–', value: it.par.q == null ? '' : String(it.par.q),
+        'aria-label': 'How much of ' + (it.name || 'this item') + ' 10 covers need', oninput: (e) => { it.par.q = e.target.value; } }),
+      K.select(K.UNITS.map((u) => [u, u]).concat(it.par.u && !K.UNITS.includes(it.par.u) ? [[it.par.u, it.par.u]] : []), it.par.u || 'kg', (v) => { it.par.u = v; },
+        { class: 'input small parunit', 'aria-label': 'Unit for ' + (it.name || 'this item') }));
+  }
   K.V.lists = function () {
     const st = K.getStation();
     if (!ui.listDraft || ui.listDraft.st !== st) ui.listDraft = { st: st, secs: K.clone(K.sections(st)) };
@@ -549,7 +567,8 @@
         sec.title = (sec.title || '').trim() || 'Mise en place';
         sec.groups = sec.groups.filter((g) => g.name.trim());
         sec.groups.forEach((g) => { g.name = g.name.trim(); if (g.en && g.en.trim()) g.en = g.en.trim(); else delete g.en;
-        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim(); return o; }); });
+        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim();
+          const q = K.parseQty(i.par && i.par.q); if (q > 0) o.par = { q: Math.round(q * 1000) / 1000, u: (i.par.u || '').trim() }; return o; }); });
         if (sec.en && sec.en.trim()) sec.en = sec.en.trim(); else delete sec.en; delete sec.confirm;
       });
       n.stations[st] = { sections: L.secs };
@@ -560,7 +579,7 @@
     const top = K.subbar('Today', () => { ui.listDraft = null; K.go('today'); }, [h('button', { class: 'btn small primary', type: 'button', onclick: saveList }, 'Save list')], 'Edit ' + K.ST[st] + ' list');
     const w = h('div', { class: 'wrap page form' });
     w.append(h('h1', { class: 'rtitle' }, K.ST[st] + ' mise en place'),
-      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows.'),
+      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows. Per 10 covers is how much of a row 10 covers need: give it one and tomorrow’s list can be planned from the covers. Leave it empty for rows you mark by hand.'),
       stationPicker());
     L.secs.forEach((sec, si) => {
       w.append(h('section', { class: 'lsec' },
@@ -579,7 +598,8 @@
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + it.name, onclick: () => { g.items.splice(ii, 1); K.render(); } }, K.icon('close')),
             h('input', { class: 'input small en-in', value: it.en || '', placeholder: K.enName(it.name) || 'In English', 'aria-label': (it.name || 'Item') + ' in English', oninput: (e) => { it.en = e.target.value; } }),
             K.select(K.recipeOptions('No recipe linked').concat(it.link && !K.linkTarget(it.link) ? [[it.link, '(recipe was deleted)']] : []), it.link || '', (v) => { it.link = v; }, { class: 'input small linksel', 'aria-label': 'Recipe for ' + (it.name || 'item') }),
-            it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null)),
+            it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null,
+            parField(it, si + '-' + gi + '-' + ii))),
           h('button', { class: 'btn small', type: 'button', onclick: () => { g.items.push({ id: 'i' + K.uid(), name: '' }); K.render(); } }, K.icon('plus'), 'Item'))),
         h('button', { class: 'btn small', type: 'button', onclick: () => { sec.groups.push({ key: 'g' + K.uid(), name: '', items: [] }); K.render(); } }, K.icon('plus'), 'Dish or group')));
     });
