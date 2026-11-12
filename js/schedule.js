@@ -114,6 +114,38 @@
     return { body: body };
   };
 
+  /* the week on paper: A4 landscape, everyone's shifts with their station, the codes used and the note */
+  K.printWeek = function (wk, src) {
+    const mon = K.parseYmd(wk), S = STN(), doc = D.weeks[wk] || {}, used = {};
+    const old = document.getElementById('printsheet');
+    if (old) old.remove();
+    const cell = (id, i) => {
+      const c = String(((src.rows[id] || [])[i]) || '').trim(), st = ((src.st[id] || [])[i]) || '', k = kindOf(c, st);
+      if (k === 'off' || k === 'empty') return h('td', { class: 'pw-off' }, k === 'off' ? '–' : '');
+      used[c] = true;
+      return h('td', { class: 'pw-c pw-' + k }, h('b', null, c), st ? h('small', null, S[st] || st) : null);
+    };
+    const end = K.addDays(mon, 6), fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    const table = h('table', { class: 'pw-table' },
+      h('thead', null, h('tr', null, h('th', { class: 'pw-nm' }, ''), K.DAYS.map((d, i) => h('th', null, d, h('span', null, String(K.addDays(mon, i).getDate())))))),
+      h('tbody', null, src.order.map((id) => h('tr', null, h('th', { class: 'pw-nm' }, K.personName(id)), K.DAYS.map((d, i) => cell(id, i))))));
+    const codes = (D.codes.codes || []).filter((x) => used[x.code] && x.label);
+    const page = h('section', { class: 'pr-page pr-week' },
+      h('header', { class: 'pr-head' },
+        h('img', { class: 'pr-logo', src: 'assets/brand/logo-black.png', alt: 'Komat' }),
+        h('div', { class: 'pr-title' }, h('span', { class: 'pr-kicker' }, src.draft ? 'Schedule · draft, not final' : 'Schedule'),
+          h('h1', null, fmt(mon) + ' – ' + fmt(end)), doc.note ? h('p', null, doc.note) : null)),
+      table,
+      h('div', { class: 'pw-foot' },
+        h('div', { class: 'pw-key' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['float', 'Filler']].map((x) => h('span', null, h('i', { class: 'pw-' + x[0] }), x[1]))),
+        codes.length ? h('div', { class: 'pw-codes' }, codes.map((x) => h('span', null, h('b', null, x.code), ' ' + x.label))) : null,
+        h('span', { class: 'pw-printed' }, 'Printed ' + new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))));
+    const sheet = h('div', { id: 'printsheet', 'aria-hidden': 'true' }, page);
+    document.body.append(sheet);
+    Promise.all(Array.from(sheet.querySelectorAll('img')).map((im) => (im.complete ? null : new Promise((r) => { im.onload = r; im.onerror = r; }))))
+      .then(() => setTimeout(() => window.print(), 30));
+  };
+
   function stationKey() {
     return h('div', { class: 'sv-key', 'aria-hidden': 'true' }, [['hot', 'Hot'], ['cold', 'Cold'], ['pass', 'Pass'], ['br', 'Breakfast'], ['prep', 'Prep'], ['float', 'Filler'], ['learn', 'Learning']].map((x) =>
       h('span', null, h('i', { class: 'svc-' + x[0] }), x[1])));
@@ -144,7 +176,8 @@
     const anyUf = src.order.some((id) => [0, 1, 2, 3, 4, 5, 6].some((i) => ufAt(id, i)));
     const key = stationKey();
     if (anyUf) key.append(h('span', { class: 'uf-k' }, K.icon('sad'), K.calendarOn ? 'Not fair · earns more' : 'Not fair'));
-    return h('section', { class: 'sv-card' }, key,
+    const tools = h('div', { class: 'sv-wtools' }, src.draft ? h('span', { class: 'sv-draftk' }, 'Draft') : h('span'), h('button', { class: 'btn small', type: 'button', onclick: () => K.printWeek(wk, src) }, K.icon('print'), 'Print the week'));
+    return h('section', { class: 'sv-card' }, tools, key,
       h('table', { class: 'sv-week' }, h('thead', null, head), h('tbody', null, rows)),
       h('p', { class: 'sv-hint' }, edit ? 'Tap a day for who stands where. Tap a shift to change it, a name to rename or move it.' : 'Tap a day for who stands where.'));
   }
