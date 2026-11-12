@@ -43,6 +43,7 @@
     if (e.notes) card.append(h('div', { class: 'evt-block' }, h('span', { class: 'label' }, 'Notes for the kitchen'), h('p', { class: 'prose' }, e.notes)));
     if (e.emailNotes) card.append(h('details', { class: 'evt-block' }, h('summary', { class: 'label' }, 'From the booking email'), h('p', { class: 'prose' }, e.emailNotes)));
     if (e.source === 'email' && !dishes.length && K.me.admin && e.status !== 'cancelled') card.append(h('p', { class: 'banner warn' }, 'Added from the booking email. Tap Edit to add the food, then “Make the prep list from the food”.'));
+    const nb = K.notifyTeamBtn && K.notifyTeamBtn(e); if (nb) card.append(nb);
     if (tasks.length) card.append(h('div', { class: 'evt-block' }, h('span', { class: 'label' }, 'Prep list · ' + doneN + ' of ' + tasks.length + ' done'),
       h('ul', { class: 'evt-tasks' }, tasks.slice().sort((a, b) => (b.before || 0) - (a.before || 0)).map((k) => {
         const st = K.evTaskStatus('evt-' + e.id + '-' + k.id), due = K.dueDate(e, k);
@@ -163,9 +164,9 @@
         menu: (e.menu || '').trim(), notes: (e.notes || '').trim(), status: e.status || 'confirmed',
         dishes: e.dishes.filter((d) => (d.name || '').trim() || d.link).map((d) => ({ name: (d.name || '').trim(), link: d.link || '', qty: String(d.qty || '').trim() })),
         tasks: e.tasks.filter((k) => (k.text || '').trim()).map((k) => ({ id: k.id || 't' + K.uid(), text: k.text.trim(), station: k.station || 'hot', before: +k.before || 0 })),
-        updated: Date.now(),
+        updated: Date.now(), created: +e.created || Date.now(),
       };
-      ['source', 'uid', 'emailNotes', 'emailLink', 'emailSubject', 'createdAt'].forEach((k) => { if (e[k] !== undefined) body[k] = e[k]; });
+      ['source', 'uid', 'emailNotes', 'emailLink', 'emailSubject', 'createdAt', 'announce'].forEach((k) => { if (e[k] !== undefined) body[k] = e[k]; });
       ui.sheet = null; ui.calSel = body.date; ui.calMonth = body.date.slice(0, 7);
       K.saveEvent(id, body);
     };

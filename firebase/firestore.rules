@@ -75,6 +75,16 @@ service cloud.firestore {
         || (member() && request.resource.data.kind == 'gaveway' && request.resource.data.n is int && request.resource.data.n >= 0 && request.resource.data.n <= 2);
       allow delete: if admin() || (member() && resource.data.kind in ['spend', 'gaveway']);
     }
+    // phones that said yes to notifications: each person saves and removes their own phone's address;
+    // the chefs, and the job that sends the notifications, read them (and clear ones that stopped working)
+    match /pushsubs/{uid} {
+      allow read: if admin() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if member() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['endpoint', 'keys', 'name', 'at'])
+        && request.resource.data.endpoint is string && request.resource.data.endpoint.size() < 1000 && request.resource.data.endpoint.matches('https://.+')
+        && request.resource.data.keys is map;
+      allow delete: if admin() || (signedIn() && request.auth.uid == uid);
+    }
     // photos and videos are stored in pieces under blobs/{id}/p/{n}
     match /blobs/{id}/p/{n} {
       allow read, write: if member();

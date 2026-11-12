@@ -79,6 +79,14 @@ await expect('cook cannot fake a big "gave way"', false, () => setDoc(cook.d('po
 await expect('cook cannot delete a bonus', false, () => setDoc(chef.d('points/bonus_y'), { person: 'sam', n: 3, kind: 'bonus', at: 1 }).then(() => deleteDoc(cook.d('points/bonus_y'))));
 await expect('head chef gives a bonus', true, () => setDoc(chef.d('points/bonus_z'), { person: 'sam', n: 3, kind: 'bonus', date: '2026-11-21', reason: 'stayed late', at: 1 }));
 await expect('cook reads the cover board', true, () => getDocs(collection(cook.db, 'points')));
+// notifications: each phone's address
+const sub = { endpoint: 'https://push.example/abc', keys: { p256dh: 'k', auth: 'a' }, name: 'Cook', at: 1 };
+await expect('cook saves their own phone for notifications', true, () => setDoc(cook.d('pushsubs/' + C), sub));
+await expect('cook cannot save a phone for someone else', false, () => setDoc(cook.d('pushsubs/someone'), sub));
+await expect('cook cannot read the other phones', false, () => getDocs(collection(cook.db, 'pushsubs')));
+await expect('cook cannot add other fields', false, () => setDoc(cook.d('pushsubs/' + C), Object.assign({ role: 'admin' }, sub)));
+await expect('head chef reads the phones (the sender does)', true, () => getDocs(collection(chef.db, 'pushsubs')));
+await expect('cook turns their notifications off', true, () => deleteDoc(cook.d('pushsubs/' + C)));
 await expect('signed-out phone cannot read days off', false, () => getDocs(collection(nobody.db, 'dayoff')));
 await expect('cook cannot change the kitchen code', false, () => setDoc(cook.d('private/join'), { code: 'mine-123', at: 4 }));
 await expect('cook cannot make themselves head chef', false, () => updateDoc(cook.d('members/' + C), { role: 'admin' }));

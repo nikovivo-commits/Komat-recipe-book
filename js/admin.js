@@ -23,6 +23,7 @@
         } }, ui.confirmOut ? 'Tap again: you will need the code' : 'Sign out')));
       if (K.me.admin) rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => K.openPeople() }, K.icon('chef'), h('span', null, h('b', null, 'People and kitchen code'), h('span', { class: 'muted' }, Object.keys(D.members).length + ' people can open the book')), K.icon('next')));
     }
+    const push = K.pushRow && K.pushRow(); if (push) rows.push(push);
     if (K.me.admin) {
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = { type: 'kitchen', k: K.clone(K.kitchen()) }; K.render(); } }, K.icon('chef'), h('span', null, h('b', null, 'Kitchen rules'), h('span', { class: 'muted' }, 'Order deadline, repeating tasks, products to check daily')), K.icon('next')));
       rows.push(h('button', { class: 'set-link', type: 'button', onclick: () => { ui.sheet = null; K.go('brand'); } }, K.icon('photo'), h('span', null, h('b', null, 'Branding'), h('span', { class: 'muted' }, 'Logo and the photo at the top of each page')), K.icon('next')));

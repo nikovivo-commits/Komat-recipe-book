@@ -1,12 +1,12 @@
 /* Offline support for the stand-alone site. The app itself comes from the network when it can,
    so updates arrive straight away, and from the cache when the kitchen Wi-Fi drops.
    Photos and fonts come from the cache first, so pages open fast. */
-const CACHE = 'komat-v120';
+const CACHE = 'komat-v121';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'data/translations.js', 'data/produce.js', 'data/art.js', 'data/recipes.js', 'data/settings.js', 'vendor/firebase.js', 'firebase-config.js',
   'js/core.js', 'js/allergens.js', 'js/store.js', 'js/data.js', 'js/cloud.js', 'js/timers.js', 'js/gestures.js', 'js/motion.js', 'js/moments.js', 'js/ink.js', 'js/app.js', 'js/photos.js',
-  'js/recipes.js', 'js/editor.js', 'js/today.js', 'js/ordercheck.js', 'js/orders.js', 'js/schedule.js', 'js/rotagen.js', 'js/rota.js', 'js/daysoff.js', 'js/events.js', 'js/admin.js', 'js/login.js', 'js/print.js', 'js/docs.js',
+  'js/recipes.js', 'js/editor.js', 'js/today.js', 'js/ordercheck.js', 'js/orders.js', 'js/schedule.js', 'js/rotagen.js', 'js/rota.js', 'js/daysoff.js', 'js/events.js', 'js/admin.js', 'js/login.js', 'js/print.js', 'js/docs.js', 'js/notify.js',
   'assets/brand/logo.png', 'assets/brand/logo-black.png', 'assets/brand/icon-192.png', 'assets/brand/apple-touch-icon.png', 'assets/photos/theme/cat.jpg', 'assets/photos/theme/today.jpg',
 ];
 
@@ -37,4 +37,22 @@ self.addEventListener('fetch', (e) => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
     return res;
   }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined)).then((r) => r || Response.error())));
+});
+
+/* push notifications: a new event or a new week of The Brigade (sent by tools/notify/send.mjs) */
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Komat', {
+    body: d.body || '', tag: d.tag || undefined, icon: 'assets/brand/icon-192.png', data: { url: d.url || './' },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
+    const c = cs.find((x) => x.url.startsWith(self.registration.scope));
+    if (c) return c.focus().then((w) => (w && w.navigate ? w.navigate(url) : w)).catch(() => self.clients.openWindow(url));
+    return self.clients.openWindow(url);
+  }));
 });
