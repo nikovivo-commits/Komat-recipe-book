@@ -31,7 +31,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, move: 250, moveSt: 60 };
+  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, lead: 1200, move: 250, moveSt: 60 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -159,6 +159,8 @@
           });
           auto.forEach((id) => { if (work[id][d] && lrnOf(id, d)) { const x = S(id).learn[0]; extras[id] = 'learn-' + x; if (!teach(x)) c += W.noTeacher; } });
           if (PER) c += lunchMiss(d, on, extras, work, special).length * W.lunchHole + (Object.keys(extras).length ? 0 : W.noFiller);
+          /* lead: someone who always takes their own station when they work (the sous chef on Pass) */
+          here.forEach((id) => { const s0 = S(id); if (s0.lead && (s0.stations || [])[0] && on[id] !== s0.stations[0]) c += W.lead; });
           if (PER || PREV) { if (PREV) Object.keys(on).concat(Object.keys(extras)).forEach((id) => { const ps = ((PREV.st || {})[id] || [])[d]; if (ps && ps !== (on[id] || extras[id])) c += W.moveSt; }); }
           if (!best || c < best.cost) best = { cost: c, on: on, extras: extras };
           return;

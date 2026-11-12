@@ -274,6 +274,7 @@
           h('div', { class: 'rp-flags' },
             check('Learning Hot: not alone on busy days, learns next to a mentor when spare', !!s.learner, (v) => set((p) => { person(p, id).learner = v; })),
             check('Mentor on Hot', !!s.mentor, (v) => set((p) => { person(p, id).mentor = v; })),
+            check('Always on their first station when they work (e.g. the sous chef on Pass)', !!s.lead, (v) => set((p) => { person(p, id).lead = v; })),
             check('Keep days off together when possible', !!s.together, (v) => set((p) => { person(p, id).together = v; })))].filter(Boolean));
       } else if (s.mode === 'fixed') {
         card.append(...[row('Every week', h('div', { class: 'rp-pattern' }, DAYS.map((d, i) => h('label', null, h('span', null, d),
