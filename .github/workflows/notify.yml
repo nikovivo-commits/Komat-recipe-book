@@ -1,0 +1,31 @@
+# Push notifications for the Komat app: a new event, or a new week of The Brigade.
+# GitHub runs scheduled jobs only from the default branch, so this file lives there too; it checks out
+# the branch the site is published from and runs tools/notify/send.mjs (it explains the two secrets).
+name: Komat notifications
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: komat-notify
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/cookbook-html-recreation-vgn40u
+          sparse-checkout: tools/notify
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-package-lock --prefix tools/notify web-push@3.6.7
+      - run: node tools/notify/send.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          KOMAT_NOTIFY_TOKEN: ${{ secrets.KOMAT_NOTIFY_TOKEN }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
