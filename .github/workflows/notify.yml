@@ -23,9 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --no-save --no-package-lock --prefix tools/notify web-push@3.6.7
+      - run: npm install --no-save --no-package-lock --prefix tools/notify web-push@3.6.7 @anthropic-ai/sdk@1.3.0
       - run: node tools/notify/send.mjs
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           KOMAT_NOTIFY_TOKEN: ${{ secrets.KOMAT_NOTIFY_TOKEN }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
