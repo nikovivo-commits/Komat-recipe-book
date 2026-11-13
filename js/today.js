@@ -332,7 +332,8 @@
 
     /* ===== Tomorrow ===== */
     const order = K.orderFor(st), cl = K.closedInfo(st);
-    left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed', editBtn())));
+    left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed',
+      K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
