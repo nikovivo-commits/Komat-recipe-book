@@ -19,7 +19,8 @@ const FS = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(d
 
 if (!process.env.FIREBASE_SERVICE_ACCOUNT && !process.env.KOMAT_NOTIFY_TOKEN) { console.error('missing secret FIREBASE_SERVICE_ACCOUNT (or KOMAT_NOTIFY_TOKEN)'); process.exit(1); }
 if (!DRY && !process.env.VAPID_PRIVATE_KEY) { console.error('missing secret VAPID_PRIVATE_KEY'); process.exit(1); }
-if (!DRY) webpush.setVapidDetails(SITE, PUBLIC, process.env.VAPID_PRIVATE_KEY);
+/* a pasted secret often carries a line break or spaces */
+if (!DRY) webpush.setVapidDetails(SITE, PUBLIC, process.env.VAPID_PRIVATE_KEY.replace(/\s+/g, ''));
 
 /* Firestore REST values <-> plain JSON */
 const unval = (v) => 'stringValue' in v ? v.stringValue : 'integerValue' in v ? +v.integerValue : 'doubleValue' in v ? v.doubleValue : 'booleanValue' in v ? v.booleanValue : 'nullValue' in v ? null
@@ -29,7 +30,7 @@ const unfields = (f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k,
 let token = '';
 async function signIn() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT), now = Math.floor(Date.now() / 1000);
+    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.trim()), now = Math.floor(Date.now() / 1000);
     const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
     const head = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 });
     const jwt = head + '.' + crypto.createSign('RSA-SHA256').update(head).sign(sa.private_key).toString('base64url');
