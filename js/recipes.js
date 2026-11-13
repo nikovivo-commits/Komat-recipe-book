@@ -385,6 +385,7 @@
         miniAllergens(c.ingredients),
         scaler(c, true),
         partCols(c, 'Ingredients', 'Method', c.name),
+        fromLink(r.components[c.ci]),
         c.notes ? h('p', { class: 'prose note' }, c.notes) : null));
     });
     if (P.hasMain) {
@@ -425,6 +426,11 @@
     ];
   }
 
+  /* a part that is another recipe in the book: open that recipe (where it is changed) */
+  function fromLink(c) {
+    if (!c || !c.from || !c.fromName) return null;
+    return h('button', { class: 'partof', type: 'button', onclick: () => K.go('recipe', { id: c.from }) }, h('span', { class: 'muted' }, 'The book’s recipe'), h('b', null, c.fromName), K.icon('next'));
+  }
   function compPage(r, c) {
     const ci = ui.comp, part = { key: 'x', ci: ci, name: c.name, yieldQty: c.yieldQty, yieldUnit: c.yieldUnit, ingredients: c.ingredients, steps: c.steps };
     const body = h('div', { class: 'wrap page recipe' }), pa = K.partArt(r, ci);
@@ -435,6 +441,7 @@
       h('p', { class: 'kicker' }, 'Recipe · part ' + (ci + 1) + ' of ' + r.components.length),
       h('h1', { class: 'rtitle' }, c.name),
       h('button', { class: 'partof', type: 'button', onclick: () => K.go('recipe', { id: r.id }) }, h('span', { class: 'muted' }, 'Part of the dish'), h('b', null, r.name), K.icon('next')),
+      fromLink(c),
       metaChips(r, part),
       scaler(part, false),
       allergenBlock(K.detectAllergens([c.ingredients]), [], r.allergensChecked, 'Allergens in this part', Object.keys(K.detectAllergens(K.allIngLists(r))).concat(r.allergens)),

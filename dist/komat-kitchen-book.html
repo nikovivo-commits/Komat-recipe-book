@@ -4023,7 +4023,7 @@ window.KOMAT_PART_ART = [
   function normComp(c) {
     c = c || {};
     return { cid: c.cid || '', name: c.name || 'Component', station: c.station || '', yieldQty: c.yieldQty || '', yieldUnit: c.yieldUnit || '',
-      ingredients: Array.isArray(c.ingredients) ? c.ingredients : [], steps: Array.isArray(c.steps) ? c.steps : [], notes: c.notes || '' };
+      ingredients: Array.isArray(c.ingredients) ? c.ingredients : [], steps: Array.isArray(c.steps) ? c.steps : [], notes: c.notes || '', from: c.from || '' };
   }
   K.normComp = normComp;
   K.norm = function (r) {
@@ -4064,10 +4064,23 @@ window.KOMAT_PART_ART = [
   }
   K.setLang = function (l) {
     K.lang = l; K.store.set('lang', l);
-    D.recipes = D.recipesSrc.map(langRec);
+    D.recipes = linkParts(D.recipesSrc.map(langRec));
     K.render();
   };
-  function setRecipes(list) { D.recipesSrc = list; D.recipes = list.map(langRec); houseFor = null; }
+  /* a part of a dish can be another recipe in the book (from: its id): it shows that recipe's ingredients, method
+     and yield, so the two never drift apart; change them on the recipe itself */
+  function linkParts(all) {
+    all.forEach((r) => r.components.forEach((c) => {
+      const s = c.from && c.from !== r.id ? all.find((x) => x.id === c.from) : null;
+      if (!s) return;
+      c.ingredients = K.clone(s.ingredients); c.steps = s.steps.slice(); c.fromName = s.name;
+      if (!c.yieldQty) { c.yieldQty = s.yieldQty; c.yieldUnit = s.yieldUnit; }
+      const bag = [s.name, s.aka].concat(s.ingredients.map((i) => i.n)).join(' ').toLowerCase();
+      c._alt = ((c._alt || '') + ' ' + bag).trim(); r._alt = ((r._alt || '') + ' ' + bag).trim();
+    }));
+    return all;
+  }
+  function setRecipes(list) { D.recipesSrc = list; D.recipes = linkParts(list.map(langRec)); houseFor = null; }
   /* show a saved recipe at once, before the database echoes it back */
   K.upsertRecipe = function (rec) {
     const list = D.recipesSrc.filter((r) => r.id !== rec.id);
@@ -6169,6 +6182,7 @@ window.KOMAT_PART_ART = [
         miniAllergens(c.ingredients),
         scaler(c, true),
         partCols(c, 'Ingredients', 'Method', c.name),
+        fromLink(r.components[c.ci]),
         c.notes ? h('p', { class: 'prose note' }, c.notes) : null));
     });
     if (P.hasMain) {
@@ -6209,6 +6223,11 @@ window.KOMAT_PART_ART = [
     ];
   }
 
+  /* a part that is another recipe in the book: open that recipe (where it is changed) */
+  function fromLink(c) {
+    if (!c || !c.from || !c.fromName) return null;
+    return h('button', { class: 'partof', type: 'button', onclick: () => K.go('recipe', { id: c.from }) }, h('span', { class: 'muted' }, 'The book’s recipe'), h('b', null, c.fromName), K.icon('next'));
+  }
   function compPage(r, c) {
     const ci = ui.comp, part = { key: 'x', ci: ci, name: c.name, yieldQty: c.yieldQty, yieldUnit: c.yieldUnit, ingredients: c.ingredients, steps: c.steps };
     const body = h('div', { class: 'wrap page recipe' }), pa = K.partArt(r, ci);
@@ -6219,6 +6238,7 @@ window.KOMAT_PART_ART = [
       h('p', { class: 'kicker' }, 'Recipe · part ' + (ci + 1) + ' of ' + r.components.length),
       h('h1', { class: 'rtitle' }, c.name),
       h('button', { class: 'partof', type: 'button', onclick: () => K.go('recipe', { id: r.id }) }, h('span', { class: 'muted' }, 'Part of the dish'), h('b', null, r.name), K.icon('next')),
+      fromLink(c),
       metaChips(r, part),
       scaler(part, false),
       allergenBlock(K.detectAllergens([c.ingredients]), [], r.allergensChecked, 'Allergens in this part', Object.keys(K.detectAllergens(K.allIngLists(r))).concat(r.allergens)),
@@ -6299,7 +6319,7 @@ window.KOMAT_PART_ART = [
   function editComp(c) {
     c = K.normComp(c);
     return { cid: c.cid || 'c' + K.uid(), name: c.name === 'Component' ? '' : c.name, station: c.station || '', yieldQty: String(c.yieldQty || ''), yieldUnit: c.yieldUnit || 'g',
-      ingredients: c.ingredients.length ? c.ingredients.map((i) => ({ q: i.q, u: i.u, n: i.n })) : [{ q: '', u: 'g', n: '' }], stepsText: c.steps.join('\n'), notes: c.notes, open: true };
+      ingredients: c.ingredients.length ? c.ingredients.map((i) => ({ q: i.q, u: i.u, n: i.n })) : [{ q: '', u: 'g', n: '' }], stepsText: c.steps.join('\n'), notes: c.notes, from: c.from || '', open: true };
   }
   K.startEdit = function (r, cat, type) {
     if (r) r = K.findSrc(r.id) || r;
@@ -6394,8 +6414,11 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'two tight' },
           K.field('Yield', h('input', { class: 'input mono', id: 'cy' + i, inputmode: 'decimal', placeholder: '500', value: c.yieldQty, oninput: (ev) => { c.yieldQty = ev.target.value; } })),
           K.field('Unit', h('input', { class: 'input', id: 'cu' + i, list: 'unitl', placeholder: 'g', value: c.yieldUnit, oninput: (ev) => { c.yieldUnit = ev.target.value; } })))),
-      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients'), ingEditor(c.ingredients, 'c' + i)),
-      K.field('Method', h('textarea', { class: 'input', id: 'cm' + i, rows: '6', value: c.stepsText, oninput: (ev) => { c.stepsText = ev.target.value; } }), 'One step per line. Times like "20 минути" become tap-to-start timers.'),
+      c.from ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients and method'),
+        h('p', { class: 'hint' }, 'They come from the book’s recipe “' + ((K.find(c.from) || {}).name || c.from) + '”. Change them there; this dish follows.'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const s = K.findSrc(c.from); if (s) { c.ingredients = s.ingredients.map((x) => ({ q: x.q, u: x.u, n: x.n })); c.stepsText = s.steps.join('\n'); } c.from = ''; K.render(); } }, 'Write them here instead')) : null,
+      c.from ? null : h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients'), ingEditor(c.ingredients, 'c' + i)),
+      c.from ? null : K.field('Method', h('textarea', { class: 'input', id: 'cm' + i, rows: '6', value: c.stepsText, oninput: (ev) => { c.stepsText = ev.target.value; } }), 'One step per line. Times like "20 минути" become tap-to-start timers.'),
       K.field('Notes', h('textarea', { class: 'input', id: 'cno' + i, rows: '2', value: c.notes, oninput: (ev) => { c.notes = ev.target.value; } }), 'Storage, holding, shelf life.'),
       h('button', { class: 'btn danger small', type: 'button', onclick: () => { if (!c.confirmDel) { c.confirmDel = true; K.render(); return; } e.components.splice(i, 1); K.render(); } }, c.confirmDel ? 'Tap again to remove' : 'Remove component')));
     return box;
@@ -6647,6 +6670,7 @@ window.KOMAT_PART_ART = [
     for (let ci = 0; e.type === 'dish' && ci < e.components.length; ci++) {
       const c = e.components[ci], cq = (c.yieldQty || '').trim(), cn = (c.name || '').trim();
       const ings = clean(c.ingredients), steps = (c.stepsText || '').split('\n').map((x) => x.trim()).filter(Boolean);
+      if (c.from) { comps.push({ cid: c.cid || 'c' + K.uid(), name: cn || 'Part', station: c.station || '', yieldQty: cq ? String(K.parseQty(cq)) || '' : '', yieldUnit: cq ? (c.yieldUnit || '').trim() || 'g' : '', ingredients: [], steps: [], notes: (c.notes || '').trim(), from: c.from }); continue; }
       if (!cn && !ings.length && !steps.length) continue;
       if (!cn) { c.open = true; return fail('Give part ' + (ci + 1) + ' a name.'); }
       if (cq && !(K.parseQty(cq) > 0)) { c.open = true; return fail('The yield of “' + cn + '” must be a number above zero.'); }

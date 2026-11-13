@@ -11,7 +11,7 @@
   function editComp(c) {
     c = K.normComp(c);
     return { cid: c.cid || 'c' + K.uid(), name: c.name === 'Component' ? '' : c.name, station: c.station || '', yieldQty: String(c.yieldQty || ''), yieldUnit: c.yieldUnit || 'g',
-      ingredients: c.ingredients.length ? c.ingredients.map((i) => ({ q: i.q, u: i.u, n: i.n })) : [{ q: '', u: 'g', n: '' }], stepsText: c.steps.join('\n'), notes: c.notes, open: true };
+      ingredients: c.ingredients.length ? c.ingredients.map((i) => ({ q: i.q, u: i.u, n: i.n })) : [{ q: '', u: 'g', n: '' }], stepsText: c.steps.join('\n'), notes: c.notes, from: c.from || '', open: true };
   }
   K.startEdit = function (r, cat, type) {
     if (r) r = K.findSrc(r.id) || r;
@@ -106,8 +106,11 @@
         h('div', { class: 'two tight' },
           K.field('Yield', h('input', { class: 'input mono', id: 'cy' + i, inputmode: 'decimal', placeholder: '500', value: c.yieldQty, oninput: (ev) => { c.yieldQty = ev.target.value; } })),
           K.field('Unit', h('input', { class: 'input', id: 'cu' + i, list: 'unitl', placeholder: 'g', value: c.yieldUnit, oninput: (ev) => { c.yieldUnit = ev.target.value; } })))),
-      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients'), ingEditor(c.ingredients, 'c' + i)),
-      K.field('Method', h('textarea', { class: 'input', id: 'cm' + i, rows: '6', value: c.stepsText, oninput: (ev) => { c.stepsText = ev.target.value; } }), 'One step per line. Times like "20 минути" become tap-to-start timers.'),
+      c.from ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients and method'),
+        h('p', { class: 'hint' }, 'They come from the book’s recipe “' + ((K.find(c.from) || {}).name || c.from) + '”. Change them there; this dish follows.'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { const s = K.findSrc(c.from); if (s) { c.ingredients = s.ingredients.map((x) => ({ q: x.q, u: x.u, n: x.n })); c.stepsText = s.steps.join('\n'); } c.from = ''; K.render(); } }, 'Write them here instead')) : null,
+      c.from ? null : h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Ingredients'), ingEditor(c.ingredients, 'c' + i)),
+      c.from ? null : K.field('Method', h('textarea', { class: 'input', id: 'cm' + i, rows: '6', value: c.stepsText, oninput: (ev) => { c.stepsText = ev.target.value; } }), 'One step per line. Times like "20 минути" become tap-to-start timers.'),
       K.field('Notes', h('textarea', { class: 'input', id: 'cno' + i, rows: '2', value: c.notes, oninput: (ev) => { c.notes = ev.target.value; } }), 'Storage, holding, shelf life.'),
       h('button', { class: 'btn danger small', type: 'button', onclick: () => { if (!c.confirmDel) { c.confirmDel = true; K.render(); return; } e.components.splice(i, 1); K.render(); } }, c.confirmDel ? 'Tap again to remove' : 'Remove component')));
     return box;
@@ -359,6 +362,7 @@
     for (let ci = 0; e.type === 'dish' && ci < e.components.length; ci++) {
       const c = e.components[ci], cq = (c.yieldQty || '').trim(), cn = (c.name || '').trim();
       const ings = clean(c.ingredients), steps = (c.stepsText || '').split('\n').map((x) => x.trim()).filter(Boolean);
+      if (c.from) { comps.push({ cid: c.cid || 'c' + K.uid(), name: cn || 'Part', station: c.station || '', yieldQty: cq ? String(K.parseQty(cq)) || '' : '', yieldUnit: cq ? (c.yieldUnit || '').trim() || 'g' : '', ingredients: [], steps: [], notes: (c.notes || '').trim(), from: c.from }); continue; }
       if (!cn && !ings.length && !steps.length) continue;
       if (!cn) { c.open = true; return fail('Give part ' + (ci + 1) + ' a name.'); }
       if (cq && !(K.parseQty(cq) > 0)) { c.open = true; return fail('The yield of “' + cn + '” must be a number above zero.'); }

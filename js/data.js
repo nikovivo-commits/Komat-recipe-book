@@ -34,7 +34,7 @@
   function normComp(c) {
     c = c || {};
     return { cid: c.cid || '', name: c.name || 'Component', station: c.station || '', yieldQty: c.yieldQty || '', yieldUnit: c.yieldUnit || '',
-      ingredients: Array.isArray(c.ingredients) ? c.ingredients : [], steps: Array.isArray(c.steps) ? c.steps : [], notes: c.notes || '' };
+      ingredients: Array.isArray(c.ingredients) ? c.ingredients : [], steps: Array.isArray(c.steps) ? c.steps : [], notes: c.notes || '', from: c.from || '' };
   }
   K.normComp = normComp;
   K.norm = function (r) {
@@ -75,10 +75,23 @@
   }
   K.setLang = function (l) {
     K.lang = l; K.store.set('lang', l);
-    D.recipes = D.recipesSrc.map(langRec);
+    D.recipes = linkParts(D.recipesSrc.map(langRec));
     K.render();
   };
-  function setRecipes(list) { D.recipesSrc = list; D.recipes = list.map(langRec); houseFor = null; }
+  /* a part of a dish can be another recipe in the book (from: its id): it shows that recipe's ingredients, method
+     and yield, so the two never drift apart; change them on the recipe itself */
+  function linkParts(all) {
+    all.forEach((r) => r.components.forEach((c) => {
+      const s = c.from && c.from !== r.id ? all.find((x) => x.id === c.from) : null;
+      if (!s) return;
+      c.ingredients = K.clone(s.ingredients); c.steps = s.steps.slice(); c.fromName = s.name;
+      if (!c.yieldQty) { c.yieldQty = s.yieldQty; c.yieldUnit = s.yieldUnit; }
+      const bag = [s.name, s.aka].concat(s.ingredients.map((i) => i.n)).join(' ').toLowerCase();
+      c._alt = ((c._alt || '') + ' ' + bag).trim(); r._alt = ((r._alt || '') + ' ' + bag).trim();
+    }));
+    return all;
+  }
+  function setRecipes(list) { D.recipesSrc = list; D.recipes = linkParts(list.map(langRec)); houseFor = null; }
   /* show a saved recipe at once, before the database echoes it back */
   K.upsertRecipe = function (rec) {
     const list = D.recipesSrc.filter((r) => r.id !== rec.id);
