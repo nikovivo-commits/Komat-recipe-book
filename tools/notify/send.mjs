@@ -1,5 +1,6 @@
-/* Sends the kitchen's push notifications: a new event (or one a chef sent again with "Notify the team") and
-   a new week of The Brigade. Runs every few minutes from .github/workflows/notify.yml.
+/* Sends the kitchen's push notifications: a new event (or one a chef sent again with "Notify the team"),
+   a new week of The Brigade, and a reminder before a supplier's order deadline. It also reads photos of the
+   whiteboard taken in the app (scan.mjs, with the secret ANTHROPIC_API_KEY) and writes their lines on the board. Runs every few minutes from .github/workflows/notify.yml.
    It signs in either with a Firebase service account key (the secret FIREBASE_SERVICE_ACCOUNT: the JSON file from
    Firebase console > Project settings > Service accounts > Generate new private key), or as a kitchen member with
    the full rights (a saved sign-in in the secret KOMAT_NOTIFY_TOKEN). It signs the pushes with the secret VAPID_PRIVATE_KEY,
@@ -26,6 +27,9 @@ if (!DRY) webpush.setVapidDetails(SITE, PUBLIC, process.env.VAPID_PRIVATE_KEY.re
 const unval = (v) => 'stringValue' in v ? v.stringValue : 'integerValue' in v ? +v.integerValue : 'doubleValue' in v ? v.doubleValue : 'booleanValue' in v ? v.booleanValue : 'nullValue' in v ? null
   : 'arrayValue' in v ? (v.arrayValue.values || []).map(unval) : 'mapValue' in v ? unfields(v.mapValue.fields || {}) : null;
 const unfields = (f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, unval(v)]));
+const val = (v) => v === null || v === undefined ? { nullValue: null } : typeof v === 'boolean' ? { booleanValue: v } : typeof v === 'number' ? (Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v })
+  : typeof v === 'string' ? { stringValue: v } : Array.isArray(v) ? { arrayValue: { values: v.map(val) } } : { mapValue: { fields: fieldsOf(v) } };
+const fieldsOf = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => [k, val(v)]));
 
 let token = '';
 async function signIn() {
@@ -82,6 +86,45 @@ if (!state) { await save(); console.log('first run: notifications start from now
 const since = +prior.since || started;
 
 const today = sofia(new Date());
+
+/* photos of the whiteboard or a paper list, taken in the app: Claude reads each one and its lines go on the board */
+const boards = await list('boards');
+const supDoc = await call('GET', 'settings/suppliers');
+const supData = supDoc ? unfields(supDoc.fields || {}) : {};
+const lineKey = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+/* a board section named like a supplier ("Зеленчук" for the vegetable supplier) puts its lines with that supplier */
+const supFor = (sec) => { const k = lineKey(sec); if (!k) return ''; const s = (supData.list || []).find((x) => { const n = lineKey(x.name); return n && (n.includes(k) || k.includes(n)); }); return s ? s.id : ''; };
+const pending = boards.filter((d) => d.data.kind === 'scan' && d.data.status === 'pending');
+if (pending.length && !process.env.ANTHROPIC_API_KEY) console.log(pending.length + ' board photo(s) waiting: add the secret ANTHROPIC_API_KEY to read them');
+if (pending.length && process.env.ANTHROPIC_API_KEY) {
+  const { readBoardPhoto } = await import('./scan.mjs');
+  const open = new Set(boards.filter((d) => d.data.kind === 'item' && d.data.status === 'need').map((d) => lineKey(d.data.n)));
+  for (const sc of pending) {
+    const d = sc.data;
+    try {
+      const meta = unfields(((await call('GET', 'blobs/' + d.photo)) || {}).fields || {});
+      if (!meta.n) throw new Error('the photo is missing');
+      const parts = [];
+      for (let i = 0; i < meta.n; i++) { const p = await call('GET', 'blobs/' + d.photo + '/p/' + i); parts.push(Buffer.from(((p || {}).fields || {}).d.bytesValue, 'base64')); }
+      const res = await readBoardPhoto(Buffer.concat(parts), meta.type);
+      const added = [];
+      for (const it of res.items) {
+        if (open.has(lineKey(it.name))) continue;
+        open.add(lineKey(it.name)); added.push(it.name);
+        if (DRY) continue;
+        await call('PATCH', 'boards/wb' + crypto.randomBytes(6).toString('hex'), { fields: fieldsOf({
+          kind: 'item', n: it.name, qty: it.qty, status: 'need', sup: (supData.map || {})[lineKey(it.name)] || supFor(it.section), via: 'photo',
+          by: d.by || '', ink: d.ink || 'blue', hand: d.hand || 'caveat', st: d.st || '', at: Date.now(),
+        }) });
+      }
+      console.log('board photo ' + sc.id + ': ' + res.items.length + ' lines read, ' + added.length + ' new');
+      if (!DRY) await call('PATCH', 'boards/' + sc.id, { fields: fieldsOf(Object.assign({}, d, { status: 'done', added: added.length, names: added, note: res.note, doneAt: Date.now() })) });
+    } catch (err) {
+      console.error('board photo ' + sc.id + ' failed:', err.message);
+      if (!DRY) await call('PATCH', 'boards/' + sc.id, { fields: fieldsOf(Object.assign({}, d, { status: 'failed', error: String(err.message || err).slice(0, 160), doneAt: Date.now() })) });
+    }
+  }
+}
 const mon = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
 const msgs = [];
 for (const w of await list('schedules')) {
@@ -98,11 +141,10 @@ for (const e of await list('events')) {
   });
 }
 /* the whiteboard: an hour before a supplier's order deadline, on its order days, remind the chefs of what is still on it */
-const sup = await call('GET', 'settings/suppliers');
-const sd = sup ? unfields(sup.fields || {}) : {}, supList = Array.isArray(sd.list) ? sd.list : [], supMap = sd.map || {};
+const sd = supData, supList = Array.isArray(sd.list) ? sd.list : [], supMap = sd.map || {};
 if (supList.length) {
   const key = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const open = (await list('boards')).filter((d) => d.data.kind === 'item' && d.data.status === 'need');
+  const open = (await list('boards')).filter((d) => d.data.kind === 'item' && d.data.status === 'need'); /* fresh: includes lines just read from photos */
   const now = new Date(), parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now).map((p) => [p.type, p.value]));
   const dayIdx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday), mins = +parts.hour * 60 + +parts.minute;
   for (const s of supList) {

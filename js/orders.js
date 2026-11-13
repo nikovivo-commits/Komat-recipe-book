@@ -15,6 +15,7 @@
   const lines = (status) => (D.wb || []).filter((i) => i.status === status).sort((a, b) => (a.at || 0) - (b.at || 0));
   K.wbOpen = () => lines('need');
   const first = (id) => (K.nameOf(id) || '').split(' ')[0];
+  const photoBtn = () => (K.mode === 'firebase' || K.mode === 'local' ? h('button', { class: 'btn wide wb-photo', type: 'button', disabled: !!ui.wbPhotoBusy, onclick: K.wbPhoto }, K.icon('camera'), ui.wbPhotoBusy ? 'Saving the photo…' : 'Photo of the board or a paper list') : null);
 
   /* ---------- writing on the board ---------- */
   K.wbAdd = function (n, qty) {
@@ -63,6 +64,34 @@
       h('datalist', { id: 'wb-names' }, suggestions().map((n) => h('option', { value: n }))),
       h('button', { class: 'btn primary', type: 'submit' }, K.icon('plus'), 'Write it'));
   }
+  /* a photo of the kitchen's whiteboard or a paper list: Claude reads it in the background (tools/notify/send.mjs)
+     and writes its lines on this board, in the photographer's hand */
+  K.wbPhoto = function () {
+    K.pickFile('image/*', false, (files) => {
+      if (!files || !files[0]) return;
+      ui.wbPhotoBusy = true; K.render();
+      K.shrinkImage(files[0], 1600).then((b) => K.assets.upload(b)).then((r) => {
+        const id = 'scan' + K.uid(), doc = { kind: 'scan', status: 'pending', photo: r.id, by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now(), date: K.day(0) };
+        D.wbScans = (D.wbScans || []).concat([Object.assign({ id: id }, doc)]);
+        return K.db.doc('boards/' + id).set(doc);
+      }).then(() => { ui.wbPhotoBusy = false; K.render(); K.toast('Photo saved. Its lines appear on the board in a few minutes.'); },
+        (e) => { ui.wbPhotoBusy = false; K.render(); K.writeFailed(e); });
+    });
+  };
+  function scanCards() {
+    const day = Date.now() - 36 * 3600 * 1000;
+    const list = (D.wbScans || []).filter((s) => (s.at || 0) > day && !s.hidden).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 3);
+    return list.map((s) => {
+      const txt = s.status === 'done' ? (s.added ? 'Read: ' + s.added + (s.added === 1 ? ' line' : ' lines') + ' added' + (s.names && s.names.length ? ' (' + s.names.slice(0, 6).join(', ') + (s.names.length > 6 ? '…' : '') + ')' : '') : 'Read it: nothing new to add') + (s.note ? '. ' + s.note : '')
+        : s.status === 'failed' ? 'Could not read it' + (s.error ? ': ' + s.error : '') + '. Write the lines by hand.'
+          : 'Reading it… the lines appear here in a few minutes.';
+      return h('div', { class: 'wb-scan ' + (s.status || 'pending') },
+        h('img', { class: 'wb-scan-img', src: K.media(s.photo), alt: 'Photo of the board', loading: 'lazy', onclick: () => K.openPhotos([{ id: s.photo, title: 'Photo of the board' }], 0) }),
+        h('span', null, h('b', null, 'Photo · ' + K.hm(s.at) + (first(s.by) ? ' · ' + first(s.by) : '')), h('span', null, txt)),
+        s.status === 'pending' ? null : h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Hide this photo', onclick: () => { s.hidden = true; K.render(); K.db.doc('boards/' + s.id).update({ hidden: true }).catch(() => {}); } }, K.icon('close')));
+    });
+  }
+
   /* the marker in the header: write on the board from any page */
   K.wbQuick = function () { ui.sheet = { type: 'wbadd', f: { text: '', amt: '' } }; K.render(); setTimeout(() => { const el = document.getElementById('wb-in'); if (el) el.focus(); }, 60); };
   K.SHEETS.wbadd = function (S) {
@@ -70,6 +99,7 @@
     return K.sheet('Write on the whiteboard', h('div', { class: 'wb-quick' },
       h('p', { class: 'muted' }, 'Something running low or missing? Write it; the chefs order it.'),
       writeForm(S.f),
+      photoBtn(),
       S.f.last ? h('p', { class: 'wb-ok' }, K.icon('check'), 'On the board: ' + S.f.last + '. Anything else?') : null,
       open.length ? h('p', { class: 'muted' }, open.length + (open.length === 1 ? ' thing' : ' things') + ' on the board: ' + open.slice(-6).map((i) => i.n).join(', ') + (open.length > 6 ? '…' : '')) : null,
       h('div', { class: 'btns' }, h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.go('orders'); } }, 'See the whole board', K.icon('next')))));
@@ -146,7 +176,8 @@
     const w = h('div', { class: 'wrap orders wbx' });
     body.append(w);
     ui.wbForm = ui.wbForm || { text: '', amt: '' };
-    w.append(h('section', { class: 'block wboard' }, writeForm(ui.wbForm)));
+    w.append(h('section', { class: 'block wboard' }, writeForm(ui.wbForm), photoBtn()));
+    const sc = scanCards(); if (sc.length) w.append(h('div', { class: 'wb-scans' }, sc));
 
     /* to order, by supplier; the ones we cannot place yet last */
     const groups = {};
@@ -157,7 +188,7 @@
       w.append(h('section', { class: 'block card wb-sup' + (urgent(s) ? ' due' : '') },
         h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, s.name), when(s) ? h('span', { class: 'wb-due' }, when(s)) : null),
           K.me.admin ? h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon('send'), s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
-        h('div', { class: 'wboard' }, list.map((i) => line(i, { pick: supPick(i) })))));
+        h('div', { class: 'wboard' }, list.map((i) => line(i, {})))));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },

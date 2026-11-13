@@ -2430,3 +2430,18 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-msg { min-height: 160px; font: 500 1rem/1.45 var(--sans); white-space: pre-wrap; }
 .wb-sups { display: grid; gap: 14px; }
 .wb-supedit { display: grid; gap: 10px; padding: 14px; }
+.wb-photo { margin-top: 10px; }
+.wboard .wb-photo { background: transparent; }
+.wb-scans { display: grid; gap: 8px; }
+.wb-scan { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 44px 10px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.wb-scan.pending { border-style: dashed; }
+.wb-scan.failed { border-color: var(--urgent); }
+.wb-scan-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--surface-2); cursor: zoom-in; }
+.wb-scan > span { display: grid; gap: 2px; min-width: 0; }
+.wb-scan > span > span { color: var(--muted); font-size: .9rem; }
+.wb-scan .wb-wipe { top: 8px; right: 4px; }
+.wbx > * { min-width: 0; }
+.wbx .wb-form, .wbx .wb-row { min-width: 0; }
+.wb-row { grid-template-columns: minmax(0, 1fr) minmax(0, 7em); }
+.wb-row .input { min-width: 0; width: 100%; }
+.wb-photo { white-space: normal; max-width: 100%; }
