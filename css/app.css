@@ -2396,3 +2396,6 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .news-ask > .btn, .news-ask > .btns { grid-column: 2; justify-self: start; }
 .news-ask .btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .evt-notify { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: .88rem; }
+.pushask { display: grid; gap: 12px; }
+.pushask p { margin: 0; }
+.pushask ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }

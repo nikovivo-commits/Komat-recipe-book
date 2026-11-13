@@ -2403,6 +2403,9 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .news-ask > .btn, .news-ask > .btns { grid-column: 2; justify-self: start; }
 .news-ask .btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .evt-notify { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: .88rem; }
+.pushask { display: grid; gap: 12px; }
+.pushask p { margin: 0; }
+.pushask ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
 
 </style>
 <div id="app"></div>
@@ -4624,6 +4627,8 @@ window.KOMAT_PART_ART = [
     setting('shiftcodes', (d) => { D.codes = d && Array.isArray(d.codes) ? K.clone(d) : { codes: [] }; });
     setting('kitchen', (d) => { D.kitchen = d ? K.clone(d) : null; });
     setting('rotaplan', (d) => { D.rotaplan = d ? K.clone(d) : null; });
+    /* when the chefs last asked everyone to turn notifications on */
+    setting('pushask', (d) => { D.pushAsk = (d && +d.v) || 0; });
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
@@ -10104,6 +10109,33 @@ window.KOMAT_PART_ART = [
     if (w && box) w.prepend(box);
     return r;
   };
+  /* when the chefs ask everyone to turn notifications on, whoever has not yet sees it as a popup on their next open */
+  ['recipes', 'today', 'orders', 'schedule', 'events'].forEach((v) => {
+    const page = K.V[v];
+    if (page) K.V[v] = function () { const r = page.apply(this, arguments); askPopup(); return r; };
+  });
+  function askPopup() {
+    const v = D.pushAsk || 0;
+    if (!v || ui.sheet || ui.cook || K.store.get('pushAskSeen', 0) >= v) return;
+    const st = K.pushState();
+    if (st === 'on') { K.store.set('pushAskSeen', v); return; }
+    if (st === 'off' || st === 'install') ui.sheet = { type: 'pushask' };
+  }
+  K.SHEETS.pushask = function () {
+    const done = () => { K.store.set('pushAskSeen', D.pushAsk || Date.now()); K.store.set('pushAsked', true); ui.sheet = null; K.render(); };
+    const st = K.pushState();
+    const body = st === 'install'
+      ? h('div', { class: 'pushask' },
+        h('p', null, 'Get a notification when an event is added or next week of The Brigade is out.'),
+        h('ol', null, h('li', null, 'Tap ', h('b', null, 'Share'), ' at the bottom of Safari.'), h('li', null, 'Tap ', h('b', null, 'Add to Home Screen'), '.'),
+          h('li', null, 'Open Komat from the new icon and tap ', h('b', null, 'Turn on'), ' when it asks.')),
+        h('button', { class: 'btn primary wide big', type: 'button', onclick: done }, 'OK'))
+      : h('div', { class: 'pushask' },
+        h('p', null, 'Get a notification when an event is added or next week of The Brigade is out. Nothing else.'),
+        h('button', { class: 'btn primary wide big', type: 'button', disabled: !!ui.pushBusy, onclick: () => { done(); K.pushOn(); } }, K.icon('bell'), 'Turn on notifications'),
+        h('button', { class: 'btn wide', type: 'button', onclick: done }, 'Not now'));
+    return K.sheet('Turn on notifications', body, { onClose: done });
+  };
 
   function newsBox() {
     const evs = K.newEvents(), wks = K.newWeeks(), ask = pushAsk();
@@ -10132,7 +10164,7 @@ window.KOMAT_PART_ART = [
   };
   function check() {
     if (checking) return; checking = true;
-    navigator.serviceWorker.ready.then((r) => r.pushManager.getSubscription()).then((s) => {
+    navigator.serviceWorker.getRegistration().then((r) => (r ? r.pushManager.getSubscription() : null)).then((s) => {
       ui.pushOn = !!s && Notification.permission === 'granted';
       if (ui.pushOn) save(s).catch(() => {}); /* the phone may have renewed its address */
       K.render();
@@ -10147,7 +10179,8 @@ window.KOMAT_PART_ART = [
     ui.pushBusy = true; K.render();
     Notification.requestPermission().then((p) => {
       if (p !== 'granted') throw new Error(p);
-      return navigator.serviceWorker.ready;
+      /* the offline helper normally registers itself on the site; register it here if not */
+      return navigator.serviceWorker.getRegistration().then((r) => r || navigator.serviceWorker.register('sw.js')).then(() => navigator.serviceWorker.ready);
     }).then((r) => r.pushManager.getSubscription().then((s) => s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID) })))
       .then(save).then(() => { ui.pushOn = true; ui.pushBusy = false; K.render(); K.toast('Notifications on'); }, () => {
         ui.pushBusy = false; K.render();
@@ -10156,7 +10189,7 @@ window.KOMAT_PART_ART = [
   };
   K.pushOff = function () {
     ui.pushBusy = true; K.render();
-    navigator.serviceWorker.ready.then((r) => r.pushManager.getSubscription()).then((s) => s && s.unsubscribe())
+    navigator.serviceWorker.getRegistration().then((r) => (r ? r.pushManager.getSubscription() : null)).then((s) => s && s.unsubscribe())
       .then(() => K.db.doc('pushsubs/' + K.me.id).delete()).then(() => { ui.pushOn = false; ui.pushBusy = false; K.render(); K.toast('Notifications off'); },
         () => { ui.pushBusy = false; K.render(); K.toast('Could not turn notifications off'); });
   };
@@ -10189,9 +10222,18 @@ window.KOMAT_PART_ART = [
       off: 'Off on this phone. Turn on to get a buzz when an event is added or next week of The Brigade is out.',
       on: 'On for this phone: new events and each new week of The Brigade.',
     }[st];
-    return h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Notifications'), h('span', { class: 'muted' }, txt)),
+    const row = h('div', { class: 'set-row' }, h('div', null, h('b', null, 'Notifications'), h('span', { class: 'muted' }, txt)),
       st === 'on' ? h('button', { class: 'btn small', type: 'button', disabled: !!ui.pushBusy, onclick: K.pushOff }, 'Turn off')
         : st === 'off' ? h('button', { class: 'btn small primary', type: 'button', disabled: !!ui.pushBusy, onclick: K.pushOn }, ui.pushBusy ? 'Turning on…' : 'Turn on') : null);
+    if (!K.me.admin) return row;
+    const arm = ui.askArm;
+    return h('div', null, row, h('div', { class: 'set-row' },
+      h('div', null, h('b', null, 'Ask everyone to turn them on'), h('span', { class: 'muted' }, 'Whoever has not turned notifications on gets a popup the next time they open Komat.' + (D.pushAsk ? ' Last asked ' + new Date(D.pushAsk).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '.' : ''))),
+      h('button', { class: 'btn small', type: 'button', onclick: () => {
+        if (!arm) { ui.askArm = true; K.render(); return; }
+        ui.askArm = false;
+        K.db.doc('settings/pushask').set({ v: Date.now() }).then(() => K.toast('Asked: everyone sees it next time they open Komat'), K.writeFailed);
+      } }, K.icon('bell'), arm ? 'Tap again to ask everyone' : 'Ask everyone')));
   };
 
   /* "Notify the team" on an event: the chefs can send it again (or for an event added before notifications) */

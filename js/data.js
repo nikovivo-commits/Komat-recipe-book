@@ -638,6 +638,8 @@
     setting('shiftcodes', (d) => { D.codes = d && Array.isArray(d.codes) ? K.clone(d) : { codes: [] }; });
     setting('kitchen', (d) => { D.kitchen = d ? K.clone(d) : null; });
     setting('rotaplan', (d) => { D.rotaplan = d ? K.clone(d) : null; });
+    /* when the chefs last asked everyone to turn notifications on */
+    setting('pushask', (d) => { D.pushAsk = (d && +d.v) || 0; });
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
