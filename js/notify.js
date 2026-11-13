@@ -113,14 +113,20 @@
   }
   K.pushOn = function () {
     ui.pushBusy = true; K.render();
+    let step = 'asking the phone';
     Notification.requestPermission().then((p) => {
-      if (p !== 'granted') throw new Error(p);
+      if (p !== 'granted') throw new Error('permission ' + p);
+      step = 'starting the offline helper';
       /* the offline helper normally registers itself on the site; register it here if not */
       return navigator.serviceWorker.getRegistration().then((r) => r || navigator.serviceWorker.register('sw.js')).then(() => navigator.serviceWorker.ready);
-    }).then((r) => r.pushManager.getSubscription().then((s) => s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID) })))
-      .then(save).then(() => { ui.pushOn = true; ui.pushBusy = false; K.render(); K.toast('Notifications on'); }, () => {
+    }).then((r) => { step = 'getting the phone’s address'; return r.pushManager.getSubscription().then((s) => s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID) })); })
+      .then((s) => { step = 'saving it to the kitchen'; return save(s); })
+      .then(() => { ui.pushOn = true; ui.pushBusy = false; K.render(); K.toast('Notifications on'); }, (err) => {
         ui.pushBusy = false; K.render();
-        K.toast(Notification.permission === 'denied' ? 'Notifications are blocked for Komat in the phone’s settings' : 'Could not turn notifications on. Try again in a moment.');
+        const why = ((err && (err.name || '')) + ' ' + ((err && (err.code || err.message)) || String(err))).trim();
+        K.toast(Notification.permission === 'denied' ? 'Notifications are blocked for Komat in the phone’s settings' : 'Could not turn notifications on (' + step + ': ' + why + ')', { tone: 'warn' });
+        /* leave a problem report so whoever looks after the app can see what went wrong on this phone */
+        if (Notification.permission !== 'denied') K.db.collection('bugs').add({ text: 'Notifications did not turn on, at ' + step + ': ' + why.slice(0, 300), where: 'notifications', view: ui.view, at: Date.now(), by: K.me.id || '', status: 'open', notified: false, ua: (navigator.userAgent || '').slice(0, 160) }).catch(() => {});
       });
   };
   K.pushOff = function () {
