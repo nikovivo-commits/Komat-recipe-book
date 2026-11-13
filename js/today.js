@@ -331,16 +331,15 @@
       h('button', { class: 'btn wide outline-apron', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, 'Closing? Write tomorrow’s list', K.icon('next'))));
 
     /* ===== Tomorrow ===== */
-    const order = K.orderFor(st), cl = K.closedInfo(st);
+    const cl = K.closedInfo(st);
     left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed',
       K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide big', type: 'button', onclick: () => K.startStock(st, true) }, K.icon('order'), cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for ' + nTmr : 'Done: nothing to make tomorrow'),
-      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.')));
-    if (order) left.append(h('button', { class: 'askorder sent tt-tmr', type: 'button', onclick: () => K.startStock(st, false) },
-      K.icon('order'), h('span', { class: 'ask-txt' }, h('b', null, 'Order sent for ' + K.ST[st]), h('span', null, order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change')), K.icon('next')));
+      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
+      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
+      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Write it on the whiteboard') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
     /* the kitchen's printable documents, under everything else */
     if (K.docsBox) w.append(K.docsBox());

@@ -2399,3 +2399,34 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pushask { display: grid; gap: 12px; }
 .pushask p { margin: 0; }
 .pushask ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+
+/* ---------- the whiteboard: lines by supplier, ready messages, on the way ---------- */
+.wbx { display: grid; gap: 18px; max-width: 760px; }
+.wbx > .wboard .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }
+.wb-sup { display: grid; gap: 12px; }
+.wb-sup.due { box-shadow: 0 0 0 2px var(--todo), var(--shadow); }
+.wb-sup-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.wb-sup-head > div { display: grid; gap: 2px; min-width: 0; }
+.wb-sup-head .block-title { margin: 0; }
+.wb-due { color: var(--muted); font-size: .88rem; }
+.wb-sup.due .wb-due { color: var(--todo-ink); font-weight: 700; }
+.wb-sup .wboard { padding: 10px 12px 8px; border-width: 6px; }
+.wb-sup .wboard::after { display: none; }
+.wb-pick { flex-basis: 100%; max-width: 240px; margin-top: 4px; font: 500 .9rem/1.2 var(--sans); color: var(--ink); }
+.wb-noamt { opacity: .5; }
+.wb-when { margin-left: 8px; font-family: var(--sans); font-size: .78rem; color: #6A6D68; }
+.wb-ordered .wb-name { text-decoration: none; }
+.wb-got { position: absolute; right: -4px; top: 4px; display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid var(--ready); border-radius: 50%; background: #fff; color: var(--ready); }
+.wb-got .ico { width: 18px; height: 18px; }
+.wb-way { margin: 6px 0 -6px; }
+.wb-sup.way { opacity: .92; }
+.wb-empty { text-align: center; }
+.wb-quick { display: grid; gap: 12px; }
+.wb-quick .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }
+.wb-quick .wb-form .input { background: var(--surface); border-color: var(--line); }
+.wb-ok { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--ready); font-weight: 700; }
+.wb-ok .ico { width: 18px; height: 18px; }
+.wb-sendbox { display: grid; gap: 12px; }
+.wb-msg { min-height: 160px; font: 500 1rem/1.45 var(--sans); white-space: pre-wrap; }
+.wb-sups { display: grid; gap: 14px; }
+.wb-supedit { display: grid; gap: 10px; padding: 14px; }

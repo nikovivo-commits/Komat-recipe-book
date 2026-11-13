@@ -7,7 +7,7 @@
   const D = (K.D = {
     loaded: false, recipesSrc: [], recipes: [],
     branding: { logo: '', heroes: [], approve: '', pages: {} },
-    checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
+    checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {}, wb: [], suppliers: { list: [], map: {} },
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, docs: null, dayoff: {}, points: {}, bugs: [], names: {}, noWrite: false,
   });
 
@@ -654,6 +654,9 @@
     /* when the chefs last asked everyone to turn notifications on */
     setting('pushask', (d) => { D.pushAsk = (d && +d.v) || 0; });
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
+    /* the whiteboard: who we order from, and what is written on it (kept until it arrives) */
+    setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {} }; });
+    db.collection('boards').where('kind', '==', 'item').onSnapshot((s) => { D.wb = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */

@@ -2407,6 +2407,37 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .pushask p { margin: 0; }
 .pushask ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
 
+/* ---------- the whiteboard: lines by supplier, ready messages, on the way ---------- */
+.wbx { display: grid; gap: 18px; max-width: 760px; }
+.wbx > .wboard .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }
+.wb-sup { display: grid; gap: 12px; }
+.wb-sup.due { box-shadow: 0 0 0 2px var(--todo), var(--shadow); }
+.wb-sup-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.wb-sup-head > div { display: grid; gap: 2px; min-width: 0; }
+.wb-sup-head .block-title { margin: 0; }
+.wb-due { color: var(--muted); font-size: .88rem; }
+.wb-sup.due .wb-due { color: var(--todo-ink); font-weight: 700; }
+.wb-sup .wboard { padding: 10px 12px 8px; border-width: 6px; }
+.wb-sup .wboard::after { display: none; }
+.wb-pick { flex-basis: 100%; max-width: 240px; margin-top: 4px; font: 500 .9rem/1.2 var(--sans); color: var(--ink); }
+.wb-noamt { opacity: .5; }
+.wb-when { margin-left: 8px; font-family: var(--sans); font-size: .78rem; color: #6A6D68; }
+.wb-ordered .wb-name { text-decoration: none; }
+.wb-got { position: absolute; right: -4px; top: 4px; display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid var(--ready); border-radius: 50%; background: #fff; color: var(--ready); }
+.wb-got .ico { width: 18px; height: 18px; }
+.wb-way { margin: 6px 0 -6px; }
+.wb-sup.way { opacity: .92; }
+.wb-empty { text-align: center; }
+.wb-quick { display: grid; gap: 12px; }
+.wb-quick .wb-form { margin-top: 0; padding-top: 0; border-top: 0; }
+.wb-quick .wb-form .input { background: var(--surface); border-color: var(--line); }
+.wb-ok { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--ready); font-weight: 700; }
+.wb-ok .ico { width: 18px; height: 18px; }
+.wb-sendbox { display: grid; gap: 12px; }
+.wb-msg { min-height: 160px; font: 500 1rem/1.45 var(--sans); white-space: pre-wrap; }
+.wb-sups { display: grid; gap: 14px; }
+.wb-supedit { display: grid; gap: 10px; padding: 14px; }
+
 </style>
 <div id="app"></div>
 <script>window.K = { BUILD: 'artifact' };</script>
@@ -4003,7 +4034,7 @@ window.KOMAT_PART_ART = [
   const D = (K.D = {
     loaded: false, recipesSrc: [], recipes: [],
     branding: { logo: '', heroes: [], approve: '', pages: {} },
-    checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {},
+    checklists: null, checks: {}, prep: {}, orders: {}, boards: {}, events: [], weeks: {}, wb: [], suppliers: { list: [], map: {} },
     staff: { people: [] }, codes: { codes: [] }, kitchen: null, rotaplan: null, docs: null, dayoff: {}, points: {}, bugs: [], names: {}, noWrite: false,
   });
 
@@ -4650,6 +4681,9 @@ window.KOMAT_PART_ART = [
     /* when the chefs last asked everyone to turn notifications on */
     setting('pushask', (d) => { D.pushAsk = (d && +d.v) || 0; });
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
+    /* the whiteboard: who we order from, and what is written on it (kept until it arrives) */
+    setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {} }; });
+    db.collection('boards').where('kind', '==', 'item').onSnapshot((s) => { D.wb = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */
@@ -5552,6 +5586,7 @@ window.KOMAT_PART_ART = [
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'schedule' && K.calendarOn && K.waitingDayoff) { const n = (K.me.admin ? K.waitingCount() : 0) + (K.myMoves ? K.myMoves().length : 0); if (n) return h('span', { class: 'badge', 'aria-label': n + (K.me.admin ? ' things waiting' : ' changes to your week') }, String(n)); }
     if (tab === 'schedule' && K.newWeeks && K.newWeeks().length) return h('span', { class: 'badge dot', 'aria-label': 'A new week is out' });
+    if (tab === 'orders' && K.wbOpen) { const n = K.wbOpen().length; return n && K.me.admin ? h('span', { class: 'badge', 'aria-label': n + ' to order' }, String(n)) : n ? h('span', { class: 'badge dot', 'aria-label': 'Things on the whiteboard' }) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length + (K.newEvents ? K.newEvents().length : 0); return n ? h('span', { class: 'badge dot', 'aria-label': 'New event, or one today or tomorrow' }) : null; }
     return null;
   }
@@ -5578,6 +5613,7 @@ window.KOMAT_PART_ART = [
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
       K.langSwitch(),
+      K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Write on the whiteboard', title: 'Write on the whiteboard', onclick: K.wbQuick }, K.icon('board')) : null,
       h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Settings', onclick: () => { ui.sheet = { type: 'settings' }; render(); } }, K.icon('gear'))));
   }
   /* the top bar for sub-pages: back, title, actions */
@@ -7132,16 +7168,15 @@ window.KOMAT_PART_ART = [
       h('button', { class: 'btn wide outline-apron', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, 'Closing? Write tomorrow’s list', K.icon('next'))));
 
     /* ===== Tomorrow ===== */
-    const order = K.orderFor(st), cl = K.closedInfo(st);
+    const cl = K.closedInfo(st);
     left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed',
       K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      h('button', { class: 'btn ' + (cl ? '' : 'primary') + ' wide big', type: 'button', onclick: () => K.startStock(st, true) }, K.icon('order'), cl ? 'Check ingredients again' : nTmr ? 'Done: check ingredients for ' + nTmr : 'Done: nothing to make tomorrow'),
-      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.')));
-    if (order) left.append(h('button', { class: 'askorder sent tt-tmr', type: 'button', onclick: () => K.startStock(st, false) },
-      K.icon('order'), h('span', { class: 'ask-txt' }, h('b', null, 'Order sent for ' + K.ST[st]), h('span', null, order.items.length + (order.items.length === 1 ? ' item' : ' items') + ' · tap to change')), K.icon('next')));
+      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
+      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
+      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Write it on the whiteboard') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
     /* the kitchen's printable documents, under everything else */
     if (K.docsBox) w.append(K.docsBox());
@@ -7559,131 +7594,220 @@ window.KOMAT_PART_ART = [
 </script>
 <script>
 /* js/orders.js */
-/* The whiteboard: what the kitchen needs, written by everyone in their own hand.
-   One order per calendar day. At midnight it goes to the head chef and a clean board starts. */
+/* The whiteboard: what the kitchen needs, written by everyone in their own hand, from any page (the marker
+   in the header). A line stays until it arrives: written -> ordered -> arrived. The chefs say once which
+   supplier sells a product and the board remembers; each supplier gets a ready message for WhatsApp or Viber,
+   and a reminder comes before that supplier's order deadline (sent by tools/notify/send.mjs).
+   Lines live in boards/{id} with kind 'item'; the suppliers in settings/suppliers. */
 (function () {
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const key = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const sups = () => (D.suppliers && D.suppliers.list) || [];
+  const smap = () => (D.suppliers && D.suppliers.map) || {};
+  const supById = (id) => sups().find((s) => s.id === id) || null;
+  K.wbSupOf = (it) => (it.sup && supById(it.sup) ? it.sup : smap()[key(it.n)] && supById(smap()[key(it.n)]) ? smap()[key(it.n)] : '');
+  const lines = (status) => (D.wb || []).filter((i) => i.status === status).sort((a, b) => (a.at || 0) - (b.at || 0));
+  K.wbOpen = () => lines('need');
+  const first = (id) => (K.nameOf(id) || '').split(' ')[0];
 
-  /* every station's lines for one order, the same product written twice kept as one line */
-  function combined(date) {
-    const comb = {};
-    K.STATIONS.forEach((s) => {
-      const d = K.orderFor(s[0], date);
-      if (!d) return;
-      d.items.forEach((i) => {
-        const k = i.n.toLowerCase();
-        if (!comb[k]) comb[k] = { n: i.n, s: 'low', rows: [] };
-        if (i.s === 'out') comb[k].s = 'out';
-        comb[k].rows.push({ st: s[0], s: i.s, note: i.note, by: i.by || d.by, ink: i.ink, hand: i.hand, at: i.at || d.at });
-      });
-    });
-    return Object.keys(comb).map((k) => comb[k]).sort((a, b) => a.n.localeCompare(b.n));
+  /* ---------- writing on the board ---------- */
+  K.wbAdd = function (n, qty) {
+    n = String(n || '').trim(); qty = String(qty || '').trim();
+    if (!n) return Promise.resolve();
+    const dup = lines('need').find((i) => key(i.n) === key(n));
+    if (dup) {
+      const q = dup.qty && qty && dup.qty !== qty ? dup.qty + ' + ' + qty : qty || dup.qty || '';
+      dup.qty = q; K.refresh(true);
+      return K.db.doc('boards/' + dup.id).update({ qty: q, at: Date.now() }).catch(K.writeFailed);
+    }
+    const id = 'wb' + K.uid(), it = { kind: 'item', n: n, qty: qty, status: 'need', sup: smap()[key(n)] || '', by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now() };
+    D.wb = (D.wb || []).concat([Object.assign({ id: id }, it)]); K.refresh(true);
+    return K.db.doc('boards/' + id).set(it).catch(K.writeFailed);
+  };
+  const setLine = (it, patch) => { Object.assign(it, patch); K.refresh(true); return K.db.doc('boards/' + it.id).update(patch).catch(K.writeFailed); };
+  function wipe(it) {
+    const keep = Object.assign({}, it); delete keep.id;
+    D.wb = D.wb.filter((x) => x.id !== it.id); K.refresh(true);
+    K.db.doc('boards/' + it.id).delete().catch(K.writeFailed);
+    K.toast('Wiped: ' + it.n, { undo: () => { D.wb = D.wb.concat([Object.assign({ id: it.id }, keep)]); K.refresh(true); K.db.doc('boards/' + it.id).set(keep).catch(K.writeFailed); } });
   }
-  const shortSt = (st) => K.ST[st].split(' ')[0];
-  const who = (r) => shortSt(r.st) + (K.nameOf(r.by) ? ', ' + K.nameOf(r.by).split(' ')[0] : '');
-  function orderText(date, list) {
-    const line = (x) => '- ' + x.n + ':' + x.rows.map((r) => ' ' + (r.note || '?') + ' [' + K.ST[r.st] + (K.nameOf(r.by) ? ', ' + K.nameOf(r.by) : '') + ']').join(';');
-    return 'Komat order · written ' + K.prettyDate(date) + '\n' + list.map(line).join('\n');
+  /* the names we have written before, to pick from while writing */
+  function suggestions() {
+    const seen = {};
+    (D.wb || []).forEach((i) => { seen[key(i.n)] = i.n; });
+    Object.keys(smap()).forEach((k) => { if (!seen[k]) seen[k] = k; });
+    return Object.keys(seen).sort().map((k) => seen[k]);
   }
-  /* one handwritten line on the board */
-  function boardLine(x, canWipe) {
-    const r0 = x.rows[0] || {};
-    return h('div', { class: 'oline wb-line ' + x.s + ' ' + K.inkClass(r0.ink) + ' ' + K.handClass(r0.hand) },
-      h('span', { class: 'wb-name' }, x.n),
-      x.rows.map((r) => h('span', { class: 'wb-amt ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, r.note || '…')),
-      h('span', { class: 'wb-by' }, x.rows.map((r) => h('span', { class: 'wb-who' }, shortSt(r.st), K.nameOf(r.by) ? h('span', { class: 'wb-sig ' + K.inkClass(r.ink) + ' ' + K.handClass(r.hand) }, K.nameOf(r.by).split(' ')[0]) : null))),
-      canWipe ? h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Wipe ' + x.n + ' off the board', onclick: () => wipe(x) }, K.icon('close')) : null);
-  }
-  /* write a line on the board: it goes on your station's order, in your hand */
-  function writeForm() {
-    const S = (ui.wbForm = ui.wbForm || { text: '', amt: '' });
-    const st = K.getStation(), hand = 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand());
+  function writeForm(S, after) {
+    const hand = 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand());
     return h('form', { class: 'wb-form', onsubmit: (e) => {
       e.preventDefault();
-      const name = (S.text || '').trim(), amt = (S.amt || '').trim();
+      const name = (S.text || '').trim();
       if (!name) { const el = document.getElementById('wb-in'); if (el) el.focus(); return; }
-      if (!amt) { K.toast('How much? Write the amount too.'); const el = document.getElementById('wb-amt'); if (el) el.focus(); return; }
-      const cur = ((K.orderFor(st) || {}).items || []).filter((i) => i.n.toLowerCase() !== name.toLowerCase()   );
-      const item = { n: name, s: 'out', note: amt, extra: true, by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', at: Date.now() };
-      cur.push(item);
-      S.text = ''; S.amt = '';
-      K.vibrate(10);
-      K.sendOrder(st, cur, false).then(() => K.render(), (er) => K.writeFailed(er));
+      K.wbAdd(name, S.amt);
+      K.vibrate && K.vibrate(10);
+      S.text = ''; S.amt = ''; S.last = name;
+      if (after) after(name);
       K.render();
+      setTimeout(() => { const el = document.getElementById('wb-in'); if (el) el.focus(); }, 30);
     } },
       h('div', { class: 'wb-row' },
-        h('input', { class: hand, id: 'wb-in', value: S.text, autocomplete: 'off', enterkeyhint: 'next', placeholder: 'What, e.g. лимони', 'aria-label': 'What we need', oninput: (e) => { S.text = e.target.value; } }),
-        h('input', { class: hand + ' wb-amt-in', id: 'wb-amt', value: S.amt, autocomplete: 'off', enterkeyhint: 'done', placeholder: '2 kg', 'aria-label': 'How much', oninput: (e) => { S.amt = e.target.value; } })),
-      h('button', { class: 'btn primary', type: 'submit' }, 'Write for ' + K.ST[st]));
+        h('input', { class: hand, id: 'wb-in', value: S.text || '', list: 'wb-names', autocomplete: 'off', enterkeyhint: 'next', placeholder: 'What, e.g. лимони', 'aria-label': 'What we need', oninput: (e) => { S.text = e.target.value; } }),
+        h('input', { class: hand + ' wb-amt-in', id: 'wb-amt', value: S.amt || '', autocomplete: 'off', enterkeyhint: 'done', placeholder: '2 kg', 'aria-label': 'How much (if you know)', oninput: (e) => { S.amt = e.target.value; } })),
+      h('datalist', { id: 'wb-names' }, suggestions().map((n) => h('option', { value: n }))),
+      h('button', { class: 'btn primary', type: 'submit' }, K.icon('plus'), 'Write it'));
   }
-  /* wipe a line off the board: it comes off every station's order that has it */
-  function wipe(x) {
-    const k = x.n.toLowerCase(), before = {};
-    K.STATIONS.forEach((s) => {
-      const d = K.orderFor(s[0]);
-      if (!d || !d.items.some((i) => i.n.toLowerCase() === k)) return;
-      before[s[0]] = d.items.slice();
-      K.sendOrder(s[0], d.items.filter((i) => i.n.toLowerCase() !== k), false).then(() => K.render(), (er) => K.writeFailed(er));
-    });
-    K.toast('Wiped: ' + x.n, { undo: () => Object.keys(before).forEach((st) => K.sendOrder(st, before[st], false).then(() => K.render())) });
+  /* the marker in the header: write on the board from any page */
+  K.wbQuick = function () { ui.sheet = { type: 'wbadd', f: { text: '', amt: '' } }; K.render(); setTimeout(() => { const el = document.getElementById('wb-in'); if (el) el.focus(); }, 60); };
+  K.SHEETS.wbadd = function (S) {
+    const open = lines('need');
+    return K.sheet('Write on the whiteboard', h('div', { class: 'wb-quick' },
+      h('p', { class: 'muted' }, 'Something running low or missing? Write it; the chefs order it.'),
+      writeForm(S.f),
+      S.f.last ? h('p', { class: 'wb-ok' }, K.icon('check'), 'On the board: ' + S.f.last + '. Anything else?') : null,
+      open.length ? h('p', { class: 'muted' }, open.length + (open.length === 1 ? ' thing' : ' things') + ' on the board: ' + open.slice(-6).map((i) => i.n).join(', ') + (open.length > 6 ? '…' : '')) : null,
+      h('div', { class: 'btns' }, h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.go('orders'); } }, 'See the whole board', K.icon('next')))));
+  };
+
+  /* ---------- a supplier's day and deadline ---------- */
+  const todayIdx = () => (new Date().getDay() + 6) % 7;
+  function when(s) {
+    const days = (s.days || []).slice().sort();
+    if (!days.length) return s.deadline ? 'Order by ' + s.deadline : '';
+    const t = todayIdx(), now = new Date(), [hh, mm] = String(s.deadline || '23:59').split(':').map(Number);
+    const open = days.includes(t) && (now.getHours() * 60 + now.getMinutes()) < hh * 60 + (mm || 0);
+    if (open) return 'Order by ' + (s.deadline || 'tonight') + ' today';
+    for (let k = 1; k <= 7; k++) { const d = (t + k) % 7; if (days.includes(d)) return 'Next order: ' + (k === 1 ? 'tomorrow' : DAYS[d]) + (s.deadline ? ' by ' + s.deadline : ''); }
+    return '';
   }
-  /* the head chef's copy: the phone's mail app opens with the whole order, and it is copied too */
-  function emailOrder(date, list) {
-    const to = K.kitchen().orderEmail || '', body = orderText(date, list);
-    try { navigator.clipboard.writeText(body).catch(() => {}); } catch (e) { /* no clipboard here */ }
-    try { window.location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent('Komat order · ' + K.prettyDate(date)) + '&body=' + encodeURIComponent(body); } catch (e) { /* no mail app */ }
-    K.toast('The order is copied' + (to ? ' and an email to ' + to + ' is open.' : '.'), { tone: 'good' });
+  const urgent = (s) => /today/.test(when(s));
+
+  /* ---------- the message to the supplier ---------- */
+  function message(s, list) {
+    const d = K.addDays(K.parseYmd(K.day(0)), 1);
+    const day = d.toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'numeric' });
+    return (s.greeting || 'Здравейте!') + ' Поръчка за Комат за утре (' + day + '):\n' +
+      list.map((i) => '• ' + i.n + (i.qty ? ' – ' + i.qty : '')).join('\n') + '\nБлагодаря!';
+  }
+  const phoneDigits = (p) => { let d = String(p || '').replace(/[^\d+]/g, ''); if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '359' + d.slice(1); return d; };
+  K.SHEETS.wbsend = function (S) {
+    const s = supById(S.sup), list = lines('need').filter((i) => K.wbSupOf(i) === S.sup);
+    if (!s) return null;
+    if (S.text == null) S.text = message(s, list);
+    const viber = s.app === 'viber';
+    const go = () => {
+      try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
+      const url = viber ? 'viber://forward?text=' + encodeURIComponent(S.text) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
+      if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
+      const at = Date.now(), ids = list.map((i) => i.id);
+      list.forEach((i) => setLine(i, { status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }));
+      ui.sheet = null; K.render();
+      K.toast(list.length + (list.length === 1 ? ' line' : ' lines') + ' ordered from ' + s.name, { undo: () => D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })) });
+    };
+    return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
+      h('p', { class: 'muted' }, (viber ? 'Viber opens to pick ' + s.name + '; the message is copied too, paste it if it is not there.' : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
+      h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; } }, S.text),
+      h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
+  };
+
+  /* ---------- the page ---------- */
+  function line(it, opts) {
+    const wb = K.inkClass(it.ink) + ' ' + K.handClass(it.hand);
+    return h('div', { class: 'oline wb-line ' + wb + (opts.done ? ' wb-ordered' : '') },
+      h('span', { class: 'wb-name' }, it.n),
+      it.qty ? h('span', { class: 'wb-amt ' + wb }, it.qty) : h('span', { class: 'wb-amt wb-noamt' }, '…'),
+      h('span', { class: 'wb-by' }, h('span', { class: 'wb-who' }, it.st && K.ST[it.st] ? K.ST[it.st].split(' ')[0] : '', first(it.by) ? h('span', { class: 'wb-sig ' + wb }, first(it.by)) : null),
+        opts.done && it.orderedAt ? h('span', { class: 'wb-when' }, 'ordered ' + K.hm(it.orderedAt)) : null),
+      opts.pick ? opts.pick : null,
+      opts.done
+        ? h('button', { type: 'button', class: 'wb-got', 'aria-label': it.n + ' arrived', title: 'Arrived', onclick: () => setLine(it, { status: 'got', gotAt: Date.now(), date: K.day(0) }) }, K.icon('check'))
+        : h('button', { type: 'button', class: 'wb-wipe', 'aria-label': 'Wipe ' + it.n + ' off the board', onclick: () => wipe(it) }, K.icon('close')));
+  }
+  function supPick(it) {
+    if (!K.me.admin || !sups().length) return null;
+    return K.select([['', 'Who sells it?']].concat(sups().map((s) => [s.id, s.name])), K.wbSupOf(it), (v) => {
+      setLine(it, { sup: v });
+      if (v) { const next = { list: sups(), map: Object.assign({}, smap(), { [key(it.n)]: v }) }; D.suppliers = next; K.db.doc('settings/suppliers').set(next).catch(K.writeFailed); }
+    }, { 'aria-label': 'Supplier for ' + it.n, class: 'input small wb-pick' });
   }
 
   K.V.orders = function () {
-    const cur = K.orderDay(), prev = K.orderDay(-1);
-    const date = ui.orderDate === prev ? prev : cur, isCur = date === cur;
-    const list = combined(date), board = D.boards[date];
+    const need = lines('need'), out = lines('ordered');
     const body = h('div', { class: 'page' });
-    body.append(K.pageHead('Whiteboard', null, h('div', { class: 'phead-side' }, h('p', { class: 'psub' }, 'Order written ' + K.sheetDate(date)),
-      K.seg([[cur, 'This order'], [prev, 'The one before']], date, (v) => { ui.orderDate = v; K.render(); }, { 'aria-label': 'Which order', class: 'seg on-dark' })), 'orders'));
-    const w = h('div', { class: 'wrap orders' });
+    body.append(K.pageHead('Whiteboard', need.length ? need.length + ' to order' + (out.length ? ' · ' + out.length + ' on the way' : '') : out.length ? out.length + ' on the way' : 'What the kitchen needs',
+      K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('chef'), 'Suppliers') : null, 'orders'));
+    const w = h('div', { class: 'wrap orders wbx' });
     body.append(w);
-    const grid = h('div', { class: 'orders-grid' });
-    w.append(grid);
-    const main = h('section', { class: 'block' });
-    grid.append(main);
+    ui.wbForm = ui.wbForm || { text: '', amt: '' };
+    w.append(h('section', { class: 'block wboard' }, writeForm(ui.wbForm)));
 
-    /* where we are on the order's clock */
-    const next = K.sheetDate(K.ymd(K.addDays(K.parseYmd(date), 1)));
-    main.append(h('div', { class: 'daystamp board-stamp' },
-      h('span', { class: 'ds-k' }, !isCur ? 'The order before' : 'Today’s order · open'),
-      h('b', { class: 'ds-d' }, K.sheetDate(date)),
-      h('span', { class: 'ds-t' }, !isCur ? 'Sent at 00:00 on ' + next + '.' : 'Write what we need until midnight. At 00:00 it goes to the chef and a clean board starts.')));
-
-    const wb = h('div', { class: 'wboard' + (list.length || isCur ? '' : ' empty') });
-    list.forEach((x) => wb.append(boardLine(x, isCur)));
-    if (isCur) wb.append(writeForm());
-    main.append(wb);
-    if (list.length && K.me.admin) {
-      main.append(h('div', { class: 'wb-send' },
-        h('button', { class: 'btn wide', type: 'button', onclick: () => emailOrder(date, list) }, K.icon('send'), 'Email me this order'),
-        K.kitchen().orderEmail ? null : h('p', { class: 'hint' }, 'Set the address in Settings → Kitchen rules.')));
+    /* to order, by supplier; the ones we cannot place yet last */
+    const groups = {};
+    need.forEach((i) => { const s = K.wbSupOf(i); (groups[s] = groups[s] || []).push(i); });
+    const order = sups().filter((s) => groups[s.id]).sort((a, b) => (urgent(b) ? 1 : 0) - (urgent(a) ? 1 : 0));
+    order.forEach((s) => {
+      const list = groups[s.id];
+      w.append(h('section', { class: 'block card wb-sup' + (urgent(s) ? ' due' : '') },
+        h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, s.name), when(s) ? h('span', { class: 'wb-due' }, when(s)) : null),
+          K.me.admin ? h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon('send'), s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
+        h('div', { class: 'wboard' }, list.map((i) => line(i, { pick: supPick(i) })))));
+    });
+    if (groups['']) {
+      w.append(h('section', { class: 'block card wb-sup none' },
+        h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, sups().length ? 'Who sells it?' : 'On the board'),
+          h('span', { class: 'wb-due' }, K.me.admin ? (sups().length ? 'Pick the supplier once; the board remembers it' : 'Add your suppliers to send ready messages') : 'The chefs order these'))),
+        h('div', { class: 'wboard' }, groups[''].map((i) => line(i, { pick: supPick(i) }))),
+        K.me.admin && !sups().length ? h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('plus'), 'Add a supplier') : null));
     }
+    if (!need.length) w.append(h('p', { class: 'none wb-empty' }, 'The board is clean. Write what runs low the moment you see it, from any page: the marker at the top.'));
 
-    const side = h('section', { class: 'block card board' },
-      h('div', { class: 'block-top' }, h('h2', { class: 'block-title' }, 'Photo of a paper list'),
-        isCur ? h('button', { class: 'btn small' + (board ? '' : ' primary'), type: 'button', disabled: !!ui.boardBusy, onclick: K.addBoardPhoto }, K.icon('camera'), ui.boardBusy ? 'Saving…' : board ? 'Replace' : 'Add photo') : null),
-      h('p', { class: 'muted' }, board ? 'Added ' + K.hm(board.at) + (K.nameOf(board.by) ? ' by ' + K.nameOf(board.by) : '') : isCur ? 'If someone wrote the order on paper, add a photo of it here.' : 'No photo for that order.'),
-      board ? h('a', { href: board.photo, target: '_blank', rel: 'noopener', class: 'board-link' }, h('img', { class: 'board-img', src: board.photo, alt: 'Photo of the kitchen whiteboard' })) : null);
-    grid.append(side);
-
-    /* each station's ingredient check sits under the board */
-    if (isCur) {
-      w.append(h('h2', { class: 'block-title ost-title' }, 'Check a station’s ingredients'), h('div', { class: 'ostations' }, K.STATIONS.map((s) => {
-        const d = K.orderFor(s[0], date);
-        return h('div', { class: 'ost card' + (d ? ' in' : '') }, h('span', { class: 'ost-name' }, K.icon(K.ST_ICON[s[0]]), s[1]),
-          h('span', { class: 'muted' }, d ? 'Written ' + K.hm(d.at) + (K.nameOf(d.by) ? ' by ' + K.nameOf(d.by) : '') + ' · ' + d.items.length + (d.items.length === 1 ? ' line' : ' lines') : 'Not checked yet'),
-          h('button', { class: 'btn small' + (d ? '' : ' primary'), type: 'button', onclick: () => K.startStock(s[0], false) }, d ? 'Change' : 'Check'));
-      })));
+    /* ordered, waiting for the delivery */
+    if (out.length) {
+      const og = {};
+      out.forEach((i) => { const s = i.sup || ''; (og[s] = og[s] || []).push(i); });
+      w.append(h('h2', { class: 'sec-title wb-way' }, 'On the way'));
+      Object.keys(og).forEach((sid) => {
+        const s = supById(sid), list = og[sid];
+        w.append(h('section', { class: 'block card wb-sup way' },
+          h('div', { class: 'wb-sup-head' }, h('h2', { class: 'block-title' }, s ? s.name : 'Ordered'),
+            h('button', { class: 'btn small', type: 'button', onclick: () => list.forEach((i) => setLine(i, { status: 'got', gotAt: Date.now(), date: K.day(0) })) }, K.icon('check'), 'All arrived')),
+          h('div', { class: 'wboard' }, list.map((i) => line(i, { done: true }))),
+          h('p', { class: 'hint' }, 'Tick each line as it arrives. Not delivered? Wipe the tick by writing it on the board again.')));
+      });
     }
     return { body: body };
+  };
+
+  /* ---------- the chefs' list of suppliers ---------- */
+  K.SHEETS.suppliers = function (S) {
+    S.list = S.list || K.clone(sups());
+    const save = () => {
+      const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' ? 'viber' : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim() }));
+      const ids = list.map((s) => s.id), map = {};
+      Object.keys(smap()).forEach((k) => { if (ids.includes(smap()[k])) map[k] = smap()[k]; });
+      D.suppliers = { list: list, map: map }; ui.sheet = null; K.render();
+      K.db.doc('settings/suppliers').set(D.suppliers).then(() => K.toast('Suppliers saved'), K.writeFailed);
+    };
+    const products = (id) => Object.keys(smap()).filter((k) => smap()[k] === id);
+    return K.sheet('Suppliers', h('div', { class: 'wb-sups' },
+      h('p', { class: 'muted' }, 'Who you order from, how, and by when. A reminder goes to the chefs an hour before the deadline on order days if something is still on the board.'),
+      S.list.map((s, i) => h('div', { class: 'card wb-supedit' },
+        K.field('Name', h('input', { class: 'input', value: s.name || '', placeholder: 'e.g. Fish – Ivan', oninput: (e) => { s.name = e.target.value; } })),
+        h('div', { class: 'two' },
+          K.field('Send by', K.seg([['whatsapp', 'WhatsApp'], ['viber', 'Viber']], s.app === 'viber' ? 'viber' : 'whatsapp', (v) => { s.app = v; K.render(); }, { 'aria-label': 'Send by', class: 'seg small-seg' })),
+          K.field('Phone', h('input', { class: 'input mono', value: s.phone || '', inputmode: 'tel', placeholder: '0888 123 456', oninput: (e) => { s.phone = e.target.value; } }))),
+        h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Order days'),
+          h('div', { class: 'rp-days' }, DAYS.map((d, j) => h('button', { type: 'button', class: 'chip', 'aria-pressed': (s.days || []).includes(j) ? 'true' : 'false', onclick: () => { const l = (s.days || []).slice(), k = l.indexOf(j); if (k >= 0) l.splice(k, 1); else l.push(j); s.days = l; K.render(); } }, d)))),
+        h('div', { class: 'two' },
+          K.field('Order by', h('input', { class: 'input mono', type: 'time', value: s.deadline || '', oninput: (e) => { s.deadline = e.target.value; } })),
+          K.field('Message starts', h('input', { class: 'input', value: s.greeting || '', placeholder: 'Здравейте!', oninput: (e) => { s.greeting = e.target.value; } }))),
+        products(s.id).length ? h('p', { class: 'muted' }, 'Sells: ' + products(s.id).join(', ')) : null,
+        h('button', { class: 'btn small danger', type: 'button', onclick: () => { if (!s.del) { s.del = true; K.render(); return; } S.list.splice(i, 1); K.render(); } }, s.del ? 'Tap again to remove' : 'Remove'))),
+      h('button', { class: 'btn wide', type: 'button', onclick: () => { S.list.push({ id: 's' + K.uid(), name: '', app: 'whatsapp', phone: '', days: [], deadline: '' }); K.render(); } }, K.icon('plus'), 'Add a supplier'),
+      h('button', { class: 'btn primary wide', type: 'button', onclick: save }, 'Save')), { wide: true });
   };
 })();
 

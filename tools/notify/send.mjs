@@ -72,9 +72,14 @@ function weekRange(wk) {
 await signIn();
 const started = Date.now();
 const state = await call('GET', 'settings/pushstate');
-const save = () => DRY ? null : call('PATCH', 'settings/pushstate', { fields: { since: { integerValue: String(started) } } });
+const prior = state ? unfields(state.fields || {}) : {};
+const reminded = prior.reminded && typeof prior.reminded === 'object' ? prior.reminded : {};
+const save = () => DRY ? null : call('PATCH', 'settings/pushstate', { fields: {
+  since: { integerValue: String(started) },
+  reminded: { mapValue: { fields: Object.fromEntries(Object.entries(reminded).map(([k, v]) => [k, { stringValue: String(v) }])) } },
+} });
 if (!state) { await save(); console.log('first run: notifications start from now'); process.exit(0); }
-const since = +unfields(state.fields || {}).since || started;
+const since = +prior.since || started;
 
 const today = sofia(new Date());
 const mon = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
@@ -92,15 +97,40 @@ for (const e of await list('events')) {
     url: SITE + '#events', tag: 'ev-' + e.id,
   });
 }
+/* the whiteboard: an hour before a supplier's order deadline, on its order days, remind the chefs of what is still on it */
+const sup = await call('GET', 'settings/suppliers');
+const sd = sup ? unfields(sup.fields || {}) : {}, supList = Array.isArray(sd.list) ? sd.list : [], supMap = sd.map || {};
+if (supList.length) {
+  const key = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const open = (await list('boards')).filter((d) => d.data.kind === 'item' && d.data.status === 'need');
+  const now = new Date(), parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now).map((p) => [p.type, p.value]));
+  const dayIdx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday), mins = +parts.hour * 60 + +parts.minute;
+  for (const s of supList) {
+    if (!s || !s.deadline || !(s.days || []).includes(dayIdx) || reminded[s.id] === today) continue;
+    const [hh, mm] = String(s.deadline).split(':').map(Number), dl = hh * 60 + (mm || 0);
+    if (mins < dl - 60 || mins >= dl) continue;
+    const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)]) === s.id);
+    if (!mine.length) continue;
+    reminded[s.id] = today;
+    msgs.push({ admins: true, title: s.name + ': order by ' + s.deadline, body: mine.length + ' on the whiteboard: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
+  }
+}
 if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
 
+/* who has the full rights: reminders to order go to them only */
+const chefs = new Set();
+if (msgs.some((m) => m.admins)) {
+  for (const m of await list('members')) if (['sous', 'admin', 'dev'].includes(m.data.role)) chefs.add(m.id);
+  const own = await call('GET', 'private/owner'); if (own) chefs.add(unfields(own.fields || {}).uid);
+}
 const subs = await list('pushsubs');
 console.log(msgs.length + ' to send to ' + subs.length + ' phones:', msgs.map((m) => m.title).join(' | '));
 let sent = 0, gone = 0, failed = 0;
 for (const s of subs) {
   for (const m of msgs) {
+    if (m.admins && !chefs.has(s.id)) continue;
     if (DRY) continue;
-    try { await webpush.sendNotification({ endpoint: s.data.endpoint, keys: s.data.keys }, JSON.stringify(m), { TTL: 86400, urgency: 'normal' }); sent++; } catch (err) {
+    try { await webpush.sendNotification({ endpoint: s.data.endpoint, keys: s.data.keys }, JSON.stringify({ title: m.title, body: m.body, url: m.url, tag: m.tag }), { TTL: 86400, urgency: 'normal' }); sent++; } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) { gone++; await call('DELETE', 'pushsubs/' + s.id).catch(() => {}); break; }
       failed++; console.error('push failed', err.statusCode || '', (err.body || err.message || '').slice(0, 200));
     }
