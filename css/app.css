@@ -2461,3 +2461,46 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-usual { display: grid; gap: 6px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--sup-c) 10%, var(--surface)); }
 .wb-usual ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-weight: 600; }
 .wb-topcheck { align-self: end; padding-bottom: 10px; }
+
+/* ---------- whiteboard, tight: plain rows, short headers ---------- */
+.wbx { gap: 10px; }
+.wb-write { padding: 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.wb-write .wb-form, .wb-quick .wb-form { margin: 0; padding: 0; border: 0; }
+.wb-form .wb-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 5.5em) auto auto; gap: 6px; align-items: center; }
+.wb-form .wb-row .btn { min-width: 44px; padding-inline: 10px; justify-content: center; }
+.wb-sup.themed { padding: 0; gap: 0; }
+.wb-sup.themed > :not(.wb-sup-head) { margin: 0; }
+.wb-sup.themed .wb-sup-head { min-height: 0; padding: 10px 12px; flex-wrap: nowrap; align-items: center; }
+.wb-sup.themed .wb-sup-head .block-title { font-size: 1.15rem; line-height: 1.1; }
+.wb-sup.themed .wb-due { font-size: .8rem; }
+.wb-kind { font-size: .62rem; }
+.wb-sup.themed .wb-sendbtn { flex: none; }
+.wb-sup.themed.due { box-shadow: 0 0 0 2px var(--sup-c), var(--shadow); }
+.wb-usual { margin: 0; padding: 8px 12px; border-radius: 0; background: color-mix(in srgb, var(--sup-c) 10%, var(--surface)); font-size: .92rem; line-height: 1.35; }
+.wbl { display: grid; }
+.wbr { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px 0 12px; border-top: 1px solid var(--line); }
+.wbl > .wbr:first-child { border-top: 0; }
+.wbr-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; padding: 8px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+button.wbr-main { cursor: pointer; }
+.wbr-n { font-weight: 700; }
+.wbr-q { color: var(--ink); font-family: var(--mono); font-size: .88rem; }
+.wbr-who { color: var(--muted); font-size: .78rem; }
+.wbr-btn { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.wbr-btn .ico { width: 16px; height: 16px; }
+.wbr-btn.got { border: 2px solid var(--ready); color: var(--ready); }
+.wbr.done .wbr-n { font-weight: 600; }
+.wbr-pick { max-width: 9.5em; min-height: 34px; padding: 4px 22px 4px 8px; font-size: .82rem; }
+.wb-sup.none { padding: 10px 0 0; gap: 6px; }
+.wb-sup.none .wb-sup-head { padding: 0 12px; }
+.wb-sup.way { padding: 0; gap: 0; }
+.wb-sup.way .wb-sup-head { padding: 10px 12px; }
+.wb-sup.way .hint { display: none; }
+.wb-scan { padding: 6px 40px 6px 6px; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; }
+.wb-scan-img { width: 40px; height: 40px; }
+.wb-scan > span > span { font-size: .82rem; }
+.wb-way { margin: 4px 0 -4px; font-size: 1.1rem; }
+.wb-sup.none .block-title, .wb-sup.way .block-title { font-size: 1.05rem; margin: 0; }
+.wb-sup.none .wb-due { font-size: .8rem; }
+.wb-sup.way .wb-sup-head { flex-wrap: nowrap; align-items: center; }
+.wb-sup.way .wb-sup-head .btn { flex: none; }
+.wb-usual b { font-weight: 700; }
