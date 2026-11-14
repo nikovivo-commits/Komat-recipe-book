@@ -23,7 +23,7 @@ const SCHEMA = {
 const PROMPT = `This is a photo taken in a restaurant kitchen (Komat, Sofia). It shows the whiteboard, or a piece of paper, where the cooks write what the kitchen needs to order from suppliers.
 
 List every product written on it that still needs ordering, one entry per product:
-- name: the product as written, in its original language and spelling (usually Bulgarian), lower case unless it is a brand. Fix only obvious slips of the pen.
+- name: the product in Bulgarian, lower case unless it is a brand, as the kitchen writes it. If it is written in Bulgarian keep it as written (fix only obvious slips of the pen). If it is written in English, give the usual Bulgarian kitchen word instead ("chives" → "лук резанец", "spring onion" → "пресен лук", "salad mix" → "салатен микс").
 - qty: the amount exactly as written (e.g. "2 кг", "3 бр", "1 каса"), or "" if no amount is written.
 - section: the heading of the column or block it is written under (the board is often split by supplier, e.g. "Зеленчук", "Месо", "Риба"), as written, or "" if none.
 Leave out anything crossed out, wiped or ticked off as already ordered, and anything that is not a product to order (dates, names, prep tasks, notes, drawings, the board's frame).

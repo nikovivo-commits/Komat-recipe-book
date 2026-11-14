@@ -163,9 +163,30 @@
   const theme = (s) => THEMES[s.kind] || THEMES.other;
 
   /* ---------- the message to the supplier ---------- */
+  /* the message goes out in Bulgarian: a name written in English becomes the kitchen's Bulgarian word */
+  const BG = {
+    'salad mix': 'салатен микс', 'chives': 'лук резанец', 'spring onion': 'пресен лук', 'spring onions': 'пресен лук', 'microgreens': 'микрозеленчуци', 'edible flowers': 'ядливи цветя',
+    'lemon': 'лимони', 'lemons': 'лимони', 'lime': 'лайм', 'limes': 'лайм', 'orange': 'портокали', 'oranges': 'портокали', 'potatoes': 'картофи', 'new potatoes': 'пресни картофи', 'onion': 'лук', 'onions': 'лук',
+    'red onion': 'червен лук', 'shallots': 'шалот', 'garlic': 'чесън', 'carrots': 'моркови', 'tomatoes': 'домати', 'cherry tomatoes': 'чери домати', 'cucumber': 'краставици', 'cucumbers': 'краставици',
+    'avocado': 'авокадо', 'avocados': 'авокадо', 'parsley': 'магданоз', 'dill': 'копър', 'basil': 'босилек', 'mint': 'мента', 'coriander': 'кориандър', 'thyme': 'мащерка', 'rosemary': 'розмарин',
+    'spinach': 'спанак', 'rocket': 'рукола', 'arugula': 'рукола', 'celery': 'целина', 'celeriac': 'целина', 'leek': 'праз', 'leeks': 'праз', 'fennel': 'резене', 'ginger': 'джинджифил', 'beetroot': 'цвекло',
+    'pumpkin': 'тиква', 'pumpkin seeds': 'тиквено семе', 'hazelnuts': 'лешник', 'walnuts': 'орехи', 'broccolini': 'броколини', 'broccoli': 'броколи', 'cauliflower': 'карфиол', 'courgettes': 'тиквички', 'zucchini': 'тиквички',
+    'peppers': 'чушки', 'chilli': 'люти чушки', 'apples': 'ябълки', 'green apples': 'зелени ябълки', 'strawberries': 'ягоди', 'raspberries': 'малини', 'blueberries': 'боровинки',
+    'mushrooms': 'гъби', 'morels': 'смръчкули', 'shiitake': 'шийтаке', "lion's mane": 'лъвска грива', 'butter': 'масло', 'cream': 'сметана', 'milk': 'мляко', 'eggs': 'яйца', 'yogurt': 'кисело мляко',
+    'flour': 'брашно', 'salt': 'сол', 'sugar': 'захар', 'olive oil': 'зехтин', 'oil': 'олио', 'sunflower oil': 'олио', 'vinegar': 'оцет', 'rice': 'ориз', 'buckwheat': 'елда', 'tomato paste': 'доматено пюре',
+    'canned tomatoes': 'консервирани домати', 'baking soda': 'сода бикарбонат', 'baking powder': 'бакпулвер', 'bread': 'хляб', 'beef': 'говеждо', 'bones': 'кости', 'beef bones': 'говежди кости', 'pork': 'свинско', 'chicken': 'пилешко',
+  };
+  let trBack = null;
+  function bgName(n) {
+    const t = String(n || '').trim(), k = t.toLowerCase();
+    if (!t || /[\u0400-\u04FF]/.test(t)) return t;
+    if (BG[k]) return BG[k];
+    if (!trBack) { trBack = {}; const TR = window.KOMAT_TR || {}; Object.keys(TR).forEach((bg) => { const en = String(TR[bg] || '').trim().toLowerCase(); if (bg.length < 40 && en && en.length < 40 && !trBack[en]) trBack[en] = bg; }); }
+    return trBack[k] || t;
+  }
   function message(s, list, withUsual) {
     /* the way the kitchen writes it: "Здравейте, за утре" and then one line each, amount first ("2бр латинка") */
-    const rows = (withUsual ? usual(s) : []).concat(list.map((i) => (i.qty ? i.qty + ' ' : '') + i.n));
+    const rows = (withUsual ? usual(s) : []).concat(list.map((i) => (i.qty ? i.qty + ' ' : '') + bgName(i.n)));
     if (s.app === 'shop') return rows.join('\n'); /* a shop (Metro): just the list to take along */
     return (s.greeting || 'Здравейте, за утре') + '\n' + rows.join('\n');
   }
@@ -174,7 +195,10 @@
     const s = supById(S.sup), list = lines('need').filter((i) => K.wbSupOf(i) === S.sup);
     if (!s) return null;
     if (S.withUsual == null) S.withUsual = !!usualDue(s);
-    if (S.text == null) S.text = message(s, list, S.withUsual);
+    if (S.text == null || !S.edited) S.text = message(s, list, S.withUsual);
+    const noQty = list.filter((i) => !i.qty);
+    const qtyBox = noQty.length ? h('div', { class: 'wb-noqty' }, h('span', { class: 'label' }, 'No amount yet'),
+      noQty.map((i) => h('label', { class: 'wb-noqty-row' }, h('span', null, i.n), h('input', { class: 'input small', placeholder: 'how much', autocomplete: 'off', onchange: (e) => { const q = e.target.value.trim(); if (q) { setLine(i, { qty: q }); S.edited = false; K.render(); } } })))) : null;
     const viber = s.app === 'viber', shop = s.app === 'shop';
     const go = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
@@ -193,12 +217,14 @@
     if (shop) {
       return K.sheet('Shopping list · ' + s.name, h('div', { class: 'wb-sendbox' },
         h('p', { class: 'muted' }, (s.link ? 'The list is copied and ' + s.name + '’s website opens to order the delivery.' : 'Copy it for whoever goes to ' + s.name + '.') + ' The lines move to On the way; tick them when they arrive.'),
-        h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; } }, S.text),
+        qtyBox,
+        h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
         h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
     }
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
       h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
-      h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; } }, S.text),
+      qtyBox,
+      h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
       h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
   };
@@ -208,13 +234,24 @@
   function line(it, opts) {
     const who = opts.done && it.orderedAt ? 'ordered ' + K.hm(it.orderedAt) : [it.st && K.ST[it.st] ? K.ST[it.st].split(' ')[0] : '', first(it.by), it.via === 'photo' ? 'photo' : ''].filter(Boolean).join(' · ');
     const main = [h('span', { class: 'wbr-n' }, it.n), it.qty ? h('span', { class: 'wbr-q' }, it.qty) : null, who ? h('span', { class: 'wbr-who' }, who) : null];
+    const addQ = !it.qty && !opts.done ? h('button', { type: 'button', class: 'wbr-addq', 'aria-label': 'How much ' + it.n, onclick: () => { ui.sheet = { type: 'wbqty', id: it.id, qty: '' }; K.render(); setTimeout(() => { const el = document.getElementById('wbq-in'); if (el) el.focus(); }, 60); } }, '+ amount') : null;
     return h('div', { class: 'wbr' + (opts.done ? ' done' : '') },
       K.wbCanOrder() && !opts.done ? h('button', { type: 'button', class: 'wbr-main', 'aria-label': 'Change ' + it.n, onclick: () => { ui.sheet = { type: 'wbline', id: it.id, n: it.n, qty: it.qty || '', sup: K.wbSupOf(it) }; K.render(); } }, main) : h('span', { class: 'wbr-main' }, main),
-      opts.pick || null,
+      addQ, opts.pick || null,
       opts.done
         ? h('button', { type: 'button', class: 'wbr-btn got', 'aria-label': it.n + ' arrived', title: 'Arrived', onclick: () => setLine(it, { status: 'got', gotAt: Date.now(), date: K.day(0) }) }, K.icon('check'))
         : h('button', { type: 'button', class: 'wbr-btn', 'aria-label': 'Wipe ' + it.n + ' off the board', onclick: () => wipe(it) }, K.icon('close')));
   }
+  /* how much: a quick box for a line written (or read from a photo) without an amount */
+  K.SHEETS.wbqty = function (S) {
+    const it = (D.wb || []).find((x) => x.id === S.id);
+    if (!it) return null;
+    const save = (e) => { if (e) e.preventDefault(); const q = (S.qty || '').trim(); if (q) setLine(it, { qty: q }); ui.sheet = null; K.render(); };
+    return K.sheet('How much ' + it.n + '?', h('form', { class: 'wb-sendbox', onsubmit: save },
+      h('input', { class: 'input big', id: 'wbq-in', value: S.qty, placeholder: 'e.g. 2 кг, 3бр, 1 каса', autocomplete: 'off', enterkeyhint: 'done', oninput: (e) => { S.qty = e.target.value; } }),
+      h('div', { class: 'rp-days' }, ['1бр', '2бр', '3бр', '5бр', '1 кг', '2 кг', '5 кг', '1 каса'].map((q) => h('button', { type: 'button', class: 'chip', onclick: () => { S.qty = q; save(); } }, q))),
+      h('button', { class: 'btn primary wide', type: 'submit' }, 'Save')));
+  };
   K.SHEETS.wbline = function (S) {
     const it = (D.wb || []).find((x) => x.id === S.id);
     if (!it) return null;
