@@ -87,6 +87,15 @@ const since = +prior.since || started;
 
 const today = sofia(new Date());
 
+/* guests: someone who joins with the kitchen code and "(гост)" or "(guest)" in their name is made a Viewer
+   (reads everything, changes nothing) on the next run, a minute at most */
+for (const m of await list('members')) {
+  if (m.data.role === 'cook' && /\((гост|guest|viewer)\)/i.test(String(m.data.name || ''))) {
+    if (!DRY) await call('PATCH', 'members/' + m.id + '?updateMask.fieldPaths=role', { fields: { role: { stringValue: 'viewer' } } });
+    console.log('guest ' + m.data.name + ' is now a viewer');
+  }
+}
+
 /* photos of the whiteboard or a paper list, taken in the app: Claude reads each one and its lines go on the board */
 const boards = await list('boards');
 const supDoc = await call('GET', 'settings/suppliers');
