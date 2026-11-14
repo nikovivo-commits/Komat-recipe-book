@@ -27,6 +27,7 @@ List every product written on it that still needs ordering, one entry per produc
 - qty: the amount exactly as written (e.g. "2 кг", "3 бр", "1 каса"), or "" if no amount is written.
 - section: the heading of the column or block it is written under (the board is often split by supplier, e.g. "Зеленчук", "Месо", "Риба"), as written, or "" if none.
 Leave out anything crossed out, wiped or ticked off as already ordered, and anything that is not a product to order (dates, names, prep tasks, notes, drawings, the board's frame).
+The block at the bottom of the board, under a long horizontal line across it, is usually the day's lunch menu (dishes such as "крем супа от тиква", often with a mark like * or ✓ in front): it is not an order, leave all of it out.
 If the photo shows no such list, return no items.
 note: one short sentence in English about anything you could not read with confidence, or "" if everything was clear.`;
 
