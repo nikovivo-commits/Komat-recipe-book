@@ -7798,7 +7798,7 @@ window.KOMAT_PART_ART = [
     if (!days.length) return s.deadline ? 'Order by ' + dlText(s.deadline) : '';
     const t = todayIdx(), now = new Date();
     const open = days.includes(t) && (now.getHours() * 60 + now.getMinutes()) < dlMin(s.deadline);
-    if (open) return 'Order by ' + (s.deadline ? dlText(s.deadline) : 'tonight') + ' today';
+    if (open) return s.deadline ? 'Order by ' + dlText(s.deadline) + ' today' : 'Order today';
     for (let k = 1; k <= 7; k++) { const d = (t + k) % 7; if (days.includes(d)) return 'Next order: ' + (k === 1 ? 'tomorrow' : DAYS[d]) + (s.deadline ? ' by ' + dlText(s.deadline) : ''); }
     return '';
   }
