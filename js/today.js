@@ -339,7 +339,7 @@
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
       cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
       cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
-      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Write it on the whiteboard') : null));
+      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Add it to Ordering') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
     /* the kitchen's printable documents, under everything else */
     if (K.docsBox) w.append(K.docsBox());

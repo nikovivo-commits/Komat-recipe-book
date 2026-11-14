@@ -206,7 +206,7 @@
   };
 
   /* ---------- problem reports ---------- */
-  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
+  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Ordering', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
   K.SHEETS.bug = function (B) {
     const where = (VIEW_NAMES[ui.view] || ui.view) + (ui.view === 'today' || ui.view === 'stock' ? ' · ' + K.ST[K.getStation()] : '') + (ui.view === 'recipe' && K.find(ui.id) ? ' · ' + K.find(ui.id).name : '');
     const send = () => {

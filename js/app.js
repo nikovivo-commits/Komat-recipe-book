@@ -13,7 +13,7 @@
   };
   const ui = K.ui;
 
-  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Whiteboard', 'board'], ['schedule', 'Brigade', 'rota'], ['events', 'Events', 'event']];
+  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Ordering', 'board'], ['schedule', 'Brigade', 'rota'], ['events', 'Events', 'event']];
   const TAB_OF = { recipe: 'recipes', edit: 'recipes', brand: 'recipes', stock: 'today', lists: 'today', rotaplan: 'schedule' };
 
   /* ---------- navigation ---------- */
@@ -178,7 +178,7 @@
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
       K.langSwitch(),
-      K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Write on the whiteboard', title: 'Write on the whiteboard', onclick: K.wbQuick }, K.icon('board')) : null,
+      K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Add to the order list', title: 'Add to the order list', onclick: K.wbQuick }, K.icon('board')) : null,
       h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Settings', onclick: () => { ui.sheet = { type: 'settings' }; render(); } }, K.icon('gear'))));
   }
   /* the top bar for sub-pages: back, title, actions */

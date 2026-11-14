@@ -156,7 +156,7 @@ if (supList.length) {
     const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)] || supGuess(i.data.n)) === s.id);
     if (!mine.length) continue;
     reminded[s.id] = today;
-    msgs.push({ admins: true, title: s.name + ': order by ' + (s.deadline === '00:00' ? 'midnight' : s.deadline), body: mine.length + ' on the whiteboard: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
+    msgs.push({ admins: true, title: s.name + ': order by ' + (s.deadline === '00:00' ? 'midnight' : s.deadline), body: mine.length + ' in Ordering: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
   }
 }
 if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }

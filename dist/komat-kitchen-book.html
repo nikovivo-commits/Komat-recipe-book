@@ -2521,6 +2521,9 @@ button.wbr-main { cursor: pointer; }
 .wb-histcard { display: grid; gap: 6px; padding: 10px 12px; border-left: 4px solid var(--sup-c, var(--line)); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
 .wb-histhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; }
 .wb-histcard ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.wb-date { display: grid; gap: 2px; padding: 2px 2px 0; }
+.wb-date-k { color: var(--apron); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.wb-date b { font: 700 2rem/1 var(--display); }
 
 </style>
 <div id="app"></div>
@@ -5536,7 +5539,7 @@ window.KOMAT_PART_ART = [
   };
   const ui = K.ui;
 
-  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Whiteboard', 'board'], ['schedule', 'Brigade', 'rota'], ['events', 'Events', 'event']];
+  const TABS = [['recipes', 'Recipes', 'book'], ['today', 'Today', 'today'], ['orders', 'Ordering', 'board'], ['schedule', 'Brigade', 'rota'], ['events', 'Events', 'event']];
   const TAB_OF = { recipe: 'recipes', edit: 'recipes', brand: 'recipes', stock: 'today', lists: 'today', rotaplan: 'schedule' };
 
   /* ---------- navigation ---------- */
@@ -5701,7 +5704,7 @@ window.KOMAT_PART_ART = [
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
       K.langSwitch(),
-      K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Write on the whiteboard', title: 'Write on the whiteboard', onclick: K.wbQuick }, K.icon('board')) : null,
+      K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Add to the order list', title: 'Add to the order list', onclick: K.wbQuick }, K.icon('board')) : null,
       h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Settings', onclick: () => { ui.sheet = { type: 'settings' }; render(); } }, K.icon('gear'))));
   }
   /* the top bar for sub-pages: back, title, actions */
@@ -5814,7 +5817,7 @@ window.KOMAT_PART_ART = [
   const PAGE = { today: 'today', orders: 'orders', schedule: 'schedule-rota', events: 'events' };
   /* the recipe book opens on a different dish each day */
   const DAILY = ['recipes', 'salmon', 'soup', 'chocolate', 'cauliflower', 'fishcakes', 'sandwiches', 'herring'];
-  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Whiteboard'], ['schedule', 'The Brigade'], ['events', 'Events']];
+  K.PAGE_PHOTO_TABS = [['recipes', 'Recipes'], ['today', 'Today'], ['orders', 'Ordering'], ['schedule', 'The Brigade'], ['events', 'Events']];
 
   K.defaultPagePhoto = function (tab) {
     if (tab === 'recipes') {
@@ -7264,7 +7267,7 @@ window.KOMAT_PART_ART = [
       cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
       cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
       cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
-      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Write it on the whiteboard') : null));
+      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Add it to Ordering') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
     /* the kitchen's printable documents, under everything else */
     if (K.docsBox) w.append(K.docsBox());
@@ -7779,7 +7782,7 @@ window.KOMAT_PART_ART = [
         const id = 'scan' + K.uid(), doc = { kind: 'scan', status: 'pending', photo: r.id, by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now(), date: K.day(0) };
         D.wbScans = (D.wbScans || []).concat([Object.assign({ id: id }, doc)]);
         return K.db.doc('boards/' + id).set(doc);
-      }).then(() => { ui.wbPhotoBusy = false; K.render(); K.toast('Photo saved. Its lines appear on the board in a minute or two.'); },
+      }).then(() => { ui.wbPhotoBusy = false; K.render(); K.toast('Photo saved. Its lines appear in Ordering in a minute or two.'); },
         (e) => { ui.wbPhotoBusy = false; K.render(); K.writeFailed(e); });
     });
   };
@@ -7801,12 +7804,12 @@ window.KOMAT_PART_ART = [
   K.wbQuick = function () { ui.sheet = { type: 'wbadd', f: { text: '', amt: '' } }; K.render(); setTimeout(() => { const el = document.getElementById('wb-in'); if (el) el.focus(); }, 60); };
   K.SHEETS.wbadd = function (S) {
     const open = lines('need');
-    return K.sheet('Write on the whiteboard', h('div', { class: 'wb-quick' },
-      h('p', { class: 'muted' }, 'Something running low or missing? Write it; the chefs order it.'),
+    return K.sheet('Add to the order list', h('div', { class: 'wb-quick' },
+      h('p', { class: 'muted' }, 'Something running low or missing? Add it; it gets ordered.'),
       writeForm(S.f, null, true),
-      S.f.last ? h('p', { class: 'wb-ok' }, K.icon('check'), 'On the board: ' + S.f.last + '. Anything else?') : null,
-      open.length ? h('p', { class: 'muted' }, open.length + (open.length === 1 ? ' thing' : ' things') + ' on the board: ' + open.slice(-6).map((i) => i.n).join(', ') + (open.length > 6 ? '…' : '')) : null,
-      h('div', { class: 'btns' }, h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.go('orders'); } }, 'See the whole board', K.icon('next')))));
+      S.f.last ? h('p', { class: 'wb-ok' }, K.icon('check'), 'Added: ' + S.f.last + '. Anything else?') : null,
+      open.length ? h('p', { class: 'muted' }, open.length + (open.length === 1 ? ' thing' : ' things') + ' on the list: ' + open.slice(-6).map((i) => i.n).join(', ') + (open.length > 6 ? '…' : '')) : null,
+      h('div', { class: 'btns' }, h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.go('orders'); } }, 'Open Ordering', K.icon('next')))));
   };
 
   /* ---------- a supplier's day and deadline ---------- */
@@ -7933,7 +7936,6 @@ window.KOMAT_PART_ART = [
   const sentOn = (day) => (D.wbSent || []).filter((x) => x.date === day).sort((a, b) => (a.at || 0) - (b.at || 0));
   K.SHEETS.wbhist = function (S) {
     const day = K.day(S.day || 0), list = sentOn(day);
-    const nice = K.parseYmd(day).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
     const rows = (x) => {
       const sp = supById(x.sup), lines = String(x.text || '').split('\n').map((l) => l.trim()).filter(Boolean);
       const greet = ((sp && sp.greeting) || 'Здравейте').toLowerCase().slice(0, 9);
@@ -7941,7 +7943,7 @@ window.KOMAT_PART_ART = [
     };
     return K.sheet('Ordered ' + (S.day === -1 ? 'yesterday' : 'today'), h('div', { class: 'wb-sendbox' },
       K.seg([[-1, 'Yesterday'], [0, 'Today']], S.day, (v) => { S.day = v; K.render(); }, { 'aria-label': 'Which day', class: 'seg' }),
-      h('p', { class: 'muted' }, nice + (list.length ? ' · ' + list.length + (list.length === 1 ? ' order' : ' orders') : '')),
+      h('div', { class: 'wb-date' }, h('span', { class: 'wb-date-k' }, (S.day === -1 ? 'Yesterday' : 'Today') + (list.length ? ' · ' + list.length + (list.length === 1 ? ' order' : ' orders') : '')), h('b', null, K.sheetDate(day))),
       list.length ? list.map((x) => {
         const sp = supById(x.sup), th = sp ? theme(sp) : THEMES.other;
         return h('section', { class: 'wb-histcard', style: '--sup-c:' + th[1] },
@@ -8003,11 +8005,13 @@ window.KOMAT_PART_ART = [
   K.V.orders = function () {
     const need = lines('need'), out = lines('ordered');
     const body = h('div', { class: 'page' });
-    body.append(K.pageHead('Whiteboard', need.length ? need.length + ' to order' : 'What the kitchen needs',
+    body.append(K.pageHead('Ordering', need.length ? need.length + ' to order' : 'What the kitchen needs',
       K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('chef'), 'Suppliers') : null, 'orders'));
     const w = h('div', { class: 'wrap orders wbx' });
     body.append(w);
     ui.wbForm = ui.wbForm || { text: '', amt: '' };
+    /* the day, the way Today shows it: orders written today go out for tomorrow */
+    w.append(h('div', { class: 'wb-date' }, h('span', { class: 'wb-date-k' }, 'Today · ordering for ' + K.sheetDate(K.day(1))), h('b', null, K.sheetDate(K.day(0)))));
     w.append(h('section', { class: 'wb-write' }, writeForm(ui.wbForm, null, true), ui.wbPhotoBusy ? h('p', { class: 'muted' }, 'Saving the photo…') : null));
     const yN = sentOn(K.day(-1)).length, tN = sentOn(K.day(0)).length;
     w.append(h('div', { class: 'wb-hist' },
@@ -8038,7 +8042,7 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'wbl' }, groups[''].map((i) => line(i, { pick: supPick(i) }))),
         K.me.admin && !sups().length ? h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('plus'), 'Add a supplier') : null));
     }
-    if (!need.length && !order.length) w.append(h('p', { class: 'none wb-empty' }, 'The board is clean. Write what runs low the moment you see it, from any page: the marker at the top.'));
+    if (!need.length && !order.length) w.append(h('p', { class: 'none wb-empty' }, 'Nothing to order. Write what runs low the moment you see it, from any page: the button at the top.'));
 
     return { body: body };
   };
@@ -10275,7 +10279,7 @@ window.KOMAT_PART_ART = [
   };
 
   /* ---------- problem reports ---------- */
-  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Whiteboard', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
+  const VIEW_NAMES = { recipes: 'Recipes', recipe: 'Recipe', edit: 'Edit recipe', today: 'Today', stock: 'Order check', lists: 'Edit list', orders: 'Ordering', schedule: 'The Brigade', events: 'Events', brand: 'Branding' };
   K.SHEETS.bug = function (B) {
     const where = (VIEW_NAMES[ui.view] || ui.view) + (ui.view === 'today' || ui.view === 'stock' ? ' · ' + K.ST[K.getStation()] : '') + (ui.view === 'recipe' && K.find(ui.id) ? ' · ' + K.find(ui.id).name : '');
     const send = () => {
