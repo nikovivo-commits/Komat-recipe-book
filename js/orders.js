@@ -114,13 +114,16 @@
 
   /* ---------- a supplier's day and deadline ---------- */
   const todayIdx = () => (new Date().getDay() + 6) % 7;
+  /* a deadline in minutes from midnight; 00:00 means midnight at the end of the day */
+  const dlMin = (t) => { const [hh, mm] = String(t || '23:59').split(':').map(Number); const m = (hh || 0) * 60 + (mm || 0); return m === 0 ? 1440 : m; };
+  const dlText = (t) => (t === '00:00' ? 'midnight' : t);
   function when(s) {
     const days = (s.days || []).slice().sort();
-    if (!days.length) return s.deadline ? 'Order by ' + s.deadline : '';
-    const t = todayIdx(), now = new Date(), [hh, mm] = String(s.deadline || '23:59').split(':').map(Number);
-    const open = days.includes(t) && (now.getHours() * 60 + now.getMinutes()) < hh * 60 + (mm || 0);
-    if (open) return 'Order by ' + (s.deadline || 'tonight') + ' today';
-    for (let k = 1; k <= 7; k++) { const d = (t + k) % 7; if (days.includes(d)) return 'Next order: ' + (k === 1 ? 'tomorrow' : DAYS[d]) + (s.deadline ? ' by ' + s.deadline : ''); }
+    if (!days.length) return s.deadline ? 'Order by ' + dlText(s.deadline) : '';
+    const t = todayIdx(), now = new Date();
+    const open = days.includes(t) && (now.getHours() * 60 + now.getMinutes()) < dlMin(s.deadline);
+    if (open) return 'Order by ' + (s.deadline ? dlText(s.deadline) : 'tonight') + ' today';
+    for (let k = 1; k <= 7; k++) { const d = (t + k) % 7; if (days.includes(d)) return 'Next order: ' + (k === 1 ? 'tomorrow' : DAYS[d]) + (s.deadline ? ' by ' + dlText(s.deadline) : ''); }
     return '';
   }
   const urgent = (s) => /today/.test(when(s));
@@ -128,8 +131,8 @@
   const openToday = (s) => {
     if ((s.days || []).length && !s.days.includes(todayIdx())) return false;
     if (!s.deadline) return true;
-    const now = new Date(), [hh, mm] = String(s.deadline).split(':').map(Number);
-    return now.getHours() * 60 + now.getMinutes() < hh * 60 + (mm || 0);
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes() < dlMin(s.deadline);
   };
   const sentToday = (s) => (D.wbSent || []).some((x) => x.sup === s.id && x.date === K.day(0));
   const usual = (s) => String(s.usual || '').split('\n').map((x) => x.trim()).filter(Boolean);

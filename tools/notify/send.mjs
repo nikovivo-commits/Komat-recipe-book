@@ -151,12 +151,12 @@ if (supList.length) {
   const dayIdx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday), mins = +parts.hour * 60 + +parts.minute;
   for (const s of supList) {
     if (!s || !s.deadline || !(s.days || []).includes(dayIdx) || reminded[s.id] === today) continue;
-    const [hh, mm] = String(s.deadline).split(':').map(Number), dl = hh * 60 + (mm || 0);
+    const [hh, mm] = String(s.deadline).split(':').map(Number), dl = (hh * 60 + (mm || 0)) || 1440; /* 00:00 means midnight */
     if (mins < dl - 60 || mins >= dl) continue;
     const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)] || supGuess(i.data.n)) === s.id);
     if (!mine.length) continue;
     reminded[s.id] = today;
-    msgs.push({ admins: true, title: s.name + ': order by ' + s.deadline, body: mine.length + ' on the whiteboard: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
+    msgs.push({ admins: true, title: s.name + ': order by ' + (s.deadline === '00:00' ? 'midnight' : s.deadline), body: mine.length + ' on the whiteboard: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
   }
 }
 if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
