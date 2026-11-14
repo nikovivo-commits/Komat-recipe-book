@@ -115,7 +115,8 @@
     box.hidden = false;
     document.body.classList.add('toasting');
     clearTimeout(toastT);
-    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 5000 : 3200);
+    /* short, so it never sits over what you are doing */
+    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 3000 : 2000);
   };
 
   /* ---------- icons (24px, stroke) ---------- */

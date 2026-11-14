@@ -2524,6 +2524,10 @@ button.wbr-main { cursor: pointer; }
 .wb-date { display: grid; gap: 2px; padding: 2px 2px 0; }
 .wb-date-k { color: var(--apron); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .wb-date b { font: 700 2rem/1 var(--display); }
+/* with a sheet open (and the keyboard up) a message shows at the top, away from what you are typing */
+body.locked .toast { top: calc(env(safe-area-inset-top, 0px) + 10px); bottom: auto; }
+@keyframes toastdown { from { opacity: 0; transform: translateY(-18px) scale(.96); } }
+body.locked .toast:not([hidden]) { animation-name: toastdown; }
 
 </style>
 <div id="app"></div>
@@ -3705,7 +3709,8 @@ window.KOMAT_PART_ART = [
     box.hidden = false;
     document.body.classList.add('toasting');
     clearTimeout(toastT);
-    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 5000 : 3200);
+    /* short, so it never sits over what you are doing */
+    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 3000 : 2000);
   };
 
   /* ---------- icons (24px, stroke) ---------- */
