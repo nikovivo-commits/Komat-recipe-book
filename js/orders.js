@@ -125,19 +125,37 @@
     return '';
   }
   const urgent = (s) => /today/.test(when(s));
+  /* can we order from them today: an order day (or no days set) and before the deadline */
+  const openToday = (s) => {
+    if ((s.days || []).length && !s.days.includes(todayIdx())) return false;
+    if (!s.deadline) return true;
+    const now = new Date(), [hh, mm] = String(s.deadline).split(':').map(Number);
+    return now.getHours() * 60 + now.getMinutes() < hh * 60 + (mm || 0);
+  };
+  const sentToday = (s) => (D.wbSent || []).some((x) => x.sup === s.id && x.date === K.day(0));
+  const usual = (s) => String(s.usual || '').split('\n').map((x) => x.trim()).filter(Boolean);
+  const usualDue = (s) => !s.paused && usual(s).length && openToday(s) && !sentToday(s);
+  /* what each supplier brings: the colour of their card and the photo behind its name */
+  const THEMES = {
+    greens: ['Greens', '#2E7A4E', 'microgreens'], bread: ['Bread', '#A86F32', 'bread'], veg: ['Vegetables & fruit', '#4F7D2A', 'carrots'],
+    meat: ['Meat', '#9B2C24', 'minced-veal'], charcuterie: ['Charcuterie & cheese', '#7E3F33', 'pancetta'], mushrooms: ['Mushrooms', '#65503C', 'dried-morels'],
+    dairy: ['Dairy', '#A07E14', 'katyk'], pantry: ['Oil & pantry', '#5E6B22', 'olive-oil'], pastry: ['Pastry & stabilisers', '#5D4F86', 'xanthan'], other: ['Other', '#3A3B3A', ''],
+  };
+  K.WB_THEMES = THEMES;
+  const theme = (s) => THEMES[s.kind] || THEMES.other;
 
   /* ---------- the message to the supplier ---------- */
-  function message(s, list) {
-    const d = K.addDays(K.parseYmd(K.day(0)), 1);
-    const day = d.toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'numeric' });
-    return (s.greeting || 'Здравейте!') + ' Поръчка за Комат за утре (' + day + '):\n' +
-      list.map((i) => '• ' + i.n + (i.qty ? ' – ' + i.qty : '')).join('\n') + '\nБлагодаря!';
+  function message(s, list, withUsual) {
+    /* the way the kitchen writes it: "Здравейте, за утре" and then one line each, amount first ("2бр латинка") */
+    const rows = (withUsual ? usual(s) : []).concat(list.map((i) => (i.qty ? i.qty + ' ' : '') + i.n));
+    return (s.greeting || 'Здравейте, за утре') + '\n' + rows.join('\n');
   }
   const phoneDigits = (p) => { let d = String(p || '').replace(/[^\d+]/g, ''); if (d.startsWith('+')) d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = '359' + d.slice(1); return d; };
   K.SHEETS.wbsend = function (S) {
     const s = supById(S.sup), list = lines('need').filter((i) => K.wbSupOf(i) === S.sup);
     if (!s) return null;
-    if (S.text == null) S.text = message(s, list);
+    if (S.withUsual == null) S.withUsual = !!usualDue(s);
+    if (S.text == null) S.text = message(s, list, S.withUsual);
     const viber = s.app === 'viber';
     const go = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
@@ -146,8 +164,12 @@
       if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
       const at = Date.now(), ids = list.map((i) => i.id);
       list.forEach((i) => setLine(i, { status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }));
+      /* remember it went today, so the usual order does not ask again */
+      const sid = 'sent' + K.uid(), sent = { kind: 'sent', sup: S.sup, date: K.day(0), at: at, by: K.me.id || '', text: S.text };
+      D.wbSent = (D.wbSent || []).concat([Object.assign({ id: sid }, sent)]);
+      K.db.doc('boards/' + sid).set(sent).catch(K.writeFailed);
       ui.sheet = null; K.render();
-      K.toast(list.length + (list.length === 1 ? ' line' : ' lines') + ' ordered from ' + s.name, { undo: () => D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })) });
+      K.toast('Ordered from ' + s.name, { undo: () => { D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })); D.wbSent = D.wbSent.filter((x) => x.id !== sid); K.db.doc('boards/' + sid).delete().catch(() => {}); K.render(); } });
     };
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
       h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
@@ -192,14 +214,17 @@
     /* to order, by supplier; the ones we cannot place yet last */
     const groups = {};
     need.forEach((i) => { const s = K.wbSupOf(i); (groups[s] = groups[s] || []).push(i); });
-    const order = sups().filter((s) => groups[s.id]).sort((a, b) => (urgent(b) ? 1 : 0) - (urgent(a) ? 1 : 0));
+    /* suppliers with lines, and the ones whose usual order is due today; pinned and due first */
+    const rank = (s) => (usualDue(s) && s.top ? 0 : usualDue(s) || (groups[s.id] && openToday(s) && (s.days || []).length) ? 1 : groups[s.id] ? 2 : 3);
+    const order = sups().filter((s) => groups[s.id] || usualDue(s)).sort((a, b) => rank(a) - rank(b) || String(a.deadline || '99').localeCompare(String(b.deadline || '99')));
     order.forEach((s) => {
-      const list = groups[s.id];
-      w.append(h('section', { class: 'block card wb-sup' + (urgent(s) ? ' due' : '') },
-        h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, s.name), when(s) ? h('span', { class: 'wb-due' }, when(s)) : null),
-          K.me.admin ? h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon('send'), s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
-        s.sells ? h('p', { class: 'wb-sells' }, s.sells) : null,
-        h('div', { class: 'wboard' }, list.map((i) => line(i, { pick: supPick(i) })))));
+      const list = groups[s.id] || [], th = theme(s), u = usualDue(s) ? usual(s) : [];
+      w.append(h('section', { class: 'block card wb-sup themed' + (urgent(s) || u.length ? ' due' : '') + (s.top && u.length ? ' pinned' : ''), style: '--sup-c:' + th[1] + ';--sup-img:' + (th[2] ? 'url("' + new URL('assets/photos/produce/' + th[2] + '.jpg', document.baseURI).href + '")' : 'none') },
+        h('div', { class: 'wb-sup-head' }, h('div', null, h('span', { class: 'wb-kind' }, th[0]), h('h2', { class: 'block-title' }, s.name),
+          sentToday(s) ? h('span', { class: 'wb-due' }, K.icon('check'), 'Sent today') : when(s) || u.length ? h('span', { class: 'wb-due' }, when(s) || 'Order today') : null),
+          K.me.admin ? h('button', { class: 'btn small wb-sendbtn', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon('send'), s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
+        u.length ? h('div', { class: 'wb-usual' }, h('span', { class: 'label' }, 'The usual'), h('ul', null, u.map((x) => h('li', null, x)))) : null,
+        list.length ? h('div', { class: 'wboard' }, list.map((i) => line(i, { pick: supPick(i) }))) : null));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },
@@ -208,7 +233,7 @@
         h('div', { class: 'wboard' }, groups[''].map((i) => line(i, { pick: supPick(i) }))),
         K.me.admin && !sups().length ? h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('plus'), 'Add a supplier') : null));
     }
-    if (!need.length) w.append(h('p', { class: 'none wb-empty' }, 'The board is clean. Write what runs low the moment you see it, from any page: the marker at the top.'));
+    if (!need.length && !order.length) w.append(h('p', { class: 'none wb-empty' }, 'The board is clean. Write what runs low the moment you see it, from any page: the marker at the top.'));
 
     /* ordered, waiting for the delivery */
     if (out.length) {
@@ -231,7 +256,7 @@
   K.SHEETS.suppliers = function (S) {
     S.list = S.list || K.clone(sups());
     const save = () => {
-      const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' ? 'viber' : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim(), sells: (s.sells || '').trim(), paused: !!s.paused }));
+      const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' ? 'viber' : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim(), sells: (s.sells || '').trim(), paused: !!s.paused, kind: s.kind || 'other', usual: (s.usual || '').trim(), top: !!s.top }));
       const ids = list.map((s) => s.id), map = {};
       Object.keys(smap()).forEach((k) => { if (ids.includes(smap()[k])) map[k] = smap()[k]; });
       D.suppliers = { list: list, map: map }; ui.sheet = null; K.render();
@@ -249,7 +274,11 @@
           h('div', { class: 'rp-days' }, DAYS.map((d, j) => h('button', { type: 'button', class: 'chip', 'aria-pressed': (s.days || []).includes(j) ? 'true' : 'false', onclick: () => { const l = (s.days || []).slice(), k = l.indexOf(j); if (k >= 0) l.splice(k, 1); else l.push(j); s.days = l; K.render(); } }, d)))),
         h('div', { class: 'two' },
           K.field('Order by', h('input', { class: 'input mono', type: 'time', value: s.deadline || '', oninput: (e) => { s.deadline = e.target.value; } })),
-          K.field('Message starts', h('input', { class: 'input', value: s.greeting || '', placeholder: 'Здравейте!', oninput: (e) => { s.greeting = e.target.value; } }))),
+          K.field('Message starts', h('input', { class: 'input', value: s.greeting || '', placeholder: 'Здравейте, за утре', oninput: (e) => { s.greeting = e.target.value; } }))),
+        h('div', { class: 'two' },
+          K.field('Type', K.select(Object.keys(THEMES).map((k) => [k, THEMES[k][0]]), s.kind || 'other', (v) => { s.kind = v; }, { 'aria-label': 'Type of supplier', class: 'input' })),
+          h('label', { class: 'check wb-topcheck' }, h('input', { type: 'checkbox', checked: !!s.top, onchange: (e) => { s.top = e.target.checked; } }), h('span', null, 'On top on order days'))),
+        K.field('The usual order', h('textarea', { class: 'input', rows: '3', placeholder: '2бр латинка\n2бр киселец\n1бр ядливи цветя', oninput: (e) => { s.usual = e.target.value; } }, s.usual || ''), 'One line each. It goes in the message on every order day, with whatever is on the board.'),
         K.field('Sells', h('textarea', { class: 'input', rows: '2', placeholder: 'e.g. смръчкули, шийтаке, лъвска грива', oninput: (e) => { s.sells = e.target.value; } }, s.sells || ''), 'Products, separated by commas. Lines that mention one go to this supplier.'),
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !!s.paused, onchange: (e) => { s.paused = e.target.checked; } }), h('span', null, 'Not ordering from them now')),
         products(s.id).length ? h('p', { class: 'muted' }, 'Also picked by hand: ' + products(s.id).join(', ')) : null,

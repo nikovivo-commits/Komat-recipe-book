@@ -656,9 +656,9 @@
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     /* the whiteboard: who we order from, and what is written on it (kept until it arrives) */
     setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {} }; });
-    db.collection('boards').where('kind', 'in', ['item', 'scan']).onSnapshot((s) => {
+    db.collection('boards').where('kind', 'in', ['item', 'scan', 'sent']).onSnapshot((s) => {
       const all = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id }));
-      D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan');
+      D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan'); D.wbSent = all.filter((x) => x.kind === 'sent');
       K.refresh();
     }, onErr);
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);

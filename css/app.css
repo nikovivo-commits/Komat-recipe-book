@@ -2447,3 +2447,17 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-photo { white-space: normal; max-width: 100%; }
 .wb-sells { margin: -6px 0 0; color: var(--muted); font-size: .85rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .wb-pick.compact { min-height: 0; padding: 2px 24px 2px 0; border: 0; background-color: transparent; color: #6A6D68; font-size: .8rem; width: auto; }
+/* each supplier's card: their colour, and a photo of what they bring behind the name */
+.wb-sup.themed { padding: 0 0 14px; overflow: hidden; gap: 12px; }
+.wb-sup.themed > :not(.wb-sup-head) { margin-inline: 14px; }
+.wb-sup.themed .wb-sup-head { min-height: 104px; padding: 16px; color: #fff; align-items: flex-end;
+  background: linear-gradient(90deg, var(--sup-c) 38%, transparent 92%), var(--sup-img) right center / cover no-repeat; background-color: var(--sup-c); }
+.wb-sup.themed .wb-sup-head .block-title { color: #fff; text-shadow: 0 1px 8px rgba(0, 0, 0, .35); }
+.wb-sup.themed .wb-due, .wb-sup.themed.due .wb-due { display: inline-flex; align-items: center; gap: 4px; color: #fff; opacity: .95; font-weight: 700; }
+.wb-sup.themed .wb-due .ico { width: 16px; height: 16px; }
+.wb-kind { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.wb-sendbtn { background: #fff; color: var(--sup-c, var(--ink)); border-color: transparent; }
+.wb-sup.themed.due { box-shadow: 0 0 0 3px var(--sup-c), var(--shadow); }
+.wb-usual { display: grid; gap: 6px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--sup-c) 10%, var(--surface)); }
+.wb-usual ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-weight: 600; }
+.wb-topcheck { align-self: end; padding-bottom: 10px; }
