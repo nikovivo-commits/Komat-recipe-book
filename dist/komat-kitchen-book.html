@@ -6052,13 +6052,21 @@ window.KOMAT_PART_ART = [
   }
   /* Bulgarian spellings that differ only a little still find each other: гьози, гьоза, гиоза and гйоза,
      or домат and домати. ь and ъ are dropped, й becomes и, и before о is dropped, and the last word
-     of what you typed loses its ending vowel. */
+     of what you typed loses its ending (домати, яйцата, лукове). Singular and plural find each other
+     where the last letter changes too: жълтък and жълтъци, белтък and белтъци, друг and друзи.
+     In English, yolks finds yolk. */
   const fold = (t) => t.replace(/[ьъ]/g, '').replace(/й/g, 'и').replace(/и(?=о)/g, '');
-  const stem = (t) => t.replace(/([а-я]{3,})[аиеяоуъ](\s*)$/, '$1$2');
+  const stem = (t) => t.replace(/([а-я]{3,}?)(ове|еве|ите|ата|ята|ото|ете|ът|ят)(\s*)$/, '$1$3').replace(/([а-я]{3,})[аиеяоуъ](\s*)$/, '$1$2');
+  const SWAP = { к: 'кцч', ц: 'кцч', ч: 'кцч', г: 'гзж', з: 'гзж', ж: 'гзж' };
+  function forms(q) {
+    const f = stem(fold(q)), m = f.match(/([а-я]{3,})([кцчгзж])$/);
+    return m ? SWAP[m[2]].split('').map((x) => m[1] + x) : [f];
+  }
   function matchesQ(text, q) {
     if (text.includes(q)) return true;
-    if (/[a-z]/.test(q)) return K.latin(text).includes(q);
-    return fold(text).includes(stem(fold(q)));
+    if (/[a-z]/.test(q)) { const l = K.latin(text); return l.includes(q) || (/[a-z]{3,}e?s$/.test(q) && l.includes(q.replace(/e?s$/, ''))); }
+    const t = fold(text);
+    return forms(q).some((x) => t.includes(x));
   }
   /* the first ingredient that matched, to show why a result is here */
   function whyMatch(r, c, q) {
