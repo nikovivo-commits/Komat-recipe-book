@@ -4758,7 +4758,7 @@ window.KOMAT_PART_ART = [
     setting('pushask', (d) => { D.pushAsk = (d && +d.v) || 0; });
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     /* the whiteboard: who we order from, and what is written on it (kept until it arrives) */
-    setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {} }; });
+    setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {}, orderers: d && Array.isArray(d.orderers) ? d.orderers.slice() : [] }; });
     db.collection('boards').where('kind', 'in', ['item', 'scan', 'sent']).onSnapshot((s) => {
       const all = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id }));
       D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan'); D.wbSent = all.filter((x) => x.kind === 'sent');
@@ -5666,7 +5666,7 @@ window.KOMAT_PART_ART = [
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'schedule' && K.calendarOn && K.waitingDayoff) { const n = (K.me.admin ? K.waitingCount() : 0) + (K.myMoves ? K.myMoves().length : 0); if (n) return h('span', { class: 'badge', 'aria-label': n + (K.me.admin ? ' things waiting' : ' changes to your week') }, String(n)); }
     if (tab === 'schedule' && K.newWeeks && K.newWeeks().length) return h('span', { class: 'badge dot', 'aria-label': 'A new week is out' });
-    if (tab === 'orders' && K.wbOpen) { const n = K.wbOpen().length; return n && K.me.admin ? h('span', { class: 'badge', 'aria-label': n + ' to order' }, String(n)) : n ? h('span', { class: 'badge dot', 'aria-label': 'Things on the whiteboard' }) : null; }
+    if (tab === 'orders' && K.wbOpen) { const n = K.wbOpen().length; return n && K.wbCanOrder && K.wbCanOrder() ? h('span', { class: 'badge', 'aria-label': n + ' to order' }, String(n)) : n ? h('span', { class: 'badge dot', 'aria-label': 'Things on the whiteboard' }) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length + (K.newEvents ? K.newEvents().length : 0); return n ? h('span', { class: 'badge dot', 'aria-label': 'New event, or one today or tomorrow' }) : null; }
     return null;
   }
@@ -7688,6 +7688,19 @@ window.KOMAT_PART_ART = [
   const smap = () => (D.suppliers && D.suppliers.map) || {};
   const supById = (id) => sups().find((s) => s.id === id) || null;
   const active = () => sups().filter((s) => !s.paused);
+  /* who places the orders (people on The Brigade, chosen in Suppliers); nobody chosen = the chefs */
+  const orderers = () => (D.suppliers && D.suppliers.orderers) || [];
+  K.wbCanOrder = function () {
+    const o = orderers();
+    if (!o.length) return !!K.me.admin;
+    return o.includes(K.getMe ? K.getMe() : '') || K.me.role === 'dev';
+  };
+  /* remember who sells a product (the settings are the chefs' to write; for the others the line keeps it) */
+  const remember = (n, v) => {
+    if (!K.me.admin || !v) return;
+    D.suppliers = Object.assign({}, D.suppliers, { map: Object.assign({}, smap(), { [key(n)]: v }) });
+    K.db.doc('settings/suppliers').set(D.suppliers).catch(K.writeFailed);
+  };
   /* who sells a product, from what each supplier's "Sells" list says: the longest word found in the line wins
      ("консервирани домати" goes to the tins supplier, plain "домати" to the vegetables) */
   K.wbGuess = function (n) {
@@ -7872,7 +7885,7 @@ window.KOMAT_PART_ART = [
     const who = opts.done && it.orderedAt ? 'ordered ' + K.hm(it.orderedAt) : [it.st && K.ST[it.st] ? K.ST[it.st].split(' ')[0] : '', first(it.by), it.via === 'photo' ? 'photo' : ''].filter(Boolean).join(' · ');
     const main = [h('span', { class: 'wbr-n' }, it.n), it.qty ? h('span', { class: 'wbr-q' }, it.qty) : null, who ? h('span', { class: 'wbr-who' }, who) : null];
     return h('div', { class: 'wbr' + (opts.done ? ' done' : '') },
-      K.me.admin && !opts.done ? h('button', { type: 'button', class: 'wbr-main', 'aria-label': 'Change ' + it.n, onclick: () => { ui.sheet = { type: 'wbline', id: it.id, n: it.n, qty: it.qty || '', sup: K.wbSupOf(it) }; K.render(); } }, main) : h('span', { class: 'wbr-main' }, main),
+      K.wbCanOrder() && !opts.done ? h('button', { type: 'button', class: 'wbr-main', 'aria-label': 'Change ' + it.n, onclick: () => { ui.sheet = { type: 'wbline', id: it.id, n: it.n, qty: it.qty || '', sup: K.wbSupOf(it) }; K.render(); } }, main) : h('span', { class: 'wbr-main' }, main),
       opts.pick || null,
       opts.done
         ? h('button', { type: 'button', class: 'wbr-btn got', 'aria-label': it.n + ' arrived', title: 'Arrived', onclick: () => setLine(it, { status: 'got', gotAt: Date.now(), date: K.day(0) }) }, K.icon('check'))
@@ -7884,7 +7897,7 @@ window.KOMAT_PART_ART = [
     const save = () => {
       const n = (S.n || '').trim(); if (!n) return;
       setLine(it, { n: n, qty: (S.qty || '').trim(), sup: S.sup || '' });
-      if (S.sup) { const next = { list: sups(), map: Object.assign({}, smap(), { [key(n)]: S.sup }) }; D.suppliers = next; K.db.doc('settings/suppliers').set(next).catch(K.writeFailed); }
+      remember(n, S.sup);
       ui.sheet = null; K.render();
     };
     const opts = sups().filter((x) => !x.paused || x.id === S.sup);
@@ -7897,11 +7910,11 @@ window.KOMAT_PART_ART = [
       h('button', { class: 'btn wide danger', type: 'button', onclick: () => { ui.sheet = null; wipe(it); } }, K.icon('close'), 'Wipe it off')));
   };
   function supPick(it) {
-    if (!K.me.admin || !sups().length) return null;
+    if (!K.wbCanOrder() || !sups().length) return null;
     const cur = K.wbSupOf(it), opts = sups().filter((s) => !s.paused || s.id === cur);
     return K.select([['', cur ? 'Move to…' : 'Who sells it?']].concat(opts.map((s) => [s.id, s.name])), cur, (v) => {
       setLine(it, { sup: v });
-      if (v) { const next = { list: sups(), map: Object.assign({}, smap(), { [key(it.n)]: v }) }; D.suppliers = next; K.db.doc('settings/suppliers').set(next).catch(K.writeFailed); }
+      remember(it.n, v);
     }, { 'aria-label': 'Supplier for ' + it.n, class: 'input small wbr-pick' });
   }
 
@@ -7928,14 +7941,14 @@ window.KOMAT_PART_ART = [
       w.append(h('section', { class: 'block card wb-sup themed' + (done ? ' sent' : urgent(s) || u.length || pin ? ' due' : '') + (!done && s.top && (u.length || pin) ? ' pinned' : ''), style: '--sup-c:' + th[1] + ';--sup-img:' + (th[2] ? 'url("' + new URL('assets/photos/suppliers/' + th[2] + '.jpg', document.baseURI).href + '")' : 'none') },
         h('div', { class: 'wb-sup-head' }, h('div', null, h('span', { class: 'wb-kind' }, th[0]), h('h2', { class: 'block-title' }, s.name),
           sentToday(s) ? h('span', { class: 'wb-due' }, K.icon('check'), 'Sent today' + (lastSent(s) ? ' ' + K.hm(lastSent(s).at) : '')) : when(s) || u.length ? h('span', { class: 'wb-due' }, when(s) || 'Order today') : null),
-          K.me.admin ? h('button', { class: 'btn small wb-sendbtn', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon(s.app === 'shop' ? (s.link ? 'link' : 'list') : 'send'), s.app === 'shop' ? (s.link ? 'Website' : 'List') : s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
+          K.wbCanOrder() ? h('button', { class: 'btn small wb-sendbtn', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon(s.app === 'shop' ? (s.link ? 'link' : 'list') : 'send'), s.app === 'shop' ? (s.link ? 'Website' : 'List') : s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
         u.length ? h('p', { class: 'wb-usual' }, h('b', null, 'The usual: '), u.join(' · ')) : null,
         list.length ? h('div', { class: 'wbl' }, list.map((i) => line(i, {}))) : !u.length && !done ? h('p', { class: 'wb-usual' }, 'Order day. Write what we need for ' + s.name + ' above.') : null));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },
         h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, sups().length ? 'Who sells it?' : 'On the board'),
-          h('span', { class: 'wb-due' }, K.me.admin ? (sups().length ? 'Pick the supplier once; the board remembers it' : 'Add your suppliers to send ready messages') : 'The chefs order these'))),
+          h('span', { class: 'wb-due' }, K.wbCanOrder() ? (sups().length ? 'Pick the supplier once; the board remembers it' : 'Add your suppliers to send ready messages') : 'The chefs order these'))),
         h('div', { class: 'wbl' }, groups[''].map((i) => line(i, { pick: supPick(i) }))),
         K.me.admin && !sups().length ? h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('plus'), 'Add a supplier') : null));
     }
@@ -7965,11 +7978,16 @@ window.KOMAT_PART_ART = [
       const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' || s.app === 'shop' ? s.app : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim(), sells: (s.sells || '').trim(), paused: !!s.paused, kind: s.kind || 'other', usual: (s.usual || '').trim(), top: !!s.top, link: (s.link || '').trim() }));
       const ids = list.map((s) => s.id), map = {};
       Object.keys(smap()).forEach((k) => { if (ids.includes(smap()[k])) map[k] = smap()[k]; });
-      D.suppliers = { list: list, map: map }; ui.sheet = null; K.render();
+      D.suppliers = { list: list, map: map, orderers: (S.orderers || orderers()).slice() }; ui.sheet = null; K.render();
       K.db.doc('settings/suppliers').set(D.suppliers).then(() => K.toast('Suppliers saved'), K.writeFailed);
     };
     const products = (id) => Object.keys(smap()).filter((k) => smap()[k] === id);
+    S.orderers = S.orderers || orderers().slice();
+    const team = (D.staff && D.staff.people) || [];
     return K.sheet('Suppliers', h('div', { class: 'wb-sups' },
+      team.length ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Who can order'),
+        h('div', { class: 'rp-days' }, team.map((p) => h('button', { type: 'button', class: 'chip', 'aria-pressed': S.orderers.includes(p.id) ? 'true' : 'false', onclick: () => { const i = S.orderers.indexOf(p.id); if (i >= 0) S.orderers.splice(i, 1); else S.orderers.push(p.id); K.render(); } }, p.name))),
+        h('p', { class: 'hint' }, 'Only they see the order buttons and get the deadline reminders. Everyone can write on the board.')) : null,
       h('p', { class: 'muted' }, 'Who you order from, how, and by when. A reminder goes to the chefs an hour before the deadline on order days if something is still on the board.'),
       S.list.map((s, i) => h('div', { class: 'card wb-supedit' },
         K.field('Name', h('input', { class: 'input', value: s.name || '', placeholder: 'e.g. Fish – Ivan', oninput: (e) => { s.name = e.target.value; } })),

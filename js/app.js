@@ -151,7 +151,7 @@
     if (tab === 'today') { const n = K.openUrgents().length; return n ? h('span', { class: 'badge', 'aria-label': n + ' urgent' }, String(n)) : null; }
     if (tab === 'schedule' && K.calendarOn && K.waitingDayoff) { const n = (K.me.admin ? K.waitingCount() : 0) + (K.myMoves ? K.myMoves().length : 0); if (n) return h('span', { class: 'badge', 'aria-label': n + (K.me.admin ? ' things waiting' : ' changes to your week') }, String(n)); }
     if (tab === 'schedule' && K.newWeeks && K.newWeeks().length) return h('span', { class: 'badge dot', 'aria-label': 'A new week is out' });
-    if (tab === 'orders' && K.wbOpen) { const n = K.wbOpen().length; return n && K.me.admin ? h('span', { class: 'badge', 'aria-label': n + ' to order' }, String(n)) : n ? h('span', { class: 'badge dot', 'aria-label': 'Things on the whiteboard' }) : null; }
+    if (tab === 'orders' && K.wbOpen) { const n = K.wbOpen().length; return n && K.wbCanOrder && K.wbCanOrder() ? h('span', { class: 'badge', 'aria-label': n + ' to order' }, String(n)) : n ? h('span', { class: 'badge dot', 'aria-label': 'Things on the whiteboard' }) : null; }
     if (tab === 'events') { const n = K.upcomingEvents().filter((e) => K.isLive(e) && K.daysUntil(e.date) <= 1).length + (K.newEvents ? K.newEvents().length : 0); return n ? h('span', { class: 'badge dot', 'aria-label': 'New event, or one today or tomorrow' }) : null; }
     return null;
   }

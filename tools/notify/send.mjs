@@ -162,10 +162,20 @@ if (supList.length) {
 if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
 
 /* who has the full rights: reminders to order go to them only */
+/* reminders to order go to the people chosen to order (Suppliers > Who can order), else to the chefs */
 const chefs = new Set();
 if (msgs.some((m) => m.admins)) {
-  for (const m of await list('members')) if (['sous', 'admin', 'dev'].includes(m.data.role)) chefs.add(m.id);
-  const own = await call('GET', 'private/owner'); if (own) chefs.add(unfields(own.fields || {}).uid);
+  const members = await list('members'), who = Array.isArray(supData.orderers) ? supData.orderers : [];
+  if (who.length) {
+    const staffDoc = await call('GET', 'settings/staff');
+    const people = staffDoc ? (unfields(staffDoc.fields || {}).people || []) : [];
+    const norm = (x) => String(x || '').trim().toLowerCase();
+    const names = people.filter((p) => who.includes(p.id)).map((p) => norm(p.name));
+    for (const m of members) { const n = norm(m.data.name); if (n && names.some((x) => x === n || x.split(' ')[0] === n.split(' ')[0])) chefs.add(m.id); }
+  } else {
+    for (const m of members) if (['sous', 'admin', 'dev'].includes(m.data.role)) chefs.add(m.id);
+    const own = await call('GET', 'private/owner'); if (own) chefs.add(unfields(own.fields || {}).uid);
+  }
 }
 const subs = await list('pushsubs');
 console.log(msgs.length + ' to send to ' + subs.length + ' phones:', msgs.map((m) => m.title).join(' | '));
