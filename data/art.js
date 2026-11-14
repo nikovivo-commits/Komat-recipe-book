@@ -50,6 +50,18 @@ window.KOMAT_ART = [
 ];
 /* the parts of a dish, by part id: assets/photos/art/parts/<part id>.jpg */
 window.KOMAT_PART_ART = [
+  "cyc1r8o40jp",
+  "cmww0puifk4",
+  "ct0892nd4j7",
+  "clh1gc5kjl",
+  "clh25qcq4x",
+  "clh3revjo2",
+  "clh4638elz",
+  "clh53bebq4",
+  "clh6d0e4c5",
+  "cf4a6ay1bs4",
+  "c2tlsen3ksa",
+  "ctaramabase",
   "c0el7xdxboh",
   "c1mtx52x71e",
   "c2m9cjqxr71",
