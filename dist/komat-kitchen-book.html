@@ -2452,6 +2452,8 @@ body.fab-away .fab { transform: translateY(calc(100% + 32px)) scale(.6); opacity
 .wb-row { grid-template-columns: minmax(0, 1fr) minmax(0, 7em); }
 .wb-row .input { min-width: 0; width: 100%; }
 .wb-photo { white-space: normal; max-width: 100%; }
+.wb-sells { margin: -6px 0 0; color: var(--muted); font-size: .85rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wb-pick.compact { min-height: 0; padding: 2px 24px 2px 0; border: 0; background-color: transparent; color: #6A6D68; font-size: .8rem; width: auto; }
 
 </style>
 <div id="app"></div>
@@ -7626,7 +7628,15 @@ window.KOMAT_PART_ART = [
   const sups = () => (D.suppliers && D.suppliers.list) || [];
   const smap = () => (D.suppliers && D.suppliers.map) || {};
   const supById = (id) => sups().find((s) => s.id === id) || null;
-  K.wbSupOf = (it) => (it.sup && supById(it.sup) ? it.sup : smap()[key(it.n)] && supById(smap()[key(it.n)]) ? smap()[key(it.n)] : '');
+  const active = () => sups().filter((s) => !s.paused);
+  /* who sells a product, from what each supplier's "Sells" list says: the longest word found in the line wins
+     ("консервирани домати" goes to the tins supplier, plain "домати" to the vegetables) */
+  K.wbGuess = function (n) {
+    const k = key(n); let best = '', len = 0;
+    active().forEach((s) => String(s.sells || '').split(/[,;\n]/).map(key).filter((w) => w.length >= 3).forEach((w) => { if (k.includes(w) && w.length > len) { best = s.id; len = w.length; } }));
+    return best;
+  };
+  K.wbSupOf = (it) => (it.sup && supById(it.sup) ? it.sup : smap()[key(it.n)] && supById(smap()[key(it.n)]) ? smap()[key(it.n)] : K.wbGuess(it.n));
   const lines = (status) => (D.wb || []).filter((i) => i.status === status).sort((a, b) => (a.at || 0) - (b.at || 0));
   K.wbOpen = () => lines('need');
   const first = (id) => (K.nameOf(id) || '').split(' ')[0];
@@ -7778,10 +7788,11 @@ window.KOMAT_PART_ART = [
   }
   function supPick(it) {
     if (!K.me.admin || !sups().length) return null;
-    return K.select([['', 'Who sells it?']].concat(sups().map((s) => [s.id, s.name])), K.wbSupOf(it), (v) => {
+    const cur = K.wbSupOf(it), opts = sups().filter((s) => !s.paused || s.id === cur);
+    return K.select([['', cur ? 'Move to…' : 'Who sells it?']].concat(opts.map((s) => [s.id, s.name])), cur, (v) => {
       setLine(it, { sup: v });
       if (v) { const next = { list: sups(), map: Object.assign({}, smap(), { [key(it.n)]: v }) }; D.suppliers = next; K.db.doc('settings/suppliers').set(next).catch(K.writeFailed); }
-    }, { 'aria-label': 'Supplier for ' + it.n, class: 'input small wb-pick' });
+    }, { 'aria-label': 'Supplier for ' + it.n, class: 'input small wb-pick' + (cur ? ' compact' : '') });
   }
 
   K.V.orders = function () {
@@ -7804,7 +7815,8 @@ window.KOMAT_PART_ART = [
       w.append(h('section', { class: 'block card wb-sup' + (urgent(s) ? ' due' : '') },
         h('div', { class: 'wb-sup-head' }, h('div', null, h('h2', { class: 'block-title' }, s.name), when(s) ? h('span', { class: 'wb-due' }, when(s)) : null),
           K.me.admin ? h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon('send'), s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
-        h('div', { class: 'wboard' }, list.map((i) => line(i, {})))));
+        s.sells ? h('p', { class: 'wb-sells' }, s.sells) : null,
+        h('div', { class: 'wboard' }, list.map((i) => line(i, { pick: supPick(i) })))));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },
@@ -7836,7 +7848,7 @@ window.KOMAT_PART_ART = [
   K.SHEETS.suppliers = function (S) {
     S.list = S.list || K.clone(sups());
     const save = () => {
-      const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' ? 'viber' : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim() }));
+      const list = S.list.filter((s) => (s.name || '').trim()).map((s) => ({ id: s.id, name: s.name.trim(), app: s.app === 'viber' ? 'viber' : 'whatsapp', phone: (s.phone || '').trim(), days: (s.days || []).slice().sort(), deadline: (s.deadline || '').trim(), greeting: (s.greeting || '').trim(), sells: (s.sells || '').trim(), paused: !!s.paused }));
       const ids = list.map((s) => s.id), map = {};
       Object.keys(smap()).forEach((k) => { if (ids.includes(smap()[k])) map[k] = smap()[k]; });
       D.suppliers = { list: list, map: map }; ui.sheet = null; K.render();
@@ -7855,7 +7867,9 @@ window.KOMAT_PART_ART = [
         h('div', { class: 'two' },
           K.field('Order by', h('input', { class: 'input mono', type: 'time', value: s.deadline || '', oninput: (e) => { s.deadline = e.target.value; } })),
           K.field('Message starts', h('input', { class: 'input', value: s.greeting || '', placeholder: 'Здравейте!', oninput: (e) => { s.greeting = e.target.value; } }))),
-        products(s.id).length ? h('p', { class: 'muted' }, 'Sells: ' + products(s.id).join(', ')) : null,
+        K.field('Sells', h('textarea', { class: 'input', rows: '2', placeholder: 'e.g. смръчкули, шийтаке, лъвска грива', oninput: (e) => { s.sells = e.target.value; } }, s.sells || ''), 'Products, separated by commas. Lines that mention one go to this supplier.'),
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !!s.paused, onchange: (e) => { s.paused = e.target.checked; } }), h('span', null, 'Not ordering from them now')),
+        products(s.id).length ? h('p', { class: 'muted' }, 'Also picked by hand: ' + products(s.id).join(', ')) : null,
         h('button', { class: 'btn small danger', type: 'button', onclick: () => { if (!s.del) { s.del = true; K.render(); return; } S.list.splice(i, 1); K.render(); } }, s.del ? 'Tap again to remove' : 'Remove'))),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { S.list.push({ id: 's' + K.uid(), name: '', app: 'whatsapp', phone: '', days: [], deadline: '' }); K.render(); } }, K.icon('plus'), 'Add a supplier'),
       h('button', { class: 'btn primary wide', type: 'button', onclick: save }, 'Save')), { wide: true });

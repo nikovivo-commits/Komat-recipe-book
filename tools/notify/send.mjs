@@ -94,6 +94,8 @@ const supData = supDoc ? unfields(supDoc.fields || {}) : {};
 const lineKey = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
 /* a board section named like a supplier ("Зеленчук" for the vegetable supplier) puts its lines with that supplier */
 const supFor = (sec) => { const k = lineKey(sec); if (!k) return ''; const s = (supData.list || []).find((x) => { const n = lineKey(x.name); return n && (n.includes(k) || k.includes(n)); }); return s ? s.id : ''; };
+/* what each supplier sells, as in the app: the longest product word found in the line wins */
+const supGuess = (n) => { const k = lineKey(n); let best = '', len = 0; (supData.list || []).filter((x) => !x.paused).forEach((x) => String(x.sells || '').split(/[,;\n]/).map(lineKey).filter((w) => w.length >= 3).forEach((w) => { if (k.includes(w) && w.length > len) { best = x.id; len = w.length; } })); return best; };
 const pending = boards.filter((d) => d.data.kind === 'scan' && d.data.status === 'pending');
 if (pending.length && !process.env.ANTHROPIC_API_KEY) console.log(pending.length + ' board photo(s) waiting: add the secret ANTHROPIC_API_KEY to read them');
 if (pending.length && process.env.ANTHROPIC_API_KEY) {
@@ -113,7 +115,7 @@ if (pending.length && process.env.ANTHROPIC_API_KEY) {
         open.add(lineKey(it.name)); added.push(it.name);
         if (DRY) continue;
         await call('PATCH', 'boards/wb' + crypto.randomBytes(6).toString('hex'), { fields: fieldsOf({
-          kind: 'item', n: it.name, qty: it.qty, status: 'need', sup: (supData.map || {})[lineKey(it.name)] || supFor(it.section), via: 'photo',
+          kind: 'item', n: it.name, qty: it.qty, status: 'need', sup: (supData.map || {})[lineKey(it.name)] || supGuess(it.name) || supFor(it.section), via: 'photo',
           by: d.by || '', ink: d.ink || 'blue', hand: d.hand || 'caveat', st: d.st || '', at: Date.now(),
         }) });
       }
@@ -151,7 +153,7 @@ if (supList.length) {
     if (!s || !s.deadline || !(s.days || []).includes(dayIdx) || reminded[s.id] === today) continue;
     const [hh, mm] = String(s.deadline).split(':').map(Number), dl = hh * 60 + (mm || 0);
     if (mins < dl - 60 || mins >= dl) continue;
-    const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)]) === s.id);
+    const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)] || supGuess(i.data.n)) === s.id);
     if (!mine.length) continue;
     reminded[s.id] = today;
     msgs.push({ admins: true, title: s.name + ': order by ' + s.deadline, body: mine.length + ' on the whiteboard: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
