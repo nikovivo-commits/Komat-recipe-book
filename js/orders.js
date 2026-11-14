@@ -95,7 +95,7 @@
         const id = 'scan' + K.uid(), doc = { kind: 'scan', status: 'pending', photo: r.id, by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now(), date: K.day(0) };
         D.wbScans = (D.wbScans || []).concat([Object.assign({ id: id }, doc)]);
         return K.db.doc('boards/' + id).set(doc);
-      }).then(() => { ui.wbPhotoBusy = false; K.render(); K.toast('Photo saved. Its lines appear on the board in a few minutes.'); },
+      }).then(() => { ui.wbPhotoBusy = false; K.render(); K.toast('Photo saved. Its lines appear on the board in a minute or two.'); },
         (e) => { ui.wbPhotoBusy = false; K.render(); K.writeFailed(e); });
     });
   };
@@ -105,7 +105,7 @@
     return list.map((s) => {
       const txt = s.status === 'done' ? (s.added ? 'Read: ' + s.added + (s.added === 1 ? ' line' : ' lines') + ' added' + (s.names && s.names.length ? ' (' + s.names.slice(0, 6).join(', ') + (s.names.length > 6 ? '…' : '') + ')' : '') : 'Read it: nothing new to add') + (s.note ? '. ' + s.note : '')
         : s.status === 'failed' ? 'Could not read it' + (s.error ? ': ' + s.error : '') + '. Write the lines by hand.'
-          : 'Reading it… the lines appear here in a few minutes.';
+          : 'Reading it… the lines appear here in a minute or two.';
       return h('div', { class: 'wb-scan ' + (s.status || 'pending') },
         h('img', { class: 'wb-scan-img', src: K.media(s.photo), alt: 'Photo of the board', loading: 'lazy', onclick: () => K.openPhotos([{ id: s.photo, title: 'Photo of the board' }], 0) }),
         h('span', null, h('b', null, 'Photo · ' + K.hm(s.at) + (first(s.by) ? ' · ' + first(s.by) : '')), h('span', null, txt)),

@@ -188,7 +188,7 @@
         if (!arm) { ui.notifyArm = e.id; K.render(); return; }
         ui.notifyArm = null;
         const body = K.clone(e); delete body.id; body.announce = Date.now(); if (!body.created) body.created = +e.createdAt || +e.updated || Date.now();
-        K.saveEvent(e.id, body).then(() => K.toast('The team gets a notification in the next few minutes'));
+        K.saveEvent(e.id, body).then(() => K.toast('The team gets a notification in a minute or two'));
       } }, K.icon('bell'), arm ? 'Tap again to send to everyone' : sent ? 'Notify again' : 'Notify the team'));
   };
 })();
