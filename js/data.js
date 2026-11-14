@@ -662,6 +662,13 @@
       D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan'); D.wbSent = all.filter((x) => x.kind === 'sent');
       K.refresh();
     }, onErr);
+    /* questions to Claude (Ask Claude) and their answers; each phone shows its own */
+    db.collection('boards').where('kind', '==', 'ask').onSnapshot((s) => {
+      const fresh = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id }));
+      /* keep a question just sent until the database has it */
+      D.asks = fresh.concat((D.asks || []).filter((a) => a.status === 'pending' && !fresh.some((f) => f.id === a.id) && Date.now() - (a.at || 0) < 60000));
+      K.refresh();
+    }, onErr);
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
     db.collection('schedules').onSnapshot((s) => { const w = {}; s.docs.forEach((x) => { w[x.id] = K.clone(x.data()); }); D.weeks = w; K.refresh(); }, onErr);
     /* cover points: earned for covering, spent on priority; they never run out, so all of them */

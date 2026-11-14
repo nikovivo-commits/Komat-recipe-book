@@ -26,6 +26,8 @@
     const m = hs.match(/^r\.([A-Za-z0-9_\-~]+)(?:\.(\d+))?$/);
     if (m) { ui.view = 'recipe'; ui.id = m[1]; ui.comp = m[2] ? +m[2] : -1; return true; }
     if (TABS.some((t) => t[0] === hs)) { ui.view = hs; return true; }
+    /* a notification that Claude answered opens the question sheet */
+    if (hs === 'ask') { ui.sheet = { type: 'ask' }; ui.view = TABS.some((t) => t[0] === ui.view) || ui.view === 'recipe' ? ui.view : 'today'; return true; }
     return false;
   }
   /* K.go('today') or K.go('recipe', {id, comp}) */
@@ -180,6 +182,7 @@
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
       K.langSwitch(),
+      K.canAsk && K.canAsk() ? h('button', { type: 'button', class: 'icon-btn on-dark ask-btn', 'aria-label': 'Ask Claude', title: 'Ask Claude', onclick: K.askOpen }, K.askMark(), K.askUnseen() ? h('span', { class: 'ask-dot', 'aria-label': 'New answer' }) : null) : null,
       K.wbQuick && K.mode !== 'pending' && K.mode !== 'none' ? h('button', { type: 'button', class: 'icon-btn on-dark wb-marker', 'aria-label': 'Add to the order list', title: 'Add to the order list', onclick: K.wbQuick }, K.icon('board')) : null,
       h('button', { type: 'button', class: 'icon-btn on-dark', 'aria-label': 'Settings', onclick: () => { ui.sheet = { type: 'settings' }; render(); } }, K.icon('gear'))));
   }
