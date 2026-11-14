@@ -588,6 +588,7 @@
 
   /* ---------- write errors ---------- */
   function writeFailed(e) {
+    if (e && e.code === 'viewer') { K.toast('View only: you can look around, nothing is changed.'); K.refresh(true); return; }
     if (e && e.code === 'invalid_argument') { D.noWrite = true; K.refresh(true); K.toast('Not saved: you can only view this book.', { tone: 'bad' }); }
     else if (e && e.code === 'quota_exceeded') K.toast('The database is full. Ask the head chef to clear old records in Settings.', { tone: 'bad' });
     else K.toast('Not saved. Check your connection and try again.', { tone: 'bad' });

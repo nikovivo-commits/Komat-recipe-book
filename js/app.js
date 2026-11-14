@@ -92,11 +92,13 @@
     app.append(out.top || header());
     document.body.classList.toggle('over-photo', !out.top && !out.solid);
     if (D.noWrite && K.mode === 'cloud') app.append(noWriteBanner());
+    if (K.me && K.me.viewer) app.append(h('div', { class: 'viewer-note' }, K.icon('lock'), h('span', null, 'View only: you can look at everything; nothing you tap changes the book.')));
     app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') + (ui.pageIn ? ' page-in' : '') }, out.body));
     ui.pageIn = false;
     if (out.tabs !== false) app.append(tabbar());
     if (out.bar) app.append(h('div', { class: 'actionbar' }, h('div', { class: 'actionbar-in' }, out.bar)));
     document.body.classList.toggle('has-tabs', out.tabs !== false);
+    document.body.classList.toggle('viewer', !!(K.me && K.me.viewer));
     document.body.classList.toggle('has-bar', !!out.bar);
     if (ui.sheet && K.SHEETS[ui.sheet.type]) { const s = K.SHEETS[ui.sheet.type](ui.sheet); if (s) { if (hadOverlay) s.classList.add('still'); app.append(s); } }
     if (ui.cook && K.V.cook) app.append(K.V.cook());

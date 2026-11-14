@@ -52,14 +52,16 @@
     });
     return out;
   }
+  const viewOnly = (path) => K.me && K.me.viewer && !/^pushsubs\//.test(path) && path !== 'members/' + K.me.id;
+  const refuse = () => Promise.reject({ code: 'viewer', message: 'view only' });
   function docRef(path) {
     const r = F.doc(fs, path);
     return {
       id: r.id, path: path,
       get: () => F.getDoc(r).then(dsnap, (e) => Promise.reject(err(e))),
-      set: (d) => write(F.setDoc(r, d)),
-      update: (d) => { const a = fields(d, [], []); return a.length ? write(F.updateDoc(r, ...a)) : Promise.resolve(); },
-      delete: () => write(F.deleteDoc(r)),
+      set: (d) => (viewOnly(path) ? refuse() : write(F.setDoc(r, d))),
+      update: (d) => { if (viewOnly(path)) return refuse(); const a = fields(d, [], []); return a.length ? write(F.updateDoc(r, ...a)) : Promise.resolve(); },
+      delete: () => (viewOnly(path) ? refuse() : write(F.deleteDoc(r))),
       onSnapshot: (next, bad) => F.onSnapshot(r, (s) => next(dsnap(s)), (e) => { if (bad) bad(err(e)); }),
       collection: (sub) => collRef(path + '/' + sub),
     };
@@ -316,7 +318,7 @@
       if (s.metadata.hasPendingWrites) return;
       if (s.exists()) {
         const m = s.data();
-        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', canWrite: true, name: m.name || '', ink: m.ink || '', hand: m.hand || '', email: u.email || '', guest: !!u.isAnonymous };
+        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', viewer: m.role === 'viewer', canWrite: m.role !== 'viewer', name: m.name || '', ink: m.ink || '', hand: m.hand || '', email: u.email || '', guest: !!u.isAnonymous };
         K.ui.auth = null;
         enter();
         K.subscribeBugs();
@@ -373,7 +375,7 @@
   S.getCode = () => F.getDoc(F.doc(fs, 'private/join')).then((s) => (s.exists() ? s.data().code : ''), (e) => Promise.reject(err(e)));
   S.setCode = (code) => write(F.setDoc(F.doc(fs, 'private/join'), { code: code, at: Date.now() }));
   /* who can do what: cooks tick and add tasks; sous chefs, head chefs and devs (whoever builds the app) change everything */
-  S.ROLES = [['cook', 'Cook'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['dev', 'Dev']];
+  S.ROLES = [['viewer', 'Viewer (read only)'], ['cook', 'Cook'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['dev', 'Dev']];
   S.FULL = ['sous', 'admin', 'dev'];
   S.roleName = (role) => (S.ROLES.find((r) => r[0] === role) || S.ROLES[0])[1];
   S.setRole = (uid, role) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { role: role }));

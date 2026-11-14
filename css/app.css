@@ -2521,3 +2521,11 @@ button.wbr-main { cursor: pointer; }
 body.locked .toast { top: calc(env(safe-area-inset-top, 0px) + 10px); bottom: auto; }
 @keyframes toastdown { from { opacity: 0; transform: translateY(-18px) scale(.96); } }
 body.locked .toast:not([hidden]) { animation-name: toastdown; }
+
+/* ---------- view only (the owner looking in, a helper): everything readable, nothing that changes the book ---------- */
+.viewer-note { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 16px; background: var(--pen-soft); color: var(--pen); font-size: .82rem; font-weight: 700; text-align: center; }
+.viewer-note .ico { width: 16px; height: 16px; flex: none; }
+body.viewer .wb-write, body.viewer .wb-marker, body.viewer .wbr-btn, body.viewer .wbr-addq, body.viewer .wbr-pick, body.viewer .wb-sendbtn,
+body.viewer .evt-notify, body.viewer .finish .btn, body.viewer .mep-add, body.viewer .addx, body.viewer .allready, body.viewer .sec-chip,
+body.viewer .off-form, body.viewer .cb-give, body.viewer .addtask, body.viewer .news-ask, body.viewer .job.add { display: none !important; }
+body.viewer .mrow, body.viewer .todo, body.viewer .jobs, body.viewer .mrow-wrap .job { pointer-events: none; }

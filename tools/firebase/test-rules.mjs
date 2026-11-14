@@ -97,6 +97,21 @@ await expect('...and not someone else\'s', false, () => updateDoc(cook.d('member
 await expect('cook cannot remove the head chef', false, () => deleteDoc(cook.d('members/' + A)));
 await expect('cook cannot write to unknown places', false, () => setDoc(cook.d('secrets/x'), { a: 1 }));
 
+// a viewer: the owner looking in, a helper; reads everything, changes nothing
+const watcher = person('watcher');
+const V = (await signInAnonymously(watcher.auth)).user.uid;
+await expect('a viewer joins with the code like a cook', true, () => setDoc(watcher.d('members/' + V), { name: 'Pancho', role: 'cook', code: 'basil-42', at: 9 }));
+await expect('head chef makes them a viewer', true, () => updateDoc(chef.d('members/' + V), { role: 'viewer' }));
+await expect('...a viewer cannot make themselves a cook again', false, () => updateDoc(watcher.d('members/' + V), { role: 'cook' }));
+await expect('viewer reads the recipes', true, () => getDoc(watcher.d('recipes/soup')));
+await expect('viewer reads the board', true, () => getDocs(collection(watcher.db, 'boards')));
+await expect('viewer cannot tick', false, () => setDoc(watcher.d('checks/x'), { date: 'x' }));
+await expect('viewer cannot write on Ordering', false, () => setDoc(watcher.d('boards/wbx'), { kind: 'item', n: 'лимони' }));
+await expect('viewer cannot ask for a day off', false, () => setDoc(watcher.d('dayoff/2026-11-30_pancho'), { kind: 'ask', date: '2026-11-30', person: 'pancho', uid: V, status: 'ok' }));
+await expect('viewer cannot add a photo', false, () => setDoc(watcher.d('blobs/p1'), { type: 'image/jpeg' }));
+await expect('viewer can still turn notifications on', true, () => setDoc(watcher.d('pushsubs/' + V), { endpoint: 'https://push.example/v', keys: { p256dh: 'k', auth: 'a' }, name: 'Pancho', at: 1 }));
+await expect('viewer changes their own name', true, () => updateDoc(watcher.d('members/' + V), { name: 'Pancho K' }));
+
 const E = (await signInAnonymously(stranger.auth)).user.uid;
 await expect('signed in but not joined: no recipes', false, () => getDoc(stranger.d('recipes/soup')));
 await expect('signed in but not joined: no people list', false, () => getDocs(collection(stranger.db, 'members')));
