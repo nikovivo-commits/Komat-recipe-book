@@ -2536,6 +2536,25 @@ body.viewer .wb-write, body.viewer .wb-marker, body.viewer .wbr-btn, body.viewer
 body.viewer .evt-notify, body.viewer .finish .btn, body.viewer .mep-add, body.viewer .addx, body.viewer .allready, body.viewer .sec-chip,
 body.viewer .off-form, body.viewer .cb-give, body.viewer .addtask, body.viewer .news-ask, body.viewer .job.add { display: none !important; }
 body.viewer .mrow, body.viewer .todo, body.viewer .jobs, body.viewer .mrow-wrap .job { pointer-events: none; }
+.wb-asked-q { margin: 0; font: 700 1.35rem/1.2 var(--display); }
+.published { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; }
+.published .ico { width: 20px; height: 20px; color: var(--ready); }
+.published span { color: var(--muted); }
+.pub-n { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, .18); font-size: .82rem; font-weight: 700; }
+.my-off { display: grid; gap: 8px; padding: 12px; }
+.my-off-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.my-off-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.my-off-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.my-off-list li:first-child { border-top: 0; }
+.my-off-list li > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.my-off-list small { color: var(--muted); }
+.my-off-st { flex: none; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.my-off-st.good { background: var(--ready-soft); color: var(--ready); }
+.my-off-st.wait { background: var(--todo-soft); color: var(--todo-ink); }
+.my-off-st.bad { background: var(--urgent-soft); color: var(--urgent); }
+.off-sheet .off-form { margin: 0; }
+.pub-n { white-space: nowrap; }
+.off-sheet .off-h { display: none; }
 
 </style>
 <div id="app"></div>
@@ -7280,8 +7299,8 @@ window.KOMAT_PART_ART = [
       K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
-      cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
+      cl ? h('p', { class: 'published' }, K.icon('check'), h('b', null, 'Tomorrow’s prep is published'), h('span', null, K.hm(cl.at) + (K.nameOf(cl.by) ? ' · ' + K.nameOf(cl.by) : ''))) : null,
+      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s prep is published for ' + K.ST[st]); } }, K.icon('check'), 'Publish tomorrow’s prep', h('span', { class: 'pub-n' }, nTmr ? nTmr + ' to make' : 'nothing to make')),
       cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
       K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Add it to Ordering') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
@@ -7919,11 +7938,15 @@ window.KOMAT_PART_ART = [
         },
       })))) : null;
     const viber = s.app === 'viber', shop = s.app === 'shop';
-    const go = () => {
+    /* opening the chat is not ordering: the lines count as ordered only when you say the message went */
+    const openApp = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
       /* Viber cannot fill in a message for a chosen chat: with a number it opens that chat (paste the copied message), without one it lets you pick the contact */
       const url = viber ? (s.phone ? 'viber://chat?number=' + encodeURIComponent('+' + phoneDigits(s.phone)) : 'viber://forward?text=' + encodeURIComponent(S.text)) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
       if (shop) { if (s.link) window.open(s.link, '_blank', 'noopener'); /* the website to order on (Metro); the list is copied to paste or follow */ } else if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
+      S.step = 'asked'; K.render();
+    };
+    const go = () => {
       const at = Date.now(), ids = list.map((i) => i.id);
       list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup, date: K.day(0) }, q ? { qty: q } : {})); });
       /* remember it went today, so the usual order does not ask again */
@@ -7933,18 +7956,26 @@ window.KOMAT_PART_ART = [
       ui.sheet = null; K.render();
       K.toast('Ordered from ' + s.name, { undo: () => { D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })); D.wbSent = D.wbSent.filter((x) => x.id !== sid); K.db.doc('boards/' + sid).delete().catch(() => {}); K.render(); } });
     };
+    if (S.step === 'asked') {
+      return K.sheet(s.name, h('div', { class: 'wb-sendbox wb-asked' },
+        h('p', { class: 'wb-asked-q' }, shop ? 'Did you place the order on the website?' : 'Did the message go to ' + s.name + '?'),
+        h('p', { class: 'muted' }, 'The lines count as ordered only when you say so, so nothing gets lost if the message did not go.'),
+        h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('check'), shop ? 'Yes, it is ordered' : 'Yes, it is sent'),
+        h('button', { class: 'btn wide', type: 'button', onclick: openApp }, K.icon(shop ? 'link' : 'send'), shop ? 'Open the website again' : viber ? 'Open Viber again' : 'Open WhatsApp again'),
+        h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.render(); K.toast('Still on the list for ' + s.name); } }, 'Not yet, keep it on the list')));
+    }
     if (shop) {
       return K.sheet('Shopping list · ' + s.name, h('div', { class: 'wb-sendbox' },
         h('p', { class: 'muted' }, (s.link ? 'The list is copied and ' + s.name + '’s website opens to order the delivery.' : 'Copy it for whoever goes to ' + s.name + '.') + ' The lines move to On the way; tick them when they arrive.'),
         qtyBox,
         h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
-        h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
+        h('button', { class: 'btn primary wide big', type: 'button', onclick: openApp }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
     }
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
       h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
       qtyBox,
       h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
-      h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
+      h('button', { class: 'btn primary wide big', type: 'button', onclick: openApp }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
   };
 
@@ -8370,6 +8401,7 @@ window.KOMAT_PART_ART = [
       const st = stAt(me, ni);
       box.append(h('div', { class: 'sv-next svn-' + kindOf(at(me, ni), st) }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
     }
+    const offBox = K.myDaysOffBox && K.myDaysOffBox(me); if (offBox) box.append(offBox);
     box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
       const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
       const mates = works(i) && st ? src.order.filter((id) => id !== me && works(i) && at(id, i) && !isOff(at(id, i)) && stAt(id, i) === st).map((id) => K.personName(id)) : [];
@@ -9614,6 +9646,20 @@ window.KOMAT_PART_ART = [
     return out.map((rs) => rs.sort((a, b) => (a.date < b.date ? -1 : 1)));
   }
   const mine = (r) => r.person === K.getMe() || (r.uid && r.uid === K.me.id);
+  /* on Mine: ask for a day off and see what you asked for, without going to the Month */
+  K.SHEETS.offask = (S) => K.sheet('Ask for a day off', h('div', { class: 'off-sheet' }, askForm(S.ds || openFrom(), S.me)));
+  const MYST = { ok: ['Accepted', 'good'], approved: ['Approved', 'good'], waiting: ['Waiting for the chef', 'wait'], refused: ['Refused', 'bad'] };
+  K.myDaysOffBox = function (me) {
+    if (!K.calendarOn) return null;
+    const rs = grouped(all().filter((r) => (r.person === me || (r.uid && r.uid === K.me.id)) && r.date >= K.day(0)).sort((a, b) => (a.date < b.date ? -1 : 1)));
+    return h('section', { class: 'sv-card my-off' },
+      h('div', { class: 'my-off-head' }, h('b', null, 'My days off'),
+        h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.offForm = null; ui.sheet = { type: 'offask', ds: openFrom(), me: me }; K.render(); } }, K.icon('plus'), 'Ask for a day off')),
+      rs.length ? h('ul', { class: 'my-off-list' }, rs.map((g) => { const st = MYST[g[0].status] || MYST.waiting; return h('li', null,
+        h('span', null, h('b', null, span(g)), h('small', null, KIND[g[0].kind] || 'Day off' + (g[0].note ? ' · ' + g[0].note : ''))),
+        h('span', { class: 'my-off-st ' + st[1] }, st[0])); }))
+        : h('p', { class: 'hint' }, 'Nothing asked for. Days off are asked from ' + pretty(openFrom()) + ' on.'));
+  };
 
   /* ---------- the page ---------- */
   K.monthView = () => (K.calendarOn ? K.daysOffView() : calendar());
