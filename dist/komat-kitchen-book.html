@@ -7875,10 +7875,26 @@ window.KOMAT_PART_ART = [
     const s = supById(S.sup), list = lines('need').filter((i) => K.wbSupOf(i) === S.sup);
     if (!s) return null;
     if (S.withUsual == null) S.withUsual = !!usualDue(s);
-    if (S.text == null || !S.edited) S.text = message(s, list, S.withUsual);
-    const noQty = list.filter((i) => !i.qty);
+    /* amounts typed here stay in the sheet while you type (no redraw, so the keyboard stays open) and are saved when it is sent */
+    S.q = S.q || {};
+    if (!S.missing) S.missing = list.filter((i) => !i.qty).map((i) => i.id);
+    const draft = () => list.map((i) => (S.q[i.id] ? Object.assign({}, i, { qty: S.q[i.id].trim() }) : i));
+    if (S.text == null || !S.edited) S.text = message(s, draft(), S.withUsual);
+    const noQty = list.filter((i) => S.missing.includes(i.id));
     const qtyBox = noQty.length ? h('div', { class: 'wb-noqty' }, h('span', { class: 'label' }, 'No amount yet'),
-      noQty.map((i) => h('label', { class: 'wb-noqty-row' }, h('span', null, i.n), h('input', { class: 'input small', placeholder: 'how much', autocomplete: 'off', onchange: (e) => { const q = e.target.value.trim(); if (q) { setLine(i, { qty: q }); S.edited = false; K.render(); } } })))) : null;
+      noQty.map((i, k) => h('label', { class: 'wb-noqty-row' }, h('span', null, i.n), h('input', {
+        class: 'input small', id: 'wbq-' + k, value: S.q[i.id] || '', placeholder: 'how much', autocomplete: 'off', enterkeyhint: k < noQty.length - 1 ? 'next' : 'done',
+        oninput: (e) => {
+          S.q[i.id] = e.target.value;
+          if (!S.edited) { S.text = message(s, draft(), S.withUsual); const ta = document.getElementById('wb-msg'); if (ta) ta.value = S.text; }
+        },
+        onkeydown: (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          const nx = document.getElementById('wbq-' + (k + 1));
+          if (nx) nx.focus(); else e.target.blur();
+        },
+      })))) : null;
     const viber = s.app === 'viber', shop = s.app === 'shop';
     const go = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
@@ -7886,7 +7902,7 @@ window.KOMAT_PART_ART = [
       const url = viber ? (s.phone ? 'viber://chat?number=' + encodeURIComponent('+' + phoneDigits(s.phone)) : 'viber://forward?text=' + encodeURIComponent(S.text)) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
       if (shop) { if (s.link) window.open(s.link, '_blank', 'noopener'); /* the website to order on (Metro); the list is copied to paste or follow */ } else if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
       const at = Date.now(), ids = list.map((i) => i.id);
-      list.forEach((i) => setLine(i, { status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }));
+      list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }, q ? { qty: q } : {})); });
       /* remember it went today, so the usual order does not ask again */
       const sid = 'sent' + K.uid(), sent = { kind: 'sent', sup: S.sup, date: K.day(0), at: at, by: K.me.id || '', text: S.text };
       D.wbSent = (D.wbSent || []).concat([Object.assign({ id: sid }, sent)]);
@@ -7898,13 +7914,13 @@ window.KOMAT_PART_ART = [
       return K.sheet('Shopping list · ' + s.name, h('div', { class: 'wb-sendbox' },
         h('p', { class: 'muted' }, (s.link ? 'The list is copied and ' + s.name + '’s website opens to order the delivery.' : 'Copy it for whoever goes to ' + s.name + '.') + ' The lines move to On the way; tick them when they arrive.'),
         qtyBox,
-        h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
+        h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
         h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
     }
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
       h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
       qtyBox,
-      h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
+      h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
       h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
   };
