@@ -2529,3 +2529,22 @@ body.viewer .wb-write, body.viewer .wb-marker, body.viewer .wbr-btn, body.viewer
 body.viewer .evt-notify, body.viewer .finish .btn, body.viewer .mep-add, body.viewer .addx, body.viewer .allready, body.viewer .sec-chip,
 body.viewer .off-form, body.viewer .cb-give, body.viewer .addtask, body.viewer .news-ask, body.viewer .job.add { display: none !important; }
 body.viewer .mrow, body.viewer .todo, body.viewer .jobs, body.viewer .mrow-wrap .job { pointer-events: none; }
+.wb-asked-q { margin: 0; font: 700 1.35rem/1.2 var(--display); }
+.published { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; }
+.published .ico { width: 20px; height: 20px; color: var(--ready); }
+.published span { color: var(--muted); }
+.pub-n { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, .18); font-size: .82rem; font-weight: 700; }
+.my-off { display: grid; gap: 8px; padding: 12px; }
+.my-off-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.my-off-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.my-off-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.my-off-list li:first-child { border-top: 0; }
+.my-off-list li > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.my-off-list small { color: var(--muted); }
+.my-off-st { flex: none; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.my-off-st.good { background: var(--ready-soft); color: var(--ready); }
+.my-off-st.wait { background: var(--todo-soft); color: var(--todo-ink); }
+.my-off-st.bad { background: var(--urgent-soft); color: var(--urgent); }
+.off-sheet .off-form { margin: 0; }
+.pub-n { white-space: nowrap; }
+.off-sheet .off-h { display: none; }

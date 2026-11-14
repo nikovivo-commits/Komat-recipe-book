@@ -294,6 +294,20 @@
     return out.map((rs) => rs.sort((a, b) => (a.date < b.date ? -1 : 1)));
   }
   const mine = (r) => r.person === K.getMe() || (r.uid && r.uid === K.me.id);
+  /* on Mine: ask for a day off and see what you asked for, without going to the Month */
+  K.SHEETS.offask = (S) => K.sheet('Ask for a day off', h('div', { class: 'off-sheet' }, askForm(S.ds || openFrom(), S.me)));
+  const MYST = { ok: ['Accepted', 'good'], approved: ['Approved', 'good'], waiting: ['Waiting for the chef', 'wait'], refused: ['Refused', 'bad'] };
+  K.myDaysOffBox = function (me) {
+    if (!K.calendarOn) return null;
+    const rs = grouped(all().filter((r) => (r.person === me || (r.uid && r.uid === K.me.id)) && r.date >= K.day(0)).sort((a, b) => (a.date < b.date ? -1 : 1)));
+    return h('section', { class: 'sv-card my-off' },
+      h('div', { class: 'my-off-head' }, h('b', null, 'My days off'),
+        h('button', { class: 'btn small primary', type: 'button', onclick: () => { ui.offForm = null; ui.sheet = { type: 'offask', ds: openFrom(), me: me }; K.render(); } }, K.icon('plus'), 'Ask for a day off')),
+      rs.length ? h('ul', { class: 'my-off-list' }, rs.map((g) => { const st = MYST[g[0].status] || MYST.waiting; return h('li', null,
+        h('span', null, h('b', null, span(g)), h('small', null, KIND[g[0].kind] || 'Day off' + (g[0].note ? ' · ' + g[0].note : ''))),
+        h('span', { class: 'my-off-st ' + st[1] }, st[0])); }))
+        : h('p', { class: 'hint' }, 'Nothing asked for. Days off are asked from ' + pretty(openFrom()) + ' on.'));
+  };
 
   /* ---------- the page ---------- */
   K.monthView = () => (K.calendarOn ? K.daysOffView() : calendar());

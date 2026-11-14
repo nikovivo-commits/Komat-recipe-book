@@ -260,6 +260,7 @@
       const st = stAt(me, ni);
       box.append(h('div', { class: 'sv-next svn-' + kindOf(at(me, ni), st) }, h('span', null, 'Your next shift'), h('b', null, when), h('span', null, [st ? S[st] || st : '', hoursOf(at(me, ni))].filter(Boolean).join(' · '))));
     }
+    const offBox = K.myDaysOffBox && K.myDaysOffBox(me); if (offBox) box.append(offBox);
     box.append(h('div', { class: 'sv-card sv-mydays' }, K.DAYS.map((d, i) => {
       const c = at(me, i), st = stAt(me, i), k = kindOf(c, st), dd = K.addDays(mon, i);
       const mates = works(i) && st ? src.order.filter((id) => id !== me && works(i) && at(id, i) && !isOff(at(id, i)) && stAt(id, i) === st).map((id) => K.personName(id)) : [];

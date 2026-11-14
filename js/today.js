@@ -336,8 +336,8 @@
       K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
     const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
     left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
-      cl ? h('p', null, h('b', null, 'Mise en place finished'), ' at ' + K.hm(cl.at) + (K.nameOf(cl.by) ? ' by ' + K.nameOf(cl.by) : '') + '.') : null,
-      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s list is up for ' + K.ST[st]); } }, K.icon('check'), nTmr ? 'Done: ' + nTmr + ' to make tomorrow' : 'Done: nothing to make tomorrow'),
+      cl ? h('p', { class: 'published' }, K.icon('check'), h('b', null, 'Tomorrow’s prep is published'), h('span', null, K.hm(cl.at) + (K.nameOf(cl.by) ? ' · ' + K.nameOf(cl.by) : ''))) : null,
+      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s prep is published for ' + K.ST[st]); } }, K.icon('check'), 'Publish tomorrow’s prep', h('span', { class: 'pub-n' }, nTmr ? nTmr + ' to make' : 'nothing to make')),
       cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
       K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Add it to Ordering') : null));
     left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));

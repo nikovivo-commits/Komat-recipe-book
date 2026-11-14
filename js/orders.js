@@ -216,11 +216,15 @@
         },
       })))) : null;
     const viber = s.app === 'viber', shop = s.app === 'shop';
-    const go = () => {
+    /* opening the chat is not ordering: the lines count as ordered only when you say the message went */
+    const openApp = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
       /* Viber cannot fill in a message for a chosen chat: with a number it opens that chat (paste the copied message), without one it lets you pick the contact */
       const url = viber ? (s.phone ? 'viber://chat?number=' + encodeURIComponent('+' + phoneDigits(s.phone)) : 'viber://forward?text=' + encodeURIComponent(S.text)) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
       if (shop) { if (s.link) window.open(s.link, '_blank', 'noopener'); /* the website to order on (Metro); the list is copied to paste or follow */ } else if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
+      S.step = 'asked'; K.render();
+    };
+    const go = () => {
       const at = Date.now(), ids = list.map((i) => i.id);
       list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup, date: K.day(0) }, q ? { qty: q } : {})); });
       /* remember it went today, so the usual order does not ask again */
@@ -230,18 +234,26 @@
       ui.sheet = null; K.render();
       K.toast('Ordered from ' + s.name, { undo: () => { D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })); D.wbSent = D.wbSent.filter((x) => x.id !== sid); K.db.doc('boards/' + sid).delete().catch(() => {}); K.render(); } });
     };
+    if (S.step === 'asked') {
+      return K.sheet(s.name, h('div', { class: 'wb-sendbox wb-asked' },
+        h('p', { class: 'wb-asked-q' }, shop ? 'Did you place the order on the website?' : 'Did the message go to ' + s.name + '?'),
+        h('p', { class: 'muted' }, 'The lines count as ordered only when you say so, so nothing gets lost if the message did not go.'),
+        h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('check'), shop ? 'Yes, it is ordered' : 'Yes, it is sent'),
+        h('button', { class: 'btn wide', type: 'button', onclick: openApp }, K.icon(shop ? 'link' : 'send'), shop ? 'Open the website again' : viber ? 'Open Viber again' : 'Open WhatsApp again'),
+        h('button', { class: 'btn wide', type: 'button', onclick: () => { ui.sheet = null; K.render(); K.toast('Still on the list for ' + s.name); } }, 'Not yet, keep it on the list')));
+    }
     if (shop) {
       return K.sheet('Shopping list · ' + s.name, h('div', { class: 'wb-sendbox' },
         h('p', { class: 'muted' }, (s.link ? 'The list is copied and ' + s.name + '’s website opens to order the delivery.' : 'Copy it for whoever goes to ' + s.name + '.') + ' The lines move to On the way; tick them when they arrive.'),
         qtyBox,
         h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 2)), 'aria-label': 'Shopping list', oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
-        h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
+        h('button', { class: 'btn primary wide big', type: 'button', onclick: openApp }, K.icon(s.link ? 'link' : 'copy'), s.link ? 'Copy the list and open the website' : 'Copy the list')));
     }
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
       h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
       qtyBox,
       h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
-      h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
+      h('button', { class: 'btn primary wide big', type: 'button', onclick: openApp }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
   };
 
