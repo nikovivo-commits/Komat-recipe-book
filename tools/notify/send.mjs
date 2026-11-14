@@ -159,60 +159,6 @@ if (supList.length) {
     msgs.push({ admins: true, title: s.name + ': order by ' + (s.deadline === '00:00' ? 'midnight' : s.deadline), body: mine.length + ' in Ordering: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
   }
 }
-/* questions asked in the app ("Ask Claude"): each is answered from the kitchen's own data (ask.mjs),
-   and the answer goes back on the question and to the phone of whoever asked */
-const asks = boards.filter((d) => d.data.kind === 'ask');
-const askNow = asks.filter((d) => d.data.status === 'pending').sort((a, b) => (a.data.at || 0) - (b.data.at || 0));
-if (askNow.length && !process.env.ANTHROPIC_API_KEY) console.log(askNow.length + ' question(s) waiting: add the secret ANTHROPIC_API_KEY to answer them');
-if (askNow.length && process.env.ANTHROPIC_API_KEY) {
-  const { answerQuestion } = await import('./ask.mjs');
-  /* what the kitchen knows, without photos, phone numbers or the kitchen code */
-  const DROP = new Set(['photo', 'photos', 'videos', 'video', 'gallery', 'img', 'image', 'pics', 'thumb', 'updated', 'ink', 'hand', 'phone', 'moved', 'leftAt', 'doneAt', 'k', 't']);
-  const tidy = (v) => Array.isArray(v) ? v.map(tidy) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([k, x]) => !DROP.has(k) && x !== '' && x !== null && !(Array.isArray(x) && !x.length)).map(([k, x]) => [k, tidy(x)])) : v;
-  const byId = (rows) => Object.fromEntries(rows.map((r) => [r.id, tidy(r.data)]));
-  const sett = async (id) => { const x = await call('GET', 'settings/' + id); return x ? tidy(unfields(x.fields || {})) : null; };
-  const back = (n) => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
-  const tomorrow = back(-1);
-  const recipes = JSON.stringify(byId(await list('recipes')));
-  const members = (await list('members')).map((m) => ({ uid: m.id, name: m.data.name, role: m.data.role }));
-  const nowTxt = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Sofia', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const data = {
-    now: nowTxt + ' (Sofia). Today is ' + today + ', tomorrow is ' + tomorrow + '.',
-    staff: ((await sett('staff')) || {}).people || [],
-    members,
-    shiftcodes: ((await sett('shiftcodes')) || {}).codes || [],
-    weeks: byId((await list('schedules')).filter((w) => w.id >= back(14) && w.id <= back(-28))),
-    daysoff: (await list('dayoff')).filter((d) => (d.data.date || '') >= back(7)).map((d) => tidy(d.data)),
-    checks: byId((await list('checks')).filter((c) => c.id.slice(0, 10) >= back(1))),
-    prep: (await list('prep')).filter((p) => (p.data.date || '') >= back(1)).map((p) => tidy(p.data)),
-    ordering: {
-      open: boards.filter((d) => d.data.kind === 'item' && d.data.status === 'need').map((d) => tidy(d.data)),
-      ordered: boards.filter((d) => d.data.kind === 'item' && d.data.status === 'ordered' && (d.data.date || '') >= back(3)).map((d) => tidy(d.data)),
-      sent: boards.filter((d) => d.data.kind === 'sent' && (d.data.date || '') >= back(7)).map((d) => tidy(d.data)),
-      suppliers: (tidy(supData).list || []),
-    },
-    events: (await list('events')).filter((e) => (e.data.date || '') >= back(14)).map((e) => tidy(e.data)),
-  };
-  const rest = 'Kitchen data now (JSON):\n' + JSON.stringify(data);
-  console.log('answering ' + askNow.length + ' question(s); recipes ' + recipes.length + ' chars, the rest ' + rest.length + ' chars');
-  for (const q of askNow) {
-    const d = q.data;
-    try {
-      const history = asks.filter((x) => x.id !== q.id && x.data.thread && x.data.thread === d.thread && x.data.status === 'done' && (x.data.at || 0) < (d.at || 0))
-        .sort((a, b) => a.data.at - b.data.at).slice(-6).map((x) => ({ q: x.data.q, a: x.data.a }));
-      const a = DRY ? '(dry run)' : await answerQuestion({ recipes, rest, history, question: String(d.q || '').slice(0, 2000), who: d.name || '' });
-      console.log('question ' + q.id + ' answered (' + a.length + ' chars)');
-      if (DRY) continue;
-      await call('PATCH', 'boards/' + q.id, { fields: fieldsOf(Object.assign({}, d, { status: 'done', a: a, doneAt: Date.now() })) });
-      if (d.by) msgs.push({ uid: d.by, title: 'Claude answered', body: a.replace(/\s+/g, ' ').slice(0, 140), url: SITE + '#ask', tag: 'ask' });
-    } catch (err) {
-      console.error('question ' + q.id + ' failed:', err.message);
-      if (!DRY) await call('PATCH', 'boards/' + q.id, { fields: fieldsOf(Object.assign({}, d, { status: 'failed', error: String(err.message || err).slice(0, 160), doneAt: Date.now() })) });
-    }
-  }
-}
-/* questions are kept for two weeks */
-if (!DRY) for (const q of asks) if ((q.data.at || 0) < Date.now() - 14 * 864e5) await call('DELETE', 'boards/' + q.id).catch(() => {});
 if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
 
 /* who has the full rights: reminders to order go to them only */
@@ -237,7 +183,6 @@ let sent = 0, gone = 0, failed = 0;
 for (const s of subs) {
   for (const m of msgs) {
     if (m.admins && !chefs.has(s.id)) continue;
-    if (m.uid && s.id !== m.uid) continue;
     if (DRY) continue;
     try { await webpush.sendNotification({ endpoint: s.data.endpoint, keys: s.data.keys }, JSON.stringify({ title: m.title, body: m.body, url: m.url, tag: m.tag }), { TTL: 86400, urgency: 'normal' }); sent++; } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) { gone++; await call('DELETE', 'pushsubs/' + s.id).catch(() => {}); break; }
