@@ -7748,7 +7748,8 @@ window.KOMAT_PART_ART = [
     const viber = s.app === 'viber';
     const go = () => {
       try { navigator.clipboard.writeText(S.text).catch(() => {}); } catch (e) { /* no clipboard */ }
-      const url = viber ? 'viber://forward?text=' + encodeURIComponent(S.text) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
+      /* Viber cannot fill in a message for a chosen chat: with a number it opens that chat (paste the copied message), without one it lets you pick the contact */
+      const url = viber ? (s.phone ? 'viber://chat?number=' + encodeURIComponent('+' + phoneDigits(s.phone)) : 'viber://forward?text=' + encodeURIComponent(S.text)) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
       if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
       const at = Date.now(), ids = list.map((i) => i.id);
       list.forEach((i) => setLine(i, { status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }));
@@ -7756,7 +7757,7 @@ window.KOMAT_PART_ART = [
       K.toast(list.length + (list.length === 1 ? ' line' : ' lines') + ' ordered from ' + s.name, { undo: () => D.wb.filter((i) => ids.includes(i.id)).forEach((i) => setLine(i, { status: 'need', orderedAt: 0 })) });
     };
     return K.sheet('Order from ' + s.name, h('div', { class: 'wb-sendbox' },
-      h('p', { class: 'muted' }, (viber ? 'Viber opens to pick ' + s.name + '; the message is copied too, paste it if it is not there.' : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
+      h('p', { class: 'muted' }, (viber ? (s.phone ? 'Viber opens the chat with ' + s.name + ' and the message is copied: hold the text box and tap Paste.' : 'Viber opens to pick ' + s.name + ', with the message.') : 'WhatsApp opens with the message to ' + (s.phone || 'the contact you pick') + '.') + ' Change anything first.'),
       h('textarea', { class: 'input wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; } }, S.text),
       h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
