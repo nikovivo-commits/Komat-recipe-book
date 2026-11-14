@@ -2504,3 +2504,5 @@ button.wbr-main { cursor: pointer; }
 .wb-sup.way .wb-sup-head { flex-wrap: nowrap; align-items: center; }
 .wb-sup.way .wb-sup-head .btn { flex: none; }
 .wb-usual b { font-weight: 700; }
+.wb-sup.themed.sent { opacity: .62; filter: saturate(.6); }
+.wb-sup.themed.sent .wb-sup-head { min-height: 0; padding-block: 8px; }

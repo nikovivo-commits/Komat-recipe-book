@@ -2511,6 +2511,8 @@ button.wbr-main { cursor: pointer; }
 .wb-sup.way .wb-sup-head { flex-wrap: nowrap; align-items: center; }
 .wb-sup.way .wb-sup-head .btn { flex: none; }
 .wb-usual b { font-weight: 700; }
+.wb-sup.themed.sent { opacity: .62; filter: saturate(.6); }
+.wb-sup.themed.sent .wb-sup-head { min-height: 0; padding-block: 8px; }
 
 </style>
 <div id="app"></div>
@@ -7809,6 +7811,7 @@ window.KOMAT_PART_ART = [
     return now.getHours() * 60 + now.getMinutes() < dlMin(s.deadline);
   };
   const sentToday = (s) => (D.wbSent || []).some((x) => x.sup === s.id && x.date === K.day(0));
+  const lastSent = (s) => (D.wbSent || []).filter((x) => x.sup === s.id && x.date === K.day(0)).sort((a, b) => b.at - a.at)[0];
   const usual = (s) => String(s.usual || '').split('\n').map((x) => x.trim()).filter(Boolean);
   const usualDue = (s) => !s.paused && usual(s).length && openToday(s) && !sentToday(s);
   /* a supplier kept on top shows on its order days even before anything is written for it (bread) */
@@ -7917,16 +7920,17 @@ window.KOMAT_PART_ART = [
     const groups = {};
     need.forEach((i) => { const s = K.wbSupOf(i); (groups[s] = groups[s] || []).push(i); });
     /* suppliers with lines, and the ones whose usual order is due today; pinned and due first */
-    const rank = (s) => ((usualDue(s) || pinnedDue(s)) && s.top ? 0 : usualDue(s) || (groups[s.id] && openToday(s) && (s.days || []).length) ? 1 : groups[s.id] ? 2 : 3);
-    const order = sups().filter((s) => groups[s.id] || usualDue(s) || pinnedDue(s)).sort((a, b) => rank(a) - rank(b) || String(a.deadline || '99').localeCompare(String(b.deadline || '99')));
+    const rank = (s) => (sentToday(s) && !groups[s.id] ? 9 : (usualDue(s) || pinnedDue(s)) && s.top ? 0 : usualDue(s) || (groups[s.id] && openToday(s) && (s.days || []).length) ? 1 : groups[s.id] ? 2 : 3);
+    /* sent today: the card drops to the bottom, ticked */
+    const order = sups().filter((s) => groups[s.id] || usualDue(s) || pinnedDue(s) || sentToday(s)).sort((a, b) => rank(a) - rank(b) || String(a.deadline || '99').localeCompare(String(b.deadline || '99')));
     order.forEach((s) => {
-      const list = groups[s.id] || [], th = theme(s), u = usualDue(s) ? usual(s) : [], pin = pinnedDue(s);
-      w.append(h('section', { class: 'block card wb-sup themed' + (urgent(s) || u.length || pin ? ' due' : '') + (s.top && (u.length || pin) ? ' pinned' : ''), style: '--sup-c:' + th[1] + ';--sup-img:' + (th[2] ? 'url("' + new URL('assets/photos/suppliers/' + th[2] + '.jpg', document.baseURI).href + '")' : 'none') },
+      const list = groups[s.id] || [], th = theme(s), u = usualDue(s) ? usual(s) : [], pin = pinnedDue(s), done = sentToday(s) && !list.length;
+      w.append(h('section', { class: 'block card wb-sup themed' + (done ? ' sent' : urgent(s) || u.length || pin ? ' due' : '') + (!done && s.top && (u.length || pin) ? ' pinned' : ''), style: '--sup-c:' + th[1] + ';--sup-img:' + (th[2] ? 'url("' + new URL('assets/photos/suppliers/' + th[2] + '.jpg', document.baseURI).href + '")' : 'none') },
         h('div', { class: 'wb-sup-head' }, h('div', null, h('span', { class: 'wb-kind' }, th[0]), h('h2', { class: 'block-title' }, s.name),
-          sentToday(s) ? h('span', { class: 'wb-due' }, K.icon('check'), 'Sent today') : when(s) || u.length ? h('span', { class: 'wb-due' }, when(s) || 'Order today') : null),
+          sentToday(s) ? h('span', { class: 'wb-due' }, K.icon('check'), 'Sent today' + (lastSent(s) ? ' ' + K.hm(lastSent(s).at) : '')) : when(s) || u.length ? h('span', { class: 'wb-due' }, when(s) || 'Order today') : null),
           K.me.admin ? h('button', { class: 'btn small wb-sendbtn', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon(s.app === 'shop' ? (s.link ? 'link' : 'list') : 'send'), s.app === 'shop' ? (s.link ? 'Website' : 'List') : s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
         u.length ? h('p', { class: 'wb-usual' }, h('b', null, 'The usual: '), u.join(' · ')) : null,
-        list.length ? h('div', { class: 'wbl' }, list.map((i) => line(i, {}))) : !u.length ? h('p', { class: 'wb-usual' }, 'Order day. Write what we need for ' + s.name + ' above.') : null));
+        list.length ? h('div', { class: 'wbl' }, list.map((i) => line(i, {}))) : !u.length && !done ? h('p', { class: 'wb-usual' }, 'Order day. Write what we need for ' + s.name + ' above.') : null));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },
