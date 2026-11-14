@@ -2517,6 +2517,10 @@ button.wbr-main { cursor: pointer; }
 .wbr-addq { min-height: 30px; padding: 2px 10px; border: 1.5px dashed var(--line); border-radius: 999px; background: transparent; color: var(--muted); font: 600 .78rem/1 var(--sans); white-space: nowrap; }
 .wb-noqty { display: grid; gap: 6px; padding: 10px 12px; border: 1px dashed var(--todo); border-radius: 12px; background: var(--todo-soft); }
 .wb-noqty-row { display: grid; grid-template-columns: minmax(0, 1fr) 8em; align-items: center; gap: 8px; font-weight: 600; }
+.wb-hist { display: flex; flex-wrap: wrap; gap: 8px; }
+.wb-histcard { display: grid; gap: 6px; padding: 10px 12px; border-left: 4px solid var(--sup-c, var(--line)); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
+.wb-histhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; }
+.wb-histcard ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 
 </style>
 <div id="app"></div>
@@ -7902,7 +7906,7 @@ window.KOMAT_PART_ART = [
       const url = viber ? (s.phone ? 'viber://chat?number=' + encodeURIComponent('+' + phoneDigits(s.phone)) : 'viber://forward?text=' + encodeURIComponent(S.text)) : 'https://wa.me/' + phoneDigits(s.phone) + '?text=' + encodeURIComponent(S.text);
       if (shop) { if (s.link) window.open(s.link, '_blank', 'noopener'); /* the website to order on (Metro); the list is copied to paste or follow */ } else if (viber) window.location.href = url; else window.open(url, '_blank', 'noopener');
       const at = Date.now(), ids = list.map((i) => i.id);
-      list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup }, q ? { qty: q } : {})); });
+      list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup, date: K.day(0) }, q ? { qty: q } : {})); });
       /* remember it went today, so the usual order does not ask again */
       const sid = 'sent' + K.uid(), sent = { kind: 'sent', sup: S.sup, date: K.day(0), at: at, by: K.me.id || '', text: S.text };
       D.wbSent = (D.wbSent || []).concat([Object.assign({ id: sid }, sent)]);
@@ -7923,6 +7927,27 @@ window.KOMAT_PART_ART = [
       h('textarea', { class: 'input wb-msg', id: 'wb-msg', rows: String(Math.min(16, list.length + 4)), 'aria-label': 'Message to ' + s.name, oninput: (e) => { S.text = e.target.value; S.edited = true; } }, S.text),
       h('button', { class: 'btn primary wide big', type: 'button', onclick: go }, K.icon('send'), viber ? 'Open Viber' : 'Open WhatsApp'),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { try { navigator.clipboard.writeText(S.text).then(() => K.toast('Copied'), () => K.toast('Select the text and copy it')); } catch (e) { K.toast('Select the text and copy it'); } } }, K.icon('copy'), 'Only copy it')));
+  };
+
+  /* ---------- what was ordered, by day ---------- */
+  const sentOn = (day) => (D.wbSent || []).filter((x) => x.date === day).sort((a, b) => (a.at || 0) - (b.at || 0));
+  K.SHEETS.wbhist = function (S) {
+    const day = K.day(S.day || 0), list = sentOn(day);
+    const nice = K.parseYmd(day).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+    const rows = (x) => {
+      const sp = supById(x.sup), lines = String(x.text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+      const greet = ((sp && sp.greeting) || 'Здравейте').toLowerCase().slice(0, 9);
+      return lines.filter((l, i) => !(i === 0 && l.toLowerCase().startsWith(greet.slice(0, 6))));
+    };
+    return K.sheet('Ordered ' + (S.day === -1 ? 'yesterday' : 'today'), h('div', { class: 'wb-sendbox' },
+      K.seg([[-1, 'Yesterday'], [0, 'Today']], S.day, (v) => { S.day = v; K.render(); }, { 'aria-label': 'Which day', class: 'seg' }),
+      h('p', { class: 'muted' }, nice + (list.length ? ' · ' + list.length + (list.length === 1 ? ' order' : ' orders') : '')),
+      list.length ? list.map((x) => {
+        const sp = supById(x.sup), th = sp ? theme(sp) : THEMES.other;
+        return h('section', { class: 'wb-histcard', style: '--sup-c:' + th[1] },
+          h('div', { class: 'wb-histhead' }, h('b', null, sp ? sp.name : 'Supplier'), h('span', { class: 'muted' }, K.hm(x.at) + (first(x.by) ? ' · ' + first(x.by) : ''))),
+          h('ul', null, rows(x).map((l) => h('li', null, l))));
+      }) : h('p', { class: 'none' }, 'Nothing was ordered through the app ' + (S.day === -1 ? 'yesterday' : 'today') + '.')));
   };
 
   /* ---------- the page ---------- */
@@ -7978,12 +8003,16 @@ window.KOMAT_PART_ART = [
   K.V.orders = function () {
     const need = lines('need'), out = lines('ordered');
     const body = h('div', { class: 'page' });
-    body.append(K.pageHead('Whiteboard', need.length ? need.length + ' to order' + (out.length ? ' · ' + out.length + ' on the way' : '') : out.length ? out.length + ' on the way' : 'What the kitchen needs',
+    body.append(K.pageHead('Whiteboard', need.length ? need.length + ' to order' : 'What the kitchen needs',
       K.me.admin ? h('button', { class: 'btn light', type: 'button', onclick: () => { ui.sheet = { type: 'suppliers' }; K.render(); } }, K.icon('chef'), 'Suppliers') : null, 'orders'));
     const w = h('div', { class: 'wrap orders wbx' });
     body.append(w);
     ui.wbForm = ui.wbForm || { text: '', amt: '' };
     w.append(h('section', { class: 'wb-write' }, writeForm(ui.wbForm, null, true), ui.wbPhotoBusy ? h('p', { class: 'muted' }, 'Saving the photo…') : null));
+    const yN = sentOn(K.day(-1)).length, tN = sentOn(K.day(0)).length;
+    w.append(h('div', { class: 'wb-hist' },
+      h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'wbhist', day: -1 }; K.render(); } }, K.icon('list'), 'Ordered yesterday' + (yN ? ' · ' + yN : '')),
+      tN ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'wbhist', day: 0 }; K.render(); } }, 'Today · ' + tN) : null));
     const sc = scanCards(); if (sc.length) w.append(h('div', { class: 'wb-scans' }, sc));
 
     /* to order, by supplier; the ones we cannot place yet last */
@@ -8011,20 +8040,6 @@ window.KOMAT_PART_ART = [
     }
     if (!need.length && !order.length) w.append(h('p', { class: 'none wb-empty' }, 'The board is clean. Write what runs low the moment you see it, from any page: the marker at the top.'));
 
-    /* ordered, waiting for the delivery */
-    if (out.length) {
-      const og = {};
-      out.forEach((i) => { const s = i.sup || ''; (og[s] = og[s] || []).push(i); });
-      w.append(h('h2', { class: 'sec-title wb-way' }, 'On the way'));
-      Object.keys(og).forEach((sid) => {
-        const s = supById(sid), list = og[sid];
-        w.append(h('section', { class: 'block card wb-sup way' },
-          h('div', { class: 'wb-sup-head' }, h('h2', { class: 'block-title' }, s ? s.name : 'Ordered'),
-            h('button', { class: 'btn small', type: 'button', onclick: () => list.forEach((i) => setLine(i, { status: 'got', gotAt: Date.now(), date: K.day(0) })) }, K.icon('check'), 'All arrived')),
-          h('div', { class: 'wbl' }, list.map((i) => line(i, { done: true }))),
-          h('p', { class: 'hint' }, 'Tick each line as it arrives. Not delivered? Wipe the tick by writing it on the board again.')));
-      });
-    }
     return { body: body };
   };
 
