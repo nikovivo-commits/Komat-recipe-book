@@ -279,13 +279,30 @@
 
   /* ---------- what was ordered, by day ---------- */
   const sentOn = (day) => (D.wbSent || []).filter((x) => x.date === day).sort((a, b) => (a.at || 0) - (b.at || 0));
+  /* the lines of one sent order: its saved list, or for older orders the lines of the message (without the greeting) */
+  const sentLines = (x) => {
+    if (x.items && x.items.length) return x.items.map((i) => (i.q ? i.q + ' ' : '') + i.n);
+    const sp = supById(x.sup), lines = String(x.text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+    const greet = ((sp && sp.greeting) || 'Здравейте').toLowerCase();
+    return lines.filter((l, i) => !(i === 0 && l.toLowerCase().startsWith(greet.slice(0, 6))));
+  };
+  const dayName = (d) => (d === K.day(0) ? 'Today' : d === K.day(-1) ? 'Yesterday' : K.prettyDate(d, { weekday: 'short', day: 'numeric', month: 'short' }));
+  /* one supplier's orders: tap its card to see what went yesterday, today and the week before */
+  K.SHEETS.wbsuphist = function (S) {
+    const sp = supById(S.sup);
+    if (!sp) return null;
+    const list = (D.wbSent || []).filter((x) => x.sup === sp.id).sort((a, b) => (b.at || 0) - (a.at || 0));
+    const th = theme(sp), y = list.filter((x) => x.date === K.day(-1));
+    return K.sheet(sp.name, h('div', { class: 'wb-sendbox' },
+      h('div', { class: 'wb-date' }, h('span', { class: 'wb-date-k' }, 'Ordered yesterday'), h('b', null, K.sheetDate(K.day(-1)))),
+      y.length ? null : h('p', { class: 'none' }, 'Nothing went to ' + sp.name + ' yesterday through the app.'),
+      list.length ? list.map((x) => h('section', { class: 'wb-histcard', style: '--sup-c:' + th[1] },
+        h('div', { class: 'wb-histhead' }, h('b', null, dayName(x.date)), h('span', { class: 'muted' }, K.hm(x.at) + (first(x.by) ? ' · ' + first(x.by) : ''))),
+        h('ul', null, sentLines(x).map((l) => h('li', null, l))))) : null,
+      list.length ? h('p', { class: 'hint' }, 'Orders sent through the app in the last two weeks.') : null));
+  };
   K.SHEETS.wbhist = function (S) {
     const day = K.day(S.day || 0), list = sentOn(day);
-    const rows = (x) => {
-      const sp = supById(x.sup), lines = String(x.text || '').split('\n').map((l) => l.trim()).filter(Boolean);
-      const greet = ((sp && sp.greeting) || 'Здравейте').toLowerCase().slice(0, 9);
-      return lines.filter((l, i) => !(i === 0 && l.toLowerCase().startsWith(greet.slice(0, 6))));
-    };
     return K.sheet('Ordered ' + (S.day === -1 ? 'yesterday' : 'today'), h('div', { class: 'wb-sendbox' },
       K.seg([[-1, 'Yesterday'], [0, 'Today']], S.day, (v) => { S.day = v; K.render(); }, { 'aria-label': 'Which day', class: 'seg' }),
       h('div', { class: 'wb-date' }, h('span', { class: 'wb-date-k' }, (S.day === -1 ? 'Yesterday' : 'Today') + (list.length ? ' · ' + list.length + (list.length === 1 ? ' order' : ' orders') : '')), h('b', null, K.sheetDate(day))),
@@ -293,7 +310,7 @@
         const sp = supById(x.sup), th = sp ? theme(sp) : THEMES.other;
         return h('section', { class: 'wb-histcard', style: '--sup-c:' + th[1] },
           h('div', { class: 'wb-histhead' }, h('b', null, sp ? sp.name : 'Supplier'), h('span', { class: 'muted' }, K.hm(x.at) + (first(x.by) ? ' · ' + first(x.by) : ''))),
-          h('ul', null, (x.items && x.items.length ? x.items.map((i) => (i.q ? i.q + ' ' : '') + i.n) : rows(x)).map((l) => h('li', null, l))));
+          h('ul', null, sentLines(x).map((l) => h('li', null, l))));
       }) : h('p', { class: 'none' }, 'Nothing was ordered through the app ' + (S.day === -1 ? 'yesterday' : 'today') + '.')));
   };
 
@@ -374,11 +391,11 @@
     order.forEach((s) => {
       const list = groups[s.id] || [], th = theme(s), u = usualDue(s) ? usual(s) : [], pin = pinnedDue(s), done = sentToday(s) && !list.length;
       w.append(h('section', { class: 'block card wb-sup themed' + (done ? ' sent' : urgent(s) || u.length || pin ? ' due' : '') + (!done && s.top && (u.length || pin) ? ' pinned' : ''), style: '--sup-c:' + th[1] + ';--sup-img:' + (th[2] ? 'url("' + new URL('assets/photos/suppliers/' + th[2] + '.jpg', document.baseURI).href + '")' : 'none') },
-        h('div', { class: 'wb-sup-head' }, h('div', null, h('span', { class: 'wb-kind' }, th[0]), h('h2', { class: 'block-title' }, s.name),
+        h('div', { class: 'wb-sup-head' }, h('button', { type: 'button', class: 'wb-sup-name', 'aria-label': 'What went to ' + s.name + ' yesterday and today', onclick: () => { ui.sheet = { type: 'wbsuphist', sup: s.id }; K.render(); } }, h('span', { class: 'wb-kind' }, th[0]), h('h2', { class: 'block-title' }, s.name),
           sentToday(s) ? h('span', { class: 'wb-due' }, K.icon('check'), 'Sent today' + (lastSent(s) ? ' ' + K.hm(lastSent(s).at) : '')) : when(s) || u.length ? h('span', { class: 'wb-due' }, when(s) || 'Order today') : null),
           K.wbCanOrder() ? h('button', { class: 'btn small wb-sendbtn', type: 'button', onclick: () => { ui.sheet = { type: 'wbsend', sup: s.id }; K.render(); } }, K.icon(s.app === 'shop' ? (s.link ? 'link' : 'list') : 'send'), s.app === 'shop' ? (s.link ? 'Website' : 'List') : s.app === 'viber' ? 'Viber' : 'WhatsApp') : null),
         u.length ? h('p', { class: 'wb-usual' }, h('b', null, 'The usual: '), u.join(' · ')) : null,
-        list.length ? h('div', { class: 'wbl' }, list.map((i) => line(i, {}))) : !u.length && !done ? h('p', { class: 'wb-usual' }, 'Order day. Write what we need for ' + s.name + ' above.') : null));
+        list.length ? h('div', { class: 'wbl' }, list.map((i) => line(i, {}))) : done && lastSent(s) ? h('p', { class: 'wb-usual wb-went' }, h('b', null, 'Went: '), sentLines(lastSent(s)).join(' · ')) : !u.length && !done ? h('p', { class: 'wb-usual' }, 'Order day. Write what we need for ' + s.name + ' above.') : null));
     });
     if (groups['']) {
       w.append(h('section', { class: 'block card wb-sup none' },

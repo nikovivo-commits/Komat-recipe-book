@@ -2549,3 +2549,8 @@ body.viewer .mrow, body.viewer .todo, body.viewer .jobs, body.viewer .mrow-wrap 
 .pub-n { white-space: nowrap; }
 .off-sheet .off-h { display: none; }
 .legal { font-size: .78rem; text-align: center; margin: 6px 0 0; }
+/* a supplier's name opens what went to them yesterday and today */
+.wb-sup-name { all: unset; display: block; cursor: pointer; min-width: 0; border-radius: 8px; }
+.wb-sup-name:focus-visible { outline: 2px solid var(--on-steel, #fff); outline-offset: 3px; }
+.wb-sup-name .block-title::after { content: " ›"; opacity: .7; font-weight: 600; }
+.wb-went { opacity: .95; }
