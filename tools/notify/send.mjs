@@ -52,6 +52,8 @@ async function signIn() {
 async function call(method, path, body) {
   const r = await fetch(FS + '/' + path, { method, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   if (method === 'GET' && r.status === 404) return null;
+  /* the database's daily limit is used up: nothing can be done until it resets; stop quietly (a failed run emails the owner every minute) */
+  if (r.status === 429) { console.log('database daily limit reached (429): trying again on the next run'); process.exit(0); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(method + ' ' + path + ': ' + r.status + ' ' + ((j.error && j.error.message) || ''));
   return j;
@@ -97,6 +99,7 @@ async function query(coll, eq) {
   const where = { compositeFilter: { op: 'AND', filters: Object.entries(eq).map(([f, v]) => ({ fieldFilter: { field: { fieldPath: f }, op: 'EQUAL', value: val(v) } })) } };
   const r = await fetch(FS + ':runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coll }], where } }) });
   const j = await r.json().catch(() => []);
+  if (r.status === 429) { console.log('database daily limit reached (429): trying again on the next run'); process.exit(0); }
   if (!r.ok) throw new Error('query ' + coll + ': ' + r.status + ' ' + ((j[0] && j[0].error && j[0].error.message) || (j.error && j.error.message) || ''));
   return j.filter((x) => x.document).map((x) => ({ id: x.document.name.split('/').pop(), created: Date.parse(x.document.createTime), data: unfields(x.document.fields || {}) }));
 }
