@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import webpush from 'web-push';
+import { createRequire } from 'node:module';
 
 const PUBLIC = 'BC85jaVS08C44ojYHcP6rADTpkau3aynlN3p8qY0J8L8Ydqrx-gPM8JoyHGi-62PAzrMQUeNqEofC71IUUREZiw';
 const SITE = 'https://nikovivo-commits.github.io/Komat-recipe-book/';
@@ -184,10 +185,12 @@ if (pruned !== today) {
 }
 const mon = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
 const msgs = [];
-for (const w of await list('schedules')) {
+const weeks = await list('schedules');
+for (const w of weeks) {
   if (w.created > since && w.id >= mon) msgs.push({ title: 'The Brigade for ' + weekRange(w.id) + ' is out', body: 'Check your shifts', url: SITE + '#schedule', tag: 'wk-' + w.id });
 }
-for (const e of await list('events')) {
+const evList = await list('events');
+for (const e of evList) {
   const d = e.data, ann = +d.announce || 0;
   if (d.status === 'cancelled' || !(d.date >= today) || !(e.created > since || ann > since)) continue;
   const fresh = e.created > since && !(ann > e.created + 60000);
@@ -196,6 +199,55 @@ for (const e of await list('events')) {
     body: [pretty(d.date, { weekday: 'short', day: 'numeric', month: 'short' }), d.guests ? d.guests + ' guests' : '', 'check it out'].filter(Boolean).join(' · '),
     url: SITE + '#events', tag: 'ev-' + e.id,
   });
+}
+/* The Brigade locks itself. At 23:00 on Saturday the chefs get a heads-up that next week goes out at midnight
+   (and how many holes it still has); from midnight, a week nobody saved is drafted exactly as the generator
+   shows it in the app (js/rotagen.js, the same code and the same inputs) and saved. The usual "The Brigade is
+   out" notification then goes to everyone on the next round. A week a chef saved by hand is never touched. */
+{
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((p) => [p.type, p.value]));
+  const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday), mins = +parts.hour * 60 + +parts.minute;
+  const addDays = (ymd, n) => { const d = new Date(ymd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const nextMon = addDays(mon, 7);
+  const due = wd === 6 ? nextMon : mon; /* on Sunday the coming week, otherwise this week if it was never saved */
+  const remind = wd === 5 && mins >= 23 * 60 && reminded.brigade !== nextMon;
+  const saved = new Set(weeks.map((w) => w.id));
+  const target = remind ? nextMon : due;
+  if ((remind || !saved.has(due)) && !saved.has(target)) {
+    const rotaGen = createRequire(import.meta.url)('../../js/rotagen.js');
+    const rp = (await call('GET', 'settings/rotaplan')), staffDoc = await call('GET', 'settings/staff');
+    const plan = rp ? unfields(rp.fields || {}) : {};
+    const ones = () => [1, 1, 1, 1, 1, 1, 1];
+    plan.people = plan.people || {};
+    plan.needs = plan.needs || { hot: ones(), cold: ones(), pass: ones() };
+    ['hot', 'cold', 'pass'].forEach((s) => { if (!Array.isArray(plan.needs[s])) plan.needs[s] = ones(); });
+    if (!Array.isArray(plan.busy)) plan.busy = [4, 5];
+    if (!Array.isArray(plan.brDays)) plan.brDays = [5, 6];
+    plan.brCode = plan.brCode || 'BR+P';
+    const ready = Object.keys(plan.people).some((id) => (plan.people[id] || {}).mode === 'auto');
+    if (ready) {
+      const pins = ((plan.pins || {})[target] || []).slice(); delete plan.pins;
+      const people = ((staffDoc ? unfields(staffDoc.fields || {}) : {}).people || []).map((p) => ({ id: p.id, name: p.name }));
+      const end = addDays(target, 6), after = addDays(target, 7);
+      const events = evList.map((e) => e.data).filter((e) => e.status !== 'cancelled' && e.status !== 'pending' && e.date >= target && e.date <= after && (+e.cooks > 0 || +e.before > 0))
+        .map((e) => ({ date: e.date, cooks: e.date <= end ? +e.cooks || 0 : 0, when: e.when || '', before: +e.before || 0, title: e.title || 'Event' }));
+      const requests = (await list('dayoff')).map((d) => d.data).filter((r) => r.date >= target && r.date <= end).map((r) => ({ person: r.person, date: r.date, kind: r.kind, status: r.status }));
+      const input = { week: target, plan, people, requests: [], keep: {}, events, pins };
+      const base = rotaGen(input);
+      const r = requests.length ? rotaGen(Object.assign({}, input, { requests, prev: { rows: base.rows, st: base.st } })) : base;
+      const holes = r.issues.filter((x) => x.sev === 'red').length;
+      if (remind) {
+        reminded.brigade = nextMon;
+        msgs.push({ chefsOnly: true, title: 'The Brigade for ' + weekRange(nextMon) + ' goes out at midnight', body: holes ? holes + (holes === 1 ? ' hole' : ' holes') + ' still to fill in the generator' : 'The draft is complete: check it once more', url: SITE + '#schedule', tag: 'wk-lock-' + nextMon });
+        console.log('brigade: reminder for ' + nextMon + ', ' + holes + ' holes');
+      } else {
+        const body = { week: target, people: r.order.slice(), rows: r.rows, st: r.st, note: '', updated: Date.now(), made: 'auto' };
+        if (!DRY) await call('PATCH', 'schedules/' + target, { fields: fieldsOf(body) });
+        console.log('brigade: saved ' + target + ' from the draft, ' + holes + ' holes');
+        if (holes) msgs.push({ chefsOnly: true, title: 'The Brigade for ' + weekRange(target) + ' is out with ' + holes + (holes === 1 ? ' hole' : ' holes'), body: 'Fill them on The Brigade', url: SITE + '#schedule', tag: 'wk-holes-' + target });
+      }
+    }
+  }
 }
 /* the whiteboard: an hour before a supplier's order deadline, on its order days, remind the chefs of what is still on it */
 await getSup();
@@ -220,6 +272,12 @@ if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
 /* who has the full rights: reminders to order go to them only */
 /* reminders to order go to the people chosen to order (Suppliers > Who can order), else to the chefs */
 const chefs = new Set();
+/* the Brigade's notices go to the chefs with the full rights (sous chef, head chef) and the owner */
+const heads = new Set();
+if (msgs.some((m) => m.chefsOnly)) {
+  for (const m of members) if (['sous', 'admin', 'dev'].includes(m.data.role)) heads.add(m.id);
+  const own = await call('GET', 'private/owner'); if (own) heads.add(unfields(own.fields || {}).uid);
+}
 if (msgs.some((m) => m.admins)) {
   const who = Array.isArray(supData.orderers) ? supData.orderers : [];
   if (who.length) {
@@ -239,6 +297,7 @@ let sent = 0, gone = 0, failed = 0;
 for (const s of subs) {
   for (const m of msgs) {
     if (m.admins && !chefs.has(s.id)) continue;
+    if (m.chefsOnly && !heads.has(s.id)) continue;
     if (DRY) continue;
     try { await webpush.sendNotification({ endpoint: s.data.endpoint, keys: s.data.keys }, JSON.stringify({ title: m.title, body: m.body, url: m.url, tag: m.tag }), { TTL: 86400, urgency: 'normal' }); sent++; } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) { gone++; await call('DELETE', 'pushsubs/' + s.id).catch(() => {}); break; }

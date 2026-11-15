@@ -119,7 +119,7 @@
       w.append(legend());
       return { body: body };
     }
-    if (src.draft) w.append(h('p', { class: 'sv-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + (src.holes ? ' · ' + src.holes + (src.holes === 1 ? ' hole' : ' holes') : '')));
+    if (src.draft) w.append(h('p', { class: 'sv-draft' }, (K.calendarOn ? 'Draft · it changes as days off come in' : 'Draft · only the chefs see it until it is saved') + ' · goes out by itself at midnight on Saturday' + (src.holes ? ' · ' + src.holes + (src.holes === 1 ? ' hole' : ' holes') : '')));
     const at = (id, i) => String(((src.rows[id] || [])[i]) || '').trim(), stAt = (id, i) => ((src.st[id] || [])[i]) || '';
     /* not fair: a shift on a day that person should have had (asked off, fixed or kept day off, an extra day, a backup station) */
     const uf = K.unfairWeek ? K.unfairWeek(wk, src.rows, src.st) : {}, ufAt = (id, i) => (uf[id] || {})[i] || null;

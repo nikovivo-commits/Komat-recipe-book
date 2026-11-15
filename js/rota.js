@@ -154,7 +154,7 @@
       ui.rpConfirm === wk ? h('div', { class: 'banner warn' }, h('b', null, 'Replace The Brigade already saved for ' + range(wk) + '?'),
         h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => use(wk, r) }, 'Yes, replace it'), h('button', { class: 'btn', type: 'button', onclick: () => { ui.rpConfirm = ''; K.render(); } }, 'Cancel')))
         : h('button', { class: 'btn primary wide', type: 'button', onclick: () => { if (has) { ui.rpConfirm = wk; K.render(); } else use(wk, r); } }, K.icon('check'), 'Use this draft for ' + range(wk)),
-      h('p', { class: 'hint' }, 'You can still change any cell on The Brigade afterwards.')));
+      h('p', { class: 'hint' }, 'You can still change any cell on The Brigade afterwards. If nobody saves it, this draft is saved by itself and sent to the team at midnight on Saturday.')));
     return box;
   }
   function whatIfBox(wk, plan) {
