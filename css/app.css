@@ -2548,3 +2548,4 @@ body.viewer .mrow, body.viewer .todo, body.viewer .jobs, body.viewer .mrow-wrap 
 .off-sheet .off-form { margin: 0; }
 .pub-n { white-space: nowrap; }
 .off-sheet .off-h { display: none; }
+.legal { font-size: .78rem; text-align: center; margin: 6px 0 0; }

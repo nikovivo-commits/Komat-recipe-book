@@ -63,6 +63,7 @@
     /* tucked away at the bottom: recipes are mostly added through Claude, problems are rare */
     if (K.me.admin) rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => K.openAdd(ui.view === 'recipes' ? ui.cat : '') }, K.icon('plus'), h('span', null, h('b', null, 'Add a recipe by hand'), h('span', { class: 'muted' }, 'New dish, new prep, or scan a recipe sheet')), K.icon('next')));
     rows.push(h('button', { class: 'set-link quiet', type: 'button', onclick: () => { ui.sheet = { type: 'bug', text: '', photo: '' }; K.render(); } }, K.icon('bug'), h('span', null, h('b', null, 'Report a problem'), h('span', { class: 'muted' }, 'Something broken or confusing? Tell the head chef')), K.icon('next')));
+    rows.push(h('p', { class: 'muted legal' }, '© 2026 Project Kitchen Flow. All rights reserved.'));
     return K.sheet('Settings', h('div', { class: 'settings' }, rows));
   };
   function exportBackup() {

@@ -127,3 +127,7 @@ sw.js               offline cache for the stand-alone site
 tools/build.mjs     builds the single-file artifact page
 tools/firebase/     bundles the SDK, runs the emulators, tests the rules
 ```
+
+## Copyright
+
+© 2026 the author of Project Kitchen Flow. All rights reserved. The code is public only so the app can be hosted on GitHub Pages; it is not open source and may not be copied, sold or reused without written permission. See [LICENSE](LICENSE). The recipes in `data/` are a demo set; each kitchen's own recipes live in its database.
