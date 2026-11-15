@@ -187,7 +187,7 @@ const mon = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.ge
 const msgs = [];
 const weeks = await list('schedules');
 for (const w of weeks) {
-  if (w.created > since && w.id >= mon) msgs.push({ title: 'The Brigade for ' + weekRange(w.id) + ' is out', body: 'Check your shifts', url: SITE + '#schedule', tag: 'wk-' + w.id });
+  if (w.created > since && w.id >= mon && !w.data.announced) msgs.push({ title: 'The Brigade for ' + weekRange(w.id) + ' is out', body: 'Check your shifts', url: SITE + '#schedule', tag: 'wk-' + w.id });
 }
 const evList = await list('events');
 for (const e of evList) {
@@ -241,9 +241,11 @@ for (const e of evList) {
         msgs.push({ chefsOnly: true, title: 'The Brigade for ' + weekRange(nextMon) + ' goes out at midnight', body: holes ? holes + (holes === 1 ? ' hole' : ' holes') + ' still to fill in the generator' : 'The draft is complete: check it once more', url: SITE + '#schedule', tag: 'wk-lock-' + nextMon });
         console.log('brigade: reminder for ' + nextMon + ', ' + holes + ' holes');
       } else {
-        const body = { week: target, people: r.order.slice(), rows: r.rows, st: r.st, note: '', updated: Date.now(), made: 'auto' };
+        const body = { week: target, people: r.order.slice(), rows: r.rows, st: r.st, note: '', updated: Date.now(), made: 'auto', announced: true };
         if (!DRY) await call('PATCH', 'schedules/' + target, { fields: fieldsOf(body) });
         console.log('brigade: saved ' + target + ' from the draft, ' + holes + ' holes');
+        /* announced in this same run (the next round skips it: announced is set) */
+        msgs.push({ title: 'The Brigade for ' + weekRange(target) + ' is out', body: 'Check your shifts', url: SITE + '#schedule', tag: 'wk-' + target });
         if (holes) msgs.push({ chefsOnly: true, title: 'The Brigade for ' + weekRange(target) + ' is out with ' + holes + (holes === 1 ? ' hole' : ' holes'), body: 'Fill them on The Brigade', url: SITE + '#schedule', tag: 'wk-holes-' + target });
       }
     }
