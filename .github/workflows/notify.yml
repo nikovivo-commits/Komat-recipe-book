@@ -1,4 +1,4 @@
-# Push notifications for the Komat app: a new event, or a new week of The Brigade.
+# Push notifications for the Komat app: a new event, or a new week of The Brigade (saved by itself at Saturday midnight).
 # GitHub runs scheduled jobs only from the default branch, so this file lives there too; it checks out
 # the branch the site is published from and runs tools/notify/send.mjs (it explains the two secrets).
 name: Komat notifications
@@ -19,7 +19,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: claude/cookbook-html-recreation-vgn40u
-          sparse-checkout: tools/notify
+          sparse-checkout: |
+            tools/notify
+            js
       - uses: actions/setup-node@v4
         with:
           node-version: 20
