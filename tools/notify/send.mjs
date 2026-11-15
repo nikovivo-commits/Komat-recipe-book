@@ -78,38 +78,59 @@ const started = Date.now();
 const state = await call('GET', 'settings/pushstate');
 const prior = state ? unfields(state.fields || {}) : {};
 const reminded = prior.reminded && typeof prior.reminded === 'object' ? prior.reminded : {};
+let pruned = prior.pruned || '';
 const save = () => DRY ? null : call('PATCH', 'settings/pushstate', { fields: {
   since: { integerValue: String(started) },
+  pruned: { stringValue: pruned },
   reminded: { mapValue: { fields: Object.fromEntries(Object.entries(reminded).map(([k, v]) => [k, { stringValue: String(v) }])) } },
 } });
 if (!state) { await save(); console.log('first run: notifications start from now'); process.exit(0); }
 const since = +prior.since || started;
-
 const today = sofia(new Date());
 
-/* guests: someone who joins with the kitchen code and "(гост)" or "(guest)" in their name is made a Viewer
-   (reads everything, changes nothing) on the next run, a minute at most */
-for (const m of await list('members')) {
-  if (m.data.role === 'cook' && /\((гост|guest|viewer)\)/i.test(String(m.data.name || ''))) {
-    if (!DRY) await call('PATCH', 'members/' + m.id + '?updateMask.fieldPaths=role', { fields: { role: { stringValue: 'viewer' } } });
-    console.log('guest ' + m.data.name + ' is now a viewer');
-  }
+/* The database's free tier allows 50,000 reads a day and the job runs every minute, so a quick run only asks
+   whether a board photo is waiting (one read). The full round (events, Brigade weeks, order reminders, guests)
+   runs every 10 minutes, and old lines are tidied away once a day. */
+const FULL = !!process.env.FULL || started - since >= 9.5 * 60000;
+async function query(coll, eq) {
+  const where = { compositeFilter: { op: 'AND', filters: Object.entries(eq).map(([f, v]) => ({ fieldFilter: { field: { fieldPath: f }, op: 'EQUAL', value: val(v) } })) } };
+  const r = await fetch(FS + ':runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: coll }], where } }) });
+  const j = await r.json().catch(() => []);
+  if (!r.ok) throw new Error('query ' + coll + ': ' + r.status + ' ' + ((j[0] && j[0].error && j[0].error.message) || (j.error && j.error.message) || ''));
+  return j.filter((x) => x.document).map((x) => ({ id: x.document.name.split('/').pop(), created: Date.parse(x.document.createTime), data: unfields(x.document.fields || {}) }));
 }
+let supData = null;
+const getSup = async () => { if (!supData) { const d = await call('GET', 'settings/suppliers'); supData = d ? unfields(d.fields || {}) : {}; } return supData; };
+/* what the kitchen taught the board: product -> supplier, from every line someone moved or ordered (boards/wblearn) */
+let learned = null;
+const getLearned = async () => { if (!learned) { const d = await call('GET', 'boards/wblearn'); learned = d ? (unfields(d.fields || {}).map || {}) : {}; } return learned; };
+const lineKey = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+/* the same loose match as the app: жълтък / жълтъци, яйце / яйцата, лук / лукове find each other */
+const SWAP = { ц: 'к', ч: 'к', з: 'г', ж: 'г' };
+const looseWord = (w) => { let x = w.replace(/[ьъ]/g, '').replace(/й/g, 'и'); if (/^[а-я]+$/.test(x) && x.length > 3) { x = x.replace(/^(.{3,}?)(ове|еве|ите|ата|ята|ото|ете|ът|ят)$/, '$1').replace(/^(.{3,})[аиеяоу]$/, '$1'); const l = x.slice(-1); if (SWAP[l]) x = x.slice(0, -1) + SWAP[l]; } return x; };
+const loose = (n) => lineKey(n).replace(/[^a-zа-я0-9% ]/g, ' ').split(/\s+/).filter(Boolean).map(looseWord).join(' ');
+/* who sells a product: what the kitchen taught first (the same name, then a looser spelling), then the longest
+   product word from a taught name or a supplier's "Sells" list found in the line */
+function supWho(n) {
+  const sd = supData || {}, lm = learned || {}, k = lineKey(n), ids = new Set((sd.list || []).filter((x) => !x.paused).map((x) => x.id));
+  if (lm[k] && ids.has(lm[k])) return lm[k];
+  if ((sd.map || {})[k] && ids.has(sd.map[k])) return sd.map[k];
+  const lk = ' ' + loose(n) + ' ';
+  let best = '', len = 0;
+  for (const [name, sup] of Object.entries(lm)) { const ln = loose(name); if (ids.has(sup) && ln.length >= 3 && lk.includes(' ' + ln + ' ') && ln.length >= len) { best = sup; len = ln.length; } }
+  (sd.list || []).filter((x) => !x.paused).forEach((x) => String(x.sells || '').split(/[,;\n]/).map(lineKey).filter((w) => w.length >= 3).forEach((w) => { if (k.includes(w) && w.length > len) { best = x.id; len = w.length; } }));
+  return best;
+}
+/* a board section named like a supplier ("Зеленчук" for the vegetable supplier) puts its lines with that supplier */
+const supFor = (sec) => { const k = lineKey(sec); if (!k) return ''; const s = ((supData || {}).list || []).find((x) => { const n = lineKey(x.name); return n && (n.includes(k) || k.includes(n)); }); return s ? s.id : ''; };
 
 /* photos of the whiteboard or a paper list, taken in the app: Claude reads each one and its lines go on the board */
-const boards = await list('boards');
-const supDoc = await call('GET', 'settings/suppliers');
-const supData = supDoc ? unfields(supDoc.fields || {}) : {};
-const lineKey = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
-/* a board section named like a supplier ("Зеленчук" for the vegetable supplier) puts its lines with that supplier */
-const supFor = (sec) => { const k = lineKey(sec); if (!k) return ''; const s = (supData.list || []).find((x) => { const n = lineKey(x.name); return n && (n.includes(k) || k.includes(n)); }); return s ? s.id : ''; };
-/* what each supplier sells, as in the app: the longest product word found in the line wins */
-const supGuess = (n) => { const k = lineKey(n); let best = '', len = 0; (supData.list || []).filter((x) => !x.paused).forEach((x) => String(x.sells || '').split(/[,;\n]/).map(lineKey).filter((w) => w.length >= 3).forEach((w) => { if (k.includes(w) && w.length > len) { best = x.id; len = w.length; } })); return best; };
-const pending = boards.filter((d) => d.data.kind === 'scan' && d.data.status === 'pending');
+const pending = await query('boards', { kind: 'scan', status: 'pending' });
 if (pending.length && !process.env.ANTHROPIC_API_KEY) console.log(pending.length + ' board photo(s) waiting: add the secret ANTHROPIC_API_KEY to read them');
 if (pending.length && process.env.ANTHROPIC_API_KEY) {
   const { readBoardPhoto } = await import('./scan.mjs');
-  const open = new Set(boards.filter((d) => d.data.kind === 'item' && d.data.status === 'need').map((d) => lineKey(d.data.n)));
+  await getSup(); await getLearned();
+  const open = new Set((await query('boards', { kind: 'item', status: 'need' })).map((d) => lineKey(d.data.n)));
   for (const sc of pending) {
     const d = sc.data;
     try {
@@ -124,7 +145,7 @@ if (pending.length && process.env.ANTHROPIC_API_KEY) {
         open.add(lineKey(it.name)); added.push(it.name);
         if (DRY) continue;
         await call('PATCH', 'boards/wb' + crypto.randomBytes(6).toString('hex'), { fields: fieldsOf({
-          kind: 'item', n: it.name, qty: it.qty, status: 'need', sup: (supData.map || {})[lineKey(it.name)] || supGuess(it.name) || supFor(it.section), via: 'photo',
+          kind: 'item', n: it.name, qty: it.qty, status: 'need', sup: supWho(it.name) || supFor(it.section), via: 'photo',
           by: d.by || '', ink: d.ink || 'blue', hand: d.hand || 'caveat', st: d.st || '', at: Date.now(),
         }) });
       }
@@ -135,6 +156,31 @@ if (pending.length && process.env.ANTHROPIC_API_KEY) {
       if (!DRY) await call('PATCH', 'boards/' + sc.id, { fields: fieldsOf(Object.assign({}, d, { status: 'failed', error: String(err.message || err).slice(0, 160), doneAt: Date.now() })) });
     }
   }
+}
+if (!FULL) { console.log('quick run: ' + pending.length + ' photo(s)'); process.exit(0); }
+
+/* guests: someone who joins with the kitchen code and "(гост)" or "(guest)" in their name is made a Viewer
+   (reads everything, changes nothing) on the next full round, within 10 minutes */
+const members = await list('members');
+for (const m of members) {
+  if (m.data.role === 'cook' && /\((гост|guest|viewer)\)/i.test(String(m.data.name || ''))) {
+    if (!DRY) await call('PATCH', 'members/' + m.id + '?updateMask.fieldPaths=role', { fields: { role: { stringValue: 'viewer' } } });
+    console.log('guest ' + m.data.name + ' is now a viewer');
+  }
+}
+/* once a day: lines ordered more than a week ago, sent orders older than two weeks and read photos older than
+   three days leave the board, so every phone opening Ordering reads less */
+if (pruned !== today) {
+  const back = (n) => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+  const old = [].concat(
+    (await query('boards', { kind: 'item', status: 'ordered' })).filter((d) => (d.data.date || '') && d.data.date < back(7)),
+    (await query('boards', { kind: 'item', status: 'got' })).filter((d) => !d.data.date || d.data.date < back(7)),
+    (await query('boards', { kind: 'sent' })).filter((d) => (d.data.date || '') < back(14)),
+    (await query('boards', { kind: 'scan', status: 'done' })).filter((d) => (d.data.at || 0) < started - 3 * 864e5),
+    (await query('boards', { kind: 'scan', status: 'failed' })).filter((d) => (d.data.at || 0) < started - 3 * 864e5));
+  if (!DRY) for (const d of old) await call('DELETE', 'boards/' + d.id).catch(() => {});
+  console.log('tidied ' + old.length + ' old lines off the board');
+  pruned = today;
 }
 const mon = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
 const msgs = [];
@@ -152,17 +198,18 @@ for (const e of await list('events')) {
   });
 }
 /* the whiteboard: an hour before a supplier's order deadline, on its order days, remind the chefs of what is still on it */
-const sd = supData, supList = Array.isArray(sd.list) ? sd.list : [], supMap = sd.map || {};
+await getSup();
+const sd = supData, supList = Array.isArray(sd.list) ? sd.list : [];
 if (supList.length) {
-  const key = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const open = (await list('boards')).filter((d) => d.data.kind === 'item' && d.data.status === 'need'); /* fresh: includes lines just read from photos */
+  await getLearned();
+  const open = await query('boards', { kind: 'item', status: 'need' });
   const now = new Date(), parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now).map((p) => [p.type, p.value]));
   const dayIdx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday), mins = +parts.hour * 60 + +parts.minute;
   for (const s of supList) {
     if (!s || !s.deadline || !(s.days || []).includes(dayIdx) || reminded[s.id] === today) continue;
     const [hh, mm] = String(s.deadline).split(':').map(Number), dl = (hh * 60 + (mm || 0)) || 1440; /* 00:00 means midnight */
     if (mins < dl - 60 || mins >= dl) continue;
-    const mine = open.filter((i) => (i.data.sup || supMap[key(i.data.n)] || supGuess(i.data.n)) === s.id);
+    const mine = open.filter((i) => (i.data.sup || supWho(i.data.n)) === s.id);
     if (!mine.length) continue;
     reminded[s.id] = today;
     msgs.push({ admins: true, title: s.name + ': order by ' + (s.deadline === '00:00' ? 'midnight' : s.deadline), body: mine.length + ' in Ordering: ' + mine.slice(0, 5).map((i) => i.data.n).join(', ') + (mine.length > 5 ? '…' : ''), url: SITE + '#orders', tag: 'sup-' + s.id });
@@ -174,7 +221,7 @@ if (!msgs.length) { await save(); console.log('nothing new'); process.exit(0); }
 /* reminders to order go to the people chosen to order (Suppliers > Who can order), else to the chefs */
 const chefs = new Set();
 if (msgs.some((m) => m.admins)) {
-  const members = await list('members'), who = Array.isArray(supData.orderers) ? supData.orderers : [];
+  const who = Array.isArray(supData.orderers) ? supData.orderers : [];
   if (who.length) {
     const staffDoc = await call('GET', 'settings/staff');
     const people = staffDoc ? (unfields(staffDoc.fields || {}).people || []) : [];

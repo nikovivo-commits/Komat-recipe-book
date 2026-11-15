@@ -4815,9 +4815,9 @@ window.KOMAT_PART_ART = [
     setting('docs', (d) => { D.docs = d && Array.isArray(d.list) ? K.clone(d) : null; });
     /* the whiteboard: who we order from, and what is written on it (kept until it arrives) */
     setting('suppliers', (d) => { D.suppliers = { list: d && Array.isArray(d.list) ? K.clone(d.list) : [], map: d && d.map && typeof d.map === 'object' ? K.clone(d.map) : {}, orderers: d && Array.isArray(d.orderers) ? d.orderers.slice() : [] }; });
-    db.collection('boards').where('kind', 'in', ['item', 'scan', 'sent']).onSnapshot((s) => {
+    db.collection('boards').where('kind', 'in', ['item', 'scan', 'sent', 'learn']).onSnapshot((s) => {
       const all = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id }));
-      D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan'); D.wbSent = all.filter((x) => x.kind === 'sent');
+      D.wb = all.filter((x) => x.kind === 'item'); D.wbScans = all.filter((x) => x.kind === 'scan'); D.wbSent = all.filter((x) => x.kind === 'sent'); D.wbLearn = all.find((x) => x.kind === 'learn') || D.wbLearn || null;
       K.refresh();
     }, onErr);
     db.collection('events').onSnapshot((s) => { D.events = s.docs.map((x) => Object.assign(K.clone(x.data()), { id: x.id })); K.refresh(); }, onErr);
@@ -7761,20 +7761,38 @@ window.KOMAT_PART_ART = [
     if (!o.length) return !!K.me.admin;
     return o.includes(K.getMe ? K.getMe() : '') || K.me.role === 'dev';
   };
-  /* remember who sells a product (the settings are the chefs' to write; for the others the line keeps it) */
-  const remember = (n, v) => {
-    if (!K.me.admin || !v) return;
-    D.suppliers = Object.assign({}, D.suppliers, { map: Object.assign({}, smap(), { [key(n)]: v }) });
-    K.db.doc('settings/suppliers').set(D.suppliers).catch(K.writeFailed);
+  /* The board learns who sells what. Every line someone moves to a supplier, and every line that goes out in an
+     order, teaches it that product -> supplier (boards/wblearn, which anyone who writes on the board may add to).
+     Next time the same product, or a looser spelling of it (жълтък / жълтъци, яйце / яйцата, лук / лукове),
+     or a longer line that contains it ("готварска сметана 35%" after "сметана"), goes to that supplier. */
+  const lmap = () => (D.wbLearn && D.wbLearn.map) || {};
+  const rememberAll = (pairs) => {
+    pairs = pairs.filter((p) => p[0] && p[1] && lmap()[key(p[0])] !== p[1]);
+    if (!pairs.length || !K.me || K.me.viewer) return;
+    const map = Object.assign({}, lmap());
+    pairs.forEach((p) => { map[key(p[0])] = p[1]; });
+    D.wbLearn = { kind: 'learn', map: map, at: Date.now() };
+    K.db.doc('boards/wblearn').set(D.wbLearn).catch(K.writeFailed);
   };
-  /* who sells a product, from what each supplier's "Sells" list says: the longest word found in the line wins
-     ("консервирани домати" goes to the tins supplier, plain "домати" to the vegetables) */
+  const remember = (n, v) => rememberAll([[n, v]]);
+  const SWAP = { ц: 'к', ч: 'к', з: 'г', ж: 'г' };
+  const looseWord = (w) => { let x = w.replace(/[ьъ]/g, '').replace(/й/g, 'и'); if (/^[а-я]+$/.test(x) && x.length > 3) { x = x.replace(/^(.{3,}?)(ове|еве|ите|ата|ята|ото|ете|ът|ят)$/, '$1').replace(/^(.{3,})[аиеяоу]$/, '$1'); const l = x.slice(-1); if (SWAP[l]) x = x.slice(0, -1) + SWAP[l]; } return x; };
+  const loose = (n) => key(n).replace(/[^a-zа-я0-9% ]/g, ' ').split(/\s+/).filter(Boolean).map(looseWord).join(' ');
+  K.wbLoose = loose;
+  /* who sells a product: what the kitchen taught first (the same name, then a looser spelling), then the longest
+     product word from a taught name or a supplier's "Sells" list found in the line ("консервирани домати" goes
+     to the tins supplier, plain "домати" to the vegetables) */
   K.wbGuess = function (n) {
-    const k = key(n); let best = '', len = 0;
+    const ok = (id) => id && active().some((s) => s.id === id), k = key(n), lm = lmap();
+    if (ok(lm[k])) return lm[k];
+    if (ok(smap()[k])) return smap()[k];
+    const lk = ' ' + loose(n) + ' ';
+    let best = '', len = 0;
+    Object.keys(lm).forEach((name) => { const ln = loose(name); if (ok(lm[name]) && ln.length >= 3 && lk.includes(' ' + ln + ' ') && ln.length >= len) { best = lm[name]; len = ln.length; } });
     active().forEach((s) => String(s.sells || '').split(/[,;\n]/).map(key).filter((w) => w.length >= 3).forEach((w) => { if (k.includes(w) && w.length > len) { best = s.id; len = w.length; } }));
     return best;
   };
-  K.wbSupOf = (it) => (it.sup && supById(it.sup) ? it.sup : smap()[key(it.n)] && supById(smap()[key(it.n)]) ? smap()[key(it.n)] : K.wbGuess(it.n));
+  K.wbSupOf = (it) => (it.sup && supById(it.sup) ? it.sup : K.wbGuess(it.n));
   const lines = (status) => (D.wb || []).filter((i) => i.status === status).sort((a, b) => (a.at || 0) - (b.at || 0));
   K.wbOpen = () => lines('need');
   const first = (id) => (K.nameOf(id) || '').split(' ')[0];
@@ -7790,7 +7808,7 @@ window.KOMAT_PART_ART = [
       dup.qty = q; K.refresh(true);
       return K.db.doc('boards/' + dup.id).update({ qty: q, at: Date.now() }).catch(K.writeFailed);
     }
-    const id = 'wb' + K.uid(), it = { kind: 'item', n: n, qty: qty, status: 'need', sup: smap()[key(n)] || '', by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now() };
+    const id = 'wb' + K.uid(), it = { kind: 'item', n: n, qty: qty, status: 'need', sup: '', by: K.me.id || '', ink: K.myInk() || 'blue', hand: K.myHand() || 'caveat', st: K.getStation(), at: Date.now() };
     D.wb = (D.wb || []).concat([Object.assign({ id: id }, it)]); K.refresh(true);
     return K.db.doc('boards/' + id).set(it).catch(K.writeFailed);
   };
@@ -7970,7 +7988,9 @@ window.KOMAT_PART_ART = [
       const at = Date.now(), ids = list.map((i) => i.id);
       list.forEach((i) => { const q = (S.q[i.id] || '').trim(); setLine(i, Object.assign({ status: 'ordered', orderedAt: at, orderedBy: K.me.id || '', sup: S.sup, date: K.day(0) }, q ? { qty: q } : {})); });
       /* remember it went today, so the usual order does not ask again */
-      const sid = 'sent' + K.uid(), sent = { kind: 'sent', sup: S.sup, date: K.day(0), at: at, by: K.me.id || '', text: S.text };
+      rememberAll(list.map((i) => [i.n, S.sup]));
+      const items = list.map((i) => ({ n: i.n, q: String(S.q[i.id] || i.qty || '').trim() }));
+      const sid = 'sent' + K.uid(), sent = { kind: 'sent', sup: S.sup, date: K.day(0), at: at, by: K.me.id || '', text: S.text, items: items };
       D.wbSent = (D.wbSent || []).concat([Object.assign({ id: sid }, sent)]);
       K.db.doc('boards/' + sid).set(sent).catch(K.writeFailed);
       ui.sheet = null; K.render();
@@ -8015,7 +8035,7 @@ window.KOMAT_PART_ART = [
         const sp = supById(x.sup), th = sp ? theme(sp) : THEMES.other;
         return h('section', { class: 'wb-histcard', style: '--sup-c:' + th[1] },
           h('div', { class: 'wb-histhead' }, h('b', null, sp ? sp.name : 'Supplier'), h('span', { class: 'muted' }, K.hm(x.at) + (first(x.by) ? ' · ' + first(x.by) : ''))),
-          h('ul', null, rows(x).map((l) => h('li', null, l))));
+          h('ul', null, (x.items && x.items.length ? x.items.map((i) => (i.q ? i.q + ' ' : '') + i.n) : rows(x)).map((l) => h('li', null, l))));
       }) : h('p', { class: 'none' }, 'Nothing was ordered through the app ' + (S.day === -1 ? 'yesterday' : 'today') + '.')));
   };
 
@@ -8124,7 +8144,7 @@ window.KOMAT_PART_ART = [
       D.suppliers = { list: list, map: map, orderers: (S.orderers || orderers()).slice() }; ui.sheet = null; K.render();
       K.db.doc('settings/suppliers').set(D.suppliers).then(() => K.toast('Suppliers saved'), K.writeFailed);
     };
-    const products = (id) => Object.keys(smap()).filter((k) => smap()[k] === id);
+    const products = (id) => { const m = Object.assign({}, smap(), lmap()); return Object.keys(m).filter((k) => m[k] === id).sort(); };
     S.orderers = S.orderers || orderers().slice();
     const team = (D.staff && D.staff.people) || [];
     return K.sheet('Suppliers', h('div', { class: 'wb-sups' },
@@ -8149,7 +8169,7 @@ window.KOMAT_PART_ART = [
         K.field('The usual order', h('textarea', { class: 'input', rows: '3', placeholder: '2бр латинка\n2бр киселец\n1бр ядливи цветя', oninput: (e) => { s.usual = e.target.value; } }, s.usual || ''), 'One line each. It goes in the message on every order day, with whatever is on the board.'),
         K.field('Sells', h('textarea', { class: 'input', rows: '2', placeholder: 'e.g. смръчкули, шийтаке, лъвска грива', oninput: (e) => { s.sells = e.target.value; } }, s.sells || ''), 'Products, separated by commas. Lines that mention one go to this supplier.'),
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !!s.paused, onchange: (e) => { s.paused = e.target.checked; } }), h('span', null, 'Not ordering from them now')),
-        products(s.id).length ? h('p', { class: 'muted' }, 'Also picked by hand: ' + products(s.id).join(', ')) : null,
+        products(s.id).length ? h('p', { class: 'muted' }, 'Learned from what we order: ' + products(s.id).join(', ')) : null,
         h('button', { class: 'btn small danger', type: 'button', onclick: () => { if (!s.del) { s.del = true; K.render(); return; } S.list.splice(i, 1); K.render(); } }, s.del ? 'Tap again to remove' : 'Remove'))),
       h('button', { class: 'btn wide', type: 'button', onclick: () => { S.list.push({ id: 's' + K.uid(), name: '', app: 'whatsapp', phone: '', days: [], deadline: '' }); K.render(); } }, K.icon('plus'), 'Add a supplier'),
       h('button', { class: 'btn primary wide', type: 'button', onclick: save }, 'Save')), { wide: true });
