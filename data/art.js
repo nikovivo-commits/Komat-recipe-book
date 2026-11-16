@@ -1,6 +1,7 @@
 /* Recipes without a photo of their own get an illustration from assets/photos/art/<id>.jpg.
    It is shown with an "Illustration" tag so nobody plates from it; a real photo always wins. */
 window.KOMAT_ART = [
+  "palamud",
   "barkani-yaitsa",
   "benedikt",
   "cake-cacao",
@@ -50,6 +51,12 @@ window.KOMAT_ART = [
 ];
 /* the parts of a dish, by part id: assets/photos/art/parts/<part id>.jpg */
 window.KOMAT_PART_ART = [
+  "cnmaqu2jbh9",
+  "c2nzrx4hva1",
+  "c0l2sjqcrfy",
+  "cn8wyom0fq1",
+  "c30kt933cs1",
+  "ckiscxlr1re",
   "cyc1r8o40jp",
   "cmww0puifk4",
   "ct0892nd4j7",
