@@ -203,6 +203,12 @@ for (const e of evList) {
     url: SITE + '#events', tag: 'ev-' + e.id,
   });
 }
+/* a one-off announcement from the chefs (settings/announce: title, body, url, at): sent to everyone once */
+{
+  const a = await call('GET', 'settings/announce');
+  const d = a ? unfields(a.fields || {}) : null;
+  if (d && d.title && +d.at > since) msgs.push({ title: String(d.title).slice(0, 80), body: String(d.body || '').slice(0, 180), url: d.url ? SITE + d.url : SITE, tag: 'news-' + d.at });
+}
 /* The Brigade locks itself. At 23:00 on Saturday the chefs get a heads-up that next week goes out at midnight
    (and how many holes it still has); from midnight, a week nobody saved is drafted exactly as the generator
    shows it in the app (js/rotagen.js, the same code and the same inputs) and saved. The usual "The Brigade is
