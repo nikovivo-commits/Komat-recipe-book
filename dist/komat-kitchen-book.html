@@ -8654,6 +8654,7 @@ window.KOMAT_PART_ART = [
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
                  off: [days], avoid: [days] (off if at all possible: worked only to stop a hole), avoidMore: [days] (the same, even later), special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
                  emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
+                 lessons: [days] (school or classes: off if at all possible, and if they must come in, only on a late shift),
                  learn: ['pass'], learnDays: 1 (a station they are learning and how many days a week: on those days
                  they stand next to a teacher there, someone whose main station it is, instead of taking a place),
                  pattern: [7 codes], patternSt: 'br' }
@@ -8676,7 +8677,7 @@ window.KOMAT_PART_ART = [
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, lead: 1200, move: 250, moveSt: 60 };
+  const W = { lesson: 20000, lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, lead: 1200, move: 250, moveSt: 60 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -8688,7 +8689,13 @@ window.KOMAT_PART_ART = [
   const addDays = (ymd, n) => { const p = ymd.split('-'); const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)); return d.toISOString().slice(0, 10); };
 
   function gen(input) {
-    const week = input.week, plan = input.plan || {}, setup = plan.people || {}, keep = input.keep || {};
+    const week = input.week, plan = input.plan || {}, keep = input.keep || {};
+    /* lesson days count as days off if possible, and need late shifts allowed (at least when there is no other way) */
+    const setup = {};
+    Object.keys(plan.people || {}).forEach((id) => {
+      const s = plan.people[id], ls = (s.lessons || []).filter((d) => !(s.off || []).includes(d));
+      setup[id] = ls.length ? Object.assign({}, s, { lessons: ls, avoid: (s.avoid || []).concat(ls.filter((d) => !(s.avoid || []).includes(d) && !(s.avoidMore || []).includes(d))).sort(), late: s.late || 'rare' }) : s;
+    });
     /* prev: the week as it stood (the draft before a request); changing someone's days or station from it costs a
        little, so one request moves as few people as it has to */
     const PREV = input.prev && input.prev.rows ? input.prev : null;
@@ -8735,6 +8742,7 @@ window.KOMAT_PART_ART = [
     const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
+    const lessonDay = (id, d) => ((S(id) || {}).lessons || []).includes(d);
     /* lunch: which stations nobody covers, given who is where at night */
     function lunchMiss(d, on, extras, work, special) {
       const need = {};
@@ -8888,6 +8896,8 @@ window.KOMAT_PART_ART = [
       let needA = pd.a, needM = pd.m;
       for (let d = 0; d < 7; d++) {
         if (w[d] && wish[id][d]) c += W.wish;
+        /* lessons in the morning: never a full shift or a prep day, worse than leaving a place empty */
+        if (w[d] && lessonDay(id, d) && (special[id][d] || !work.__late[id][d])) c += W.lesson;
         if (w[d] && pd.av.includes(d)) { if (needA > 0) { needA--; c += W.avoidNeeded; } else c += W.avoid; }
         if (w[d] && pd.am.includes(d)) { if (needM > 0) { needM--; c += W.avoidMoreNeeded; } else c += W.avoidMore; }
       }
@@ -8940,6 +8950,7 @@ window.KOMAT_PART_ART = [
         loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
         late[id] = [0, 0, 0, 0, 0, 0, 0];
       });
+      auto.forEach((id) => { if (!optsOf(id) && lateOK(id)) for (let d = 0; d < 7; d++) if (lessonDay(id, d) && work[id][d]) { special[id][d] = 0; late[id][d] = 1; } });
       return { work: work, special: special };
     }
     function evalAll(st) {
@@ -9030,6 +9041,8 @@ window.KOMAT_PART_ART = [
           touched.push(x, y);
           undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; LT[x] = wasLt; LT[y] = 0; };
         }
+        /* a lesson day they come in on is always a late shift */
+        if (!os && lateOK(id)) touched.forEach((d) => { if (w[d] && !sp[d] && lessonDay(id, d)) LT[d] = 1; });
         const nd = touched.map((d) => solveDay(d, st.work, st.special)), np = personCost(id, st.work, st.special);
         const delta = touched.reduce((a, d, k) => a + nd[k].cost - ev.days[d].cost, 0) + np - ev.pc[id];
         const temp = 300 * (1 - it / ITER) + 1;
@@ -9130,6 +9143,7 @@ window.KOMAT_PART_ART = [
         const pd = presetNeed(id);
         let needA = pd.a, needM = pd.m;
         for (let d = 0; d < 7; d++) if (best.st.work[id][d] && ((s.avoid || []).includes(d) || (s.avoidMore || []).includes(d)) && !pinned(id, d)) {
+          if (lessonDay(id, d)) { const ok = lateOf(id, d) && !best.st.special[id][d]; issues.push({ sev: ok ? 'amber' : 'red', day: d, person: id, text: name(id) + (ok ? ' comes in on ' + DAY[d] + ' from 15:00 although they have lessons (no other way to fill the kitchen)' : ' has lessons on ' + DAY[d] + ' but is on a day shift') }); continue; }
           if (pd.av.includes(d) && needA > 0) { needA--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week (of the days off if possible, the kitchen needs this one most)' }); }
           else if (pd.am.includes(d) && needM > 0) { needM--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week: the days they asked off come first' }); }
           else issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' comes in on ' + DAY[d] + ', a day off if possible (last resort)' });
@@ -9411,6 +9425,7 @@ window.KOMAT_PART_ART = [
           row('Normal shift', h('input', { class: 'input small rp-code', value: s.code || '2', 'aria-label': 'Normal shift code', onchange: (e) => set((p) => { person(p, id).code = e.target.value.trim() || '2'; }) })),
           row('Always off', days(s.off || [], (l) => set((p) => { person(p, id).off = l; p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
           row('Off if possible', days(s.avoid || [], (l) => set((p) => { person(p, id).avoid = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoidMore = (p.people[id].avoidMore || []).filter((x) => !l.includes(x)); }))),
+          plan.periods ? row('Lessons: off, a late shift only if nothing else works', days(s.lessons || [], (l) => set((p) => { const q = person(p, id); if (l.length) q.lessons = l; else delete q.lessons; q.off = (q.off || []).filter((x) => !l.includes(x)); if (l.length && !q.late) q.late = 'rare'; }))) : null,
           row('Really off, only for a hole', days(s.avoidMore || [], (l) => set((p) => { person(p, id).avoidMore = l; p.people[id].off = (p.people[id].off || []).filter((x) => !l.includes(x)); p.people[id].avoid = (p.people[id].avoid || []).filter((x) => !l.includes(x)); }))),
           row('Prep days', h('div', { class: 'rp-inline' },
             K.select([0, 1, 2, 3, 4].map((n) => [n, n ? n + ' a week' : 'None']), (s.special && s.special.n) || 0, (v) => set((p) => { const q = person(p, id); q.special = Object.assign({ code: '10:30' }, q.special, { n: +v }); }), { 'aria-label': 'Prep days a week', class: 'input small' }),
@@ -9451,7 +9466,7 @@ window.KOMAT_PART_ART = [
     if (s.mode === 'hand') return 'Filled by hand' + ((s.cover || []).length ? ' · covers ' + s.cover.map((x) => STL[x]).join(', ') + ' as the last resort' : '') + (s.br ? ' · breakfast, choice ' + s.br : '');
     if (s.mode !== 'auto') return 'Not on The Brigade';
     const st = (s.stations || []).map((x) => STL[x] + ((s.emergency || []).includes(x) ? ' (emergency)' : '')).join(' → ') || 'no station yet';
-    return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
+    return [st, (s.options || []).length ? (s.options.length === 1 ? 'a set week' : s.options.length + ' set weeks') : (s.days || 0) + (s.late === 'rare' ? ' full days, lates only if needed' : s.late ? ' full days, can do lates' : ' days'), (s.off || []).length ? 'off ' + s.off.map((d) => DAYS[d]).join(' ') : '', (s.avoidMore || []).length ? 'really off ' + s.avoidMore.map((d) => DAYS[d]).join(' ') : '', (s.avoid || []).length ? 'off if possible ' + s.avoid.map((d) => DAYS[d]).join(' ') : '', (s.lessons || []).length ? 'lessons ' + s.lessons.map((d) => DAYS[d]).join(' ') + ' (late shift at most)' : '', s.special && s.special.n ? s.special.n + ' prep days' : '',
       s.br ? 'breakfast, choice ' + s.br : '', s.learner ? 'learning Hot' : '', (s.learn || []).length ? 'learning ' + s.learn.map((x) => STL[x]).join(', ') + ' ' + (s.learnDays || 0) + ' day' + (s.learnDays === 1 ? '' : 's') + ' a week' : '', s.mentor ? 'mentor' : '', s.together ? 'days off together' : ''].filter(Boolean).join(' · ');
   }
   const row = (label, ctrl) => h('div', { class: 'rp-row' }, h('span', { class: 'legend' }, label), ctrl);

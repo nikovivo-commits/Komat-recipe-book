@@ -9,6 +9,7 @@
        setup   { mode: 'auto' | 'fixed' | 'hand' | 'off', stations: ['cold', 'hot', 'prep'], days: 4, code: '2',
                  off: [days], avoid: [days] (off if at all possible: worked only to stop a hole), avoidMore: [days] (the same, even later), special: { code: '10:30', n: 2 }, br: 0 | rank, learner: bool, mentor: bool, together: bool,
                  emergency: ['hot'] (stations they can do, but only when the place would otherwise be empty),
+                 lessons: [days] (school or classes: off if at all possible, and if they must come in, only on a late shift),
                  learn: ['pass'], learnDays: 1 (a station they are learning and how many days a week: on those days
                  they stand next to a teacher there, someone whose main station it is, instead of taking a place),
                  pattern: [7 codes], patternSt: 'br' }
@@ -31,7 +32,7 @@
   'use strict';
   const STS = ['hot', 'cold', 'pass'];
   /* what each thing costs: a place left empty is far worse than anything else */
-  const W = { lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, lead: 1200, move: 250, moveSt: 60 };
+  const W = { lesson: 20000, lateDay: 15, avoid: 4000, avoidMore: 7000, lunchHole: 6000, noFiller: 400, mix: 200, learnMiss: 150, noTeacher: 300, busyEmergency: 1500, emergency: 2500, hand: 3000, unfilled: 10000, brUnfilled: 4000, short: 3000, wish: 900, rank: 60, learnerAlone: 500, extra: 30, special: 600, split: 40, brRank: 40, brHand: 700, crowd: 350, lateRare: 900, avoidNeeded: 250, avoidMoreNeeded: 600, lead: 1200, move: 250, moveSt: 60 };
   const OFF = /^(0|X|)$/i;
 
   function rng(seed) {
@@ -43,7 +44,13 @@
   const addDays = (ymd, n) => { const p = ymd.split('-'); const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)); return d.toISOString().slice(0, 10); };
 
   function gen(input) {
-    const week = input.week, plan = input.plan || {}, setup = plan.people || {}, keep = input.keep || {};
+    const week = input.week, plan = input.plan || {}, keep = input.keep || {};
+    /* lesson days count as days off if possible, and need late shifts allowed (at least when there is no other way) */
+    const setup = {};
+    Object.keys(plan.people || {}).forEach((id) => {
+      const s = plan.people[id], ls = (s.lessons || []).filter((d) => !(s.off || []).includes(d));
+      setup[id] = ls.length ? Object.assign({}, s, { lessons: ls, avoid: (s.avoid || []).concat(ls.filter((d) => !(s.avoid || []).includes(d) && !(s.avoidMore || []).includes(d))).sort(), late: s.late || 'rare' }) : s;
+    });
     /* prev: the week as it stood (the draft before a request); changing someone's days or station from it costs a
        little, so one request moves as few people as it has to */
     const PREV = input.prev && input.prev.rows ? input.prev : null;
@@ -90,6 +97,7 @@
     const isSp = (id, c) => !!(S(id).special && String(c).trim() === String(S(id).special.code));
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
+    const lessonDay = (id, d) => ((S(id) || {}).lessons || []).includes(d);
     /* lunch: which stations nobody covers, given who is where at night */
     function lunchMiss(d, on, extras, work, special) {
       const need = {};
@@ -243,6 +251,8 @@
       let needA = pd.a, needM = pd.m;
       for (let d = 0; d < 7; d++) {
         if (w[d] && wish[id][d]) c += W.wish;
+        /* lessons in the morning: never a full shift or a prep day, worse than leaving a place empty */
+        if (w[d] && lessonDay(id, d) && (special[id][d] || !work.__late[id][d])) c += W.lesson;
         if (w[d] && pd.av.includes(d)) { if (needA > 0) { needA--; c += W.avoidNeeded; } else c += W.avoid; }
         if (w[d] && pd.am.includes(d)) { if (needM > 0) { needM--; c += W.avoidMoreNeeded; } else c += W.avoidMore; }
       }
@@ -295,6 +305,7 @@
         loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
         late[id] = [0, 0, 0, 0, 0, 0, 0];
       });
+      auto.forEach((id) => { if (!optsOf(id) && lateOK(id)) for (let d = 0; d < 7; d++) if (lessonDay(id, d) && work[id][d]) { special[id][d] = 0; late[id][d] = 1; } });
       return { work: work, special: special };
     }
     function evalAll(st) {
@@ -385,6 +396,8 @@
           touched.push(x, y);
           undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; LT[x] = wasLt; LT[y] = 0; };
         }
+        /* a lesson day they come in on is always a late shift */
+        if (!os && lateOK(id)) touched.forEach((d) => { if (w[d] && !sp[d] && lessonDay(id, d)) LT[d] = 1; });
         const nd = touched.map((d) => solveDay(d, st.work, st.special)), np = personCost(id, st.work, st.special);
         const delta = touched.reduce((a, d, k) => a + nd[k].cost - ev.days[d].cost, 0) + np - ev.pc[id];
         const temp = 300 * (1 - it / ITER) + 1;
@@ -485,6 +498,7 @@
         const pd = presetNeed(id);
         let needA = pd.a, needM = pd.m;
         for (let d = 0; d < 7; d++) if (best.st.work[id][d] && ((s.avoid || []).includes(d) || (s.avoidMore || []).includes(d)) && !pinned(id, d)) {
+          if (lessonDay(id, d)) { const ok = lateOf(id, d) && !best.st.special[id][d]; issues.push({ sev: ok ? 'amber' : 'red', day: d, person: id, text: name(id) + (ok ? ' comes in on ' + DAY[d] + ' from 15:00 although they have lessons (no other way to fill the kitchen)' : ' has lessons on ' + DAY[d] + ' but is on a day shift') }); continue; }
           if (pd.av.includes(d) && needA > 0) { needA--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week (of the days off if possible, the kitchen needs this one most)' }); }
           else if (pd.am.includes(d) && needM > 0) { needM--; issues.push({ sev: 'info', day: d, person: id, text: name(id) + ' works ' + DAY[d] + ' to make up the week: the days they asked off come first' }); }
           else issues.push({ sev: 'amber', day: d, person: id, text: name(id) + ' comes in on ' + DAY[d] + ', a day off if possible (last resort)' });
