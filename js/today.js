@@ -1,0 +1,589 @@
+/* Today: the station's day. Daily brief, to-do, mise en place checklist, notes for
+   tomorrow, the closing stock check, and the head chef's list editor. */
+(function () {
+  'use strict';
+  const K = window.K, h = K.h, D = K.D, ui = K.ui;
+
+  K.getStation = () => (K.ST[ui.station] ? ui.station : 'hot');
+  K.pickStation = (st) => { const was = K.getStation(); ui.stFrom = was !== st ? was : null; ui.station = st; K.store.set('station', st); ui.noteFor = null; ui.addTo = null; K.render(); };
+  K.dayDot = (ds) => h('span', { class: 'daydot', style: { background: K.DAY_DOTS[(K.parseYmd(ds).getDay() + 6) % 7] }, 'aria-hidden': 'true' });
+  /* page head: a restaurant photo (per page, chosen in Branding) under the title */
+  K.pageHead = function (title, sub, extra, photo) {
+    const src = photo ? K.pagePhoto(photo) : '';
+    return h('section', { class: 'phead' + (src ? ' photo' : ' speckle') }, K.photoLayer(src), K.rays('ph-rays'),
+      h('div', { class: 'wrap phead-in' },
+        h('div', null, h('h1', { class: 'ptitle' }, title), sub ? h('p', { class: 'psub' }, sub) : null),
+        extra || null));
+  };
+  /* the whole station ticked off: a moment for it (Ready for service) */
+  function maybeCelebrate(st) {
+    const items = K.checkItems(st);
+    if (!items.length || !items.every((it) => K.markState(st, it.id) === 'ok')) return false;
+    K.vibrate([20, 40, 20]);
+    ui.sheet = { type: 'ready', st: st, n: items.length, at: Date.now() };
+    K.render();
+    return true;
+  }
+  const firstName = () => String(K.me.name || '').trim().split(/\s+/)[0];
+  /* the top of a sheet: whose day it is, so nobody mixes up today's list with tomorrow's */
+  K.sheetDate = (ds) => K.parseYmd(ds).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  K.SHEETS.ready = function (S) {
+    const close = () => { ui.sheet = null; K.render(); }, name = firstName(), print = K.canPrint && K.canPrint();
+    const burst = h('span', { class: 'ready-burst', 'aria-hidden': 'true' });
+    burst.innerHTML = K.burstSvg();
+    if (!S.shown) { S.shown = true; setTimeout(() => { const b = document.getElementById('ready-ok'); if (b) b.focus({ preventScroll: true }); K.countUp(document.getElementById('ready-n'), S.n, 1100); }, 60); }
+    return h('div', { class: 'ready-back', role: 'dialog', 'aria-modal': 'true', 'aria-label': K.ST[S.st] + ' is ready for service', onkeydown: (e) => { if (e.key === 'Escape') close(); } },
+      K.clip('flambe', 'ready-clip'),
+      h('div', { class: 'ready-in' }, burst,
+        h('p', { class: 'ready-kick mono' }, h('span', { id: 'ready-n' }, String(S.n)), ' of ' + S.n + ' ready · ' + K.hm(S.at)),
+        h('h2', { class: 'ready-title' }, 'Ready for', h('br'), 'service'),
+        h('p', { class: 'ready-line' }, 'Every line on ' + K.ST[S.st] + ' is set. Beautiful work' + (name ? ', ' + name : '') + '.'),
+        h('div', { class: 'ready-btns' },
+          h('button', { class: 'btn primary wide', type: 'button', id: 'ready-ok', onclick: close }, 'Back to Today'),
+          print ? h('button', { class: 'btn wide ready-print', type: 'button', onclick: () => { ui.sheet = { type: 'print', n: 1, st: S.st }; K.render(); } }, K.icon('print'), 'Print tomorrow’s list') : null)));
+  };
+  function markReady(st, it) {
+    ui.pop = it.id;
+    K.setMark(st, it, { d: 'ok' });
+    return maybeCelebrate(st);
+  }
+  /* the time words of an event: "19:30 арт тур · 20:00 вечеря" -> 19:30 арт тур, 20:00 вечеря */
+  function eventTimes(e) {
+    const out = [], re = /(\d{1,2})[:.](\d{2})\s*([^·,;|\d]*)/g;
+    let m;
+    while ((m = re.exec(e.time || ''))) out.push({ t: m[1].padStart(2, '0') + ':' + m[2], what: m[3].trim() });
+    return out;
+  }
+  const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const evWhen = (e, ts) => (K.daysUntil(e.date) === 0 ? (ts.length && ts[0].t >= '17:00' ? 'tonight' : 'today') : 'tomorrow');
+  const openEvent = (e) => () => { ui.calSel = e.date; ui.calMonth = e.date.slice(0, 7); K.go('events'); };
+
+  /* the next event, today or tomorrow: when, how many, the run of the evening and a taste of the menu */
+  function tonightCard(e) {
+    const ts = eventTimes(e), d = K.parseYmd(e.date);
+    const dishes = K.evDishes(e).map((x) => x.name || (K.linkTarget(x.link) || {}).name).filter(Boolean).map((n) => n.replace(/\s*\([^)]*\)\s*$/, ''));
+    return h('section', { class: 'tonight card' },
+      h('button', { type: 'button', class: 'tn-head', onclick: openEvent(e) },
+        h('span', { class: 'tn-date' }, h('span', { class: 'mono' }, d.toLocaleDateString('en-GB', { month: 'short' })), h('b', null, String(d.getDate()))),
+        h('span', { class: 'tn-txt' },
+          h('span', { class: 'tn-kick' }, cap(evWhen(e, ts))),
+          h('span', { class: 'tn-title' }, e.title || 'Event'),
+          h('span', { class: 'muted' }, [e.guests ? e.guests + ' guests' : '', e.kind || ''].filter(Boolean).join(' · '))),
+        K.icon('next')),
+      ts.length ? h('ol', { class: 'tn-line' + (ts.length === 1 ? ' one' : '') }, ts.map((x, i) => h('li', { class: ts.length > 1 && i === ts.length - 1 ? 'tn-main' : null },
+        h('span', { class: 'tn-dot', 'aria-hidden': 'true' }), h('b', { class: 'mono' }, x.t), x.what ? h('span', null, cap(x.what)) : null))) : null,
+      dishes.length ? h('div', { class: 'tn-dishes' }, dishes.slice(0, 5).map((n) => h('span', { class: 'tn-dish' }, n)),
+        dishes.length > 5 ? h('span', { class: 'tn-dish more' }, '+' + (dishes.length - 5) + ' more') : null) : null);
+  }
+  /* ---------- the sheet's head: station, whose sheet, until when ---------- */
+  function sheetHead(st, tab) {
+    if (K.freshDay) K.freshDay();
+    const off = K.sheetOff(st), tmr = tab === 'tmr';
+    return h('section', { class: 'sheethead' }, h('div', { class: 'wrap sh-in' },
+      stationPicker(),
+      h('div', { class: 'sh-day' },
+        h('div', { class: 'sh-date' }, h('span', { class: 'sh-k' + (tmr ? ' w' : '') }, tmr ? 'Writing tomorrow’s sheet' : 'Today’s sheet'),
+          h('b', null, K.sheetDate(tmr ? K.sday(st, 1) : K.sday(st)))),
+        h('span', { class: 'sh-note' }, tmr ? 'Goes up when you finish' : 'Up until midnight'))));
+  }
+  /* a section's heading line: title, count, a quiet hint or small controls on the right */
+  function secHead(title, n, hint) {
+    const tools = Array.prototype.slice.call(arguments, 3).filter(Boolean);
+    return h('div', { class: 'sec-head' }, h('h2', { class: 'sec-title' }, title, n != null ? h('span', { class: 'mono' }, String(n)) : null),
+      tools.length ? h('div', { class: 'sec-tools' }, tools) : hint ? h('span', { class: 'sec-hint' }, hint) : null);
+  }
+  /* the last line of a sheet: write a task (or a note), ! for urgent, + to add */
+  function sheetAdd(id, placeholder, aria, onAdd) {
+    const S = (ui.taskForms = ui.taskForms || {})[id] || (ui.taskForms[id] = { text: '', urgent: false });
+    return h('form', { class: 'sheet-add', onsubmit: (ev) => {
+      ev.preventDefault();
+      const t = (S.text || '').trim();
+      if (!t) { const el = document.getElementById(id + '-task'); if (el) el.focus(); return; }
+      onAdd(t, S.urgent);
+      ui.taskForms[id] = { text: '', urgent: false };
+      K.render();
+    } },
+      h('input', { class: 'input', id: id + '-task', placeholder: placeholder, 'aria-label': placeholder, value: S.text, enterkeyhint: 'done', oninput: (e) => { S.text = e.target.value; } }),
+      h('button', { type: 'button', class: 'sa-flag' + (S.urgent ? ' on' : ''), 'aria-pressed': S.urgent ? 'true' : 'false', 'aria-label': 'Urgent', title: 'Urgent', onclick: () => { S.urgent = !S.urgent; K.render(); } }, '!'),
+      h('button', { class: 'sa-add', type: 'submit', 'aria-label': aria, title: aria }, K.icon('plus')));
+  }
+  /* who is working today, one slim line */
+  function onToday() {
+    const os = K.onToday();
+    if (!os.length) return null;
+    return h('div', { class: 'ontoday tt-today', 'aria-label': 'On today' }, h('span', { class: 'ot-k' }, 'On today'),
+      os.map((x) => h('span', { class: 'ot-chip' }, K.personName(x.id), h('b', { class: 'mono' }, x.code))));
+  }
+  /* the stations as buttons; a pill slides from the station you were on to the new one */
+  function stationPicker() {
+    const cur = K.getStation(), from = ui.stFrom && ui.stFrom !== cur ? ui.stFrom : null;
+    const pill = h('span', { class: 'st-pill', 'aria-hidden': 'true' });
+    const btns = h('div', { class: 'stpick-btns' + (from ? ' sliding' : '') }, pill, K.STATIONS.map((s) => h('button', { type: 'button', class: 'st-' + s[0], 'aria-pressed': cur === s[0] ? 'true' : 'false', onclick: () => K.pickStation(s[0]) }, K.icon(K.ST_ICON[s[0]]), h('span', null, s[0] === 'cold' ? s[1] : s[1].split(' ')[0]))));
+    requestAnimationFrame(() => {
+      if (!pill.isConnected) return;
+      const at = (st) => btns.querySelector('.st-' + st);
+      K.placePill(pill, at(from || cur), false);
+      btns.classList.add('has-pill');
+      if (!from) return;
+      /* each label keeps the colour that reads on what is behind it: dark on the pill, light off it */
+      const was = at(from);
+      if (was) was.classList.add('st-was');
+      requestAnimationFrame(() => {
+        K.placePill(pill, at(cur), true);
+        if (was) was.classList.remove('st-was');
+        setTimeout(() => btns.classList.remove('sliding'), 70);
+      });
+    });
+    if (from) setTimeout(() => { if (ui.stFrom === from) ui.stFrom = null; }, 0);
+    return h('div', { class: 'stpick', role: 'group', 'aria-label': 'I am on' },
+      h('span', { class: 'label on-dark' }, 'I’m on'), btns);
+  }
+
+  K.addBoardPhoto = function () {
+    K.pickFile('image/*', false, (f) => {
+      ui.boardBusy = true; K.render();
+      K.photoDataUrl(f[0]).then(K.saveBoard).then(() => { ui.boardBusy = false; K.render(); K.toast('Whiteboard photo added'); }, (e) => {
+        ui.boardBusy = false; K.render();
+        if (e && e.message === 'read') K.toast('That photo could not be read. Try another.', { tone: 'bad' }); else K.writeFailed(e);
+      });
+    });
+  };
+
+  /* ---------- the daily brief ---------- */
+
+
+  /* ---------- actions with undo ---------- */
+  function doneMark(st, it) {
+    const prev = K.mark(st, it.id) || {};
+    K.vibrate(15);
+    if (markReady(st, it)) return;
+    K.toast('Ready: ' + K.trName(it.name, it.en), { tone: 'good', undo: () => K.setMark(st, it, { d: prev.d || 'do', u: !!prev.u }) });
+  }
+  function doneTask(st, it, id) {
+    const before = id && D.prep[id] ? K.clone(D.prep[id]) : null;
+    K.setPrep(st, it, 'done');
+    K.vibrate(15);
+    K.toast('Done: ' + K.trName(it.name, it.en), { tone: 'good', undo: () => {
+      if (!before) { K.setPrep(st, it, ''); return; }
+      K.restorePrep(id, before);
+    } });
+  }
+
+  /* inline comment editor under a row */
+  /* a comment, written on the sheet in Sharpie; a fresh one is written on as you watch */
+  function noteEl(text, key, ink, by, hand) {
+    const d = key && ui.noteNew === key, who = by ? K.nameOf(by) : '';
+    if (d) setTimeout(() => { if (ui.noteNew === key) ui.noteNew = null; }, 0);
+    return h('span', { class: 'tnote ' + K.inkClass(ink) + ' ' + K.handClass(hand) + (d ? ' draw' : '') }, text, who ? h('small', { class: 'tnote-by' }, '– ' + who.split(' ')[0]) : null);
+  }
+  function noteForm(key, cur, save) {
+    if (ui.noteFor !== key) return null;
+    return h('form', { class: 'noteform', onsubmit: (e) => { e.preventDefault(); ui.noteFor = null; ui.noteNew = key; save((document.getElementById('noteedit').value || '').trim()); } },
+      h('input', { class: 'input hand ' + K.inkClass(K.myInk()) + ' ' + K.handClass(K.myHand()), id: 'noteedit', value: cur || '', placeholder: 'Comment, e.g. use the old batch first', 'aria-label': 'Comment', autofocus: true }),
+      h('button', { class: 'btn primary small', type: 'submit' }, 'Save'),
+      cur ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; save(''); } }, 'Clear')
+        : h('button', { class: 'btn small', type: 'button', onclick: () => { ui.noteFor = null; K.render(); } }, 'Cancel'));
+  }
+  function noteToggle(key) { ui.noteFor = ui.noteFor === key ? null : key; K.render(); }
+  function groupDish(gname, items) {
+    const ids = {};
+    (items || []).forEach((it) => { if (it.link) { const id = String(it.link).split('~')[0]; if (K.find(id)) ids[id] = (ids[id] || 0) + 1; } });
+    const best = Object.keys(ids).sort((a, b) => ids[b] - ids[a])[0];
+    if (best) return best;
+    const hit = D.recipes.find((r) => r.type === 'dish' && K.nameMatch(r.name, gname, true));
+    return hit ? hit.id : null;
+  }
+  /* where a row leads: its own recipe, else the dish its group belongs to */
+  function rowTarget(st, it) {
+    const lk = K.linkTarget(it.link);
+    if (lk) return { id: lk.r.id, ci: lk.ci, own: true };
+    let g = null;
+    K.sections(st).forEach((sec) => sec.groups.forEach((x) => { if (!g && x.key === it.gkey) g = x; }));
+    const d = g ? groupDish(g.name, g.items) : null;
+    return d ? { id: d, ci: -1, own: false } : null;
+  }
+  function openLink(tg) { K.go('recipe', { id: tg.id, comp: tg.ci }); }
+
+  /* ---------- to-do rows ---------- */
+  /* a to-do: tap the circle (or swipe right) when it's done, swipe left to remove,
+     tap the words to add a comment, ! flags it urgent for everyone */
+  function todoRow(o) {
+    const nkey = o.note ? o.noteKey : null;   /* no "+ comment" on Today: only a comment written earlier shows, and can be edited */
+    const done = (btn) => {
+      K.vibrate(12);
+      if (!btn) { o.onDone(); return; }
+      btn.classList.add('ticked');
+      /* one marker line through the whole task (box and name), then the row folds away */
+      const todo = btn.closest('.todo');
+      if (todo && !todo.querySelector('.rowstrike') && !K.reducedMotion()) {
+        const x = document.createElement('span');
+        x.className = 'rowstrike ' + [...btn.classList].filter((c) => c.startsWith('ink-')).join(' ');
+        x.setAttribute('aria-hidden', 'true');
+        x.innerHTML = '<svg viewBox="0 0 300 24" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M4 14c50-6 110-9 160-5 40 3 90 1 132-3"/></svg>';
+        todo.append(x);
+        todo.classList.add('struck');
+      }
+      K.foldAway(btn.closest('.todo-wrap') || btn.closest('.todo'), o.onDone, K.reducedMotion() ? 220 : 520);
+    };
+    const row = h('div', { class: 'todo' + (o.urgent ? ' urgent ' + (o.urgInk ? K.inkClass(o.urgInk) : 'ink-red') : '') + (o.kind ? ' ' + o.kind : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Done'), o.onRemove ? h('span', { class: 'sw-del' }, 'Remove', K.icon('close')) : h('span')),
+      h('div', { class: 'sw-in' },
+        /* the same box as on the sheet: what was written (DO, OPT, DEFROST…), tap it when it is done */
+        h('button', { type: 'button', class: 'tcheck tbox ' + K.inkClass(o.kindInk) + (o.box ? ' written' : ''), 'aria-label': 'Done: ' + o.name, onclick: (e) => done(e.currentTarget) },
+          o.box ? K.doMark(false, o.kinds && o.kinds.length ? o.kinds : ['do'], o.kindHand) : null),
+        h(nkey ? 'button' : 'div', { class: 'todo-main', type: nkey ? 'button' : null, onclick: nkey ? () => noteToggle(nkey) : null, 'aria-label': nkey ? o.name + (o.note ? '. Comment: ' + o.note + '. Tap to edit the comment' : '. Tap to add a comment') : null },
+          o.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
+          h('span', { class: 'todo-name' }, K.trName(o.name, o.en)),
+          o.note ? noteEl(o.note, nkey, o.noteInk, o.noteBy, o.noteHand) : null,
+          h('span', { class: 'todo-meta' }, o.meta.filter(Boolean).map((m) => h('span', null, m)),
+            o.link ? h('span', { class: 'recipelink', role: 'link', tabindex: '0', onclick: (e) => { e.stopPropagation(); openLink(o.link); }, onkeydown: (e) => { if (e.key === 'Enter') { e.stopPropagation(); openLink(o.link); } } }, o.link.own ? 'Recipe' : 'Dish', K.icon('next')) : null,
+            nkey && !o.note ? h('span', { class: 'addnote' }, '+ comment') : null)),
+        o.onUrgent ? h('button', { type: 'button', class: 'mflag' + (o.urgent ? ' on' : ''), 'aria-pressed': o.urgent ? 'true' : 'false', 'aria-label': (o.urgent ? 'Unmark ' : 'Mark ') + o.name + ' as urgent', onclick: o.onUrgent }, '!') : null));
+    K.swipeable(row, { right: { run: () => done(null), fold: true }, left: o.onRemove ? { run: o.onRemove, fold: true } : null });
+    const f = nkey ? noteForm(nkey, o.note, o.onNote) : null;
+    return f ? h('div', { class: 'todo-wrap' }, row, f) : row;
+  }
+
+  /* ---------- the Today page ---------- */
+  K.V.today = function () {
+    const st = K.getStation(), body = h('div', { class: 'page today-page' });
+    const feat = K.upcomingEvents().find((e) => K.isLive(e) && K.daysUntil(e.date) <= 1);
+    const w = h('div', { class: 'wrap today' + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '') });
+    body.append(w);
+    const items = K.checkItems(st);
+    const ready = items.filter((it) => K.markState(st, it.id) === 'ok').length;
+    const doItems = items.filter((it) => K.markState(st, it.id) === 'do' || K.isUrgent(st, it.id)).sort((a, b) => (K.isUrgent(st, b.id) ? 1 : 0) - (K.isUrgent(st, a.id) ? 1 : 0));
+    const tasks = K.dayTasks(st);
+    const todoTasks = tasks.filter((d) => d.status === 'need' && !String(d.key).startsWith('evt-') && !String(d.key).startsWith('auto-')).sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+    const doneTasks = tasks.filter((d) => d.status === 'done' && !String(d.key).startsWith('evt-'));
+    const evTodo = K.eventTasksToday(st).filter((k) => K.evTaskStatus(k.key) !== 'done');
+    const reps = K.repeatsToday(st).filter((x) => !x.done);
+    const todoN = doItems.length + todoTasks.length + evTodo.length + reps.length;
+    const nNotes = K.tomorrowTasks(st).length;
+
+    /* two tabs: what to do today, and tomorrow's list being written. After closing time it opens on Tomorrow */
+    const tab = ui.todayTab === 'tmr' || (!ui.todayTab && K.planningTomorrow() && K.sheetOff(st) < 1) ? 'tmr' : 'today';
+    const setTab = (t) => { ui.todayTab = t; ui.addTo = null; ui.noteFor = null; K.render(); };
+    const tday = K.sday(st, 1), nTmr = K.checkItems(st, tday).filter((it) => K.markState(st, it.id, tday) === 'do').length;
+    const tabBtn = (id, icon, label, sub, hot) => h('button', { type: 'button', class: 'tjt' + (hot ? ' hot' : ''), 'aria-pressed': tab === id ? 'true' : 'false', onclick: () => setTab(id) },
+      h('span', { class: 'tjt-top' }, K.icon(icon), h('span', null, label)), h('span', { class: 'tjt-sub' }, sub));
+    w.className = 'wrap today tab-' + tab + (ui.stFrom && ui.stFrom !== st ? ' st-enter' : '');
+    body.prepend(sheetHead(st, tab));
+    w.append(h('nav', { class: 'tjump two', 'aria-label': 'Today or tomorrow' },
+      tabBtn('today', 'check', 'Today', (todoN ? todoN + ' to do' : 'All done') + ' · ' + ready + '/' + items.length + ' ready', todoN > 0),
+      tabBtn('tmr', 'note', 'Tomorrow', nTmr ? nTmr + ' to make' + (nNotes ? ' · ' + nNotes + (nNotes === 1 ? ' note' : ' notes') : '') : 'Write the prep list')));
+    if (feat) w.append(h('div', { class: 'tt-today' }, tonightCard(feat)));
+    const grid = h('div', { class: 'today-grid' });
+    w.append(grid);
+    const left = h('div', { class: 'today-main' });
+    grid.append(left);
+    const on = onToday();
+    if (on) left.append(on);
+
+    /* ===== Today ===== */
+    const todo = h('section', { class: 'tsec tt-today', id: 't-todo' }, secHead('To do', todoN, 'Tap the box when it’s done',
+      K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print the sheet', title: 'Print the sheet', onclick: () => K.openPrint() }, K.icon('print')) : null));
+    const rows = [];
+    reps.forEach((x) => rows.push(todoRow({ name: x.name, kind: 'repeat', urgent: true, meta: ['Every ' + K.daysLabel(x.days)], onDone: () => doneTask(st, { key: x.key, name: x.name }, null) })));
+    evTodo.forEach((k) => rows.push(todoRow({ name: k.name, kind: 'event', meta: ['Event: ' + (k.event.title || '') + ' · ' + K.countdown(k.event)],
+      onDone: () => { K.setPrep(st, { key: k.key, name: k.name }, 'done'); K.toast('Done: ' + K.trName(k.name), { tone: 'good', undo: () => K.setPrep(st, { key: k.key, name: k.name }, '') }); } })));
+    todoTasks.forEach((d) => {
+      const it = { key: d.key, name: d.name, note: d.note || '' };
+      rows.push(todoRow({
+        name: d.name, note: d.note, noteInk: d.noteInk, noteBy: d.noteBy, noteHand: d.noteHand, urgent: !!d.urgent, urgInk: d.noteInk, noteKey: 'p:' + d._id,
+        meta: ['Task'],
+        onUrgent: () => { K.setPrep(st, it, 'need', !d.urgent); },
+        onRemove: () => { const before = K.clone(D.prep[d._id]); K.removePrep(d._id); K.toast('Removed: ' + K.trName(d.name), { undo: () => K.restorePrep(d._id, before) }); },
+        onDone: () => doneTask(st, it, d._id),
+        onNote: (t) => K.setPrepNote(d._id, t),
+      }));
+    });
+    doItems.forEach((it) => {
+      const m = K.mark(st, it.id) || {}, u = K.isUrgent(st, it.id);
+      rows.push(todoRow({
+        name: it.name, en: it.en, note: m.c, noteInk: m.cink, noteBy: m.cby, noteHand: m.chand, urgent: u, noteKey: 'm:' + it.id, link: rowTarget(st, it),
+        box: true, kinds: K.markKind(st, it.id), kindInk: m.ink, kindHand: m.hand, urgInk: m.ink,
+        meta: [K.trName(it.group, it.gen)],
+        onUrgent: () => { K.setMark(st, it, { u: !u }); },
+        onDone: () => doneMark(st, it),
+        onNote: (t) => K.setMark(st, it, { c: t }),
+      }));
+    });
+    todo.append(h('div', { class: 'todos' }, rows.length ? rows : h('p', { class: 'todos-empty' }, h('b', null, 'All clear. '), 'Mark a row DO below, or add a task.'),
+      sheetAdd('new', 'Add a task, e.g. portion 20 sea bass', 'Add the task', (t, urg) => K.setPrep(st, { key: 'task-' + K.uid(), name: t }, 'need', urg))));
+    /* the done tasks fold into one row under the list, and the page says how the day ends */
+    if (doneTasks.length) {
+      const names = doneTasks.map((d) => d.name);
+      todo.append(h('details', { class: 'donerow' }, h('summary', null, h('span', { class: 'dr-ok' }, K.icon('check')), h('b', null, doneTasks.length + ' done'),
+        h('span', { class: 'dr-names' }, names.slice(0, 2).join(', ') + (names.length > 2 ? ', +' + (names.length - 2) : ''))),
+        h('div', { class: 'donelist' }, doneTasks.map((d) => h('div', { class: 'doneitem' }, K.icon('check'), h('span', null, K.trName(d.name)),
+          h('button', { type: 'button', class: 'link-btn', onclick: () => K.setPrep(st, { key: d.key, name: d.name }, 'need') }, 'Undo'))))));
+    }
+    left.append(todo);
+
+    const editBtn = () => (K.me.admin ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Edit the list', title: 'Edit the list', onclick: () => { ui.listDraft = null; K.go('lists'); } }, K.icon('edit')) : null);
+    left.append(h('div', { class: 'tsec tt-today', id: 't-mep' }, secHead('Mise en place', null, null,
+      items.length ? h('button', { type: 'button', class: 'sec-chip', 'aria-pressed': ui.leftOnly ? 'true' : 'false', onclick: () => { ui.leftOnly = !ui.leftOnly; K.render(); } }, 'Hide ready') : null, editBtn()),
+      items.length ? h('div', { class: 'mep-prog' }, h('span', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: { width: Math.round(ready / items.length * 100) + '%' } })), h('span', { class: 'mono' }, ready + '/' + items.length + ' ready')) : null));
+    const ckToday = checklist(st, null); ckToday.classList.add('tt-today'); left.append(ckToday);
+    left.append(h('div', { class: 'finish tt-today' },
+      h('button', { class: 'btn wide outline-apron', type: 'button', onclick: () => { setTab('tmr'); window.scrollTo(0, 0); } }, 'Closing? Write tomorrow’s list', K.icon('next'))));
+
+    /* ===== Tomorrow ===== */
+    const cl = K.closedInfo(st);
+    left.append(h('div', { class: 'tsec tt-tmr', id: 't-plan' }, secHead('Prep list', null, 'Tap DO on what’s needed',
+      K.canPrint && K.canPrint() ? h('button', { class: 'sec-btn', type: 'button', 'aria-label': 'Print tomorrow’s list', title: 'Print tomorrow’s list', onclick: () => { ui.todayTab = 'tmr'; K.openPrint(); } }, K.icon('print')) : null, editBtn())));
+    const ckTmr = checklist(st, tday); ckTmr.classList.add('tt-tmr'); left.append(ckTmr);
+    left.append(h('div', { class: 'finish tt-tmr' + (cl ? ' done' : '') },
+      cl ? h('p', { class: 'published' }, K.icon('check'), h('b', null, 'Tomorrow’s prep is published'), h('span', null, K.hm(cl.at) + (K.nameOf(cl.by) ? ' · ' + K.nameOf(cl.by) : ''))) : null,
+      cl ? null : h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { K.setClosed(st).catch(K.writeFailed); K.refresh(true); K.toast('Tomorrow’s prep is published for ' + K.ST[st]); } }, K.icon('check'), 'Publish tomorrow’s prep', h('span', { class: 'pub-n' }, nTmr ? nTmr + ' to make' : 'nothing to make')),
+      cl ? null : h('p', { class: 'finish-note' }, 'Today’s sheet goes in the bin and this one goes up.'),
+      K.wbQuick ? h('button', { class: 'btn wide', type: 'button', onclick: K.wbQuick }, K.icon('board'), 'Missing an ingredient? Add it to Ordering') : null));
+    left.insertBefore(tomorrowBlock(st), left.querySelector('.finish.tt-tmr'));
+    /* the kitchen's printable documents, under everything else */
+    if (K.docsBox) w.append(K.docsBox());
+    return { body: body, solid: true };
+  };
+
+  /* Add a task: the sheet blooms out of the + button */
+  K.SHEETS.addtask = function (S) {
+    const add = () => {
+      const name = (S.text || '').trim();
+      if (!name) { const el = document.getElementById('at-text'); if (el) el.focus(); return; }
+      ui.sheet = null;
+      if (S.when === 'tomorrow') K.leaveForTomorrow(S.st, name, S.urgent);
+      else { K.setPrep(S.st, { key: 'task-' + K.uid(), name: name }, 'need', S.urgent); K.toast('Added to ' + K.ST[S.st] + ': ' + name, { tone: 'good' }); }
+      K.vibrate(12);
+      K.render();
+    };
+    const body = h('form', { class: 'addsheet', onsubmit: (e) => { e.preventDefault(); add(); } },
+      K.field('What needs doing?', h('input', { class: 'input big', id: 'at-text', value: S.text, placeholder: 'e.g. Portion 20 sea bass', autocomplete: 'off', enterkeyhint: 'done', oninput: (e) => { S.text = e.target.value; } })),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'When?'),
+        K.seg([['today', 'Today'], ['tomorrow', 'Tomorrow']], S.when, (v) => { S.when = v; K.render(); }, { 'aria-label': 'When', class: 'seg at-seg' })),
+      h('button', { type: 'button', class: 'switchrow', role: 'switch', 'aria-checked': S.urgent ? 'true' : 'false', onclick: (e) => { S.urgent = !S.urgent; e.currentTarget.setAttribute('aria-checked', S.urgent ? 'true' : 'false'); } },
+        h('span', { class: 'switch-txt' }, h('b', null, 'Urgent'), h('span', null, 'Shows in red for the whole kitchen')),
+        h('span', { class: 'switch', 'aria-hidden': 'true' }, h('i'))),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Which station?'),
+        K.seg(K.STATIONS, S.st, (v) => { S.st = v; K.render(); }, { 'aria-label': 'Station', class: 'seg at-seg' })),
+      h('button', { class: 'btn primary wide at-add', type: 'submit' }, K.icon('plus'), 'Add to my list'));
+    const back = K.sheet('Add a task', body), sheet = back.querySelector('.sheet');
+    if (!S.opened) {
+      S.opened = true;
+      if (!K.reducedMotion() && S.ox != null) {
+        sheet.classList.add('bloom-pre');
+        requestAnimationFrame(() => {
+          sheet.classList.remove('bloom-pre');
+          if (back.classList.contains('still')) return;
+          const r = sheet.getBoundingClientRect();
+          sheet.style.setProperty('--cx', (S.ox - r.left) + 'px');
+          sheet.style.setProperty('--cy', (S.oy - r.top) + 'px');
+          sheet.classList.add('bloom');
+        });
+      }
+      setTimeout(() => { const el = document.getElementById('at-text'); if (el) el.focus({ preventScroll: true }); }, 60);
+    }
+    return back;
+  };
+
+  function addTaskForm(id, placeholder, label, onAdd) {
+    const S = (ui.taskForms = ui.taskForms || {})[id] || (ui.taskForms[id] = { text: '', note: '', urgent: false, showNote: false });
+    return h('form', { class: 'addtask', onsubmit: (ev) => {
+      ev.preventDefault();
+      const t = S.text.trim();
+      if (!t) { K.toast('Write the task first.'); return; }
+      onAdd(t, S.urgent, S.note.trim());
+      ui.taskForms[id] = { text: '', note: '', urgent: false, showNote: false };
+      K.render();
+    } },
+    h('div', { class: 'addtask-row' },
+      h('input', { class: 'input', id: id + '-task', placeholder: placeholder, 'aria-label': 'New task', value: S.text, oninput: (e) => { S.text = e.target.value; } }),
+      h('button', { type: 'button', class: 'pbtn flag' + (S.urgent ? ' on' : ''), 'aria-pressed': S.urgent ? 'true' : 'false', 'aria-label': 'Urgent', title: 'Urgent', onclick: () => { S.urgent = !S.urgent; K.render(); } }, '!'),
+      h('button', { class: 'btn primary', type: 'submit' }, label)),
+    S.showNote ? h('input', { class: 'input', id: id + '-note', placeholder: 'Comment (optional), e.g. 2 for the event, the rest for service', 'aria-label': 'Comment', value: S.note, oninput: (e) => { S.note = e.target.value; } })
+      : id === 'new' ? null : h('button', { type: 'button', class: 'link-btn', onclick: () => { S.showNote = true; K.render(); const el = document.getElementById(id + '-note'); if (el) el.focus(); } }, '+ Add a comment'));
+  }
+
+  /* ---------- checklist ---------- */
+  /* day: null for today's list, or tomorrow's date while writing tomorrow's prep list */
+  function checklist(st, day) {
+    const secs = K.sections(st), doc = D.checks[K.checkId(st, day)], when = day ? 'tomorrow' : 'today';
+    if (!secs.length) return h('div', { class: 'empty' }, h('strong', null, 'No list for ' + K.ST[st] + ' yet'), K.me.admin ? 'Tap Edit list to add dishes and their prep.' : 'The head chef has not set it up yet.');
+    return h('div', { class: 'mep' + (day ? ' planning' : '') }, secs.map((sec) => h('section', { class: 'mep-sec' },
+      secs.length > 1 ? h('h3', { class: 'mep-title' }, K.trName(sec.title, sec.en)) : null,
+      h('div', { class: 'mep-groups' }, sec.groups.map((g) => {
+        const extra = ((doc && doc.extra && doc.extra[g.key]) || []).map((x) => Object.assign({ extra: true }, x));
+        let its = g.items.concat(extra).map((it) => Object.assign({ group: g.name, gen: g.en, gkey: g.key }, it));
+        const total = its.length, done = its.filter((it) => K.markState(st, it.id) === 'ok').length;
+        const toMake = day ? its.filter((it) => K.markState(st, it.id, day) === 'do').length : 0;
+        const open = day ? [] : its.filter((it) => K.markState(st, it.id) !== 'ok');
+        if (ui.leftOnly && !day) its = its.filter((it) => K.markState(st, it.id) !== 'ok');
+        const adding = ui.addTo === st + '|' + (day || '') + '|' + g.key;
+        const dish = groupDish(g.name, g.items);
+        return h('div', { class: 'mep-group card' + (!day && total && done === total ? ' complete' : '') + (ui.glow === g.key ? ' glow' : '') },
+          h('div', { class: 'mep-gname' },
+            dish ? h('button', { type: 'button', class: 'gname-link', onclick: () => K.go('recipe', { id: dish }) }, K.trName(g.name, g.en)) : h('b', null, K.trName(g.name, g.en)),
+            day ? (toMake ? h('span', { class: 'gcount tomake' }, toMake + ' to make') : null) : total ? h('span', { class: 'gcount mono' }, done + '/' + total) : null,
+            open.length > 1 ? h('button', { type: 'button', class: 'allready', onclick: (e) => allReady(st, open, e.currentTarget) }, K.icon('check'), 'All ready') : null,
+            h('button', { class: 'mep-add', type: 'button', 'aria-label': 'Add an item to ' + g.name + ' for ' + when, 'aria-expanded': adding ? 'true' : 'false', onclick: () => { ui.addTo = adding ? null : st + '|' + (day || '') + '|' + g.key; K.render(); if (!adding) { const el = document.getElementById('addx'); if (el) el.focus(); } } }, K.icon(adding ? 'close' : 'plus'))),
+          its.map((it) => mrow(st, it, day)),
+          !total && !adding ? h('p', { class: 'hint pad' }, 'Changes daily. Tap + to add ' + (day ? 'tomorrow’s' : 'today’s') + ' items.') : null,
+          ui.leftOnly && !day && total && !its.length ? h('p', { class: 'hint pad' }, 'All ready.') : null,
+          adding ? h('form', { class: 'addx', onsubmit: (e) => { e.preventDefault(); const v = document.getElementById('addx').value.trim(); if (!v) return; ui.addTo = null; K.addExtra(st, g.key, v, day || undefined); } },
+            h('input', { class: 'input', id: 'addx', placeholder: 'Item for ' + when + ' only', 'aria-label': 'Item for ' + when }), h('button', { class: 'btn primary small', type: 'submit' }, 'Add')) : null);
+      })))));
+  }
+  function mrow(st, it, day) {
+    if (day) return planRow(st, it, day);
+    const s = K.markState(st, it.id), u = K.isUrgent(st, it.id), note = K.markNote(st, it.id), tg = rowTarget(st, it);
+    const next = s === '' ? 'do' : s === 'do' ? 'ok' : '';
+    const word = s === 'do' ? 'to do' : s === 'ok' ? 'ready' : 'not checked';
+    const pop = ui.pop === it.id, wrote = ui.wrote === it.id;
+    if (pop) setTimeout(() => { if (ui.pop === it.id) ui.pop = null; }, 0);
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const ink = K.inkClass((K.mark(st, it.id) || {}).ink);
+    const row = h('div', { class: 'mrow ' + ink + (s ? ' ' + s : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') + (pop ? ' struck' : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Ready'), h('span', { class: 'sw-do' }, 'DO')),
+      h('div', { class: 'sw-in' },
+      h('button', { type: 'button', class: 'mbox' + (s ? ' ' + s : '') + (pop ? ' pop' : ''), 'aria-label': it.name + ': ' + word + '. Tap for ' + (next === 'do' ? 'to do' : next === 'ok' ? 'ready' : 'not checked') + '.',
+        onclick: () => { if (next === 'ok') { K.vibrate(12); markReady(st, it); } else { if (next === 'do') { ui.wrote = it.id; ui.openRow = it.id; K.vibrate(8); } K.setMark(st, it, next === 'do' ? { d: 'do', k: '' } : { d: next }); } } }, s === 'do' ? K.doMark(wrote, K.markKind(st, it.id), (K.mark(st, it.id) || {}).hand) : s === 'ok' ? K.doneMark(((K.mark(st, it.id) || {}).k) || '', (K.mark(st, it.id) || {}).hand, pop) : ''),
+      h('div', { class: 'mname' },
+        tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
+        it.extra ? h('span', { class: 'xtag' }, 'today') : null,
+        note ? noteEl(note, s === 'do' ? 'jm:' + it.id : 'm:' + it.id, (K.mark(st, it.id) || {}).cink, (K.mark(st, it.id) || {}).cby, (K.mark(st, it.id) || {}).chand) : null),
+      it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id) }, K.icon('close')) : null,
+      h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent', onclick: () => K.setMark(st, it, { u: !u }) }, '!'),
+      s === 'ok' ? readyStrike(pop) : null));
+    const sw = K.swipeable(row, {
+      right: s === 'ok' ? null : { run: () => markReady(st, it), fold: !!ui.leftOnly },
+      left: s === 'do' ? null : { run: () => { ui.wrote = it.id; ui.openRow = it.id; K.setMark(st, it, { d: 'do', k: '' }); } },
+    });
+    /* on today's list the options open only under the row just marked DO */
+    return s === 'do' && ui.openRow === it.id ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, null, K.mark(st, it.id) || {}, wrote)) : sw;
+  }
+  /* All ready: the group's boxes tick one after another, then all of them are saved at once */
+  /* ready: one marker line through the box word and the name together */
+  function readyStrike(draw) {
+    const x = h('span', { class: 'rowstrike ready' + (draw ? '' : ' still'), 'aria-hidden': 'true' });
+    x.innerHTML = '<svg viewBox="0 0 300 24" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path pathLength="1" vector-effect="non-scaling-stroke" d="M4 14c50-6 110-9 160-5 40 3 90 1 132-3"/></svg>';
+    return x;
+  }
+  function allReady(st, items, btn) {
+    if (!items.length) return;
+    const group = btn.closest('.mep-group'), boxes = group ? Array.from(group.querySelectorAll('.mrow:not(.ok) .mbox')) : [];
+    btn.disabled = true;
+    K.vibrate(15);
+    boxes.forEach((b, i) => { b.style.animationDelay = i * 70 + 'ms'; b.classList.add('cascade'); });
+    const before = items.map((it) => ({ it: it, m: K.mark(st, it.id) || {} }));
+    setTimeout(() => {
+      ui.glow = items[0].gkey;
+      setTimeout(() => { if (ui.glow === items[0].gkey) ui.glow = null; }, 1200);
+      K.setMarks(st, items.map((it) => ({ it: it, patch: { d: 'ok' } })));
+      if (!maybeCelebrate(st)) K.toast('All ready: ' + items[0].group, { tone: 'good', undo: () => K.setMarks(st, before.map((x) => ({ it: x.it, patch: { d: x.m.d || '', u: !!x.m.u } }))) });
+    }, K.reducedMotion() ? 0 : boxes.length * 70 + 260);
+  }
+  /* a row on tomorrow's prep list: DO = make it tomorrow, empty = we have enough */
+  function planRow(st, it, day) {
+    const m = K.mark(st, it.id, day) || {}, s = m.d === 'do' ? 'do' : '', u = K.isUrgent(st, it.id, day), note = m.c || '', tg = rowTarget(st, it);
+    const wrote = ui.wrote === it.id;
+    if (wrote) setTimeout(() => { if (ui.wrote === it.id) ui.wrote = null; }, 0);
+    const set = (v) => { K.vibrate(v ? 10 : 6); if (v) ui.wrote = it.id; K.setMark(st, it, v ? { d: v, k: '' } : { d: v }, day); };
+    const row = h('div', { class: 'mrow ' + K.inkClass(m.ink) + (s ? ' do' : '') + (u ? ' urgent' : '') + (it.extra ? ' extra' : '') },
+      h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span', { class: 'sw-ready' }, K.icon('check'), 'Enough'), h('span', { class: 'sw-do' }, 'DO')),
+      h('div', { class: 'sw-in' },
+        h('button', { type: 'button', class: 'mbox' + (s ? ' do' : ''), 'aria-label': it.name + (s ? ': needed tomorrow. Tap if there is enough.' : ': enough. Tap if it is needed tomorrow.'), onclick: () => set(s ? '' : 'do') }, s ? K.doMark(wrote, K.markKind(st, it.id, day), m.hand) : ''),
+        h('div', { class: 'mname' },
+          tg ? h('button', { type: 'button', class: 'mlink', title: tg.own ? 'Open the recipe' : 'Open the dish', onclick: () => openLink(tg) }, K.trName(it.name, it.en)) : h('span', null, K.trName(it.name, it.en)),
+          it.extra ? h('span', { class: 'xtag' }, 'tomorrow') : null,
+          note ? noteEl(note, 'jt:' + it.id, m.cink, m.cby, m.chand) : null),
+        it.extra ? h('button', { type: 'button', class: 'mflag', 'aria-label': 'Remove ' + it.name, onclick: () => K.removeExtra(st, it.gkey, it.id, day) }, K.icon('close')) : null,
+        h('button', { type: 'button', class: 'mflag' + (u ? ' on' : ''), 'aria-pressed': u ? 'true' : 'false', 'aria-label': (u ? 'Unmark ' : 'Mark ') + it.name + ' as urgent for tomorrow', onclick: () => K.setMark(st, it, { u: !u }, day) }, '!')));
+    const sw = K.swipeable(row, {
+      right: s ? { run: () => set('') } : null,
+      left: s ? null : { run: () => set('do') },
+    });
+    return s ? h('div', { class: 'mrow-wrap' }, sw, jobChips(st, it, day, m, wrote)) : sw;
+  }
+  /* under a row marked DO: what is written in the box. DO, OPT, CHECK, DEF, POR, VAC, as many as it needs
+     (DO on its own means just make it), in the hand and ink of whoever picked them. + adds a comment */
+  function jobChips(st, it, day, m, fresh) {
+    const key = (day ? 'jt:' : 'jm:') + it.id, ks = K.kindsOf(m), date = day || undefined;
+    const pick = (c) => {
+      K.vibrate(10); ui.wrote = it.id; ui.kindNew = key + c;
+      const next = ks.includes(c) ? ks.filter((x) => x !== c) : ks.concat(c);
+      K.setMark(st, it, { k: K.KINDS.map((x) => x[0]).filter((x) => next.includes(x)).join(',') }, date);
+    };
+    let n = 0;
+    return h('div', { class: 'jobs-wrap' + (fresh ? ' fresh' : '') },
+      h('div', { class: 'jobs paper ' + K.inkClass(m.ink) + ' ' + K.handClass(K.myHand()), role: 'group', 'aria-label': 'What to write in the box for ' + it.name },
+        K.KINDS.map((x) => { const on = ks.includes(x[0]); return h('button', { type: 'button', style: '--i:' + n++, class: 'job' + (on ? ' on ' + K.handClass(m.hand) + (ui.kindNew === key + x[0] ? ' draw' : '') : ''), 'aria-pressed': on ? 'true' : 'false', title: x[2], onclick: () => pick(x[0]) }, x[3] || x[1]); }),
+        h('button', { type: 'button', style: '--i:' + n++, class: 'job add', 'aria-label': m.c ? 'Edit the comment' : 'Add a comment', 'aria-expanded': ui.noteFor === key ? 'true' : 'false', onclick: () => noteToggle(key) }, K.icon(m.c ? 'edit' : 'plus'), m.c ? 'Edit note' : 'Note')),
+      noteForm(key, m.c || '', (t) => K.setMark(st, it, { c: t }, date)));
+  }
+
+  /* ---------- for tomorrow ---------- */
+  function tomorrowBlock(st) {
+    const list = K.tomorrowTasks(st);
+    return h('section', { class: 'tsec tt-tmr', id: 't-tmr' }, secHead('Notes', list.length || null, 'Lands on their to-do'),
+      h('div', { class: 'todos notes' },
+        list.map((x) => K.swipeable(h('div', { class: 'todo' + (x.d.urgent ? ' urgent' : '') },
+          h('div', { class: 'sw-bg', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'sw-del' }, 'Remove', K.icon('close'))),
+          h('div', { class: 'sw-in no-check' },
+            h('div', { class: 'todo-main' }, x.d.urgent ? h('span', { class: 'urglabel' }, 'Urgent') : null,
+              h('span', { class: 'note-line tnote ' + K.inkClass(x.d.noteInk || K.myInk()) + ' ' + K.handClass(x.d.noteHand || K.myHand()) }, K.trName(x.d.name)), x.d.note ? h('span', { class: 'tnote' }, x.d.note) : null,
+              h('span', { class: 'todo-meta' }, K.nameOf(x.d.leftBy) ? 'From ' + K.nameOf(x.d.leftBy) : 'Left today')),
+            h('button', { class: 'sec-btn ghost', type: 'button', 'aria-label': 'Remove ' + x.d.name, onclick: () => K.removePrep(x.id) }, K.icon('close')))),
+          { left: { run: () => K.removePrep(x.id), fold: true } })),
+        sheetAdd('tmr', 'Leave a note for the next shift', 'Leave the note', (t, urg) => K.leaveForTomorrow(st, t, urg))));
+  }
+
+  /* ---------- the head chef's list editor ---------- */
+  K.V.lists = function () {
+    const st = K.getStation();
+    if (!ui.listDraft || ui.listDraft.st !== st) ui.listDraft = { st: st, secs: K.clone(K.sections(st)) };
+    const L = ui.listDraft;
+    const saveList = () => {
+      const n = K.clone(D.checklists || { stations: {} });
+      n.stations = n.stations || {};
+      L.secs.forEach((sec) => {
+        sec.title = (sec.title || '').trim() || 'Mise en place';
+        sec.groups = sec.groups.filter((g) => g.name.trim());
+        sec.groups.forEach((g) => { g.name = g.name.trim(); if (g.en && g.en.trim()) g.en = g.en.trim(); else delete g.en;
+        g.items = g.items.filter((i) => i.name.trim()).map((i) => { const o = { id: i.id, name: i.name.trim() }; if (i.link) o.link = i.link; if (i.en && i.en.trim()) o.en = i.en.trim(); return o; }); });
+        if (sec.en && sec.en.trim()) sec.en = sec.en.trim(); else delete sec.en; delete sec.confirm;
+      });
+      n.stations[st] = { sections: L.secs };
+      ui.listDraft = null;
+      K.saveChecklists(n, 'List saved');
+      K.go('today');
+    };
+    const top = K.subbar('Today', () => { ui.listDraft = null; K.go('today'); }, [h('button', { class: 'btn small primary', type: 'button', onclick: saveList }, 'Save list')], 'Edit ' + K.ST[st] + ' list');
+    const w = h('div', { class: 'wrap page form' });
+    w.append(h('h1', { class: 'rtitle' }, K.ST[st] + ' mise en place'),
+      h('p', { class: 'muted measure' }, 'The standing list the team ticks every day. Link a row to its recipe so the recipe opens from the list and its ingredients show up in the order check. When you change a dish, linked rows can follow. The box under each name is its English for the EN view; grey text there is the English the app already knows.'),
+      stationPicker());
+    L.secs.forEach((sec, si) => {
+      w.append(h('section', { class: 'lsec' },
+        h('div', { class: 'xrow' }, h('input', { class: 'input big', id: 'ls' + si, value: sec.title, 'aria-label': 'Section title', oninput: (e) => { sec.title = e.target.value; } }),
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove section ' + sec.title, onclick: () => { if (!sec.confirm) { sec.confirm = true; K.render(); return; } L.secs.splice(si, 1); K.render(); } }, sec.confirm ? 'Sure?' : K.icon('trash'))),
+        h('input', { class: 'input small en-in', value: sec.en || '', placeholder: K.enName(sec.title) || 'In English', 'aria-label': 'Section title in English', oninput: (e) => { sec.en = e.target.value; } }),
+        sec.groups.map((g, gi) => h('div', { class: 'lgroup card' },
+          h('div', { class: 'xrow' }, h('input', { class: 'input strong', id: 'lg' + si + '-' + gi, value: g.name, placeholder: 'Dish or group', 'aria-label': 'Dish or group', oninput: (e) => { g.name = e.target.value; } }),
+            h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + g.name + ' up', disabled: gi === 0, onclick: () => { sec.groups.splice(gi - 1, 0, sec.groups.splice(gi, 1)[0]); K.render(); } }, K.icon('up')),
+            h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + g.name, onclick: () => { sec.groups.splice(gi, 1); K.render(); } }, K.icon('trash'))),
+          h('input', { class: 'input small en-in', value: g.en || '', placeholder: K.enName(g.name) || 'In English', 'aria-label': (g.name || 'Group') + ' in English', oninput: (e) => { g.en = e.target.value; } }),
+          g.items.map((it, ii) => h('div', { class: 'litem' },
+            h('input', { class: 'input', id: 'li' + si + '-' + gi + '-' + ii, value: it.name, placeholder: 'Item', 'aria-label': 'Item', oninput: (e) => { it.name = e.target.value; } }),
+            h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + it.name + ' up', disabled: ii === 0, onclick: () => { g.items.splice(ii - 1, 0, g.items.splice(ii, 1)[0]); K.render(); } }, K.icon('up')),
+            h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move ' + it.name + ' down', disabled: ii === g.items.length - 1, onclick: () => { g.items.splice(ii + 1, 0, g.items.splice(ii, 1)[0]); K.render(); } }, K.icon('down')),
+            h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + it.name, onclick: () => { g.items.splice(ii, 1); K.render(); } }, K.icon('close')),
+            h('input', { class: 'input small en-in', value: it.en || '', placeholder: K.enName(it.name) || 'In English', 'aria-label': (it.name || 'Item') + ' in English', oninput: (e) => { it.en = e.target.value; } }),
+            K.select(K.recipeOptions('No recipe linked').concat(it.link && !K.linkTarget(it.link) ? [[it.link, '(recipe was deleted)']] : []), it.link || '', (v) => { it.link = v; }, { class: 'input small linksel', 'aria-label': 'Recipe for ' + (it.name || 'item') }),
+            it.link && !K.linkTarget(it.link) ? h('span', { class: 'linkwarn' }, 'The linked recipe is gone. Pick it again or remove the row.') : null)),
+          h('button', { class: 'btn small', type: 'button', onclick: () => { g.items.push({ id: 'i' + K.uid(), name: '' }); K.render(); } }, K.icon('plus'), 'Item'))),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { sec.groups.push({ key: 'g' + K.uid(), name: '', items: [] }); K.render(); } }, K.icon('plus'), 'Dish or group')));
+    });
+    w.append(h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { L.secs.push({ title: 'New section', groups: [] }); K.render(); } }, K.icon('plus'), 'Section')));
+    return { top: top, body: w, tabs: false, bar: h('button', { class: 'btn primary wide', type: 'button', onclick: saveList }, K.icon('check'), 'Save list') };
+  };
+})();

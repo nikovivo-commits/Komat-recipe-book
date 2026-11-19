@@ -1,0 +1,15 @@
+{
+  "name": "komat-firebase-tools",
+  "private": true,
+  "description": "Builds vendor/firebase.js and runs the Firebase emulators for tests. Not needed to run the app.",
+  "scripts": {
+    "bundle": "node bundle.mjs",
+    "emulators": "firebase emulators:start --project demo-komat --config ../../firebase.json",
+    "test:rules": "node test-rules.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "firebase": "12.19.0",
+    "firebase-tools": "15.33.0"
+  }
+}

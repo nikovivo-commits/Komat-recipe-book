@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- Project Kitchen Flow. © 2026 the author of Project Kitchen Flow. All rights reserved. See LICENSE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1F2020">
+<meta name="description" content="Komat's kitchen book: recipes, daily mise en place, orders, The Brigade and events.">
+<title>Komat Kitchen Book</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/brand/favicon.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<!-- added to an iPhone home screen, it opens full screen like an app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Komat">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&family=Rubik+Spray+Paint&family=Rubik+Wet+Paint&family=Rubik+Dirt&family=Rubik+Burned&family=Kablammo&family=Ruslan+Display&family=Dela+Gothic+One&family=Rubik+Distressed&family=Yanone+Kaffeesatz:wght@600&family=Underdog&family=Oi&family=Great+Vibes&family=Pacifico&family=Lobster&family=Marck+Script&family=Comforter+Brush&family=Comforter&family=Bad+Script&family=Caveat:wght@700&family=Pangolin&family=Shantell+Sans:wght@600&family=Playpen+Sans:wght@600&family=Neucha&family=Amatic+SC:wght@700&family=Rubik+Scribble&family=Rubik+Doodle+Shadow&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app"></div>
+<!-- starting data for the stand-alone site -->
+<script src="data/translations.js"></script>
+<script src="data/produce.js"></script>
+<script src="data/art.js"></script>
+<script src="data/recipes.js"></script>
+<script src="data/settings.js"></script>
+<!-- the kitchen's own shared database (stand-alone site only) -->
+<script src="vendor/firebase.js"></script>
+<script src="firebase-config.js"></script>
+<!-- the app; tools/build.mjs inlines this same list for the Claude artifact -->
+<script src="js/core.js"></script>
+<script src="js/allergens.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/timers.js"></script>
+<script src="js/gestures.js"></script>
+<script src="js/motion.js"></script>
+  <script src="js/moments.js"></script>
+  <script src="js/ink.js"></script>
+<script src="js/app.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/recipes.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/today.js"></script>
+<script src="js/ordercheck.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/rotagen.js"></script>
+<script src="js/rota.js"></script>
+<script src="js/daysoff.js"></script>
+<script src="js/events.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/login.js"></script>
+<script src="js/print.js"></script>
+<script src="js/docs.js"></script>
+<script src="js/notify.js"></script>
+<!-- works offline once opened (stand-alone site only) -->
+<script>
+/* a new version takes over as soon as it is found: check on every return to the app, and reload once it is in (unless someone is typing) */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  var hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) {
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') r.update().catch(function () {}); });
+  }).catch(function () {});
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadSW) { hadSW = true; return; }
+    var go = function () { var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) { setTimeout(go, 3000); return; } location.reload(); };
+    go();
+  });
+}
+</script>
+</body>
+</html>

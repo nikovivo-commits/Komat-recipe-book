@@ -1,0 +1,18 @@
+Project Kitchen Flow (the Komat Kitchen Book)
+Copyright (c) 2026 the author of Project Kitchen Flow (GitHub: nikovivo-commits). All rights reserved.
+
+This software, its source code, design, texts, illustrations and documentation are protected by copyright
+(Bulgarian Copyright and Related Rights Act and international treaties). The code is visible in this
+repository so the app can be hosted; that does not grant any licence.
+
+No permission is given to copy, modify, distribute, sublicense, sell, host or offer this software or any
+part of it as a service, or to build another product from it, without the copyright holder's prior written
+agreement. Restaurants and other users may use the app only under a written licence or subscription
+agreement with the copyright holder.
+
+A kitchen's own data (its recipes, lists, rota, orders and guests) belongs to that kitchen. The demo recipes
+in data/ are examples.
+
+Third-party software included under its own licence:
+- Firebase JS SDK (vendor/firebase.js), Apache License 2.0, https://github.com/firebase/firebase-js-sdk
+- web-push and the Anthropic SDK, installed by the notifications job, under their own licences (MPL-2.0 and MIT).
