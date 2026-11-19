@@ -85,7 +85,8 @@
     });
   }
   /* the collections a backup holds (people, the kitchen code and photos stay out) */
-  const BOOK = ['recipes', 'settings', 'schedules', 'events', 'checks', 'prep', 'orders', 'boards', 'bugs'];
+  /* the floor book (floor/) sets K.BOOK to its own collections */
+  const BOOK = K.BOOK || ['recipes', 'settings', 'schedules', 'events', 'checks', 'prep', 'orders', 'boards', 'bugs'];
   async function commitAll(ops) {
     for (let i = 0; i < ops.length; i += 300) {
       const b = F.writeBatch(fs);
@@ -215,7 +216,7 @@
     }, () => {});
     K.user = { profiles: (ids) => Promise.resolve(ids.reduce((o, id) => { if (D.members[id]) o[id] = { name: D.members[id].name }; return o; }, {})) };
     K.subscribe();
-    if (K.me.admin) fixRecipes();
+    if (K.me.admin && !K.APP) fixRecipes();
   }
   /* one-off recipe corrections for the live book: each only touches a recipe still holding the old wording */
   function fixRecipes() {
@@ -318,7 +319,8 @@
       if (s.metadata.hasPendingWrites) return;
       if (s.exists()) {
         const m = s.data();
-        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', viewer: m.role === 'viewer', canWrite: m.role !== 'viewer', name: m.name || '', ink: m.ink || '', hand: m.hand || '', email: u.email || '', guest: !!u.isAnonymous };
+        const vw = S.VIEW.includes(m.role || 'cook');
+        K.me = { id: u.uid, admin: S.FULL.includes(m.role), role: m.role || 'cook', viewer: vw, canWrite: !vw, name: m.name || '', ink: m.ink || '', hand: m.hand || '', email: u.email || '', guest: !!u.isAnonymous };
         K.ui.auth = null;
         enter();
         K.subscribeBugs();
@@ -343,7 +345,7 @@
     S.busy = true;
     try {
       const u = auth.currentUser || (await F.signInAnonymously(auth)).user;
-      await F.setDoc(F.doc(fs, 'members/' + u.uid), { name: name, role: 'cook', code: code, at: Date.now() })
+      await F.setDoc(F.doc(fs, 'members/' + u.uid), { name: name, role: S.JOIN_ROLE, code: code, at: Date.now() })
         .catch((e) => Promise.reject(e && e.code === 'permission-denied' ? fail('bad_code') : e));
     } finally { S.busy = false; }
   };
@@ -372,11 +374,16 @@
     try { await F.terminate(fs); await F.clearIndexedDbPersistence(fs); } catch (e) { /* other tabs still open */ }
     location.reload();
   };
-  S.getCode = () => F.getDoc(F.doc(fs, 'private/join')).then((s) => (s.exists() ? s.data().code : ''), (e) => Promise.reject(err(e)));
-  S.setCode = (code) => write(F.setDoc(F.doc(fs, 'private/join'), { code: code, at: Date.now() }));
+  S.getCode = () => F.getDoc(F.doc(fs, S.CODE_DOC)).then((s) => (s.exists() ? s.data().code : ''), (e) => Promise.reject(err(e)));
+  S.setCode = (code) => write(F.setDoc(F.doc(fs, S.CODE_DOC), { code: code, at: Date.now() }));
   /* who can do what: cooks tick and add tasks; sous chefs, head chefs and devs (whoever builds the app) change everything */
-  S.ROLES = [['viewer', 'Viewer (read only)'], ['cook', 'Cook'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['dev', 'Dev']];
-  S.FULL = ['sous', 'admin', 'dev'];
+  S.ROLES = [['viewer', 'Viewer (read only)'], ['cook', 'Cook'], ['waiter', 'Waiter'], ['manager', 'Floor manager'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['dev', 'Dev']];
+  /* the floor book (floor/) sets its own: waiters join it with the floor code, and floor managers run it.
+     In the kitchen book waiters and floor managers read everything and change nothing. */
+  S.FULL = K.FULL_ROLES || ['sous', 'admin', 'dev'];
+  S.VIEW = K.VIEW_ROLES || ['viewer', 'waiter', 'manager'];
+  S.JOIN_ROLE = K.JOIN_ROLE || 'cook';
+  S.CODE_DOC = K.CODE_DOC || 'private/join';
   S.roleName = (role) => (S.ROLES.find((r) => r[0] === role) || S.ROLES[0])[1];
   S.setRole = (uid, role) => write(F.updateDoc(F.doc(fs, 'members/' + uid), { role: role }));
   S.rename = (name) => write(F.updateDoc(F.doc(fs, 'members/' + K.me.id), { name: name }));

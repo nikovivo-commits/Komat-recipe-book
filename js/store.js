@@ -39,21 +39,23 @@
   }
   const err = (code, message) => ({ code: code, message: message || code });
 
-  function LocalDB(seed) {
+  /* key: where this browser keeps the copy (the floor book keeps its own) */
+  function LocalDB(seed, key) {
+    this.key = key || DB_KEY;
     this.subs = new Set();
     this.docs = this.load();
     if (!this.docs) { this.docs = {}; if (seed) seed(this.docs); this.save(); }
     window.addEventListener('storage', (e) => {
-      if (e.key !== DB_KEY) return;
+      if (e.key !== this.key) return;
       this.docs = this.load() || {};
       this.subs.forEach((s) => this.deliver(s));
     });
   }
   LocalDB.prototype.load = function () {
-    try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    try { const raw = localStorage.getItem(this.key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   };
   LocalDB.prototype.save = function () {
-    try { localStorage.setItem(DB_KEY, JSON.stringify(this.docs)); this.full = false; }
+    try { localStorage.setItem(this.key, JSON.stringify(this.docs)); this.full = false; }
     catch (e) { if (!this.full) { this.full = true; K.toast('This device is out of storage space. Export a backup in Settings, then clear old photos.', { tone: 'bad' }); } }
   };
   LocalDB.prototype.write = function (path, data) {
