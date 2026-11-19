@@ -96,6 +96,26 @@
     const keys = Object.keys(found).concat((d.r && d.r.allergens) || [], d.n.allergens || []);
     return { keys: K.orderAl ? K.orderAl(keys) : keys, found: found, checked: !!(d.r && d.r.allergensChecked) };
   };
+  /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
+  K.allergenWhere = function (d) {
+    const out = {}, add = (k, s) => { (out[k] = out[k] || []); if (!out[k].includes(s)) out[k].push(s); };
+    const scan = (part, list) => (list || []).forEach((i) => { const n = (i && i.n) || i; K.allergensIn(n).forEach((k) => add(k, (part ? part + ': ' : '') + String(n).split(/[(]/)[0].trim())); });
+    if (d.r) {
+      /* a main ingredient that is one of the dish's parts is explained by that part */
+      const parts = d.r.components.map((c) => K.normName(c.name));
+      scan('', d.r.ingredients.filter((i) => !parts.includes(K.normName(i.n))));
+      d.r.components.forEach((c) => scan(c.name, c.ingredients));
+    }
+    scan('', (d.n.ings || []).map((x) => ({ n: x })));
+    ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'marked by the head chef'); });
+    return out;
+  };
+  /* for a guest with these allergies: 'no' (it has one of them), 'ok' (none, and the head chef checked the
+     dish's allergens) or 'ask' (none found, but nobody has checked yet: the kitchen confirms) */
+  K.allergyVerdict = function (d, sel) {
+    const where = K.allergenWhere(d), hits = sel.filter((k) => where[k]).map((k) => ({ k: k, where: where[k] }));
+    return { state: hits.length ? 'no' : d.r && d.r.allergensChecked ? 'ok' : 'ask', hits: hits };
+  };
   /* an illustration from the kitchen book for a dish without a photo */
   K.dishArt = (d) => (d && d.r && !d.photo && (window.KOMAT_ART || []).includes(d.r.id) ? 'assets/photos/art/' + d.r.id + '.jpg' : '');
 

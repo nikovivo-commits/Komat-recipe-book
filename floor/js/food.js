@@ -24,11 +24,14 @@
         n ? h('p', { class: 'hero-sub' }, n + (n === 1 ? ' dish' : ' dishes') + ' · ' + K.ingredients().length + ' ingredients') : null)));
     const w = h('div', { class: 'wrap' });
     body.append(w);
-    w.append(K.searchBox('fq', ui.q, ui.foodTab === 'ings' ? 'Search an ingredient, in Bulgarian or English' : 'Search a dish, ingredient or allergen', (v) => { ui.q = v; results(); }));
+    const allergy = ui.foodTab === 'allergy';
+    /* the allergy view is the whole menu at a glance: no search box to cover the boxes */
+    if (!allergy) w.append(K.searchBox('fq', ui.q, ui.foodTab === 'ings' ? 'Search an ingredient, in Bulgarian or English' : 'Search a dish, ingredient or allergen', (v) => { ui.q = v; results(); }));
     w.append(h('div', { class: 'chips filters' },
-      K.seg([['dishes', 'Dishes'], ['ings', 'Ingredients']], ui.foodTab, (v) => { ui.foodTab = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
-      K.canEdit() ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'adddish' }; K.render(); } }, K.icon('plus'), 'Add') : null));
-    if (ui.foodTab !== 'ings' && D.loaded && all.length) {
+      K.seg([['dishes', 'Dishes'], ['allergy', 'Allergies'], ['ings', 'Ingredients']], ui.foodTab, (v) => { ui.foodTab = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
+      K.canEdit() && !allergy ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'adddish' }; K.render(); } }, K.icon('plus'), 'Add') : null));
+    if (allergy) w.append(allergyPicker());
+    if (ui.foodTab === 'dishes' && D.loaded && all.length) {
       const secs = Array.from(new Set(all.map((d) => d.section))).sort(secOrder);
       w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Section' },
         [['', 'All', all.length]].concat(secs.map((s) => [s, s, all.filter((d) => d.section === s).length])).map((c) =>
@@ -48,6 +51,7 @@
     box.textContent = '';
     if (!D.loaded) { box.append(K.loadingBox('Loading the menu')); return; }
     if (ui.foodTab === 'ings') { box.append(ingList()); return; }
+    if (ui.foodTab === 'allergy') { box.append(allergyResults()); return; }
     const all = K.dishes(K.canEdit()).filter((d) => (!ui.sect || d.section === ui.sect) && K.matches(dishHay(d), ui.q));
     if (!all.length) {
       box.append(ui.q ? h('div', { class: 'empty' }, h('strong', null, 'Nothing for “' + ui.q.trim() + '”'), 'Try a shorter word, an ingredient or an allergen. Latin letters work too.')
@@ -61,6 +65,46 @@
         h('div', { class: 'grid' }, groups[s].map(card))));
     });
   }
+  /* ---------- a guest with allergies: tick them, see what they can and cannot eat ---------- */
+  const alSel = () => (ui.alSel = ui.alSel || []);
+  /* "Milk in butter, cream" or "Gluten (marked by the head chef)" */
+  const whereText = (hit, max) => {
+    const l = hit.where.filter((x) => x !== 'marked by the head chef'), more = max && l.length > max;
+    return l.length ? ' in ' + (max ? l.slice(0, max) : l).join(', ') + (more ? '…' : '') : ' (marked by the head chef)';
+  };
+  function allergyPicker() {
+    const sel = alSel();
+    return h('section', { class: 'al-pick' },
+      h('div', { class: 'alp-head' }, h('b', null, 'The guest is allergic to'),
+        sel.length ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.alSel = []; K.render(); } }, K.icon('close'), 'Next table') : null),
+      h('div', { class: 'alp-grid', role: 'group', 'aria-label': 'Allergies' }, (K.ALLERGENS || []).map((a) => h('button', {
+        type: 'button', class: 'alp', 'aria-pressed': sel.includes(a[0]) ? 'true' : 'false',
+        onclick: () => { ui.alSel = sel.includes(a[0]) ? sel.filter((x) => x !== a[0]) : sel.concat([a[0]]); K.render(); },
+      }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), a[1]))));
+  }
+  function allergyResults() {
+    const sel = alSel();
+    const all = K.dishes().filter((d) => d.onMenu).sort((a, b) => secOrder(a.section, b.section) || a.name.localeCompare(b.name));
+    if (!sel.length) return h('div', { class: 'empty' }, h('strong', null, 'Tick the guest’s allergies'), 'The menu splits into what they can eat, what the kitchen should confirm, and what they cannot have.');
+    const v = all.map((d) => ({ d: d, v: K.allergyVerdict(d, sel) }));
+    const ok = v.filter((x) => x.v.state === 'ok'), ask = v.filter((x) => x.v.state === 'ask'), no = v.filter((x) => x.v.state === 'no');
+    const names = sel.map((k) => K.AL[k]).join(', ');
+    const row = (x) => h('button', { type: 'button', class: 'alr alr-' + x.v.state, onclick: () => K.go('dish', { id: x.d.id }) },
+      K.dishThumb(x.d, 'sm'),
+      h('span', { class: 'alr-txt' },
+        h('b', null, x.d.name), x.d.en && x.d.en !== x.d.name ? h('span', { class: 'card-en' }, x.d.en) : null,
+        x.v.hits.length ? h('span', { class: 'alr-why' }, x.v.hits.map((hh) => h('span', null, h('b', null, K.AL[hh.k]), whereText(hh, 3)))) : null),
+      h('span', { class: 'alr-mark', 'aria-hidden': 'true' }, K.icon(x.v.state === 'ok' ? 'check' : x.v.state === 'no' ? 'close' : 'alert')));
+    const block = (cls, title, sub, list) => (list.length ? h('section', { class: 'group alg alg-' + cls }, h('h2', { class: 'group-title' }, title, h('span', { class: 'n' }, String(list.length))), sub ? h('p', { class: 'hint' }, sub) : null, h('div', { class: 'alr-list' }, list.map(row))) : null);
+    return h('div', null,
+      h('p', { class: 'al-sum', role: 'status' }, h('b', null, names + ': '), ok.length + ' can eat · ' + (ask.length ? ask.length + ' to confirm · ' : '') + no.length + ' cannot'),
+      sel.includes('sulphites') ? h('p', { class: 'banner' }, h('b', null, 'Sulphites: '), 'every wine has them, and so do vinegar dressings. Check the drinks too.') : null,
+      block('ok', 'Can eat', 'None of these allergens, and the head chef has checked the dish.', ok),
+      block('ask', 'Ask the kitchen first', 'No ' + names.toLowerCase() + ' found in the ingredients, but the head chef has not checked this dish yet.', ask),
+      block('no', 'Cannot eat', 'Some may be made without it: ask the kitchen before promising.', no),
+      h('p', { class: 'hint al-foot' }, 'Worked out from the kitchen book’s ingredients. Cross-contact in the kitchen is always possible: for a severe allergy, tell the kitchen when you send the order.'));
+  }
+
   /* the menu's order: breakfast, starters, mains, desserts; anything else after, by name */
   const ORDER = ['breakfast', 'brunch', 'bread', 'starter', 'salad', 'soup', 'main', 'meat', 'fish', 'side', 'garnish', 'dessert', 'pastry'];
   const rank = (s) => { s = String(s).toLowerCase(); const i = ORDER.findIndex((k) => s.includes(k)); return i < 0 ? 99 : i; };
@@ -141,6 +185,7 @@
           !d.onMenu ? h('span', { class: 'mchip off' }, 'Off the menu') : null,
           d.hide ? h('span', { class: 'mchip off' }, 'Hidden from the floor') : null,
           d.example ? h('span', { class: 'mchip' }, 'Example') : null),
+        guestBanner(d),
         n.pitch ? h('blockquote', { class: 'say' }, K.icon('quote'), h('div', null, h('span', { class: 'label' }, 'What to say at the table'), h('p', null, n.pitch)))
           : h('p', { class: 'say empty-say' }, K.canEdit() ? 'Nothing written yet for the table. Tap Edit to add what to say.' : 'The floor manager has not written what to say yet.'),
         h('section', { class: 'allergens' },
@@ -170,6 +215,18 @@
       body: body, tabs: false,
     };
   };
+
+  /* with allergies ticked, a dish page says straight away whether it is for this guest */
+  function guestBanner(d) {
+    const sel = alSel();
+    if (!sel.length) return null;
+    const v = K.allergyVerdict(d, sel);
+    return h('div', { class: 'al-verdict alr-' + v.state, role: 'status' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'no' ? 'close' : 'alert'),
+      h('div', null,
+        h('b', null, v.state === 'no' ? 'Not for this guest' : v.state === 'ok' ? 'Fine for this guest' : 'Ask the kitchen first'),
+        h('p', null, v.state === 'no' ? v.hits.map((x) => K.AL[x.k] + whereText(x)).join('; ') + '.'
+          : 'No ' + sel.map((k) => K.AL[k].toLowerCase()).join(', ') + (v.state === 'ok' ? ' (checked by the head chef).' : ' found, but the dish is not checked yet.'))));
+  }
 
   /* ---------- editing (floor managers and chefs) ---------- */
   K.SHEETS.dishedit = function (S) {

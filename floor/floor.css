@@ -245,3 +245,44 @@ button.fs-cell { cursor: pointer; }
   .prices b { font-size: 1.4rem; }
 }
 .qp-opt, .stock-row .icon-btn, .fs-cell, .fs-dbtn, .ing-chip, .chip { touch-action: manipulation; }
+
+/* ---------- allergies: what a guest can and cannot eat ---------- */
+.al-pick { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.alp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; }
+.alp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.alp { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; border-radius: var(--r-sm); border: 1.5px solid var(--line); background: var(--surface); text-align: left; font-weight: 700; color: inherit; touch-action: manipulation; }
+.alp-box { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--line); }
+.alp-box .ico { width: 16px; height: 16px; opacity: 0; }
+.alp[aria-pressed="true"] { border-color: var(--urgent); background: var(--urgent-soft); }
+.alp[aria-pressed="true"] .alp-box { border-color: var(--urgent); background: var(--urgent); color: var(--urgent-ink); }
+.alp[aria-pressed="true"] .alp-box .ico { opacity: 1; }
+.al-sum { margin: 16px 0 4px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--steel); color: var(--on-steel); }
+.alg .group-title { display: flex; align-items: center; gap: 8px; }
+.alg-ok .group-title { color: var(--ready); } .alg-ask .group-title { color: var(--low); } .alg-no .group-title { color: var(--urgent); }
+.alr-list { display: grid; gap: 6px; margin-top: 8px; }
+.alr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 8px 12px 8px 8px; text-align: left; border-radius: var(--r-sm); border: 1px solid var(--line); border-left-width: 5px; background: var(--surface); color: inherit; }
+.alr-ok { border-left-color: var(--ready); } .alr-ask { border-left-color: var(--todo); } .alr-no { border-left-color: var(--urgent); }
+.alr-no { background: color-mix(in srgb, var(--urgent-soft) 45%, var(--surface)); }
+.alr-txt { display: grid; min-width: 0; gap: 1px; }
+.alr-why { display: grid; gap: 2px; margin-top: 3px; font-size: .82rem; color: var(--urgent); }
+.alr-why b { font-weight: 800; }
+.alr-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; }
+.alr-ok .alr-mark { background: var(--ready); color: var(--ready-ink); } .alr-ask .alr-mark { background: var(--todo); color: var(--todo-ink); } .alr-no .alr-mark { background: var(--urgent); color: var(--urgent-ink); }
+.alr-mark .ico { width: 18px; height: 18px; }
+.al-foot { margin-top: 18px; }
+.al-verdict { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 12px 14px; border-radius: var(--r); border: 2px solid; }
+.al-verdict > .ico { width: 26px; height: 26px; }
+.al-verdict.alr-ok { border-color: var(--ready); background: var(--ready-soft); color: var(--ready); }
+.al-verdict.alr-ask { border-color: var(--todo); background: var(--todo-soft); color: var(--todo-ink); }
+.al-verdict.alr-no { border-color: var(--urgent); background: var(--urgent-soft); color: var(--urgent); }
+.al-verdict p { color: var(--ink); }
+@media (max-width: 600px) { .alp-grid { grid-template-columns: 1fr 1fr; } .alp { min-height: 46px; padding: 6px 10px; font-size: .92rem; } }
+.al-sum { position: sticky; top: calc(var(--top-h) + env(safe-area-inset-top, 0px) + 6px); z-index: 5; box-shadow: var(--shadow); }
+@media (max-width: 600px) {
+  .al-pick { padding: 10px; gap: 8px; }
+  .alp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .alp { gap: 6px; min-height: 42px; padding: 4px 7px; font-size: .8rem; line-height: 1.15; }
+  .alp-box { width: 20px; height: 20px; }
+  .alp-box .ico { width: 13px; height: 13px; }
+}
+.alp { min-width: 0; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
