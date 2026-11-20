@@ -8762,7 +8762,7 @@ window.KOMAT_PART_ART = [
       auto.forEach((id) => { if (work[id][d] && special[id][d]) { const x = (S(id).stations || []).find((y) => STS.includes(y)); if (x && need[x] > 0) need[x]--; } });
       Object.keys(on).forEach((id) => { if (!lateOf(id, d) && need[on[id]] > 0) need[on[id]]--; });
       const spare = Object.keys(extras).filter((id) => !lateOf(id, d)), miss = [];
-      STS.forEach((x) => { while (need[x] > 0) { const k = spare.findIndex((id) => rank(id, x) >= 0); if (k >= 0) spare.splice(k, 1); else miss.push(x); need[x]--; } });
+      STS.forEach((x) => { while (need[x] > 0) { const k = spare.findIndex((id) => rank(id, x) >= 0 && !(S(id).emergency || []).includes(x)); /* not someone who takes that station only in an emergency */ if (k >= 0) spare.splice(k, 1); else miss.push(x); need[x]--; } });
       /* and enough hands at lunch: full shifts, prep days and whoever covers lunch on a fixed week */
       const min = Math.max((plan.lunchMin || [])[d] || 0, minLunch[d]);
       if (min) {
