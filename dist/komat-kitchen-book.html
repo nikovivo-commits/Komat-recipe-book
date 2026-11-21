@@ -8916,7 +8916,10 @@ window.KOMAT_PART_ART = [
       return c;
     }
 
-    const R = rng(week + '|' + JSON.stringify(plan) + '|' + JSON.stringify(input.requests || []) + '|' + order.join(','));
+    /* the seed must not depend on the order the database hands fields back in (it differs between phones and
+       reads), or two phones show two different drafts of the same week: keys sorted, requests sorted */
+    const canon = (v) => (Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v));
+    const R = rng(week + '|' + canon(plan) + '|' + (input.requests || []).map(canon).sort().join(',') + '|' + order.join(','));
     const free = (id) => [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d]);
 
     function start() {
