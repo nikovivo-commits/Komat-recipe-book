@@ -112,7 +112,7 @@
       auto.forEach((id) => { if (work[id][d] && special[id][d]) { const x = (S(id).stations || []).find((y) => STS.includes(y)); if (x && need[x] > 0) need[x]--; } });
       Object.keys(on).forEach((id) => { if (!lateOf(id, d) && need[on[id]] > 0) need[on[id]]--; });
       const spare = Object.keys(extras).filter((id) => !lateOf(id, d)), miss = [];
-      STS.forEach((x) => { while (need[x] > 0) { const k = spare.findIndex((id) => rank(id, x) >= 0); if (k >= 0) spare.splice(k, 1); else miss.push(x); need[x]--; } });
+      STS.forEach((x) => { while (need[x] > 0) { const k = spare.findIndex((id) => rank(id, x) >= 0 && !(S(id).emergency || []).includes(x)); /* not someone who takes that station only in an emergency */ if (k >= 0) spare.splice(k, 1); else miss.push(x); need[x]--; } });
       /* and enough hands at lunch: full shifts, prep days and whoever covers lunch on a fixed week */
       const min = Math.max((plan.lunchMin || [])[d] || 0, minLunch[d]);
       if (min) {
@@ -266,7 +266,10 @@
       return c;
     }
 
-    const R = rng(week + '|' + JSON.stringify(plan) + '|' + JSON.stringify(input.requests || []) + '|' + order.join(','));
+    /* the seed must not depend on the order the database hands fields back in (it differs between phones and
+       reads), or two phones show two different drafts of the same week: keys sorted, requests sorted */
+    const canon = (v) => (Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v));
+    const R = rng(week + '|' + canon(plan) + '|' + (input.requests || []).map(canon).sort().join(',') + '|' + order.join(','));
     const free = (id) => [0, 1, 2, 3, 4, 5, 6].filter((d) => !hardOff[id][d]);
 
     function start() {

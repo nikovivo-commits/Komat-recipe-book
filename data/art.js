@@ -28,6 +28,7 @@ window.KOMAT_ART = [
   "revane",
   "shakshuka",
   "sorbe-limon",
+  "sladoled-oreh",
   "tarama",
   "teleshki-ezik",
   "teleshki-tartar",
