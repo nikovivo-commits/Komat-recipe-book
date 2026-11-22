@@ -102,6 +102,7 @@
       K.canEdit() ? link('rota', 'The floor team', 'The people on the schedule', open('team')) : null,
       K.canEdit() && !ex ? link('sparkle', 'Load the example wines', 'Six Bulgarian wines and notes, to see how it works', () => { ui.sheet = null; K.loadExamples(); K.render(); }) : null,
       K.canEdit() && ex ? link('trash', 'Remove the examples', 'The example wines, dish notes and questions', () => { ui.sheet = null; K.removeExamples(); K.render(); }) : null,
+      K.canEdit() ? link('list', 'Load the house menu and wine list', 'The printed menu and wine list, already typed in. Wines you have changed are kept.', loadHouse) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
       K.canEdit() ? link('download', 'Backup', 'Save everything in the floor book to a file', exportFile) : null,
       link('kitchen', 'The kitchen book', 'Recipes, prep lists and The Brigade', null, { href: '../' }),
@@ -109,6 +110,20 @@
   };
 
   /* a file prepared for the floor book: {docs: {"wines/id": {...}}}; it only adds and replaces */
+  /* the restaurant's own menu and wine list, kept with the app (floor/data/house.json): wines that are not in yet
+     are added, and the menu opens for checking against the kitchen's dishes */
+  function loadHouse() {
+    K.toast('Loading the menu and wine list…');
+    fetch('floor/data/house.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(r))).then((j) => {
+      const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
+      return Promise.all(add.map((p) => K.db.doc(p).set(docs[p]))).then(() => {
+        K.toast(add.length ? add.length + ' wines added' : 'The wines were already in');
+        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
+        else ui.sheet = null;
+        K.render();
+      });
+    }).catch((e) => (e && e.code ? K.writeFailed(e) : K.toast('The menu file could not be loaded. Check the connection and try again.', { tone: 'bad' })));
+  }
   function importFile() {
     K.pickFile('.json,application/json', false, (files) => {
       files[0].text().then((t) => {
@@ -116,7 +131,7 @@
         const paths = Object.keys(docs).filter((p) => K.BOOK.includes(p.split('/')[0]) && p.split('/').length === 2);
         /* a menu prepared as a file: each line is matched to a kitchen dish by name, for you to check before it is saved */
         if (j && Array.isArray(j.menu) && j.menu.length) {
-          return Promise.all(paths.map((p) => K.db.doc(p).set(docs[p]))).then(() => { ui.sheet = { type: 'menuimport', extra: paths.length, items: j.menu.map((e) => ({ e: e, to: matchDish(e) })) }; K.render(); });
+          return Promise.all(paths.map((p) => K.db.doc(p).set(docs[p]))).then(() => { ui.sheet = { type: 'menuimport', extra: paths.length, items: matchMenu(j.menu) }; K.render(); });
         }
         if (!paths.length) { K.toast('Nothing for the floor book in that file.', { tone: 'bad' }); return; }
         return Promise.all(paths.map((p) => K.db.doc(p).set(docs[p]))).then(() => { ui.sheet = null; K.render(); K.toast(paths.length + ' records added'); });
@@ -133,13 +148,19 @@
       let s = 0;
       want.forEach((w) => have.forEach((x) => {
         if (w === x) s = Math.max(s, 100);
-        else if (w.length >= 4 && x.length >= 4 && (x.includes(w) || w.includes(x))) s = Math.max(s, 60 - Math.min(30, Math.abs(x.length - w.length)));
+        else if (w.length >= 5 && x.length >= 5 && (x.includes(w) || w.includes(x))) s = Math.max(s, 60 - Math.min(30, Math.abs(x.length - w.length)));
       }));
       if (!s) return;
       s += (r.type === 'dish' ? 5 : 0) + (r.onMenu ? 5 : 0);
       if (s > score) { score = s; best = r.id; }
     });
-    return best;
+    return { id: best, score: score };
+  }
+  /* every line with its best kitchen dish; when two lines want the same dish, the better fit keeps it */
+  function matchMenu(menu) {
+    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id, score: m.score }; });
+    items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
+    return items;
   }
   K.SHEETS.menuimport = function (S) {
     const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
