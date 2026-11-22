@@ -286,3 +286,40 @@ button.fs-cell { cursor: pointer; }
   .alp-box .ico { width: 13px; height: 13px; }
 }
 .alp { min-width: 0; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
+
+/* ---------- confirming allergens, and the tasting menu ---------- */
+.al-nudge { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; margin-top: 12px; padding: 12px 14px; border-radius: var(--r); border: 1.5px solid var(--todo); background: var(--todo-soft); color: var(--todo-ink); text-align: left; }
+.al-nudge > span { display: grid; }
+.al-nudge > span span { font-size: .85rem; }
+.al-nudge.plain { border-color: var(--line); background: var(--surface); color: inherit; }
+.al-progress { margin-top: 12px; }
+.alc-dish { display: flex; gap: 12px; align-items: center; }
+.alc-dish > div { display: grid; }
+.alc-dish b { font: 700 1.5rem/1.1 var(--display); }
+.alc-ings summary { cursor: pointer; font-weight: 700; }
+.alc-ings p { margin-top: 6px; font-size: .9rem; color: var(--muted); }
+.alc-grid .alp > span:last-child { display: grid; min-width: 0; }
+.alc-grid .alp small { font-weight: 500; font-size: .7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alc-grid .alp:disabled { opacity: 1; }
+.alc-grid .alp.auto { border-style: dashed; }
+.tasting { display: grid; gap: 8px; margin-top: 14px; padding: 14px 16px; border-radius: var(--r); background: var(--steel); color: var(--on-steel); box-shadow: var(--shadow); }
+.ts-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.ts-head h2 { font: 700 1.7rem/1.05 var(--display); }
+.tasting .kicker.dish { color: var(--apron-on-steel); }
+.tasting .muted, .tasting .card-en { color: var(--steel-muted); }
+.tasting .btn { background: transparent; color: var(--on-steel); border-color: rgba(255, 255, 255, .25); }
+.ts-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.ts-list button { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: baseline; width: 100%; padding: 8px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, .1); background: none; color: inherit; text-align: left; }
+.ts-n { color: var(--apron-on-steel); font-size: .85rem; }
+.ts-name { display: grid; }
+.ts-edit { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.ts-edit li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 6px 4px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.ts-edit .ts-n, .tf .ts-n { color: var(--muted); }
+.tf-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.tf-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); border-left-width: 5px; background: var(--surface); }
+.tf-txt { display: grid; gap: 3px; min-width: 0; }
+.tf-name { padding: 0; border: 0; background: none; color: inherit; text-align: left; font-weight: 800; }
+.tf-ask { font-size: .82rem; }
+.tf-swap { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.tf-chip { padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--ready); background: var(--ready-soft); color: var(--ready); font-weight: 700; font-size: .85rem; }
+.tf-chip.ask { border-color: var(--todo); background: var(--todo-soft); color: var(--todo-ink); }

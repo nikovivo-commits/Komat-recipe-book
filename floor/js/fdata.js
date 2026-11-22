@@ -75,7 +75,8 @@
     return out.sort((a, b) => ((a.order || 999) - (b.order || 999)) || a.name.localeCompare(b.name));
   };
   function dishOf(r, n) {
-    const name = (r && r.name) || n.name || 'Dish';
+    /* the floor can show a kitchen dish under the name printed on the menu */
+    const kname = (r && r.name) || '', name = (r && n.menuName) || kname || n.name || 'Dish';
     const ings = [];
     if (r) {
       r.ingredients.forEach((i) => ings.push(i.n));
@@ -83,7 +84,7 @@
     }
     (n.ings || []).forEach((x) => ings.push(x));
     return {
-      id: r ? r.id : n.id, r: r, n: n, name: name, en: n.en || K.en(name) || (r && !CYR.test(name) ? '' : ''),
+      id: r ? r.id : n.id, r: r, n: n, name: name, kname: kname, en: n.en || K.en(name) || K.en(kname),
       section: n.section || (r && r.category) || 'Dishes', price: n.price || '', order: +n.order || 0, hide: !!n.hide, onMenu: r ? r.onMenu : n.onMenu !== false,
       ings: uniq(ings), parts: r ? r.components.map((c) => c.name) : [], photo: (r && (r.photo || (r.gallery[0] && r.gallery[0].id))) || n.photo || '',
       example: !!n.example,
@@ -94,7 +95,24 @@
   K.dishAllergens = function (d) {
     const found = K.detectAllergens ? K.detectAllergens([d.ings.map((n) => ({ n: n }))]) : {};
     const keys = Object.keys(found).concat((d.r && d.r.allergens) || [], d.n.allergens || []);
-    return { keys: K.orderAl ? K.orderAl(keys) : keys, found: found, checked: !!(d.r && d.r.allergensChecked) };
+    return { keys: K.orderAl ? K.orderAl(keys) : keys, found: found, checked: K.dishChecked(d) };
+  };
+  /* someone with the right to has gone through the dish's allergens and confirmed them */
+  K.dishChecked = (d) => !!(d.r ? d.r.allergensChecked : d.n.checked);
+  /* kitchen dishes are confirmed by the chefs and the owner; the floor's own dishes by whoever runs the floor book */
+  K.canCheck = (d) => (d.r ? K.mode !== 'firebase' || ['sous', 'admin', 'owner', 'dev'].includes(K.me.role) : !!(K.me && K.me.admin));
+  /* confirm a dish's allergens: `extra` are the ones ticked by hand on top of those found in the ingredients */
+  K.confirmAllergens = function (d, extra) {
+    if (!d.r) return K.saveNote(d.id, { allergens: extra, checked: true });
+    const src = D.recipes.find((r) => r.id === d.r.id);
+    if (src) { src.allergens = extra.slice(); src.allergensChecked = true; }
+    K.refresh(true);
+    return K.db.doc('recipes/' + d.r.id).update({ allergens: extra, allergensChecked: true, updated: Date.now() }).catch(K.writeFailed);
+  };
+  /* the tasting menu: its courses, in order */
+  K.tasting = function () {
+    const t = D.tasting || {};
+    return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean) };
   };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
   K.allergenWhere = function (d) {
@@ -107,14 +125,14 @@
       d.r.components.forEach((c) => scan(c.name, c.ingredients));
     }
     scan('', (d.n.ings || []).map((x) => ({ n: x })));
-    ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'marked by the head chef'); });
+    ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'ticked by hand'); });
     return out;
   };
   /* for a guest with these allergies: 'no' (it has one of them), 'ok' (none, and the head chef checked the
      dish's allergens) or 'ask' (none found, but nobody has checked yet: the kitchen confirms) */
   K.allergyVerdict = function (d, sel) {
     const where = K.allergenWhere(d), hits = sel.filter((k) => where[k]).map((k) => ({ k: k, where: where[k] }));
-    return { state: hits.length ? 'no' : d.r && d.r.allergensChecked ? 'ok' : 'ask', hits: hits };
+    return { state: hits.length ? 'no' : K.dishChecked(d) ? 'ok' : 'ask', hits: hits };
   };
   /* an illustration from the kitchen book for a dish without a photo */
   K.dishArt = (d) => (d && d.r && !d.photo && (window.KOMAT_ART || []).includes(d.r.id) ? 'assets/photos/art/' + d.r.id + '.jpg' : '');
@@ -248,6 +266,7 @@
   K.saveSetting = function (name, data) {
     if (name === 'staff') D.staff = data;
     if (name === 'codes') D.codes = data;
+    if (name === 'tasting') D.tasting = data;
     K.refresh(true);
     return K.db.doc('fohsettings/' + name).set(data).catch(K.writeFailed);
   };
@@ -290,6 +309,7 @@
       const m = byId(l);
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
+      D.tasting = m.tasting || null;
     });
   };
   K.subscribeBugs = function () { /* the kitchen book keeps the problem reports */ };
