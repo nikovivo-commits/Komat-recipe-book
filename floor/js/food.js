@@ -70,6 +70,7 @@
   const alSel = () => (ui.alSel = ui.alSel || []);
   /* "Milk in butter, cream" or "Gluten (ticked by hand)" */
   const whereText = (hit, max) => {
+    if (hit.txt) return hit.txt;
     const l = hit.where.filter((x) => x !== 'ticked by hand'), more = max && l.length > max;
     return l.length ? ' in ' + (max ? l.slice(0, max) : l).join(', ') + (more ? '…' : '') : ' (ticked by hand)';
   };
@@ -81,12 +82,17 @@
       h('div', { class: 'alp-grid', role: 'group', 'aria-label': 'Allergies' }, (K.ALLERGENS || []).concat([['lactose', 'Lactose', 'eats butter']]).map((a) => h('button', {
         type: 'button', class: 'alp' + (a[2] ? ' two' : ''), 'aria-pressed': sel.includes(a[0]) ? 'true' : 'false',
         onclick: () => { ui.alSel = sel.includes(a[0]) ? sel.filter((x) => x !== a[0]) : sel.concat([a[0]]); K.render(); },
-      }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), a[2] ? h('span', null, a[1], h('small', null, a[2])) : a[1]))));
+      }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), a[2] ? h('span', null, a[1], h('small', null, a[2])) : a[1]))),
+      h('div', { class: 'alp-head' }, h('b', null, 'The guest eats')),
+      h('div', { class: 'alp-grid diet', role: 'group', 'aria-label': 'Diet' }, ['pesc', 'veg', 'vegan'].map((k) => h('button', {
+        type: 'button', class: 'alp', 'aria-pressed': sel.includes(k) ? 'true' : 'false',
+        onclick: () => { const on = sel.includes(k); ui.alSel = sel.filter((x) => !K.DIET[x]).concat(on ? [] : [k]); K.render(); },
+      }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), K.DIET[k]))));
   }
   function allergyResults() {
     const sel = alSel();
     const all = K.dishes().filter((d) => d.onMenu).sort((a, b) => secOrder(a.section, b.section) || a.name.localeCompare(b.name));
-    if (!sel.length) return h('div', { class: 'empty' }, h('strong', null, 'Tick the guest’s allergies'), 'The menu splits into what they can eat, what the kitchen should confirm, and what they cannot have.');
+    if (!sel.length) return h('div', { class: 'empty' }, h('strong', null, 'Tick the guest’s allergies or diet'), 'The menu splits into what they can eat, what the kitchen should confirm, and what they cannot have.');
     const v = all.map((d) => ({ d: d, v: K.allergyVerdict(d, sel) }));
     const ok = v.filter((x) => x.v.state === 'ok'), mod = v.filter((x) => x.v.state === 'mod'), ask = v.filter((x) => x.v.state === 'ask'), no = v.filter((x) => x.v.state === 'no');
     const names = sel.map(K.alName).join(', ');
@@ -105,7 +111,7 @@
       block('ok', 'Can eat', 'None of these allergens, and the dish’s allergens have been confirmed.', ok),
       block('mod', 'Can eat with a change', 'Write the change on the order, so the kitchen sees it.', mod),
       sel.includes('lactose') ? h('p', { class: 'hint' }, h('b', null, 'Lactose: '), 'for a guest who avoids lactose but eats butter. For a milk allergy, tick Milk instead.') : null,
-      block('ask', 'Ask the kitchen first', 'No ' + names.toLowerCase() + ' found in the ingredients, but nobody has confirmed this dish’s allergens yet.', ask),
+      block('ask', 'Ask the kitchen first', 'Nothing against ' + names.toLowerCase() + ' found, but this dish’s allergens or diet label have not been confirmed yet.', ask),
       block('no', 'Cannot eat', 'Some may be made without it: ask the kitchen before promising.', no),
       h('p', { class: 'hint al-foot' }, 'Worked out from the kitchen book’s ingredients. Cross-contact in the kitchen is always possible: for a severe allergy, tell the kitchen when you send the order.'));
   }
@@ -125,7 +131,7 @@
     const where = K.allergenWhere(d), found = Object.keys(where).filter((k) => where[k].some((x) => x !== 'ticked by hand'));
     if (S.forId !== d.id) {
       S.forId = d.id; S.extra = ((d.r && d.r.allergens) || d.n.allergens || []).filter((k) => !found.includes(k));
-      S.butter = d.n.butterOnly ? '1' : ''; S.bread = d.n.bread ? '1' : ''; S.breadAl = d.n.bread ? (d.n.breadAl || []).slice() : null;
+      S.butter = d.n.butterOnly ? '1' : ''; S.diet = d.n.diet || ''; S.bread = d.n.bread ? '1' : ''; S.breadAl = d.n.bread ? (d.n.breadAl || []).slice() : null;
     }
     const isOn = (k) => found.includes(k) || S.extra.includes(k), onKeys = (K.ALLERGENS || []).map((a) => a[0]).filter(isOn);
     /* gluten is the usual one that leaves with the bread */
@@ -134,8 +140,8 @@
     const last = S.i >= S.ids.length - 1;
     const go = (save) => {
       if (save) {
-        const flags = { butterOnly: !!(S.butter && isOn('milk')), bread: !!S.bread, breadAl: S.bread ? breadAl : [] };
-        if (flags.butterOnly || flags.bread || D.notes[d.id]) K.saveNote(d.id, flags);
+        const flags = { butterOnly: !!(S.butter && isOn('milk')), bread: !!S.bread, breadAl: S.bread ? breadAl : [], diet: S.diet };
+        if (flags.butterOnly || flags.bread || flags.diet || D.notes[d.id]) K.saveNote(d.id, flags);
         K.confirmAllergens(d, S.extra.slice());
       }
       if (last) { ui.sheet = null; K.toast(save ? 'Allergens confirmed' : 'Done'); } else S.i++;
@@ -156,6 +162,9 @@
         butterSrc.length ? h('span', { class: 'muted' }, 'Found: ' + butterSrc.slice(0, 4).join(', ')) : null,
         K.seg([['1', 'Only butter'], ['', 'More than butter']], S.butter, (v) => { S.butter = v; K.render(); }, { class: 'seg', 'aria-label': 'The dairy in this dish' }),
         h('span', { class: 'hint' }, 'Only butter: guests who avoid lactose but eat butter can have it.')) : null,
+      h('div', { class: 'alc-q' }, h('b', null, 'Who can eat it?'),
+        K.seg([['meat', 'Has meat'], ['pesc', 'Pescatarian'], ['veg', 'Vegetarian'], ['vegan', 'Vegan']], S.diet, (v) => { S.diet = S.diet === v ? '' : v; K.render(); }, { class: 'seg wrap-seg', 'aria-label': 'Who can eat it' }),
+        h('span', { class: 'hint' }, (K.dietGuess(d) ? 'From the ingredients it looks like: ' + K.DIET[K.dietGuess(d)].toLowerCase() + '. ' : '') + 'Think of stock, gelatine, fish sauce, honey and what it is fried in.')),
       h('div', { class: 'alc-q' }, h('b', null, 'Is it served with bread?'),
         K.seg([['', 'No bread'], ['1', 'Yes, and it can go without']], S.bread, (v) => { S.bread = v; K.render(); }, { class: 'seg', 'aria-label': 'Served with bread' }),
         S.bread && onKeys.length ? h('div', { class: 'alc-bread' }, h('span', { class: 'hint' }, 'Which of its allergens are only in the bread? Without the bread, the dish no longer has them.'),
@@ -230,6 +239,7 @@
   const ORDER = ['breakfast', 'brunch', 'bread', 'mezze', 'starter', 'salad', 'soup', 'main', 'meat', 'fish', 'side', 'garnish', 'dessert', 'pastry', 'finish'];
   const rank = (s) => { s = String(s).toLowerCase(); const i = ORDER.findIndex((k) => s.includes(k)); return i < 0 ? 99 : i; };
   const secOrder = (a, b) => rank(a) - rank(b) || a.localeCompare(b);
+  const dietTag = (d) => (d.n.diet && d.n.diet !== 'meat' ? h('span', { class: 'diet-tag d-' + d.n.diet }, K.DIET[d.n.diet]) : null);
   function card(d) {
     const al = K.dishAllergens(d).keys, pairs = (d.n.pairs || []).map(K.wine).filter(Boolean);
     return h('button', { class: 'rcard', type: 'button', onclick: (e) => { if (K.morphFrom) K.morphFrom(e.currentTarget); K.go('dish', { id: d.id }); } },
@@ -239,6 +249,7 @@
         h('span', { class: 'card-name' }, d.name),
         d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null,
         h('span', { class: 'card-meta' },
+          dietTag(d),
           al.length ? h('span', null, al.length + (al.length === 1 ? ' allergen' : ' allergens')) : h('span', null, 'No allergens found'),
           pairs.length ? h('span', null, K.icon('glass'), pairs.length === 1 ? pairs[0].name : pairs.length + ' wines') : null),
         d.hide || !d.onMenu || d.example || (K.canEdit() && !d.n.pitch) ? h('span', { class: 'card-pills' },
@@ -253,7 +264,8 @@
     const all = K.ingredients().filter((e) => K.matches(e.name + ' ' + e.en + ' ' + e.what + ' ' + e.dishes.map((d) => d.name).join(' '), ui.q));
     if (!all.length) return h('div', { class: 'empty' }, h('strong', null, ui.q ? 'No ingredient called “' + ui.q.trim() + '”' : 'No ingredients yet'), ui.q ? 'Try the Bulgarian or the English name.' : 'They come from the dishes on the menu.');
     const explained = all.filter((e) => e.what), rest = all.filter((e) => !e.what);
-    const row = (e) => h('button', { type: 'button', class: 'ing-row', onclick: () => { ui.sheet = { type: 'ingredient', key: e.key }; K.render(); } },
+    const row = (e) => h('button', { type: 'button', class: 'ing-row' + (K.ingArt(e.key) ? ' has-art' : ''), onclick: () => { ui.sheet = { type: 'ingredient', key: e.key }; K.render(); } },
+      K.ingArt(e.key) ? h('img', { class: 'ing-thumb', src: K.ingArt(e.key), alt: '', loading: 'lazy' }) : null,
       h('span', { class: 'ing-name' }, h('b', null, e.name), e.en ? h('span', { class: 'ing-en' }, e.en) : null),
       e.what ? h('span', { class: 'ing-what' }, e.what) : null,
       h('span', { class: 'ing-in' }, 'In ' + e.dishes.map((d) => d.name).join(', ')),
@@ -270,7 +282,9 @@
     const e = K.ingredients().find((x) => x.key === S.key);
     if (!e) return null;
     const al = K.allergensIn ? K.allergensIn(e.name) : [];
+    const art = K.ingArt(e.key);
     const body = h('div', { class: 'stack' },
+      art ? h('figure', { class: 'ing-art' }, h('img', { src: art, alt: e.en || e.name }), h('figcaption', { class: 'art-tag' }, 'Illustration')) : null,
       e.en ? h('p', { class: 'ing-en big' }, e.en) : null,
       e.what ? h('p', { class: 'prose' }, e.what) : h('p', { class: 'muted' }, 'Nothing written about it yet.'),
       al.length ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Allergens'), alChips(al, true)) : null,
@@ -304,6 +318,7 @@
         d.en && d.en !== d.name ? h('p', { class: 'en-name' }, d.en) : null,
         n.menuBg || n.menuEn ? h('p', { class: 'menu-line' }, h('span', { class: 'label' }, 'On the menu'), n.menuBg ? h('span', null, n.menuBg) : null, n.menuEn ? h('span', { class: 'ing-en' }, n.menuEn) : null) : null,
         h('div', { class: 'meta-chips' },
+          dietTag(d),
           !d.onMenu ? h('span', { class: 'mchip off' }, 'Off the menu') : null,
           d.hide ? h('span', { class: 'mchip off' }, 'Hidden from the floor') : null,
           d.example ? h('span', { class: 'mchip' }, 'Example') : null),
@@ -322,7 +337,7 @@
 
     if (n.story) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'The story'), h('p', { class: 'prose' }, n.story)));
     if ((n.niche || []).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Ingredients guests ask about'),
-      h('dl', { class: 'niche' }, n.niche.map((x) => [h('dt', null, x.n, K.en(x.n) ? h('span', { class: 'ing-en' }, K.en(x.n)) : null), h('dd', null, x.what || '')]))));
+      h('dl', { class: 'niche' }, n.niche.map((x) => [h('dt', null, K.ingArt(K.ingKey(x.n)) ? h('button', { type: 'button', class: 'niche-art', 'aria-label': 'About ' + x.n, onclick: () => { ui.sheet = { type: 'ingredient', key: K.ingKey(x.n) }; K.render(); } }, h('img', { src: K.ingArt(K.ingKey(x.n)), alt: '', loading: 'lazy' })) : null, x.n, K.en(x.n) ? h('span', { class: 'ing-en' }, K.en(x.n)) : null), h('dd', null, x.what || '')]))));
     if (lines(n.facts).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Good to know'), h('ul', { class: 'facts' }, lines(n.facts).map((f) => h('li', null, f)))));
     if (pairs.length || n.pairText) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Wine with it'),
       n.pairText ? h('p', { class: 'prose' }, n.pairText) : null,
@@ -347,13 +362,13 @@
     const sel = alSel();
     if (!sel.length) return null;
     const v = K.allergyVerdict(d, sel);
-    const none = 'No ' + sel.map((k) => K.alName(k).toLowerCase()).join(', ');
+    const none = 'Nothing against ' + sel.map((k) => K.alName(k).toLowerCase()).join(', ');
     return h('div', { class: 'al-verdict alr-' + v.state, role: 'status' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'mod' ? 'edit' : v.state === 'no' ? 'close' : 'alert'),
       h('div', null,
         h('b', null, v.state === 'no' ? 'Not for this guest' : v.state === 'ok' ? 'Fine for this guest' : v.state === 'mod' ? 'Fine without the bread' : 'Ask the kitchen first'),
         h('p', null, v.state === 'no' ? v.hits.map((x) => K.alName(x.k) + whereText(x)).join('; ') + '.'
           : v.state === 'mod' ? v.hits.map((x) => K.alName(x.k)).join(', ') + ' only in the bread. Write “no bread” on the order.'
-            : (v.notes.length ? v.notes.join('. ') + '. ' : '') + (v.state === 'ok' ? none + ' (allergens confirmed).' : none + ' found, but the dish is not checked yet.'))));
+            : (v.notes.length ? v.notes.join('. ') + '. ' : '') + (v.state === 'ok' ? none + ' (confirmed).' : none + ' found, but the dish is not checked yet.'))));
   }
 
   /* ---------- editing (floor managers and chefs) ---------- */

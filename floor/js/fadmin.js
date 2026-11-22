@@ -119,8 +119,14 @@
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
       /* bottles already in the book keep everything; one that has no picture yet gets the one that comes with the list */
       const pics = Object.keys(docs).filter((p) => p.startsWith('wines/') && docs[p].label).map((p) => [K.wine(p.slice(6)), docs[p].label, docs[p].focus || null]).filter((x) => x[0] && !x[0].label);
+      /* dishes already loaded from this menu get its corrected ingredient explanations */
+      let fixed = 0;
+      (j.menu || []).forEach((e) => Object.keys(D.notes).forEach((id) => {
+        const n = D.notes[id];
+        if (e.menuBg && n.menuBg === e.menuBg && e.niche && JSON.stringify(n.niche || []) !== JSON.stringify(e.niche)) { K.saveNote(id, { niche: e.niche }); fixed++; }
+      }));
       return Promise.all(add.map((p) => K.db.doc(p).set(docs[p])).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
-        K.toast([add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        K.toast([fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
         else ui.sheet = null;
         K.render();

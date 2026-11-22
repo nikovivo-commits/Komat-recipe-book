@@ -133,8 +133,14 @@
   K.allergyVerdict = function (d, sel) {
     const where = K.allergenWhere(d), n = d.n, bread = n.bread ? n.breadAl || [] : [];
     const hits = [], notes = [];
-    let fix = true;
+    let fix = true, unsure = false;
     sel.forEach((k) => {
+      /* a diet: the dish's label has to be at least as strict; a dish without a label is one to ask about */
+      if (K.DIET[k]) {
+        if (!n.diet) unsure = true;
+        else if (K.DIETS.indexOf(n.diet) < K.DIETS.indexOf(k)) { fix = false; hits.push({ k: k, where: [], txt: n.diet === 'meat' ? ': has meat' : ': the dish is ' + K.DIET[n.diet].toLowerCase() + ' only' }); }
+        return;
+      }
       /* lactose intolerance is milk, except that a dish whose only dairy is butter is fine */
       const real = k === 'lactose' ? 'milk' : k;
       if (!where[real]) return;
@@ -144,11 +150,25 @@
       hits.push({ k: k, where: where[real], bread: inBread });
     });
     /* 'mod': everything in the way is only in the bread, and the dish can be served without it */
-    const state = !hits.length ? (K.dishChecked(d) ? 'ok' : 'ask') : fix ? 'mod' : 'no';
+    const state = !hits.length ? (K.dishChecked(d) && !unsure ? 'ok' : 'ask') : fix ? 'mod' : 'no';
     if (state === 'mod') notes.unshift('Serve without the bread');
     return { state: state, hits: hits, notes: notes };
   };
-  K.alName = (k) => (k === 'lactose' ? 'Lactose' : K.AL[k]);
+  K.alName = (k) => (k === 'lactose' ? 'Lactose' : K.DIET[k] || K.AL[k]);
+  /* who can eat a dish, from anyone to the strictest; a dish carries one label (`diet` on its note) */
+  K.DIETS = ['meat', 'pesc', 'veg', 'vegan'];
+  K.DIET = { meat: 'Meat', pesc: 'Pescatarian', veg: 'Vegetarian', vegan: 'Vegan' };
+  const MEAT = /мес[оа]|телешк|говежд|свинск|пилешк|пиле\b|агнешк|патиц|патешк|бекон|шунка|прошуто|наденица|кайма|салам|луканка|пастърма|кост|chicken|beef|pork|lamb|duck|bacon|\bham\b|prosciutto|veal|sausage|chorizo|guanciale|pancetta|salami|bone|foie|gelatin|желатин/i;
+  const FISH = /риба|сьомга|аншоа|хайвер|октопод|скарид|калмар|миди|fish|salmon|anchov|caviar|octopus|shrimp|prawn|squid|mussel|tuna|тон\b/i;
+  /* what the ingredients suggest, for whoever sets the label; never shown to waiters as a fact */
+  K.dietGuess = function (d) {
+    const txt = d.ings.join(' | '), al = Object.keys(K.allergenWhere(d));
+    if (!d.ings.length) return '';
+    if (MEAT.test(txt)) return 'meat';
+    if (FISH.test(txt) || al.some((k) => ['fish', 'crustaceans', 'molluscs'].includes(k))) return 'pesc';
+    if (al.includes('milk') || al.includes('eggs') || /\bмед\b|honey/i.test(txt)) return 'veg';
+    return 'vegan';
+  };
   /* an illustration from the kitchen book for a dish without a photo */
   K.dishArt = (d) => (d && d.r && !d.photo && (window.KOMAT_ART || []).includes(d.r.id) ? 'assets/photos/art/' + d.r.id + '.jpg' : '');
 
@@ -156,6 +176,12 @@
   const SKIP = /^(сол|вода|лед|пипер|черен пипер|бял пипер|захар|олио|salt|water|ice|pepper|black pepper|sugar|oil|sunflower oil)$/;
   const ingKey = (n) => K.normName(String(n || '').split(/[,(]/)[0].replace(/[0-9%.]+/g, ' '));
   K.ingKey = ingKey;
+  /* the picture that goes with an explained ingredient, '' when there is none */
+  let ART = null;
+  K.ingArt = function (key) {
+    if (!ART) { ART = {}; const m = window.KOMAT_ING_ART || {}; Object.keys(m).forEach((n) => { ART[ingKey(n)] = m[n]; }); }
+    return ART[key] ? 'floor/art/' + ART[key] + '.jpg' : '';
+  };
   K.ingredients = function () {
     const m = {};
     K.dishes().forEach((d) => {

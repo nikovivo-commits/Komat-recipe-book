@@ -371,3 +371,24 @@ button.fs-cell { cursor: pointer; }
 .hy-opts input { width: 22px; height: 22px; }
 .hy-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 480px) { .hy-cols { grid-template-columns: 1fr; } }
+
+/* vegan, vegetarian, pescatarian */
+.diet-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font: 800 .72rem/1.4 var(--sans); letter-spacing: .03em; text-transform: uppercase; border: 1.5px solid currentColor; color: var(--ready); }
+.diet-tag.d-pesc { color: var(--cold, #2a6f97); }
+.alp-grid.diet { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.alp-grid.diet .alp[aria-pressed="true"] { border-color: var(--ready); background: var(--ready-soft); }
+.alp-grid.diet .alp[aria-pressed="true"] .alp-box { border-color: var(--ready); background: var(--ready); color: var(--ready-ink); }
+/* whole words on a narrow phone: the diet boxes carry no tick box, the long allergen names get smaller letters */
+.alp-grid.diet .alp-box { display: none; }
+.alp-grid.diet .alp { justify-content: center; text-align: center; }
+@media (max-width: 420px) { .al-pick .alp { font-size: .72rem; letter-spacing: -.02em; padding: 4px 4px; gap: 4px; } .al-pick .alp-box { width: 18px; height: 18px; } }
+
+/* pictures of the explained ingredients */
+.ing-row.has-art { grid-template-columns: 72px minmax(0, 1fr); column-gap: 12px; align-items: start; }
+.ing-row.has-art > :not(.ing-thumb) { grid-column: 2; }
+.ing-thumb { grid-row: 1 / span 4; width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-sm); }
+.ing-art { position: relative; margin: 0; }
+.ing-art img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-sm); }
+.ing-art .art-tag { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font-size: .72rem; font-weight: 700; }
+.niche-art { display: block; padding: 0; margin: 0 0 6px; border: 0; background: none; }
+.niche-art img { display: block; width: 96px; height: 72px; object-fit: cover; border-radius: var(--r-sm); }

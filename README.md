@@ -88,7 +88,7 @@ The kitchen's own database adds `members/<id>` (name and role of everyone who ha
 
 The repo is public, so `data/` only holds recipes, mise en place lists and shift codes. Staff names, rotas, events, problem reports and the team photos stay in the private shared databases and are not committed.
 
-Photos: `assets/photos/theme` (page headers, the courtyard cat), `assets/photos/gallery` (plating photos), `assets/photos/produce` (order-check products, named in `data/produce.js`) and `assets/photos/art` (illustrations for recipes without a photo, and in `art/parts` for each part of a dish by its part id, both listed in `data/art.js`). Product photos and illustrations are AI-generated.
+Photos: `assets/photos/theme` (page headers, the courtyard cat), `assets/photos/gallery` (plating photos), `assets/photos/produce` (order-check products, named in `data/produce.js`) and `assets/photos/art` (illustrations for recipes without a photo; the floor book keeps its ingredient illustrations in `floor/art`, listed in `floor/data/ingart.js`, and in `art/parts` for each part of a dish by its part id, both listed in `data/art.js`). Product photos and illustrations are AI-generated.
 
 ## Code
 
