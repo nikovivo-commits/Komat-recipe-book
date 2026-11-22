@@ -323,3 +323,11 @@ button.fs-cell { cursor: pointer; }
 .tf-swap { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
 .tf-chip { padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--ready); background: var(--ready-soft); color: var(--ready); font-weight: 700; font-size: .85rem; }
 .tf-chip.ask { border-color: var(--todo); background: var(--todo-soft); color: var(--todo-ink); }
+
+/* ---------- the menu as printed, and loading a menu file ---------- */
+.menu-line { display: grid; gap: 2px; font-size: .95rem; }
+.mi-list { display: grid; gap: 8px; }
+.mi-row { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); border-left: 5px solid var(--ready); background: var(--surface); }
+.mi-row.none { border-left-color: var(--todo); }
+.mi-name { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.mi-row select { width: 100%; }
