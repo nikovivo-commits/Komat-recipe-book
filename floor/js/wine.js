@@ -16,7 +16,10 @@
       h('span', { class: 'wl-sub' }, [w.grapes, w.region].filter(Boolean).join(' · ')),
       w.vintage ? h('span', { class: 'wl-vin' }, w.vintage) : null);
     if (!w.label) return drawn();
-    return h('div', { class: 'wlabel photo' + (cls ? ' ' + cls : '') }, K.photoWithFallback(K.media(w.label), '', (im) => im.parentNode.replaceWith(drawn()), { alt: 'Label of ' + w.name, loading: 'lazy', decoding: 'async' }));
+    /* a picture from the web is the whole bottle on white: show all of it; a photo of the label fills the frame */
+    /* a wine's bottle picture is shown zoomed in on its label; tapping it on the wine's page opens the whole bottle */
+    const fo = w.focus, crop = fo ? { transformOrigin: fo[0] + '% ' + fo[1] + '%', transform: 'translate(' + (50 - fo[0]) + '%, -' + fo[1] + '%) scale(' + fo[2] + ')' } : null;
+    return h('div', { class: 'wlabel photo' + (/^https?:/.test(w.label) ? ' web' : '') + (crop ? ' crop' : '') + (cls ? ' ' + cls : '') }, K.photoWithFallback(K.media(w.label), '', (im) => im.parentNode.replaceWith(drawn()), { alt: 'Label of ' + w.name, loading: 'lazy', decoding: 'async', style: crop }));
   };
   K.wineCard = function (w) {
     const st = K.stockState(w);
@@ -138,7 +141,7 @@
   K.SHEETS.labelweb = function (S) {
     const w = K.wine(S.id);
     if (!w) return null;
-    const done = (label) => K.saveWine(Object.assign({}, w, { label: label })).then(() => { ui.sheet = null; K.render(); K.toast('Label saved'); });
+    const done = (label) => K.saveWine(Object.assign({}, w, { label: label, focus: null })).then(() => { ui.sheet = null; K.render(); K.toast('Label saved'); });
     const fromBlob = (file) => { S.busy = true; K.render(); uploadLabel(file).then(done, (e) => { S.busy = false; K.render(); K.toast(K.uploadErr(e), { tone: 'bad' }); }); };
     const fromUrl = (url) => {
       url = String(url || '').trim();
@@ -169,7 +172,7 @@
   function addLabel(w) {
     K.pickFile('image/*', false, (files) => {
       K.toast('Saving the label…');
-      uploadLabel(files[0]).then((id) => K.saveWine(Object.assign({}, w, { label: id }))).then(() => K.toast('Label saved'), (e) => K.toast(K.uploadErr(e), { tone: 'bad' }));
+      uploadLabel(files[0]).then((id) => K.saveWine(Object.assign({}, w, { label: id, focus: null }))).then(() => K.toast('Label saved'), (e) => K.toast(K.uploadErr(e), { tone: 'bad' }));
     });
   }
 
@@ -194,7 +197,7 @@
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
       if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
-      Object.assign(doc, { nostock: !!(w && w.nostock), byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();

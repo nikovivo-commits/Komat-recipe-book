@@ -180,6 +180,8 @@
       glassCl: w.glassCl || '', say: w.say || '', nose: w.nose || '', palate: w.palate || '', story: w.story || '', facts: w.facts || '', serve: w.serve || '', decant: w.decant || '',
       glass: w.glass || '', pairs: Array.isArray(w.pairs) ? w.pairs : [], par: w.par === '' || w.par == null ? 3 : +w.par, order: +w.order || 0, example: !!w.example, updated: w.updated || 0,
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
+      /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
+      focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
   };
   K.wine = (id) => D.wines.find((w) => w.id === id) || null;
