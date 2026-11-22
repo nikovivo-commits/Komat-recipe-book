@@ -45,16 +45,18 @@
   };
   /* where the numbers come from: the Hype sheet, when it was read and when it last changed */
   const when = (t) => { const d = K.ymd(new Date(t)); return (d === K.day(0) ? 'today' : d === K.day(-1) ? 'yesterday' : K.prettyDate(d, { day: 'numeric', month: 'short' })) + ' ' + K.hm(t); };
+  const age = (t) => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 60 ? m + ' min ago' : m < 48 * 60 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; };
   function hypeBar() {
     const hs = D.hypeStock, linked = K.winesSorted().filter((x) => K.hypeRow(x)).length;
     if (!D.hypeUrl && !hs) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'hypesheet' }; K.render(); } },
       K.icon('download'), h('span', null, h('b', null, 'Take the stock from Hype'), h('span', null, 'Connect the Google Sheet with the Hype stock, once.')), K.icon('next')) : h('span');
-    const old = hs && hs.modified && Date.now() - hs.modified > 36 * 3600000;
+    const src = hs ? hs.exported || hs.modified : 0, old = src && Date.now() - src > 36 * 3600000;
     const go = () => { ui.hypeBusy = true; K.render(); K.refreshHype().then((d) => { ui.hypeBusy = false; K.render(); K.toast('Stock refreshed: ' + d.rows.length + ' products'); }, (e) => { ui.hypeBusy = false; K.render(); K.toast(e && e.message === 'nolink' ? 'The Hype sheet is not connected yet.' : 'The sheet could not be read. Check the connection, or the link in Settings.', { tone: 'bad' }); }); };
     return h('section', { class: 'hype-bar' + (old ? ' old' : '') },
       h('div', { class: 'hb-txt' }, h('b', null, 'Stock from Hype'),
         hs ? h('span', null, 'Refreshed ' + when(hs.at) + (hs.by ? ' by ' + hs.by : '')) : h('span', null, 'Not read yet'),
-        hs && hs.modified ? h('span', { class: old ? 'hb-old' : '' }, 'Sheet last changed ' + when(hs.modified) + (old ? ' · the numbers may be out of date' : '')) : null,
+        hs && (hs.exported || hs.exportedRaw) ? h('span', { class: old ? 'hb-old' : '' }, 'Exported from Hype ' + (hs.exported ? when(hs.exported) + ' · ' + age(hs.exported) : hs.exportedRaw) + (old ? ' · the numbers may be out of date' : ''))
+          : hs && hs.modified ? h('span', { class: old ? 'hb-old' : '' }, 'Sheet last changed ' + when(hs.modified) + (old ? ' · the numbers may be out of date' : '')) : null,
         hs ? h('span', { class: 'muted' }, linked + ' of our bottles paired with a Hype product') : null),
       h('div', { class: 'hb-btns' },
         D.hypeUrl ? h('button', { type: 'button', class: 'btn primary small', disabled: ui.hypeBusy ? true : null, onclick: go }, ui.hypeBusy ? 'Reading…' : 'Refresh stock') : null,
