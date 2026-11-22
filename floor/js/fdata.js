@@ -249,12 +249,14 @@
     return [parseFloat(n), UNIT[u] || UNIT[u.replace(/\.$/, '')] || String(m[2] || unit || '').trim()];
   };
   /* rows as the sheet gives them: [name, warehouse, quantity, unit, category, barcode] */
+  const DRINKS = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;
   K.setHypeStock = function (doc) {
     D.hypeStock = doc && Array.isArray(doc.rows) ? doc : null;
     const idx = {};
     ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
       const name = String(r[0] || '').trim(), q = K.parseQty(r[2], r[3]);
-      if (!name || q[0] == null) return;
+      /* drinks only: the kitchen's stock is none of the floor book's business */
+      if (!name || q[0] == null || (r[4] && !DRINKS.test(r[4]))) return;
       const e = idx[name] || (idx[name] = { name: name, qty: 0, unit: q[1], cat: r[4] || '', wh: [] });
       e.qty += q[0]; if (r[1] && !e.wh.includes(r[1])) e.wh.push(r[1]);
     });
