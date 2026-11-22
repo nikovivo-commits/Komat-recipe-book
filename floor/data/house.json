@@ -17,7 +17,7 @@
    "niche": [
     {
      "n": "катък",
-     "what": "Katak: a thick, tangy Bulgarian spread of fermented sheep’s milk, somewhere between yoghurt and fresh cheese."
+     "what": "Katak: a thick, tangy Bulgarian fermented milk spread, somewhere between yoghurt and fresh cheese. Ours is made from cow’s milk."
     },
     {
      "n": "сумак",
@@ -110,7 +110,7 @@
    "niche": [
     {
      "n": "блини",
-     "what": "Blini: small, soft buckwheat or wheat pancakes, the classic base for caviar."
+     "what": "Blini: small, soft pancakes, the classic base for caviar. Ours are made with regular wheat flour, not buckwheat, so they have gluten."
     },
     {
      "n": "есетра",
@@ -162,7 +162,7 @@
    "niche": [
     {
      "n": "крокмач",
-     "what": "Krokmach: a traditional Bulgarian sheep’s milk product, boiled with salt and left to ferment; thick, salty and tangy."
+     "what": "Krokmach: a traditional Bulgarian fermented milk product, thick, salty and tangy. Ours is similar to our katak, but made from sheep’s milk."
     },
     {
      "n": "консоме",
@@ -192,7 +192,7 @@
     },
     {
      "n": "айрян",
-     "what": "Ayran: a cold, salted yoghurt drink, here made into a sauce."
+     "what": "Ayran: a cold, salted yoghurt drink. Here it is made into a sauce with horseradish (hryan), which gives it a gentle heat."
     }
    ],
    "facts": ""
@@ -296,7 +296,7 @@
     },
     {
      "n": "жу",
-     "what": "Jus: a concentrated sauce, here made from mushrooms."
+     "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
    "facts": "A vegan option is available: ask the kitchen."
@@ -328,6 +328,10 @@
     {
      "n": "фоа гра",
      "what": "Foie gras: the rich liver of a fattened duck."
+    },
+    {
+     "n": "жу",
+     "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
    "facts": ""
