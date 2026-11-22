@@ -112,13 +112,57 @@
   function importFile() {
     K.pickFile('.json,application/json', false, (files) => {
       files[0].text().then((t) => {
-        const j = JSON.parse(t), docs = (j && j.docs) || j || {};
+        const j = JSON.parse(t), docs = (j && j.docs) || (j && j.menu ? {} : j) || {};
         const paths = Object.keys(docs).filter((p) => K.BOOK.includes(p.split('/')[0]) && p.split('/').length === 2);
+        /* a menu prepared as a file: each line is matched to a kitchen dish by name, for you to check before it is saved */
+        if (j && Array.isArray(j.menu) && j.menu.length) {
+          return Promise.all(paths.map((p) => K.db.doc(p).set(docs[p]))).then(() => { ui.sheet = { type: 'menuimport', extra: paths.length, items: j.menu.map((e) => ({ e: e, to: matchDish(e) })) }; K.render(); });
+        }
         if (!paths.length) { K.toast('Nothing for the floor book in that file.', { tone: 'bad' }); return; }
         return Promise.all(paths.map((p) => K.db.doc(p).set(docs[p]))).then(() => { ui.sheet = null; K.render(); K.toast(paths.length + ' records added'); });
       }).catch(() => K.toast('That file could not be read.', { tone: 'bad' }));
     });
   }
+  /* the kitchen recipe a menu line belongs to: the same name (Bulgarian, English or the kitchen's other name),
+     else a name that contains it; dishes on the menu win a tie. '' when nothing fits. */
+  function matchDish(e) {
+    const want = [e.menuName, e.en].concat(e.match || []).map(K.normName).filter(Boolean);
+    let best = '', score = 0;
+    D.recipes.forEach((r) => {
+      const have = [r.name, r.aka, K.en(r.name)].map(K.normName).filter(Boolean);
+      let s = 0;
+      want.forEach((w) => have.forEach((x) => {
+        if (w === x) s = Math.max(s, 100);
+        else if (w.length >= 4 && x.length >= 4 && (x.includes(w) || w.includes(x))) s = Math.max(s, 60 - Math.min(30, Math.abs(x.length - w.length)));
+      }));
+      if (!s) return;
+      s += (r.type === 'dish' ? 5 : 0) + (r.onMenu ? 5 : 0);
+      if (s > score) { score = s; best = r.id; }
+    });
+    return best;
+  }
+  K.SHEETS.menuimport = function (S) {
+    const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
+    const n = S.items.filter((x) => x.to).length;
+    const save = () => {
+      const used = {};
+      S.items.forEach((x, i) => {
+        if (!x.to) return;
+        const e = Object.assign({}, x.e); delete e.match;
+        if (x.to === '__own') { const id = 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-')); e.name = e.menuName; delete e.menuName; K.saveNote(id, e); return; }
+        if (used[x.to]) return;
+        used[x.to] = 1;
+        K.saveNote(x.to, Object.assign({ recipe: x.to }, e));
+      });
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in');
+    };
+    return K.sheet('Check the menu', h('div', { class: 'stack' },
+      h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),
+      h('div', { class: 'mi-list' }, S.items.map((x, i) => h('div', { class: 'mi-row' + (x.to ? '' : ' none') },
+        h('div', { class: 'mi-name' }, h('b', null, x.e.menuName), h('span', { class: 'ing-en' }, x.e.en || '')),
+        K.select(opts, x.to, (v) => { x.to = v; K.render(); }, { class: 'input small', id: 'mi-' + i, 'aria-label': 'Kitchen dish for ' + x.e.menuName })))),
+      h('button', { class: 'btn primary wide', type: 'button', disabled: !n, onclick: save }, 'Save ' + n + ' dishes')), { wide: true });
+  };
   function exportFile() {
     Promise.all(K.BOOK.map((c) => K.db.collection(c).get().then((s) => s.docs.map((x) => [c + '/' + x.id, x.data()]))))
       .then((lists) => {

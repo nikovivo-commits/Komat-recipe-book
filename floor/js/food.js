@@ -44,7 +44,7 @@
 
   function dishHay(d) {
     const al = K.dishAllergens(d).keys.map((k) => K.AL[k] || k);
-    return [d.name, d.en, d.section, d.ings.join(' '), d.ings.map(K.en).join(' '), al.join(' '), (d.n.niche || []).map((x) => x.n + ' ' + x.what).join(' '), d.parts.join(' ')].join(' ');
+    return [d.name, d.kname, d.en, d.n.menuBg, d.n.menuEn, d.section, d.ings.join(' '), d.ings.map(K.en).join(' '), al.join(' '), (d.n.niche || []).map((x) => x.n + ' ' + x.what).join(' '), d.parts.join(' ')].join(' ');
   }
   function results() {
     const box = document.getElementById('results');
@@ -204,7 +204,7 @@
   };
 
   /* the menu's order: breakfast, starters, mains, desserts; anything else after, by name */
-  const ORDER = ['breakfast', 'brunch', 'bread', 'starter', 'salad', 'soup', 'main', 'meat', 'fish', 'side', 'garnish', 'dessert', 'pastry'];
+  const ORDER = ['breakfast', 'brunch', 'bread', 'mezze', 'starter', 'salad', 'soup', 'main', 'meat', 'fish', 'side', 'garnish', 'dessert', 'pastry', 'finish'];
   const rank = (s) => { s = String(s).toLowerCase(); const i = ORDER.findIndex((k) => s.includes(k)); return i < 0 ? 99 : i; };
   const secOrder = (a, b) => rank(a) - rank(b) || a.localeCompare(b);
   function card(d) {
@@ -279,6 +279,7 @@
         h('p', { class: 'kicker dish' }, d.section + (d.price ? ' · ' + K.price(d.price) : '')),
         h('h1', { class: 'rtitle' }, d.name),
         d.en && d.en !== d.name ? h('p', { class: 'en-name' }, d.en) : null,
+        n.menuBg || n.menuEn ? h('p', { class: 'menu-line' }, h('span', { class: 'label' }, 'On the menu'), n.menuBg ? h('span', null, n.menuBg) : null, n.menuEn ? h('span', { class: 'ing-en' }, n.menuEn) : null) : null,
         h('div', { class: 'meta-chips' },
           !d.onMenu ? h('span', { class: 'mchip off' }, 'Off the menu') : null,
           d.hide ? h('span', { class: 'mchip off' }, 'Hidden from the floor') : null,
