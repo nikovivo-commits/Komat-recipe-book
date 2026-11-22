@@ -7,7 +7,7 @@
   /* cloud.js: which collections are this book's, who runs it, how waiters join */
   K.APP = 'floor';
   K.BOOK = ['wines', 'dishnotes', 'glossary', 'quizq', 'fohweeks', 'fohsettings', 'cellar', 'cellarmoves', 'quizscores'];
-  K.FULL_ROLES = ['manager', 'sous', 'admin', 'dev'];
+  K.FULL_ROLES = ['manager', 'sous', 'admin', 'owner', 'dev'];
   K.VIEW_ROLES = ['viewer'];
   K.JOIN_ROLE = 'waiter';
   K.CODE_DOC = 'private/floorjoin';

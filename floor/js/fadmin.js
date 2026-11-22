@@ -168,6 +168,6 @@
         })) : h('p', { class: 'muted' }, 'Nobody has joined with the floor code yet.')),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'The kitchen (' + kitchen.length + ')'),
         h('p', { class: 'hint' }, 'Cooks can read the bibles, count bottles and play the quiz. Chefs can change everything here too. The head chef manages them in the kitchen book.'),
-        h('p', { class: 'muted' }, kitchen.map((p) => p.name + (p.id === owner ? ' (owner)' : '')).join(', ')))));
+        h('p', { class: 'muted' }, kitchen.map((p) => p.name + (p.id === owner ? ' (set the kitchen up)' : '')).join(', ')))));
   };
 })();

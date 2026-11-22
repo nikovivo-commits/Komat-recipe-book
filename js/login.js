@@ -130,7 +130,7 @@
           const rid = K.rotaIdFor(p.name), staff = (D.staff && D.staff.people) || [];
           return h('li', { class: 'person' },
             h('span', { class: 'p-name' }, h('b', null, p.name || 'No name'), me ? h('span', { class: 'muted' }, ' (you)') : null),
-            h('span', { class: 'codechip' + (p.role === 'dev' ? ' dev' : K.Fire.FULL.includes(p.role) ? ' chef' : '') }, K.Fire.roleName(p.role) + (isOwner ? ' · owner' : '')),
+            h('span', { class: 'codechip' + (p.role === 'dev' ? ' dev' : K.Fire.FULL.includes(p.role) ? ' chef' : '') }, K.Fire.roleName(p.role) + (isOwner ? ' · set the kitchen up' : '')),
             staff.length ? h('label', { class: 'p-rota' }, h('span', { class: 'muted' }, 'On The Brigade as'),
               K.select((rid ? [] : [['', 'Not linked']]).concat(staff.map((s) => [s.id, s.name])), rid, (v) => {
                 const s = staff.find((x) => x.id === v);

@@ -189,5 +189,16 @@ await expect('floor manager removes a waiter', true, () => deleteDoc(manager.d('
 await expect('...who can no longer read the wines', false, () => getDocs(collection(waiter.db, 'wines')));
 await expect('floor manager cannot remove the head chef', false, () => deleteDoc(manager.d('members/' + A)));
 
+// the restaurant's owner: the full rights in both books
+const boss = person('boss'), O = (await signInAnonymously(boss.auth)).user.uid;
+await setDoc(boss.d('members/' + O), { name: 'Ivo', role: 'cook', code: 'basil-42', at: 1 });
+await expect('a cook cannot make themselves owner', false, () => updateDoc(boss.d('members/' + O), { role: 'owner' }));
+await expect('head chef makes someone owner', true, () => updateDoc(chef.d('members/' + O), { role: 'owner' }));
+await expect('owner changes a recipe', true, () => setDoc(boss.d('recipes/soup'), { name: 'Soup 5' }));
+await expect('owner changes a wine', true, () => setDoc(boss.d('wines/mavrud'), { name: 'Mavrud' }));
+await expect('owner reads the kitchen code and the floor code', true, () => getDoc(boss.d('private/join')).then(() => getDoc(boss.d('private/floorjoin'))));
+await expect('owner makes a waiter floor manager', true, () => updateDoc(boss.d('members/' + C2), { role: 'manager' }));
+await expect('owner ticks a list', true, () => setDoc(boss.d('checks/z'), { date: 'z' }));
+
 console.log(fails ? `\n${fails} FAILED` : '\nall rules checks passed');
 process.exit(fails ? 1 : 0);
