@@ -130,7 +130,7 @@
   /* a wine's article can be the bottle or the glass; a drink is priced by the measure */
   const priceField = (w, it) => (K.isDrink(w) || /чаша|glass|\b(100|125|150|175)\s?(мл|ml)/i.test(it.name) ? 'glassPrice' : 'bottlePrice');
 
-  /* the script that hands the drinks on the Stock tab to the app (wines, spirits, beer, soft and hot drinks; nothing
+  /* the script that hands the drinks on the Stock tab to the app (wines, spirits, beer and soft drinks; no coffee or tea, nothing
      from the kitchen): names, warehouses, quantities, units, categories, barcodes.
      Prices stay in the sheet. Whoever has its link can read the stock, so the link is kept in the database, not here. */
   const SCRIPT = [
@@ -141,7 +141,7 @@
     '  var col = function (rx, not) { for (var i = 0; i < head.length; i++) if (rx.test(head[i]) && !(not && not.test(head[i]))) return i; return -1; };',
     '  var c = [col(/name|product|артикул|наимен/, /id/), col(/warehouse|склад/, /id/), col(/quant|qty|колич|налич/), col(/^unit|мерна|мярка/), col(/categ|катег|група/, /id/), col(/barcode|баркод/)];',
     '  var drinks = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;',
-    '  var rows = v.slice(1).filter(function (r) { return c[4] < 0 || drinks.test(String(r[c[4]])); }).map(function (r) { return c.map(function (i) { return i < 0 ? "" : r[i]; }); });',
+    '  var rows = v.slice(1).filter(function (r) { var k = String(r[c[4]]); return c[4] < 0 || (drinks.test(k) && !/топли|hot/i.test(k)); }).map(function (r) { return c.map(function (i) { return i < 0 ? "" : r[i]; }); });',
     '  var out = { modified: DriveApp.getFileById(ss.getId()).getLastUpdated().getTime(), rows: rows };',
     '  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);',
     '}',

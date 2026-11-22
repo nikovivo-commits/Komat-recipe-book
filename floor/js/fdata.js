@@ -256,7 +256,7 @@
     ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
       const name = String(r[0] || '').trim(), q = K.parseQty(r[2], r[3]);
       /* drinks only: the kitchen's stock is none of the floor book's business */
-      if (!name || q[0] == null || (r[4] && !DRINKS.test(r[4]))) return;
+      if (!name || q[0] == null || (r[4] && (!DRINKS.test(r[4]) || /топли|hot/i.test(r[4])))) return;
       const e = idx[name] || (idx[name] = { name: name, qty: 0, unit: q[1], cat: r[4] || '', wh: [] });
       e.qty += q[0]; if (r[1] && !e.wh.includes(r[1])) e.wh.push(r[1]);
     });
