@@ -392,3 +392,11 @@ button.fs-cell { cursor: pointer; }
 .ing-art .art-tag { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font-size: .72rem; font-weight: 700; }
 .niche-art { display: block; padding: 0; margin: 0 0 6px; border: 0; background: none; }
 .niche-art img { display: block; width: 96px; height: 72px; object-fit: cover; border-radius: var(--r-sm); }
+
+/* the Hype sheet as the stock source */
+.hype-bar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.hype-bar.old { border-color: var(--low); }
+.hb-txt { display: grid; gap: 2px; font-size: .9rem; }
+.hb-old { color: var(--low); font-weight: 700; }
+.hb-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.sr-main + .sr-n + .hy-tag { align-self: center; }

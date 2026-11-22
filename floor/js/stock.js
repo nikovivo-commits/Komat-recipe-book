@@ -21,6 +21,7 @@
       w.append(K.catRest('No wines to count yet', 'Add the wines in the Wine tab; their bottles are counted here.', h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.go('wine') }, 'Go to the wine list'))));
       return { body: body };
     }
+    w.append(hypeBar());
     w.append(K.searchBox('sq', ui.sq, 'Search a wine or drink', (v) => { ui.sq = v; K.render(); }));
     w.append(h('div', { class: 'chips filters' },
       K.seg([['', 'All'], ['need', 'Low & out'], ['glass', 'By the glass']], ui.stockF, (v) => { ui.stockF = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Show' }),
@@ -42,6 +43,24 @@
     });
     return { body: body };
   };
+  /* where the numbers come from: the Hype sheet, when it was read and when it last changed */
+  const when = (t) => { const d = K.ymd(new Date(t)); return (d === K.day(0) ? 'today' : d === K.day(-1) ? 'yesterday' : K.prettyDate(d, { day: 'numeric', month: 'short' })) + ' ' + K.hm(t); };
+  function hypeBar() {
+    const hs = D.hypeStock, linked = K.winesSorted().filter((x) => K.hypeRow(x)).length;
+    if (!D.hypeUrl && !hs) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'hypesheet' }; K.render(); } },
+      K.icon('download'), h('span', null, h('b', null, 'Take the stock from Hype'), h('span', null, 'Connect the Google Sheet with the Hype stock, once.')), K.icon('next')) : h('span');
+    const old = hs && hs.modified && Date.now() - hs.modified > 36 * 3600000;
+    const go = () => { ui.hypeBusy = true; K.render(); K.refreshHype().then((d) => { ui.hypeBusy = false; K.render(); K.toast('Stock refreshed: ' + d.rows.length + ' products'); }, (e) => { ui.hypeBusy = false; K.render(); K.toast(e && e.message === 'nolink' ? 'The Hype sheet is not connected yet.' : 'The sheet could not be read. Check the connection, or the link in Settings.', { tone: 'bad' }); }); };
+    return h('section', { class: 'hype-bar' + (old ? ' old' : '') },
+      h('div', { class: 'hb-txt' }, h('b', null, 'Stock from Hype'),
+        hs ? h('span', null, 'Refreshed ' + when(hs.at) + (hs.by ? ' by ' + hs.by : '')) : h('span', null, 'Not read yet'),
+        hs && hs.modified ? h('span', { class: old ? 'hb-old' : '' }, 'Sheet last changed ' + when(hs.modified) + (old ? ' · the numbers may be out of date' : '')) : null,
+        hs ? h('span', { class: 'muted' }, linked + ' of our bottles paired with a Hype product') : null),
+      h('div', { class: 'hb-btns' },
+        D.hypeUrl ? h('button', { type: 'button', class: 'btn primary small', disabled: ui.hypeBusy ? true : null, onclick: go }, ui.hypeBusy ? 'Reading…' : 'Refresh stock') : null,
+        K.canEdit() && hs ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'hype', fromSheet: true }; K.render(); } }, 'Pair bottles') : null,
+        K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'hypesheet' }; K.render(); } }, 'Link') : null));
+  }
   function tile(n, label, st) { return h('div', { class: 'stile st-' + st }, h('b', null, String(n)), h('span', null, label)); }
   function row(w) {
     const n = K.stockOf(w.id), st = K.stockState(w);
@@ -49,8 +68,8 @@
       h('button', { type: 'button', class: 'sr-main', onclick: () => K.go('winepage', { id: w.id }) },
         K.wineLabel(w, 'mini'),
         h('span', { class: 'sr-txt' }, h('b', null, w.name + (w.vintage ? ' ' + w.vintage : '')), h('span', { class: 'muted' }, [w.producer, K.COL[w.colour], w.byGlass ? 'by the glass' : ''].filter(Boolean).join(' · ')))),
-      h('span', { class: 'sr-n mono', 'aria-label': n == null ? 'not counted' : n + ' bottles' }, n == null ? '–' : String(n)),
-      K.canWrite() ? h('span', { class: 'sr-btns' },
+      h('span', { class: 'sr-n mono', 'aria-label': n == null ? 'not counted' : n + ' bottles' }, n == null ? '–' : String(n) + (K.hypeRow(w) && K.hypeRow(w).unit !== 'pc' ? ' ' + K.hypeRow(w).unit : '')),
+      K.hypeRow(w) ? h('span', { class: 'hy-tag', title: 'From the Hype sheet' }, 'Hype') : K.canWrite() ? h('span', { class: 'sr-btns' },
         h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'One bottle out of ' + w.name, disabled: !n, onclick: () => K.moveBottles(w, -1, 'sold') }, K.icon('minus')),
         h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Bottles in or a count for ' + w.name, onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, K.icon('plus'))) : null);
   }
