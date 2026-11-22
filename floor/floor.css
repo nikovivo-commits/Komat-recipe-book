@@ -334,3 +334,9 @@ button.fs-cell { cursor: pointer; }
 .mi-row.none { border-left-color: var(--todo); }
 .mi-name { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
 .mi-row select { width: 100%; }
+
+/* ---------- spirits, beer and soft drinks on the drinks list ---------- */
+:root { --w-spirit: #8A5A2B; --w-liqueur: #5E3A7A; --w-beer: #B8860B; --w-soft: #2E7D6B; --w-hot: #5A4636; }
+.c-spirit, .wk-spirit, .chip.wc-spirit { --wc: var(--w-spirit); } .c-liqueur, .wk-liqueur, .chip.wc-liqueur { --wc: var(--w-liqueur); }
+.c-beer, .wk-beer, .chip.wc-beer { --wc: var(--w-beer); } .c-soft, .wk-soft, .chip.wc-soft { --wc: var(--w-soft); } .c-hot, .wk-hot, .chip.wc-hot { --wc: var(--w-hot); }
+.chip.wc-spirit::before, .chip.wc-liqueur::before, .chip.wc-beer::before, .chip.wc-soft::before, .chip.wc-hot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--wc); margin-right: 2px; }
