@@ -371,3 +371,14 @@ button.fs-cell { cursor: pointer; }
 .hy-opts input { width: 22px; height: 22px; }
 .hy-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 480px) { .hy-cols { grid-template-columns: 1fr; } }
+
+/* vegan, vegetarian, pescatarian */
+.diet-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font: 800 .72rem/1.4 var(--sans); letter-spacing: .03em; text-transform: uppercase; border: 1.5px solid currentColor; color: var(--ready); }
+.diet-tag.d-pesc { color: var(--cold, #2a6f97); }
+.alp-grid.diet { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.alp-grid.diet .alp[aria-pressed="true"] { border-color: var(--ready); background: var(--ready-soft); }
+.alp-grid.diet .alp[aria-pressed="true"] .alp-box { border-color: var(--ready); background: var(--ready); color: var(--ready-ink); }
+/* whole words on a narrow phone: the diet boxes carry no tick box, the long allergen names get smaller letters */
+.alp-grid.diet .alp-box { display: none; }
+.alp-grid.diet .alp { justify-content: center; text-align: center; }
+@media (max-width: 420px) { .al-pick .alp { font-size: .72rem; letter-spacing: -.02em; padding: 4px 4px; gap: 4px; } .al-pick .alp-box { width: 18px; height: 18px; } }
