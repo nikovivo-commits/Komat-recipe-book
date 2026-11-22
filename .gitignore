@@ -3,3 +3,14 @@ node_modules/
 _artifact-test.html
 private/
 *-debug.log
+
+# tools/hype-sync: the laptop's own settings, the saved Hype login, real exports and any key file
+tools/hype-sync/config.json
+tools/hype-sync/state.json
+tools/hype-sync/profile/
+tools/hype-sync/captures/
+tools/hype-sync/downloads/
+tools/hype-sync/*.log
+*firebase-adminsdk*.json
+*service-account*.json
+*serviceAccount*.json

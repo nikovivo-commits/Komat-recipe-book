@@ -1,0 +1,19 @@
+{
+  "name": "komat-hype-sync",
+  "private": true,
+  "type": "module",
+  "description": "Copies Hype's sales and stock exports to Firestore every few minutes, on the laptop in the restaurant. See README.md.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "login": "node hype-sync.mjs login",
+    "capture": "node hype-sync.mjs capture",
+    "once": "node hype-sync.mjs once",
+    "start": "node hype-sync.mjs run",
+    "test": "node test/test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.1",
+    "iconv-lite": "0.7.3",
+    "playwright": "1.63.0"
+  }
+}

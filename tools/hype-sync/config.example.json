@@ -1,0 +1,60 @@
+{
+  "baseUrl": "https://REPLACE-with-your-hype-back-office-address",
+  "firebaseProject": "komat-kitchen",
+  "timezone": "Europe/Sofia",
+  "intervalMinutes": 10,
+  "yesterdayUntilHour": 2,
+  "headless": true,
+  "timeoutSeconds": 60,
+  "loginUrlPattern": "login|signin|sign-in",
+
+  "sales": {
+    "mode": "request",
+    "request": {
+      "method": "GET",
+      "url": "/REPLACE/detailed-sales/export?from={from}&to={to}&format=csv"
+    },
+    "click": {
+      "url": "/REPLACE/detailed-sales",
+      "steps": [
+        { "fill": "input[name=from]", "value": "{from}" },
+        { "fill": "input[name=to]", "value": "{to}" },
+        { "click": "text=Show" }
+      ],
+      "download": "text=CSV"
+    },
+    "paramDateFormat": "DD.MM.YYYY",
+    "encoding": "auto",
+    "delimiter": "auto",
+    "decimal": "auto",
+    "timeFormat": "DD.MM.YYYY HH:mm:ss",
+    "columns": {
+      "time": ["Time", "Date", "Date and time", "Час", "Дата", "Дата и час"],
+      "date": [],
+      "bill": ["Bill number", "Bill", "Bill No", "Сметка", "Номер на сметка"],
+      "item": ["Item", "Article", "Name", "Артикул", "Наименование"],
+      "qty": ["Quantity", "Qty", "Количество", "К-во"],
+      "price": ["Price", "Unit price", "Цена", "Ед. цена"],
+      "total": ["Total", "Amount", "Sum", "Сума", "Общо", "Стойност"],
+      "op": ["Operator", "Waiter", "User", "Оператор", "Сервитьор"],
+      "cust": ["Customer", "Client", "Клиент"]
+    }
+  },
+
+  "stock": {
+    "enabled": false,
+    "mode": "request",
+    "request": {
+      "method": "GET",
+      "url": "/REPLACE/stock/export?format=csv"
+    },
+    "encoding": "auto",
+    "delimiter": "auto",
+    "decimal": "auto",
+    "columns": {
+      "item": ["Item", "Article", "Name", "Артикул", "Наименование"],
+      "qty": ["Quantity", "Qty", "Stock", "Количество", "Наличност"],
+      "unit": ["Unit", "Measure", "Мярка", "Мерна единица"]
+    }
+  }
+}
