@@ -116,8 +116,10 @@
     K.toast('Loading the menu and wine list…');
     fetch('floor/data/house.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(r))).then((j) => {
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
-      return Promise.all(add.map((p) => K.db.doc(p).set(docs[p]))).then(() => {
-        K.toast(add.length ? add.length + ' wines and drinks added' : 'The wines and drinks were already in');
+      /* bottles already in the book keep everything; one that has no picture yet gets the one that comes with the list */
+      const pics = Object.keys(docs).filter((p) => p.startsWith('wines/') && docs[p].label).map((p) => [K.wine(p.slice(6)), docs[p].label, docs[p].focus || null]).filter((x) => x[0] && !x[0].label);
+      return Promise.all(add.map((p) => K.db.doc(p).set(docs[p])).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
+        K.toast([add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
         else ui.sheet = null;
         K.render();

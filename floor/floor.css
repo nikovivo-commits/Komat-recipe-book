@@ -340,3 +340,6 @@ button.fs-cell { cursor: pointer; }
 .c-spirit, .wk-spirit, .chip.wc-spirit { --wc: var(--w-spirit); } .c-liqueur, .wk-liqueur, .chip.wc-liqueur { --wc: var(--w-liqueur); }
 .c-beer, .wk-beer, .chip.wc-beer { --wc: var(--w-beer); } .c-soft, .wk-soft, .chip.wc-soft { --wc: var(--w-soft); } .c-hot, .wk-hot, .chip.wc-hot { --wc: var(--w-hot); }
 .chip.wc-spirit::before, .chip.wc-liqueur::before, .chip.wc-beer::before, .chip.wc-soft::before, .chip.wc-hot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--wc); margin-right: 2px; }
+.wlabel.photo.web { background: #fff; }
+.wlabel.photo.web img { object-fit: contain; }
+.wlabel.photo.crop img { position: absolute; left: 0; top: 50%; width: 100%; height: auto; max-width: none; object-fit: fill; }
