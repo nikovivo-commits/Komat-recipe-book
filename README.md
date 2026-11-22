@@ -1,6 +1,6 @@
 # Komat Kitchen Book
 
-The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each station's mise en place, ordering, the staff rota and events. It is written for phones on the pass first, and works just as well on a tablet or laptop.
+The Komat kitchen's recipe book and day-to-day tool: recipes and dishes, each station's mise en place, ordering, the staff rota and events. A second app for front of house, [the floor book](#the-floor-book-front-of-house), lives in `floor/`. It is written for phones on the pass first, and works just as well on a tablet or laptop.
 
 ## What's in it
 
@@ -127,6 +127,37 @@ sw.js               offline cache for the stand-alone site
 tools/build.mjs     builds the single-file artifact page
 tools/firebase/     bundles the SDK, runs the emulators, tests the rules
 ```
+
+## The floor book (front of house)
+
+The same site has a second app for the waiters at `floor/` (for example `https://nikovivo-commits.github.io/Komat-recipe-book/floor/`). It looks and works like the kitchen book, shares its styles and helpers, and runs on the same database, so the dishes, their photos and allergens always come from the kitchen.
+
+- **Food**: every dish on the menu, in Bulgarian with the English translation, with **what to say at the table**, the story, **ingredients guests ask about**, good-to-know facts, the allergens (found from the kitchen's own ingredients) and the wines that go with it. **Allergies**: tick the guest's allergies (the EU 14) and the menu splits into *Can eat* (none of them, checked by the head chef), *Ask the kitchen first* (none found in the ingredients, but the dish is not checked yet) and *Cannot eat*, each with where the allergen is ("Milk in Hollandaise: butter"). The ticks stay while you open dishes, whose pages then say whether they are for this guest; *Next table* clears them. An **Ingredients** list explains everything in the dishes (search in Bulgarian, English or Latin letters). Floor managers write the notes, add dishes the kitchen keeps as plain recipes, and dishes of the floor's own (bread, the amuse-bouche).
+- **Wine**: every wine with a **photo of its label** (taken with the phone; until then a label is drawn from the producer, name and vintage), what to say, nose and palate, the story, serving temperature, glass and decanting, prices by the bottle and glass, the dishes it goes with, and **how many bottles are left**. A wine that is low or out suggests others of the same colour that are in stock.
+- **Stock**: the bottles of every wine, out (86) first, then low. − takes a bottle off (with Undo), + records a delivery, breakage, a bottle on the house or a fresh count; **Stock take** counts the whole cellar in one go; **Moves** shows every bottle in and out. A count sets the number; each sale after it is saved on its own, so two phones never overwrite each other.
+- **Quiz**: ten questions on the wines, the food or both, twenty seconds each, quicker answers score more. Questions are made from the bibles themselves (grapes, regions, the label photos, prices, pairings, translations, allergens, the unusual ingredients) plus general service knowledge and the floor manager's own questions. A **leaderboard** for the week, the month and all time.
+- **Schedule**: the floor's week (Week, Day and Mine), with shift codes the floor manager sets. Tap a day to set a shift.
+
+**Who can do what.** Waiters join on their phone at `floor/` with their name and the **floor code** (not the kitchen code). They read everything, count and sell bottles and play the quiz. **Floor managers** (and the chefs) also write the bibles, the schedule and quiz questions, and manage the floor code and the waiters under Settings → People and floor code. The head chef makes someone floor manager there or in the kitchen book. In the kitchen book, waiters and floor managers can look at everything but change nothing. Cooks can use the floor book like waiters.
+
+**To switch it on:** publish the updated [`firebase/firestore.rules`](firebase/firestore.rules) in the Firebase console (Firestore → Rules), then sign in at `floor/` with the head chef's email, open Settings → People and floor code and set the floor code. A new floor book is empty: Settings → Load the example wines shows how it works (six Bulgarian wines with made-up producers), and Remove the examples takes them out again. Without `firebase-config.js` the floor book keeps everything on the device and starts with the examples.
+
+```
+floor/index.html        the floor book (its <base> is the site root, so it shares css/, js/, data/ and assets/)
+floor/floor.css         labels, stock, quiz and schedule styles on top of css/app.css
+floor/js/fdata.js       dishes from the kitchen, floor notes, wines, bottles, saving and live data
+floor/js/fapp.js        boot, routing, header and tabs
+floor/js/food.js        the food bible and ingredients
+floor/js/wine.js        the wine bible, labels, examples
+floor/js/stock.js       bottles, counts and moves
+floor/js/quiz.js        questions, rounds and the leaderboard
+floor/js/fschedule.js   the floor schedule
+floor/js/fadmin.js      joining, settings, people and the floor code, files
+floor/data/examples.js  the example wines and notes
+floor/sw.js             offline cache for the floor book
+```
+
+Its collections are `wines`, `dishnotes` (the floor's notes per kitchen dish, or dishes of its own), `glossary`, `cellar` (the last count per wine), `cellarmoves` (each bottle in or out), `quizq`, `quizscores`, `fohweeks` and `fohsettings`; the floor code is `private/floorjoin`.
 
 ## Copyright
 

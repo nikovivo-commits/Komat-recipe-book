@@ -1,7 +1,7 @@
 /* Offline support for the stand-alone site. The app itself comes from the network when it can,
    so updates arrive straight away, and from the cache when the kitchen Wi-Fi drops.
    Photos and fonts come from the cache first, so pages open fast. */
-const CACHE = 'komat-v162';
+const CACHE = 'komat-v163';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'data/translations.js', 'data/produce.js', 'data/art.js', 'data/recipes.js', 'data/settings.js', 'vendor/firebase.js', 'firebase-config.js',
@@ -16,7 +16,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && !k.startsWith('komat-floor-')).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   const req = e.request;

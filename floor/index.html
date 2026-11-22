@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Project Kitchen Flow: the floor book. © 2026 the author of Project Kitchen Flow. All rights reserved. See LICENSE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- everything below is addressed from the site's root, so the floor book shares the kitchen book's files -->
+<base href="../">
+<meta name="theme-color" content="#1F2020">
+<meta name="description" content="Komat's floor book: the food and wine bibles, bottles in stock, the team quiz and the floor schedule.">
+<title>Komat Floor Book</title>
+<link rel="manifest" href="floor/manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/brand/favicon.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Komat Floor">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="floor/floor.css">
+</head>
+<body class="floor">
+<div id="app"></div>
+<!-- the kitchen's translations and illustrations; the demo recipes and floor examples for the device-only copy -->
+<script src="data/translations.js"></script>
+<script src="data/art.js"></script>
+<script src="data/recipes.js"></script>
+<script src="floor/data/examples.js"></script>
+<!-- the shared database (stand-alone site only) -->
+<script src="vendor/firebase.js"></script>
+<script src="firebase-config.js"></script>
+<script src="js/core.js"></script>
+<script src="floor/js/fdata.js"></script>
+<script src="js/allergens.js"></script>
+<script src="js/store.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/gestures.js"></script>
+<script src="js/motion.js"></script>
+<script src="floor/js/fapp.js"></script>
+<script src="js/photos.js"></script>
+<script src="floor/js/food.js"></script>
+<script src="floor/js/wine.js"></script>
+<script src="floor/js/stock.js"></script>
+<script src="floor/js/quiz.js"></script>
+<script src="floor/js/fschedule.js"></script>
+<script src="floor/js/fadmin.js"></script>
+<script>
+/* works offline once opened; a new version takes over on the next return to the app */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  var hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('floor/sw.js', { scope: 'floor/', updateViaCache: 'none' }).then(function (r) {
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') r.update().catch(function () {}); });
+  }).catch(function () {});
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadSW) { hadSW = true; return; }
+    var go = function () { var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) { setTimeout(go, 3000); return; } location.reload(); };
+    go();
+  });
+}
+</script>
+</body>
+</html>

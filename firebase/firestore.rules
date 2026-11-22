@@ -5,18 +5,27 @@ rules_version = '2';
 //   Sous chefs, head chefs and devs (whoever builds and looks after the app) have the full
 //   rights: they also change recipes, station lists, the rota, events and settings, see the
 //   kitchen code and manage the people list. The owner who set the kitchen up always keeps them.
+//   The floor book (floor/) shares this database: waiters join it with the floor code and floor
+//   managers run it. Waiters and floor managers read the kitchen book but change nothing in it;
+//   cooks can use the floor book like waiters, and the chefs have the full rights there too.
 service cloud.firestore {
   match /databases/{db}/documents {
     function signedIn() { return request.auth != null; }
     function mePath() { return /databases/$(db)/documents/members/$(request.auth.uid); }
     function ownerPath() { return /databases/$(db)/documents/private/owner; }
     function joinPath() { return /databases/$(db)/documents/private/join; }
+    function floorJoinPath() { return /databases/$(db)/documents/private/floorjoin; }
     function member() { return signedIn() && exists(mePath()); }
     function owner() { return signedIn() && exists(ownerPath()) && get(ownerPath()).data.uid == request.auth.uid; }
     function fullRole(r) { return r in ['sous', 'admin', 'dev']; }
     function admin() { return member() && fullRole(get(mePath()).data.role); }
-    // a viewer (the owner looking in, a helper) reads everything and changes nothing
-    function writer() { return member() && get(mePath()).data.role != 'viewer'; }
+    // a viewer (the owner looking in, a helper) reads everything and changes nothing; on the kitchen's own
+    // lists that also goes for waiters and floor managers
+    function writer() { return member() && get(mePath()).data.role in ['cook', 'sous', 'admin', 'dev']; }
+    // the floor book: everyone but a viewer writes stock, quiz scores and photos; floor managers and chefs change the bibles
+    function floorWriter() { return member() && get(mePath()).data.role != 'viewer'; }
+    function floorAdmin() { return member() && get(mePath()).data.role in ['manager', 'sous', 'admin', 'dev']; }
+    function floorRole(r) { return r in ['viewer', 'waiter', 'manager']; }
     function isOwnerDoc(uid) { return exists(ownerPath()) && get(ownerPath()).data.uid == uid; }
     function goodName(d) { return d.name is string && d.name.size() > 0 && d.name.size() <= 40; }
 
@@ -25,6 +34,12 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && request.auth.token.firebase.sign_in_provider == 'password'
         && request.resource.data.keys().hasOnly(['uid', 'at']) && request.resource.data.uid == request.auth.uid;
+    }
+    // the floor code waiters join with
+    match /private/floorjoin {
+      allow read: if floorAdmin();
+      allow write: if floorAdmin() && request.resource.data.keys().hasOnly(['code', 'at'])
+        && request.resource.data.code is string && request.resource.data.code.size() >= 6 && request.resource.data.code.size() <= 40;
     }
     // the kitchen code cooks join with
     match /private/join {
@@ -39,6 +54,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['name', 'role', 'code', 'at'])
         && goodName(request.resource.data)
         && ((request.resource.data.role == 'cook' && exists(joinPath()) && request.resource.data.code == get(joinPath()).data.code)
+          || (request.resource.data.role == 'waiter' && exists(floorJoinPath()) && request.resource.data.code == get(floorJoinPath()).data.code)
           || (request.resource.data.role == 'admin' && owner()));
       // you can change your own name; anyone with the full rights can also change roles, but the owner keeps the full rights
       allow update: if goodName(request.resource.data) && (
@@ -46,14 +62,43 @@ service cloud.firestore {
             && (!('ink' in request.resource.data) || (request.resource.data.ink is string && request.resource.data.ink.size() <= 12))
             && (!('hand' in request.resource.data) || (request.resource.data.hand is string && request.resource.data.hand.size() <= 20)))
           || (admin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'role'])
-            && request.resource.data.role in ['viewer', 'cook', 'sous', 'admin', 'dev'] && (fullRole(request.resource.data.role) || !isOwnerDoc(uid))));
-      allow delete: if signedIn() && (request.auth.uid == uid || (admin() && !isOwnerDoc(uid)));
+            && request.resource.data.role in ['viewer', 'cook', 'waiter', 'manager', 'sous', 'admin', 'dev'] && (fullRole(request.resource.data.role) || !isOwnerDoc(uid)))
+          // a floor manager moves people between viewer, waiter and floor manager
+          || (floorAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'role'])
+            && floorRole(resource.data.role) && floorRole(request.resource.data.role) && !isOwnerDoc(uid)));
+      allow delete: if signedIn() && (request.auth.uid == uid || (admin() && !isOwnerDoc(uid)) || (floorAdmin() && floorRole(resource.data.role) && !isOwnerDoc(uid)));
     }
     // the book itself
     match /{coll}/{id} {
       allow read: if member() && coll in ['recipes', 'settings', 'schedules', 'events', 'checks', 'prep', 'orders', 'boards', 'bugs', 'blobs'];
       allow write: if (admin() && coll in ['recipes', 'settings', 'schedules', 'events'])
-        || (writer() && coll in ['checks', 'prep', 'orders', 'boards', 'bugs', 'blobs']);
+        || (writer() && coll in ['checks', 'prep', 'orders', 'boards', 'bugs', 'blobs'])
+        || (floorWriter() && coll == 'blobs');
+    }
+    // the floor book: the food and wine bibles, the floor rota and quiz questions are kept by floor managers and chefs;
+    // everyone reads them, counts the bottles and plays the quiz
+    match /{coll}/{id} {
+      allow read: if member() && coll in ['wines', 'dishnotes', 'glossary', 'quizq', 'fohweeks', 'fohsettings', 'cellar', 'cellarmoves', 'quizscores'];
+      allow write: if floorAdmin() && coll in ['wines', 'dishnotes', 'glossary', 'quizq', 'fohweeks', 'fohsettings'];
+    }
+    // a stock count of one wine: anyone on the floor counts; a count sets the bottles outright
+    match /cellar/{id} {
+      allow write: if floorWriter() && request.resource.data.n is number && request.resource.data.n >= 0 && request.resource.data.n <= 100000;
+      allow delete: if floorAdmin();
+    }
+    // a bottle in or out since the last count (sold, opened for glasses, delivered, broken): added, never changed;
+    // whoever added one can take it back (Undo)
+    match /cellarmoves/{id} {
+      allow create: if floorWriter() && request.resource.data.n is int && request.resource.data.n >= -500 && request.resource.data.n <= 500
+        && request.resource.data.w is string && request.resource.data.by == request.auth.uid;
+      allow delete: if floorAdmin() || (floorWriter() && resource.data.by == request.auth.uid);
+    }
+    // a finished quiz round: your own, written once
+    match /quizscores/{id} {
+      allow create: if floorWriter() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.score is int && request.resource.data.score >= 0 && request.resource.data.score <= 5000
+        && request.resource.data.right is int && request.resource.data.of is int && request.resource.data.right <= request.resource.data.of && request.resource.data.of <= 50;
+      allow delete: if floorAdmin();
     }
     // days off: everyone sees them (and why). You ask for yourself; the head chef or sous chef can ask for anyone
     // and is the only one who approves or refuses. Priority moves someone else's plain request between accepted
@@ -90,7 +135,7 @@ service cloud.firestore {
     // photos and videos are stored in pieces under blobs/{id}/p/{n}
     match /blobs/{id}/p/{n} {
       allow read: if member();
-      allow write: if writer();
+      allow write: if floorWriter();
     }
   }
 }
