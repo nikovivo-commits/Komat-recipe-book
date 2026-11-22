@@ -86,7 +86,10 @@ a.icon-btn { display: inline-grid; place-items: center; text-decoration: none; }
 .chip.wc-red { --wc: var(--w-red); } .chip.wc-white { --wc: var(--w-white); } .chip.wc-rose { --wc: var(--w-rose); } .chip.wc-orange { --wc: var(--w-orange); } .chip.wc-sparkling { --wc: var(--w-sparkling); } .chip.wc-sweet { --wc: var(--w-sweet); }
 .wl-big { position: relative; display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
 div.wl-big { cursor: default; }
-.wl-add { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); box-shadow: var(--shadow); }
+.wl-add { position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); display: grid; gap: 6px; width: max-content; }
+.wl-add .btn { box-shadow: var(--shadow); justify-content: center; }
+.lw-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+a.btn { text-decoration: none; }
 .label-edit { display: flex; gap: 14px; align-items: center; }
 @media (min-width: 760px) { .whead { grid-template-columns: 300px minmax(0, 1fr); align-items: start; } }
 .prices { display: flex; flex-wrap: wrap; gap: 10px 28px; }
