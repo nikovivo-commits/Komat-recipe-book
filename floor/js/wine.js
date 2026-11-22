@@ -109,7 +109,7 @@
         w.nostock ? null : h('section', { class: 'stock-box st-' + st },
           h('div', { class: 'sb-top' }, h('span', { class: 'label' }, K.isDrink(w) ? 'In stock now' : 'In the cellar now'), K.stockBadge(w, true)),
           h('p', { class: 'hint' }, st === 'none' ? 'Nobody has counted it yet. Count it in Stock.' : st === 'out' ? 'Out: tell the guest and offer something close.' : st === 'low' ? 'Running low: ' + n + ' left, the floor manager keeps at least ' + w.par + '.' : 'Plenty for tonight.'),
-          K.canWrite() ? h('div', { class: 'btns' },
+          K.hypeRow(w) ? h('p', { class: 'hint' }, 'From Hype: “' + w.hype + '”' + (D.hypeStock ? ', read ' + K.hm(D.hypeStock.at) + '. Refresh it in Stock.' : '.')) : K.canWrite() ? h('div', { class: 'btns' },
             h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'sold') }, K.icon('minus'), ['spirit', 'liqueur'].includes(w.colour) ? 'Finished a bottle' : K.isDrink(w) ? 'Sold one' : 'Sold a bottle'),
             w.byGlass && !K.isDrink(w) ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'glass') }, K.icon('glass'), 'Opened for glasses') : null,
             h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, 'Count')) : null),

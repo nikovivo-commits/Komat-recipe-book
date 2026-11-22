@@ -236,7 +236,50 @@
   K.price = (p) => { const s = String(p || '').trim(); return !s ? '' : /^[\d.,]+$/.test(s) ? s.replace('.', ',') + ' €' : s; };
 
   /* ---------- bottles: the last count plus every bottle in or out since ---------- */
+  /* ---------- Hype, the till: its stock sheet is the source for every bottle paired with a Hype product ---------- */
+  const UNIT = { 'бр': 'pc', 'бр.': 'pc', pc: 'pc', pcs: 'pc', 'кг': 'kg', 'кг.': 'kg', kg: 'kg', 'л': 'L', 'л.': 'L', l: 'L' };
+  /* "7.280 бр." -> [7.28, 'pc']; a plain number keeps the unit given beside it */
+  K.parseQty = function (v, unit) {
+    const t = String(v == null ? '' : v).trim().replace(/\u00a0/g, ' ');
+    const m = t.match(/^(-?[\d.,\s]*\d)\s*([^\d\s].*)?$/);
+    if (!m) return [null, UNIT[String(unit || '').trim().toLowerCase()] || String(unit || '').trim()];
+    let n = m[1].replace(/\s/g, '');
+    n = n.includes(',') && n.includes('.') ? (n.lastIndexOf(',') > n.lastIndexOf('.') ? n.replace(/\./g, '').replace(',', '.') : n.replace(/,/g, '')) : n.replace(',', '.');
+    const u = String(m[2] || unit || '').trim().toLowerCase();
+    return [parseFloat(n), UNIT[u] || UNIT[u.replace(/\.$/, '')] || String(m[2] || unit || '').trim()];
+  };
+  /* rows as the sheet gives them: [name, warehouse, quantity, unit, category, barcode] */
+  const DRINKS = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;
+  K.setHypeStock = function (doc) {
+    D.hypeStock = doc && Array.isArray(doc.rows) ? doc : null;
+    const idx = {};
+    ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
+      const name = String(r[0] || '').trim(), q = K.parseQty(r[2], r[3]);
+      /* drinks only: the kitchen's stock is none of the floor book's business */
+      if (!name || q[0] == null || (r[4] && (!DRINKS.test(r[4]) || /топли|hot/i.test(r[4])))) return;
+      const e = idx[name] || (idx[name] = { name: name, qty: 0, unit: q[1], cat: r[4] || '', wh: [] });
+      e.qty += q[0]; if (r[1] && !e.wh.includes(r[1])) e.wh.push(r[1]);
+    });
+    D.hypeIdx = idx;
+  };
+  K.hypeRow = (w) => (w && w.hype && D.hypeIdx && D.hypeIdx[w.hype]) || null;
+  /* read the sheet again through its link; whoever runs the floor book also saves it for every other phone */
+  K.refreshHype = function () {
+    if (!D.hypeUrl) return Promise.reject(new Error('nolink'));
+    return fetch(D.hypeUrl, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error('http')))).then((j) => {
+      if (!j || !Array.isArray(j.rows)) throw new Error('shape');
+      const doc = { at: Date.now(), modified: +j.modified || 0, by: K.myName(), rows: j.rows.map((r) => [String(r[0] || ''), String(r[1] || ''), r[2] == null ? '' : r[2], String(r[3] || ''), String(r[4] || ''), String(r[5] || '')]) };
+      K.setHypeStock(doc);
+      K.refresh(true);
+      if (K.canEdit()) K.db.doc('fohsettings/hypestock').set(doc).catch(K.writeFailed);
+      return doc;
+    });
+  };
+  K.saveHypeUrl = function (url) { D.hypeUrl = url; return K.db.doc('fohsettings/hype').set({ url: url, updated: Date.now() }).catch(K.writeFailed); };
+
   K.stockOf = function (id) {
+    const hr = K.hypeRow(K.wine(id));
+    if (hr) return Math.max(0, Math.round(hr.qty * 100) / 100);
     const c = D.cellar[id];
     const since = c ? c.at || 0 : 0;
     let n = c ? +c.n || 0 : 0, moved = false;
@@ -253,7 +296,8 @@
   };
   K.stockBadge = function (w, big) {
     const st = K.stockState(w), n = K.stockOf(w.id), h = K.h;
-    const txt = st === 'none' ? 'Not counted' : st === 'out' ? 'Out · 86' : n + (n === 1 ? ' bottle' : ' bottles');
+    const hr = K.hypeRow(w), unit = hr && hr.unit !== 'pc' ? hr.unit : '';
+    const txt = st === 'none' ? 'Not counted' : st === 'out' ? 'Out · 86' : unit ? n + ' ' + unit : n + (n === 1 ? ' bottle' : ' bottles');
     return h('span', { class: 'stk stk-' + st + (big ? ' big' : '') }, h('span', { class: 'stk-dot', 'aria-hidden': 'true' }), txt);
   };
   const myId = () => (K.me && K.me.id) || 'this-phone';
@@ -359,6 +403,9 @@
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
       D.tasting = m.tasting || null;
+      D.hypeUrl = (m.hype && m.hype.url) || '';
+      /* a fresher read made on this phone is not replaced by an older saved one */
+      if (m.hypestock && (!D.hypeStock || (m.hypestock.at || 0) >= (D.hypeStock.at || 0))) K.setHypeStock(m.hypestock);
     });
   };
   K.subscribeBugs = function () { /* the kitchen book keeps the problem reports */ };

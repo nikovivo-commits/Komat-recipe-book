@@ -3,7 +3,7 @@
    remembered on the bottle (`hype`), so the next file needs no checking. Nothing is saved until you press Save. */
 (function () {
   'use strict';
-  const K = window.K, h = K.h, ui = K.ui;
+  const K = window.K, h = K.h, ui = K.ui, D = K.D;
 
   /* ---------- reading the file ---------- */
   function decode(buf) {
@@ -130,7 +130,54 @@
   /* a wine's article can be the bottle or the glass; a drink is priced by the measure */
   const priceField = (w, it) => (K.isDrink(w) || /чаша|glass|\b(100|125|150|175)\s?(мл|ml)/i.test(it.name) ? 'glassPrice' : 'bottlePrice');
 
+  /* the script that hands the drinks on the Stock tab to the app (wines, spirits, beer and soft drinks; no coffee or tea, nothing
+     from the kitchen): names, warehouses, quantities, units, categories, barcodes.
+     Prices stay in the sheet. Whoever has its link can read the stock, so the link is kept in the database, not here. */
+  const SCRIPT = [
+    'function doGet() {',
+    '  var ss = SpreadsheetApp.getActiveSpreadsheet();',
+    '  var v = ss.getSheetByName("Stock").getDataRange().getValues();',
+    '  var head = v[0].map(function (x) { return String(x).toLowerCase(); });',
+    '  var col = function (rx, not) { for (var i = 0; i < head.length; i++) if (rx.test(head[i]) && !(not && not.test(head[i]))) return i; return -1; };',
+    '  var c = [col(/name|product|артикул|наимен/, /id/), col(/warehouse|склад/, /id/), col(/quant|qty|колич|налич/), col(/^unit|мерна|мярка/), col(/categ|катег|група/, /id/), col(/barcode|баркод/)];',
+    '  var drinks = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;',
+    '  var rows = v.slice(1).filter(function (r) { var k = String(r[c[4]]); return c[4] < 0 || (drinks.test(k) && !/топли|hot/i.test(k)); }).map(function (r) { return c.map(function (i) { return i < 0 ? "" : r[i]; }); });',
+    '  var out = { modified: DriveApp.getFileById(ss.getId()).getLastUpdated().getTime(), rows: rows };',
+    '  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);',
+    '}',
+  ].join('\n');
+  K.SHEETS.hypesheet = function (S) {
+    if (S.url == null) S.url = D.hypeUrl || '';
+    const save = (e) => {
+      e.preventDefault();
+      const url = String(S.url).trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) { K.toast('That is not the web app link. It starts with https://script.google.com/macros/s/ and ends with /exec.', { tone: 'bad' }); return; }
+      K.saveHypeUrl(url);
+      K.toast('Reading the sheet…');
+      K.refreshHype().then((d) => { ui.sheet = { type: 'hype', fromSheet: true }; K.render(); K.toast(d.rows.length + ' products read from the sheet'); },
+        () => K.toast('Saved, but the sheet could not be read. Check that the web app is set to “Anyone”.', { tone: 'bad' }));
+    };
+    return K.sheet('The Hype stock sheet', h('form', { class: 'stack', onsubmit: save },
+      h('p', null, 'The app reads the “Stock” tab of your Google Sheet through a small script that lives in the sheet. You set it up once:'),
+      h('ol', { class: 'prose' },
+        h('li', null, 'Open the sheet “Komat Hype Database” on a computer. Menu ', h('b', null, 'Extensions → Apps Script'), '.'),
+        h('li', null, 'Delete what is there, paste the script below, and press Save.'),
+        h('li', null, h('b', null, 'Deploy → New deployment → Web app'), '. Execute as: ', h('b', null, 'Me'), '. Who has access: ', h('b', null, 'Anyone'), '. Press Deploy and allow it when Google asks.'),
+        h('li', null, 'Copy the ', h('b', null, 'Web app URL'), ' and paste it here.')),
+      h('textarea', { class: 'input mono', rows: '6', readonly: true, 'aria-label': 'The script', value: SCRIPT }),
+      h('button', { class: 'btn', type: 'button', onclick: () => navigator.clipboard.writeText(SCRIPT).then(() => K.toast('Script copied'), () => K.toast('Select the text and copy it by hand.')) }, 'Copy the script'),
+      K.field('Web app URL', h('input', { class: 'input', id: 'hy-url', value: S.url, placeholder: 'https://script.google.com/macros/s/…/exec', inputmode: 'url', oninput: (e) => { S.url = e.target.value; } }),
+        'Anyone with this link can read the stock list (no prices), so it is kept in the database and only shown to people who joined.'),
+      h('button', { class: 'btn primary wide', type: 'submit' }, 'Save and read the sheet')), { wide: true });
+  };
+
   K.SHEETS.hype = function (S) {
+    /* pairing against the sheet's products: the numbers then follow the sheet, nothing is counted by hand */
+    if (S.fromSheet && !S.items && D.hypeIdx) {
+      S.items = Object.keys(D.hypeIdx).map((n) => ({ name: n, qty: D.hypeIdx[n].qty, price: null, unit: D.hypeIdx[n].unit, tok: tokens(n) }));
+      Object.assign(S, { live: true, cols: { name: 0, qty: 0, price: -1 }, head: [], doStock: false, doPrice: false });
+      pair(S);
+    }
     if (!S.items) {
       return K.sheet('Prices and stock from Hype', h('div', { class: 'stack' },
         h('p', null, 'Hype has no live feed, so the numbers come over as a file:'),
@@ -168,7 +215,7 @@
         const it = S.items[S.map[w.id]], patch = { hype: it.name };
         if (S.doPrice && it.price) { const k = priceField(w, it), v = money(it.price); if (String(w[k]) !== v) { patch[k] = v; pr++; } }
         if (patch.hype !== w.hype || Object.keys(patch).length > 1) K.saveWine(Object.assign({}, w, patch));
-        if (S.doStock && it.qty !== null && !w.nostock) { K.countBottles(w, it.qty); st++; }
+        if (!S.live && S.doStock && it.qty !== null && !w.nostock) { K.countBottles(w, it.qty); st++; }
       });
       ui.sheet = null; K.render();
       K.toast(paired.length + ' bottles paired' + (st ? ' · ' + st + ' counts set' : '') + (pr ? ' · ' + pr + ' prices changed' : ''));
@@ -176,10 +223,10 @@
     return K.sheet('Prices and stock from Hype', h('div', { class: 'stack' },
       h('p', { class: 'muted' }, S.items.length + ' articles in the file · ' + paired.length + ' of ' + wines.length + ' bottles paired'),
       S.sales ? h('p', { class: 'banner' }, h('b', null, 'This looks like a sales report. '), 'Its quantities are what was sold, not what is on the shelf, so stock is switched off. Prices can still be taken.') : null,
-      h('div', { class: 'hy-opts' },
+      S.live ? h('p', { class: 'hint' }, 'Pair each bottle with its product in Hype. From then on its stock is the sheet’s number, and Refresh stock updates it.') : h('div', { class: 'hy-opts' },
         h('label', null, h('input', { type: 'checkbox', checked: S.doStock ? true : null, disabled: S.cols.qty < 0 ? true : null, onchange: (e) => { S.doStock = e.target.checked; } }), 'Set the bottles in stock from Hype'),
         h('label', null, h('input', { type: 'checkbox', checked: S.doPrice ? true : null, disabled: S.cols.price < 0 ? true : null, onchange: (e) => { S.doPrice = e.target.checked; } }), 'Set the prices from Hype')),
-      h('details', null, h('summary', null, 'Wrong numbers? Choose the columns'),
+      S.live ? null : h('details', null, h('summary', null, 'Wrong numbers? Choose the columns'),
         h('div', { class: 'hy-cols' }, colSel('name', 'Article name'), colSel('qty', 'Quantity in stock'), colSel('price', 'Selling price'))),
       paired.length ? h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Paired', h('span', { class: 'n' }, String(paired.length))),
         h('p', { class: 'hint' }, 'Tap a bottle to change its article. Orange ones were guessed from the name.'), h('div', { class: 'hy-list' }, paired.map(row))) : null,
@@ -187,6 +234,6 @@
       h('button', { class: 'btn primary wide', type: 'button', disabled: paired.length ? null : true, onclick: save }, 'Save ' + paired.length + ' bottles')), { wide: true });
   };
   function meta(it) {
-    return h('span', { class: 'hy-n mono' }, it.qty !== null ? h('div', null, String(Math.round(it.qty * 100) / 100) + ' in stock') : null, it.price ? h('div', null, K.price(money(it.price))) : null);
+    return h('span', { class: 'hy-n mono' }, it.qty !== null ? h('div', null, String(Math.round(it.qty * 100) / 100) + (it.unit && it.unit !== 'pc' ? ' ' + it.unit : '') + ' in stock') : null, it.price ? h('div', null, K.price(money(it.price))) : null);
   }
 })();
