@@ -264,7 +264,8 @@
     const all = K.ingredients().filter((e) => K.matches(e.name + ' ' + e.en + ' ' + e.what + ' ' + e.dishes.map((d) => d.name).join(' '), ui.q));
     if (!all.length) return h('div', { class: 'empty' }, h('strong', null, ui.q ? 'No ingredient called “' + ui.q.trim() + '”' : 'No ingredients yet'), ui.q ? 'Try the Bulgarian or the English name.' : 'They come from the dishes on the menu.');
     const explained = all.filter((e) => e.what), rest = all.filter((e) => !e.what);
-    const row = (e) => h('button', { type: 'button', class: 'ing-row', onclick: () => { ui.sheet = { type: 'ingredient', key: e.key }; K.render(); } },
+    const row = (e) => h('button', { type: 'button', class: 'ing-row' + (K.ingArt(e.key) ? ' has-art' : ''), onclick: () => { ui.sheet = { type: 'ingredient', key: e.key }; K.render(); } },
+      K.ingArt(e.key) ? h('img', { class: 'ing-thumb', src: K.ingArt(e.key), alt: '', loading: 'lazy' }) : null,
       h('span', { class: 'ing-name' }, h('b', null, e.name), e.en ? h('span', { class: 'ing-en' }, e.en) : null),
       e.what ? h('span', { class: 'ing-what' }, e.what) : null,
       h('span', { class: 'ing-in' }, 'In ' + e.dishes.map((d) => d.name).join(', ')),
@@ -281,7 +282,9 @@
     const e = K.ingredients().find((x) => x.key === S.key);
     if (!e) return null;
     const al = K.allergensIn ? K.allergensIn(e.name) : [];
+    const art = K.ingArt(e.key);
     const body = h('div', { class: 'stack' },
+      art ? h('figure', { class: 'ing-art' }, h('img', { src: art, alt: e.en || e.name }), h('figcaption', { class: 'art-tag' }, 'Illustration')) : null,
       e.en ? h('p', { class: 'ing-en big' }, e.en) : null,
       e.what ? h('p', { class: 'prose' }, e.what) : h('p', { class: 'muted' }, 'Nothing written about it yet.'),
       al.length ? h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Allergens'), alChips(al, true)) : null,
@@ -334,7 +337,7 @@
 
     if (n.story) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'The story'), h('p', { class: 'prose' }, n.story)));
     if ((n.niche || []).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Ingredients guests ask about'),
-      h('dl', { class: 'niche' }, n.niche.map((x) => [h('dt', null, x.n, K.en(x.n) ? h('span', { class: 'ing-en' }, K.en(x.n)) : null), h('dd', null, x.what || '')]))));
+      h('dl', { class: 'niche' }, n.niche.map((x) => [h('dt', null, K.ingArt(K.ingKey(x.n)) ? h('button', { type: 'button', class: 'niche-art', 'aria-label': 'About ' + x.n, onclick: () => { ui.sheet = { type: 'ingredient', key: K.ingKey(x.n) }; K.render(); } }, h('img', { src: K.ingArt(K.ingKey(x.n)), alt: '', loading: 'lazy' })) : null, x.n, K.en(x.n) ? h('span', { class: 'ing-en' }, K.en(x.n)) : null), h('dd', null, x.what || '')]))));
     if (lines(n.facts).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Good to know'), h('ul', { class: 'facts' }, lines(n.facts).map((f) => h('li', null, f)))));
     if (pairs.length || n.pairText) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Wine with it'),
       n.pairText ? h('p', { class: 'prose' }, n.pairText) : null,

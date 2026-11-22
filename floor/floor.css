@@ -382,3 +382,13 @@ button.fs-cell { cursor: pointer; }
 .alp-grid.diet .alp-box { display: none; }
 .alp-grid.diet .alp { justify-content: center; text-align: center; }
 @media (max-width: 420px) { .al-pick .alp { font-size: .72rem; letter-spacing: -.02em; padding: 4px 4px; gap: 4px; } .al-pick .alp-box { width: 18px; height: 18px; } }
+
+/* pictures of the explained ingredients */
+.ing-row.has-art { grid-template-columns: 72px minmax(0, 1fr); column-gap: 12px; align-items: start; }
+.ing-row.has-art > :not(.ing-thumb) { grid-column: 2; }
+.ing-thumb { grid-row: 1 / span 4; width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-sm); }
+.ing-art { position: relative; margin: 0; }
+.ing-art img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-sm); }
+.ing-art .art-tag { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fff; font-size: .72rem; font-weight: 700; }
+.niche-art { display: block; padding: 0; margin: 0 0 6px; border: 0; background: none; }
+.niche-art img { display: block; width: 96px; height: 72px; object-fit: cover; border-radius: var(--r-sm); }

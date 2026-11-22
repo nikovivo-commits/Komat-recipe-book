@@ -176,6 +176,12 @@
   const SKIP = /^(сол|вода|лед|пипер|черен пипер|бял пипер|захар|олио|salt|water|ice|pepper|black pepper|sugar|oil|sunflower oil)$/;
   const ingKey = (n) => K.normName(String(n || '').split(/[,(]/)[0].replace(/[0-9%.]+/g, ' '));
   K.ingKey = ingKey;
+  /* the picture that goes with an explained ingredient, '' when there is none */
+  let ART = null;
+  K.ingArt = function (key) {
+    if (!ART) { ART = {}; const m = window.KOMAT_ING_ART || {}; Object.keys(m).forEach((n) => { ART[ingKey(n)] = m[n]; }); }
+    return ART[key] ? 'floor/art/' + ART[key] + '.jpg' : '';
+  };
   K.ingredients = function () {
     const m = {};
     K.dishes().forEach((d) => {
