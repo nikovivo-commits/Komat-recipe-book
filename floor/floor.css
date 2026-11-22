@@ -343,3 +343,31 @@ button.fs-cell { cursor: pointer; }
 .wlabel.photo.web { background: #fff; }
 .wlabel.photo.web img { object-fit: contain; }
 .wlabel.photo.crop img { position: absolute; left: 0; top: 50%; width: 100%; height: auto; max-width: none; object-fit: fill; }
+
+/* allergies: a dish that is fine with a change, and the questions about butter and bread */
+.alg-mod .group-title { color: var(--low); }
+.alr-mod { border-left-color: var(--low); }
+.alr-mod .alr-mark { background: var(--low); color: #fff; }
+.al-verdict.alr-mod { border-color: var(--low); background: var(--todo-soft); color: var(--todo-ink); }
+.alr-fix { margin-top: 3px; font-size: .85rem; font-weight: 800; color: var(--ready); }
+.alr-mod .alr-fix { color: inherit; }
+.alp.two > span:last-child { display: grid; min-width: 0; }
+.alp.two small { font-weight: 600; font-size: .72rem; opacity: .75; }
+.alc-q { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.alc-bread { display: grid; gap: 6px; }
+.alc-bread .chip[aria-pressed="true"] { border-color: var(--urgent); background: var(--urgent-soft); }
+.al-notes { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: .9rem; }
+/* Hype import */
+.hy-list { display: grid; gap: 6px; }
+.hy-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 52px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; color: inherit; }
+.hy-row > span:first-child { display: grid; min-width: 0; gap: 1px; }
+.hy-row .muted, .hy-row b { overflow-wrap: anywhere; }
+.hy-row.none { opacity: .6; border-style: dashed; }
+.hy-row.guess { border-color: var(--low); }
+.hy-n { font-size: .85rem; text-align: right; white-space: nowrap; }
+.hy-tag { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--low); }
+.hy-opts { display: grid; gap: 8px; }
+.hy-opts label { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; }
+.hy-opts input { width: 22px; height: 22px; }
+.hy-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 480px) { .hy-cols { grid-template-columns: 1fr; } }
