@@ -23,29 +23,30 @@
     return h('button', { class: 'rcard wcard st-' + st + (w.off ? ' off' : ''), type: 'button', onclick: () => K.go('winepage', { id: w.id }) },
       K.wineLabel(w, 'thumb'),
       h('div', { class: 'card-txt' },
-        h('span', { class: 'kicker wk-' + w.colour }, K.COL[w.colour] + (w.region ? ' · ' + w.region : '')),
+        h('span', { class: 'kicker wk-' + w.colour }, (K.isDrink(w) && w.style ? w.style : K.COL[w.colour]) + (w.region ? ' · ' + w.region : '')),
         h('span', { class: 'card-name' }, w.name + (w.vintage ? ' ' + w.vintage : '')),
         w.producer ? h('span', { class: 'card-en' }, w.producer) : null,
         h('span', { class: 'card-meta' },
           w.grapes ? h('span', null, w.grapes) : null,
+          K.isDrink(w) && w.measure ? h('span', null, w.measure) : null,
           w.byGlass && w.glassPrice ? h('span', null, K.icon('glass'), K.price(w.glassPrice)) : null,
           w.bottlePrice ? h('span', null, K.icon('bottle'), K.price(w.bottlePrice)) : null),
-        h('span', { class: 'card-pills' }, K.stockBadge(w), w.off ? h('span', { class: 'pill muted' }, 'Off the list') : null, w.example ? h('span', { class: 'pill muted' }, 'Example') : null)));
+        h('span', { class: 'card-pills' }, w.nostock ? null : K.stockBadge(w), w.off ? h('span', { class: 'pill muted' }, 'Off the list') : null, w.example ? h('span', { class: 'pill muted' }, 'Example') : null)));
   };
 
   /* ---------- the list ---------- */
   K.V.wine = function () {
     const body = h('div', { class: 'page' }), all = K.winesSorted();
-    const onList = all.filter((w) => !w.off), glass = onList.filter((w) => w.byGlass).length;
-    body.append(K.pageHead('The wine list', onList.length ? onList.length + ' wines' + (glass ? ' · ' + glass + ' by the glass' : '') : 'Every bottle, its label and its story', null, '', 'wine-head has-search'));
+    const onList = all.filter((w) => !w.off), glass = onList.filter((w) => w.byGlass && !K.isDrink(w)).length, nd = onList.filter(K.isDrink).length, nw = onList.length - nd;
+    body.append(K.pageHead('Wine & drinks', onList.length ? nw + ' wines' + (nd ? ' · ' + nd + ' drinks' : '') + (glass ? ' · ' + glass + ' by the glass' : '') : 'Every bottle, its label and its story', null, '', 'wine-head has-search'));
     const w = h('div', { class: 'wrap' });
     body.append(w);
-    w.append(K.searchBox('wq', ui.wq, 'Search a wine, grape, region or dish', (v) => { ui.wq = v; results(); }));
+    w.append(K.searchBox('wq', ui.wq, 'Search a wine, drink, grape, region or dish', (v) => { ui.wq = v; results(); }));
     const cols = K.COLOURS.filter((c) => all.some((x) => x.colour === c[0]));
     w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Colour' },
       [['', 'All', all.length], ['glass', 'By the glass', glass]].concat(cols.map((c) => [c[0], c[1], all.filter((x) => x.colour === c[0]).length])).map((c) =>
         h('button', { class: 'chip' + (c[0] && c[0] !== 'glass' ? ' wc-' + c[0] : ''), type: 'button', 'aria-pressed': ui.colour === c[0] ? 'true' : 'false', onclick: () => { ui.colour = c[0]; K.render(); } }, c[1], h('span', { class: 'cn' }, String(c[2]))))
-        .concat(K.canEdit() ? [h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'wineedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a wine')] : [])));
+        .concat(K.canEdit() ? [h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'wineedit', id: null }; K.render(); } }, K.icon('plus'), 'Add')] : [])));
     w.append(h('div', { id: 'wresults' }));
     return { body: body, after: results };
   };
@@ -59,7 +60,7 @@
     box.textContent = '';
     if (!D.winesLoaded) { box.append(K.loadingBox('Loading the wines')); return; }
     let all = K.winesSorted().filter((w) => K.matches(hay(w), ui.wq));
-    if (ui.colour === 'glass') all = all.filter((w) => w.byGlass);
+    if (ui.colour === 'glass') all = all.filter((w) => w.byGlass && !K.isDrink(w));
     else if (ui.colour) all = all.filter((w) => w.colour === ui.colour);
     if (!D.wines.length) {
       box.append(K.catRest('The wine list is empty', K.canEdit() ? 'Add the first wine with a photo of its label, or load the example wines to see how it works.' : 'Wines show here as soon as the floor manager adds them.',
@@ -70,7 +71,8 @@
     }
     if (!all.length) { box.append(h('div', { class: 'empty' }, h('strong', null, 'No wine like that'), 'Try a grape, a region, or a dish it goes with.')); return; }
     const groups = {};
-    all.forEach((x) => { const k = x.off ? 'Off the list' : K.COL[x.colour]; (groups[k] = groups[k] || []).push(x); });
+    all.forEach((x) => { /* the spirits are a long list: rakia, vodka, gin and the rest each get their own heading */
+      const k = x.off ? 'Off the list' : x.colour === 'spirit' && x.style ? x.style : K.COL[x.colour]; (groups[k] = groups[k] || []).push(x); });
     Object.keys(groups).sort((a, b) => (a === 'Off the list') - (b === 'Off the list')).forEach((k) => {
       box.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, k, h('span', { class: 'n' }, String(groups[k].length))), h('div', { class: 'grid' }, groups[k].map(K.wineCard))));
     });
@@ -94,18 +96,19 @@
         w.producer ? h('p', { class: 'en-name' }, w.producer) : null,
         h('div', { class: 'meta-chips' },
           w.grapes ? h('span', { class: 'mchip' }, K.icon('leaf'), w.grapes) : null,
-          w.region || w.country ? h('span', { class: 'mchip' }, K.icon('globe'), [w.region, w.country].filter(Boolean).join(', ')) : null,
+          w.region || w.country ? h('span', { class: 'mchip' }, K.icon('globe'), [w.region, w.country].filter((x, i, l) => x && l.indexOf(x) === i).join(', ')) : null,
           w.off ? h('span', { class: 'mchip off' }, 'Off the list') : null,
           w.example ? h('span', { class: 'mchip' }, 'Example') : null),
         h('div', { class: 'prices' },
           w.bottlePrice ? h('div', null, h('span', { class: 'label' }, 'Bottle'), h('b', null, K.price(w.bottlePrice))) : null,
-          w.byGlass ? h('div', null, h('span', { class: 'label' }, 'Glass' + (w.glassCl ? ' · ' + w.glassCl + ' cl' : '')), h('b', null, K.price(w.glassPrice) || 'yes')) : h('div', null, h('span', { class: 'label' }, 'Glass'), h('b', { class: 'muted' }, 'bottle only'))),
-        h('section', { class: 'stock-box st-' + st },
-          h('div', { class: 'sb-top' }, h('span', { class: 'label' }, 'In the cellar now'), K.stockBadge(w, true)),
+          K.isDrink(w) ? (w.glassPrice ? h('div', null, h('span', { class: 'label' }, w.measure || 'Price'), h('b', null, K.price(w.glassPrice))) : null)
+            : w.byGlass ? h('div', null, h('span', { class: 'label' }, 'Glass' + (w.glassCl ? ' · ' + w.glassCl + ' cl' : '')), h('b', null, K.price(w.glassPrice) || 'yes')) : h('div', null, h('span', { class: 'label' }, 'Glass'), h('b', { class: 'muted' }, 'bottle only'))),
+        w.nostock ? null : h('section', { class: 'stock-box st-' + st },
+          h('div', { class: 'sb-top' }, h('span', { class: 'label' }, K.isDrink(w) ? 'In stock now' : 'In the cellar now'), K.stockBadge(w, true)),
           h('p', { class: 'hint' }, st === 'none' ? 'Nobody has counted it yet. Count it in Stock.' : st === 'out' ? 'Out: tell the guest and offer something close.' : st === 'low' ? 'Running low: ' + n + ' left, the floor manager keeps at least ' + w.par + '.' : 'Plenty for tonight.'),
           K.canWrite() ? h('div', { class: 'btns' },
-            h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'sold') }, K.icon('minus'), 'Sold a bottle'),
-            w.byGlass ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'glass') }, K.icon('glass'), 'Opened for glasses') : null,
+            h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'sold') }, K.icon('minus'), ['spirit', 'liqueur'].includes(w.colour) ? 'Finished a bottle' : K.isDrink(w) ? 'Sold one' : 'Sold a bottle'),
+            w.byGlass && !K.isDrink(w) ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'glass') }, K.icon('glass'), 'Opened for glasses') : null,
             h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, 'Count')) : null),
         w.say ? h('blockquote', { class: 'say' }, K.icon('quote'), h('div', null, h('span', { class: 'label' }, 'What to say at the table'), h('p', null, w.say))) : null)));
     if (w.nose || w.palate) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'In the glass'),
@@ -121,7 +124,7 @@
       if (alt.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'If it runs out, offer'), h('div', { class: 'grid' }, alt.map(K.wineCard))));
     }
     return {
-      top: K.subbar('Wine', () => K.back('wine'), [K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'wineedit', id: w.id }; K.render(); } }, K.icon('edit'), 'Edit') : null], w.name),
+      top: K.subbar('Drinks', () => K.back('wine'), [K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'wineedit', id: w.id }; K.render(); } }, K.icon('edit'), 'Edit') : null], w.name),
       body: body, tabs: false,
     };
   };
@@ -171,7 +174,7 @@
   }
 
   /* ---------- editing ---------- */
-  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'facts', 'serve', 'glass', 'decant', 'par', 'order'];
+  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order'];
   K.SHEETS.wineedit = function (S) {
     const w = S.id ? K.wine(S.id) : null;
     if (!S.f) {
@@ -190,7 +193,8 @@
       FIELDS.forEach((k) => { doc[k] = String(f[k] || '').trim(); });
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
-      Object.assign(doc, { byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
+      Object.assign(doc, { nostock: !!(w && w.nostock), byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();
@@ -209,12 +213,14 @@
       labelBox,
       K.field('Name', inp('name', { required: true, placeholder: 'Mavrud Reserve' })),
       h('div', { class: 'two' }, K.field('Producer', inp('producer')), K.field('Vintage', inp('vintage', { inputmode: 'numeric', placeholder: '2021 or NV' }))),
-      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Colour'), K.seg(K.COLOURS, f.colour, (v) => { f.colour = v; K.render(); }, { class: 'seg wrap-seg' })),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Kind'), K.seg(K.COLOURS, f.colour, (v) => { f.colour = v; K.render(); }, { class: 'seg wrap-seg' })),
       h('div', { class: 'two' }, K.field('Grapes', inp('grapes', { placeholder: 'Mavrud' })), K.field('Style', inp('style', { placeholder: 'dry, full-bodied' }))),
       h('div', { class: 'two' }, K.field('Region', inp('region', { placeholder: 'Thracian Valley' })), K.field('Country', inp('country'))),
-      h('div', { class: 'two' }, K.field('Bottle price', inp('bottlePrice', { inputmode: 'decimal' })),
+      /* a spirit, beer or soft drink has one price for its measure; a wine has a bottle price and maybe a glass price */
+      K.DRINK_KINDS.includes(f.colour) ? h('div', { class: 'two' }, K.field('Price', inp('glassPrice', { inputmode: 'decimal' })), K.field('Measure', inp('measure', { placeholder: '50 ml' }))) : null,
+      K.DRINK_KINDS.includes(f.colour) ? null : h('div', { class: 'two' }, K.field('Bottle price', inp('bottlePrice', { inputmode: 'decimal' })),
         h('label', { class: 'check big' }, h('input', { type: 'checkbox', checked: f.byGlass, onchange: (e) => { f.byGlass = e.target.checked; K.render(); } }), h('span', null, 'Sold by the glass'))),
-      f.byGlass ? h('div', { class: 'two' }, K.field('Glass price', inp('glassPrice', { inputmode: 'decimal' })), K.field('Glass size (cl)', inp('glassCl', { inputmode: 'decimal', placeholder: '15' }))) : null,
+      f.byGlass && !K.DRINK_KINDS.includes(f.colour) ? h('div', { class: 'two' }, K.field('Glass price', inp('glassPrice', { inputmode: 'decimal' })), K.field('Glass size (cl)', inp('glassCl', { inputmode: 'decimal', placeholder: '15' }))) : null,
       K.field('What to say at the table', area('say', 3, 'One or two sentences to sell it.')),
       K.field('Nose', area('nose', 2, 'Dark cherry, plum, a little smoke')),
       K.field('Palate', area('palate', 2, 'Firm tannins, fresh acidity, long finish')),

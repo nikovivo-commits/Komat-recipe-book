@@ -167,7 +167,11 @@
   };
 
   /* ---------- wines ---------- */
-  K.COLOURS = [['red', 'Red'], ['white', 'White'], ['rose', 'Rosé'], ['orange', 'Orange'], ['sparkling', 'Sparkling'], ['sweet', 'Sweet']];
+  K.COLOURS = [['red', 'Red'], ['white', 'White'], ['rose', 'Rosé'], ['orange', 'Orange'], ['sparkling', 'Sparkling'], ['sweet', 'Sweet'],
+    /* the rest of the drinks list is kept the same way as the wines: a label, a price, bottles in stock */
+    ['spirit', 'Spirits'], ['liqueur', 'Liqueurs & digestifs'], ['beer', 'Beer'], ['soft', 'Soft drinks'], ['hot', 'Hot drinks']];
+  K.DRINK_KINDS = ['spirit', 'liqueur', 'beer', 'soft', 'hot'];
+  K.isDrink = (w) => K.DRINK_KINDS.includes(w.colour);
   K.COL = {}; K.COLOURS.forEach((c) => { K.COL[c[0]] = c[1]; });
   K.normWine = function (w) {
     return {
@@ -175,7 +179,7 @@
       colour: K.COL[w.colour] ? w.colour : 'red', style: w.style || '', label: w.label || '', byGlass: !!w.byGlass, glassPrice: w.glassPrice || '', bottlePrice: w.bottlePrice || '',
       glassCl: w.glassCl || '', say: w.say || '', nose: w.nose || '', palate: w.palate || '', story: w.story || '', facts: w.facts || '', serve: w.serve || '', decant: w.decant || '',
       glass: w.glass || '', pairs: Array.isArray(w.pairs) ? w.pairs : [], par: w.par === '' || w.par == null ? 3 : +w.par, order: +w.order || 0, example: !!w.example, updated: w.updated || 0,
-      off: !!w.off,
+      off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
     };
   };
   K.wine = (id) => D.wines.find((w) => w.id === id) || null;

@@ -102,7 +102,7 @@
       K.canEdit() ? link('rota', 'The floor team', 'The people on the schedule', open('team')) : null,
       K.canEdit() && !ex ? link('sparkle', 'Load the example wines', 'Six Bulgarian wines and notes, to see how it works', () => { ui.sheet = null; K.loadExamples(); K.render(); }) : null,
       K.canEdit() && ex ? link('trash', 'Remove the examples', 'The example wines, dish notes and questions', () => { ui.sheet = null; K.removeExamples(); K.render(); }) : null,
-      K.canEdit() ? link('list', 'Load the house menu and wine list', 'The printed menu and wine list, already typed in. Wines you have changed are kept.', loadHouse) : null,
+      K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', loadHouse) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
       K.canEdit() ? link('download', 'Backup', 'Save everything in the floor book to a file', exportFile) : null,
       link('kitchen', 'The kitchen book', 'Recipes, prep lists and The Brigade', null, { href: '../' }),
@@ -117,7 +117,7 @@
     fetch('floor/data/house.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(r))).then((j) => {
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
       return Promise.all(add.map((p) => K.db.doc(p).set(docs[p]))).then(() => {
-        K.toast(add.length ? add.length + ' wines added' : 'The wines were already in');
+        K.toast(add.length ? add.length + ' wines and drinks added' : 'The wines and drinks were already in');
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
         else ui.sheet = null;
         K.render();

@@ -17,7 +17,7 @@
     kitchen: '<path d="M7 14.5V20h10v-5.5"/><path d="M7 14.5a4 4 0 0 1-1.6-7.6A4.5 4.5 0 0 1 12 4a4.5 4.5 0 0 1 6.6 2.9A4 4 0 0 1 17 14.5z"/><path d="M7 17h10"/>',
   });
 
-  const TABS = [['food', 'Food', 'plate'], ['wine', 'Wine', 'glass'], ['stock', 'Stock', 'bottle'], ['quiz', 'Quiz', 'trophy'], ['schedule', 'Schedule', 'rota']];
+  const TABS = [['food', 'Food', 'plate'], ['wine', 'Drinks', 'glass'], ['stock', 'Stock', 'bottle'], ['quiz', 'Quiz', 'trophy'], ['schedule', 'Schedule', 'rota']];
   const TAB_OF = { dish: 'food', winepage: 'wine' };
 
   /* ---------- navigation ---------- */
@@ -129,7 +129,7 @@
   K.brandMark = brandMark;
   function badge(tab) {
     if (K.mode === 'pending' || ui.auth) return null;
-    if (tab === 'stock') { const n = D.wines.filter((w) => !w.off && K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' wines out' }, String(n)) : null; }
+    if (tab === 'stock') { const n = D.wines.filter((w) => !w.off && !w.nostock && K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' wines out' }, String(n)) : null; }
     return null;
   }
   function tabButtons(cls) {

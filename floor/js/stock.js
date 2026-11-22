@@ -7,7 +7,7 @@
   const WHY = { sold: 'sold', glass: 'opened for glasses', in: 'delivered', broken: 'broken or corked', comp: 'on the house', out: 'taken out' };
 
   K.V.stock = function () {
-    const body = h('div', { class: 'page' }), all = K.winesSorted().filter((w) => !w.off);
+    const body = h('div', { class: 'page' }), all = K.winesSorted().filter((w) => !w.off && !w.nostock);
     const by = { out: [], low: [], ok: [], none: [] };
     all.forEach((w) => by[K.stockState(w)].push(w));
     const bottles = all.reduce((s, w) => s + (K.stockOf(w.id) || 0), 0);
@@ -21,7 +21,7 @@
       w.append(K.catRest('No wines to count yet', 'Add the wines in the Wine tab; their bottles are counted here.', h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.go('wine') }, 'Go to the wine list'))));
       return { body: body };
     }
-    w.append(K.searchBox('sq', ui.sq, 'Search a wine', (v) => { ui.sq = v; K.render(); }));
+    w.append(K.searchBox('sq', ui.sq, 'Search a wine or drink', (v) => { ui.sq = v; K.render(); }));
     w.append(h('div', { class: 'chips filters' },
       K.seg([['', 'All'], ['need', 'Low & out'], ['glass', 'By the glass']], ui.stockF, (v) => { ui.stockF = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Show' }),
       K.canWrite() ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'stocktake', n: {} }; K.render(); } }, K.icon('list'), 'Stock take') : null,
@@ -81,7 +81,7 @@
 
   /* the whole cellar in one go: a box per wine, only the ones you fill in are saved */
   K.SHEETS.stocktake = function (S) {
-    const all = K.winesSorted().filter((w) => !w.off);
+    const all = K.winesSorted().filter((w) => !w.off && !w.nostock);
     const save = (e) => {
       e.preventDefault();
       const ids = Object.keys(S.n).filter((id) => String(S.n[id]).trim() !== '' && +S.n[id] >= 0);
