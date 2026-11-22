@@ -84,7 +84,9 @@
     const dishes = K.dishes().filter((d) => (d.n.pairs || []).includes(w.id) || w.pairs.includes(d.id));
     const body = h('div', { class: 'wrap page recipe wine-page' });
     const label = w.label ? h('button', { type: 'button', class: 'wl-big', 'aria-label': 'Open the label photo', onclick: () => K.openPhotos([{ id: w.label, title: K.wineTitle(w) }], 0) }, K.wineLabel(w, 'big'))
-      : h('div', { class: 'wl-big' }, K.wineLabel(w, 'big'), K.canEdit() ? h('button', { type: 'button', class: 'btn small wl-add', onclick: () => addLabel(w) }, K.icon('camera'), 'Photo of the label') : null);
+      : h('div', { class: 'wl-big' }, K.wineLabel(w, 'big'), K.canEdit() ? h('div', { class: 'wl-add' },
+        h('button', { type: 'button', class: 'btn small', onclick: () => addLabel(w) }, K.icon('camera'), 'Photo of the label'),
+        h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'labelweb', id: w.id }; K.render(); } }, K.icon('globe'), 'From the web')) : null);
     body.append(h('div', { class: 'rhead has-photo whead' }, label,
       h('div', { class: 'rhead-txt' },
         h('p', { class: 'kicker wk-' + w.colour }, K.COL[w.colour] + (w.style ? ' · ' + w.style : '')),
@@ -128,6 +130,39 @@
   function uploadLabel(file) {
     return K.shrinkImage(file, 1400, 0.85).then((blob) => K.assets.upload(blob)).then((r) => r.id);
   }
+  /* a label picture from the web: search for it, then paste the copied picture (it is saved into the book) or
+     the picture's address (the book then shows it from that site for as long as it stays there) */
+  K.SHEETS.labelweb = function (S) {
+    const w = K.wine(S.id);
+    if (!w) return null;
+    const done = (label) => K.saveWine(Object.assign({}, w, { label: label })).then(() => { ui.sheet = null; K.render(); K.toast('Label saved'); });
+    const fromBlob = (file) => { S.busy = true; K.render(); uploadLabel(file).then(done, (e) => { S.busy = false; K.render(); K.toast(K.uploadErr(e), { tone: 'bad' }); }); };
+    const fromUrl = (url) => {
+      url = String(url || '').trim();
+      if (!/^https:\/\/\S+$/.test(url)) { K.toast('Paste the picture’s address: it starts with https://', { tone: 'bad' }); return; }
+      S.busy = true; K.render();
+      const im = new Image();
+      im.onload = () => done(url);
+      im.onerror = () => { S.busy = false; K.render(); K.toast('That address is not a picture. Open the picture itself, then copy its address.', { tone: 'bad' }); };
+      im.src = url;
+    };
+    const q = encodeURIComponent(K.wineTitle(w) + ' wine bottle');
+    const inp = h('input', { class: 'input', id: 'lw-url', type: 'url', placeholder: 'https://…', autocomplete: 'off', 'aria-label': 'Address of the picture' });
+    const body = h('div', { class: 'stack', onpaste: (e) => {
+      const items = Array.from((e.clipboardData && e.clipboardData.items) || []), img = items.find((i) => i.kind === 'file' && /^image\//.test(i.type));
+      if (img) { e.preventDefault(); fromBlob(img.getAsFile()); return; }
+      const t = e.clipboardData && e.clipboardData.getData('text');
+      if (t && /^https:\/\//.test(t.trim()) && e.target !== inp) { e.preventDefault(); fromUrl(t); }
+    } },
+      h('a', { class: 'btn primary wide', href: 'https://www.google.com/search?tbm=isch&q=' + q, target: '_blank', rel: 'noopener' }, K.icon('search'), 'Search pictures of ' + w.name),
+      h('ol', { class: 'lw-steps' },
+        h('li', null, 'Pick a picture where the label is clear and the vintage matches.'),
+        h('li', null, h('b', null, 'On a computer: '), 'right-click it, Copy image, come back here and press Ctrl+V (⌘V on a Mac). The picture is saved into the book.'),
+        h('li', null, h('b', null, 'On a phone: '), 'save the picture, then use Photo of the label and choose it from your photos.')),
+      h('form', { class: 'inline-form', onsubmit: (e) => { e.preventDefault(); fromUrl(inp.value); } }, inp, h('button', { class: 'btn', type: 'submit', disabled: !!S.busy }, S.busy ? 'Saving…' : 'Use this link')),
+      h('p', { class: 'hint' }, 'A link shows the picture from the other site, so it disappears if they remove it. A pasted or saved picture stays. Use pictures from the producer where you can.'));
+    return K.sheet('Label from the web', body);
+  };
   function addLabel(w) {
     K.pickFile('image/*', false, (files) => {
       K.toast('Saving the label…');
