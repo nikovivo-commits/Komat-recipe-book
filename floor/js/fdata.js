@@ -256,11 +256,19 @@
     ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
       const name = String(r[0] || '').trim(), q = K.parseQty(r[2], r[3]);
       /* drinks only: the kitchen's stock is none of the floor book's business */
-      if (!name || q[0] == null || (r[4] && (!DRINKS.test(r[4]) || /топли|hot/i.test(r[4])))) return;
+      if (!name || q[0] == null || (!D.hypeStock.bar && r[4] && (!DRINKS.test(r[4]) || /топли|hot/i.test(r[4])))) return;
       const e = idx[name] || (idx[name] = { name: name, qty: 0, unit: q[1], cat: r[4] || '', wh: [] });
       e.qty += q[0]; if (r[1] && !e.wh.includes(r[1])) e.wh.push(r[1]);
     });
     D.hypeIdx = idx;
+  };
+  /* when Hype exported the numbers: a time in ms, or 0 when the sheet's text is not a date we can read */
+  K.hypeTime = function (v) {
+    if (typeof v === 'number') return v;
+    const t = String(v || '').trim(), m = t.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:[ ,T]+(\d{1,2}):(\d{2}))?/);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)).getTime();
+    const d = Date.parse(t.replace(' ', 'T'));
+    return isNaN(d) ? 0 : d;
   };
   K.hypeRow = (w) => (w && w.hype && D.hypeIdx && D.hypeIdx[w.hype]) || null;
   /* read the sheet again through its link; whoever runs the floor book also saves it for every other phone */
@@ -268,7 +276,7 @@
     if (!D.hypeUrl) return Promise.reject(new Error('nolink'));
     return fetch(D.hypeUrl, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error('http')))).then((j) => {
       if (!j || !Array.isArray(j.rows)) throw new Error('shape');
-      const doc = { at: Date.now(), modified: +j.modified || 0, by: K.myName(), rows: j.rows.map((r) => [String(r[0] || ''), String(r[1] || ''), r[2] == null ? '' : r[2], String(r[3] || ''), String(r[4] || ''), String(r[5] || '')]) };
+      const doc = { at: Date.now(), modified: +j.modified || 0, exported: K.hypeTime(j.exported), exportedRaw: String(j.exported || ''), bar: !!j.bar, by: K.myName(), rows: j.rows.map((r) => [String(r[0] || ''), String(r[1] || ''), r[2] == null ? '' : r[2], String(r[3] || ''), String(r[4] || ''), String(r[5] || '')]) };
       K.setHypeStock(doc);
       K.refresh(true);
       if (K.canEdit()) K.db.doc('fohsettings/hypestock').set(doc).catch(K.writeFailed);

@@ -136,13 +136,18 @@
   const SCRIPT = [
     'function doGet() {',
     '  var ss = SpreadsheetApp.getActiveSpreadsheet();',
-    '  var v = ss.getSheetByName("Stock").getDataRange().getValues();',
+    '  var bar = ss.getSheetByName("Bar_Stock");',
+    '  var v = (bar || ss.getSheetByName("Stock")).getDataRange().getValues();',
     '  var head = v[0].map(function (x) { return String(x).toLowerCase(); });',
     '  var col = function (rx, not) { for (var i = 0; i < head.length; i++) if (rx.test(head[i]) && !(not && not.test(head[i]))) return i; return -1; };',
-    '  var c = [col(/name|product|артикул|наимен/, /id/), col(/warehouse|склад/, /id/), col(/quant|qty|колич|налич/), col(/^unit|мерна|мярка/), col(/categ|катег|група/, /id/), col(/barcode|баркод/)];',
+    '  var c = [col(/name|product|артикул|наимен/, /id/), col(/warehouse|склад/, /id/), col(/quant|qty|колич|налич/, /raw/), col(/^unit|мерна|мярка/), col(/categ|катег|група/, /id/), col(/barcode|баркод/)];',
+    '  var ex = col(/export/), exported = "";',
     '  var drinks = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;',
-    '  var rows = v.slice(1).filter(function (r) { var k = String(r[c[4]]); return c[4] < 0 || (drinks.test(k) && !/топли|hot/i.test(k)); }).map(function (r) { return c.map(function (i) { return i < 0 ? "" : r[i]; }); });',
-    '  var out = { modified: DriveApp.getFileById(ss.getId()).getLastUpdated().getTime(), rows: rows };',
+    '  var rows = v.slice(1).filter(function (r) {',
+    '    if (ex >= 0 && r[ex] && !exported) exported = r[ex] instanceof Date ? r[ex].getTime() : String(r[ex]);',
+    '    var k = String(r[c[4]]); return bar || c[4] < 0 || (drinks.test(k) && !/топли|hot/i.test(k));',
+    '  }).map(function (r) { return c.map(function (i) { return i < 0 ? "" : r[i]; }); });',
+    '  var out = { bar: !!bar, exported: exported, modified: DriveApp.getFileById(ss.getId()).getLastUpdated().getTime(), rows: rows };',
     '  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);',
     '}',
   ].join('\n');
@@ -158,7 +163,7 @@
         () => K.toast('Saved, but the sheet could not be read. Check that the web app is set to “Anyone”.', { tone: 'bad' }));
     };
     return K.sheet('The Hype stock sheet', h('form', { class: 'stack', onsubmit: save },
-      h('p', null, 'The app reads the “Stock” tab of your Google Sheet through a small script that lives in the sheet. You set it up once:'),
+      h('p', null, 'The app reads the “Bar_Stock” tab of your Google Sheet (or “Stock”, drinks only, when there is no such tab) through a small script that lives in the sheet. You set it up once:'),
       h('ol', { class: 'prose' },
         h('li', null, 'Open the sheet “Komat Hype Database” on a computer. Menu ', h('b', null, 'Extensions → Apps Script'), '.'),
         h('li', null, 'Delete what is there, paste the script below, and press Save.'),
