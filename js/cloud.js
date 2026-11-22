@@ -377,10 +377,11 @@
   S.getCode = () => F.getDoc(F.doc(fs, S.CODE_DOC)).then((s) => (s.exists() ? s.data().code : ''), (e) => Promise.reject(err(e)));
   S.setCode = (code) => write(F.setDoc(F.doc(fs, S.CODE_DOC), { code: code, at: Date.now() }));
   /* who can do what: cooks tick and add tasks; sous chefs, head chefs and devs (whoever builds the app) change everything */
-  S.ROLES = [['viewer', 'Viewer (read only)'], ['cook', 'Cook'], ['waiter', 'Waiter'], ['manager', 'Floor manager'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['dev', 'Dev']];
+  S.ROLES = [['viewer', 'Viewer (read only)'], ['cook', 'Cook'], ['waiter', 'Waiter'], ['manager', 'Floor manager'], ['sous', 'Sous chef'], ['admin', 'Head chef'], ['owner', 'Owner'], ['dev', 'Dev']];
   /* the floor book (floor/) sets its own: waiters join it with the floor code, and floor managers run it.
      In the kitchen book waiters and floor managers read everything and change nothing. */
-  S.FULL = K.FULL_ROLES || ['sous', 'admin', 'dev'];
+  /* the restaurant's owner has the full rights in both books */
+  S.FULL = K.FULL_ROLES || ['sous', 'admin', 'owner', 'dev'];
   S.VIEW = K.VIEW_ROLES || ['viewer', 'waiter', 'manager'];
   S.JOIN_ROLE = K.JOIN_ROLE || 'cook';
   S.CODE_DOC = K.CODE_DOC || 'private/join';
