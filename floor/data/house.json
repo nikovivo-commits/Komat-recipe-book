@@ -652,10 +652,15 @@
    "serve": "6–8 °C",
    "order": 6,
    "par": 2,
-   "label": "",
+   "label": "https://www.bighammerwines.com/cdn/shop/files/Sieurd_ArquesAimery1531CremantdeLimouxGrandeCuveeNV.webp?v=1741734390",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.1,
+    66.6,
+    2.98
+   ]
   },
   "wines/pol-roger-champagne-brut-reserve-nv": {
    "colour": "sparkling",
@@ -703,10 +708,15 @@
    "serve": "6–8 °C",
    "order": 8,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0650/4356/2708/files/champagne-rose-brut-vintage-pol-roger-2018_59043_5419af8a-77ed-4633-b8e6-cadb0b488846.jpg?v=1757945744&width=900&height=1620",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    72.0,
+    62.0,
+    2.6
+   ]
   },
   "wines/tsarev-brod-gergana-2024": {
    "colour": "white",
@@ -1238,10 +1248,15 @@
    "serve": "8–10 °C",
    "order": 28,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0650/4356/2708/files/vermentino-di-sardegna-meri-argiolas-202520260722182400_bd3add70-c828-4030-ada5-7cdc087961fa.png?v=1787279053&width=900&height=1620",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    49.9,
+    67.1,
+    1.93
+   ]
   },
   "wines/schiopetto-pinot-grigio-2023": {
    "colour": "white",
@@ -1261,10 +1276,15 @@
    "serve": "8–10 °C",
    "order": 29,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0650/4356/2708/files/pinot-grigio-schiopetto-202320251114104639_dcf3e9dd-6bc9-4e2a-9b7e-04c91a39c6e3.png?v=1787269821&width=900&height=1620",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.0,
+    67.1,
+    2.19
+   ]
   },
   "wines/schiopetto-friulano-2023": {
    "colour": "white",
@@ -1284,10 +1304,15 @@
    "serve": "8–10 °C",
    "order": 30,
    "par": 2,
-   "label": "",
+   "label": "https://resources.vino.com/data/offertaImmaginePiccola/offertaImmaginePiccola-95767.jpg",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    49.8,
+    66.6,
+    3.63
+   ]
   },
   "wines/gerovassiliou-malagousia-2025": {
    "colour": "white",
@@ -1335,7 +1360,7 @@
    "serve": "8–10 °C",
    "order": 32,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0594/3538/5028/files/weingut-buchegger-kremstal-gruner-veltliner-holzgasse-750ml-12-2024-454.webp?v=1766028035",
    "pairs": [],
    "glassCl": "",
    "updated": 0
@@ -1358,10 +1383,15 @@
    "serve": "8–10 °C",
    "order": 33,
    "par": 2,
-   "label": "",
+   "label": "https://images.jjbuckley.com/Vintage/279479/2022-948619-750.jpg",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    49.8,
+    67.4,
+    2.51
+   ]
   },
   "wines/pazo-barrantes-albarino-2019": {
    "colour": "white",
@@ -1381,10 +1411,15 @@
    "serve": "8–10 °C",
    "order": 34,
    "par": 2,
-   "label": "",
+   "label": "https://caskcartel.com/cdn/shop/files/73_6ab8c438-9d8f-4d13-a2b3-07c939846ede.png?crop=center&height=1200&v=1704371706&width=1200",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.0,
+    66.3,
+    1.0
+   ]
   },
   "wines/domaine-la-perriere-sancerre-megalithe-2018": {
    "colour": "white",
@@ -1404,10 +1439,15 @@
    "serve": "8–10 °C",
    "order": 35,
    "par": 2,
-   "label": "",
+   "label": "https://www.saq.com/media/catalog/product/1/4/14142253-1_1794517991.png",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.3,
+    67.7,
+    1.81
+   ]
   },
   "wines/raoul-gautherin-chablis-2023": {
    "colour": "white",
@@ -2072,10 +2112,15 @@
    "serve": "16–18 °C",
    "order": 61,
    "par": 2,
-   "label": "",
+   "label": "https://vintageroots.co.uk/wp-content/uploads/2026/04/EFH17-AOP-Morgon-Chateau-de-la-Chaize.png",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.0,
+    67.8,
+    1.0
+   ]
   },
   "wines/chateau-penin-la-fleur-grand-cru-2022": {
    "colour": "red",
@@ -2169,10 +2214,15 @@
    "serve": "16–18 °C",
    "order": 65,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0650/4356/2708/files/primitivo-di-manduria-riserva-elegia-produttori-di-manduria-2022-303138_f05f6e25-53af-435e-8374-7607f478b29e.png?v=1791894654&width=900&height=1620",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.1,
+    67.0,
+    1.91
+   ]
   },
   "wines/firriato-nero-davola-harmonium-2019": {
    "colour": "red",
@@ -2192,10 +2242,15 @@
    "serve": "16–18 °C",
    "order": 66,
    "par": 2,
-   "label": "",
+   "label": "https://resources.vino.com/data/offertaImmaginePiccola/offertaImmaginePiccola-98903.jpg",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.0,
+    66.7,
+    3.32
+   ]
   },
   "wines/paolo-manzone-nebbiolo-2020": {
    "colour": "red",
@@ -2322,10 +2377,15 @@
    "serve": "8–10 °C",
    "order": 71,
    "par": 2,
-   "label": "",
+   "label": "https://cdn.shopify.com/s/files/1/0650/4356/2708/files/passito-lecru-firriato-2023-50cl20260722181314_bef92b6c-6398-423d-a252-2b0758b0aad3.png?v=1787276405&width=900&height=1620",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    50.1,
+    71.0,
+    2.26
+   ]
   },
   "wines/px-nectar": {
    "colour": "sweet",
@@ -2345,10 +2405,15 @@
    "serve": "8–10 °C",
    "order": 72,
    "par": 2,
-   "label": "",
+   "label": "https://www.drinkfinder.co.uk/cdn/shop/files/Gonzalez-Byass-Nectar-Pedro-Ximenez-Dulce-sherry-75cl.jpg?v=1769162240",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "focus": [
+    49.9,
+    65.7,
+    3.69
+   ]
   },
   "wines/drink-edna": {
    "colour": "spirit",
