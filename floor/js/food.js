@@ -30,7 +30,8 @@
     w.append(h('div', { class: 'chips filters' },
       K.seg([['dishes', 'Dishes'], ['allergy', 'Allergies'], ['ings', 'Ingredients']], ui.foodTab, (v) => { ui.foodTab = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
       K.canEdit() && !allergy ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'adddish' }; K.render(); } }, K.icon('plus'), 'Add') : null));
-    if (allergy) w.append(allergyPicker());
+    if (allergy) { w.append(checkNudge()); w.append(allergyPicker()); }
+    if (ui.foodTab === 'dishes' && D.loaded && !ui.q && !ui.sect) w.append(tastingCard());
     if (ui.foodTab === 'dishes' && D.loaded && all.length) {
       const secs = Array.from(new Set(all.map((d) => d.section))).sort(secOrder);
       w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Section' },
@@ -67,10 +68,10 @@
   }
   /* ---------- a guest with allergies: tick them, see what they can and cannot eat ---------- */
   const alSel = () => (ui.alSel = ui.alSel || []);
-  /* "Milk in butter, cream" or "Gluten (marked by the head chef)" */
+  /* "Milk in butter, cream" or "Gluten (ticked by hand)" */
   const whereText = (hit, max) => {
-    const l = hit.where.filter((x) => x !== 'marked by the head chef'), more = max && l.length > max;
-    return l.length ? ' in ' + (max ? l.slice(0, max) : l).join(', ') + (more ? '…' : '') : ' (marked by the head chef)';
+    const l = hit.where.filter((x) => x !== 'ticked by hand'), more = max && l.length > max;
+    return l.length ? ' in ' + (max ? l.slice(0, max) : l).join(', ') + (more ? '…' : '') : ' (ticked by hand)';
   };
   function allergyPicker() {
     const sel = alSel();
@@ -99,11 +100,108 @@
     return h('div', null,
       h('p', { class: 'al-sum', role: 'status' }, h('b', null, names + ': '), ok.length + ' can eat · ' + (ask.length ? ask.length + ' to confirm · ' : '') + no.length + ' cannot'),
       sel.includes('sulphites') ? h('p', { class: 'banner' }, h('b', null, 'Sulphites: '), 'every wine has them, and so do vinegar dressings. Check the drinks too.') : null,
-      block('ok', 'Can eat', 'None of these allergens, and the head chef has checked the dish.', ok),
-      block('ask', 'Ask the kitchen first', 'No ' + names.toLowerCase() + ' found in the ingredients, but the head chef has not checked this dish yet.', ask),
+      tastingFor(sel),
+      block('ok', 'Can eat', 'None of these allergens, and the dish’s allergens have been confirmed.', ok),
+      block('ask', 'Ask the kitchen first', 'No ' + names.toLowerCase() + ' found in the ingredients, but nobody has confirmed this dish’s allergens yet.', ask),
       block('no', 'Cannot eat', 'Some may be made without it: ask the kitchen before promising.', no),
       h('p', { class: 'hint al-foot' }, 'Worked out from the kitchen book’s ingredients. Cross-contact in the kitchen is always possible: for a severe allergy, tell the kitchen when you send the order.'));
   }
+
+  /* ---------- confirming allergens, dish by dish ---------- */
+  function checkNudge() {
+    const todo = K.dishes().filter((d) => d.onMenu && !K.dishChecked(d) && K.canCheck(d));
+    const total = K.dishes().filter((d) => d.onMenu).length, done = K.dishes().filter((d) => d.onMenu && K.dishChecked(d)).length;
+    if (!todo.length) return total && done < total ? h('p', { class: 'hint al-progress' }, done + ' of ' + total + ' dishes have confirmed allergens. The chefs or the owner confirm the rest.') : null;
+    return h('button', { type: 'button', class: 'al-nudge', onclick: () => { ui.sheet = { type: 'alcheck', ids: todo.map((d) => d.id), i: 0 }; K.render(); } },
+      K.icon('check'), h('span', null, h('b', null, 'Confirm the allergens: ' + todo.length + (todo.length === 1 ? ' dish' : ' dishes') + ' to go'),
+        h('span', null, done + ' of ' + total + ' confirmed. One dish at a time, a few seconds each.')), K.icon('next'));
+  }
+  K.SHEETS.alcheck = function (S) {
+    const d = K.dish(S.ids[S.i]);
+    if (!d) { ui.sheet = null; return null; }
+    const where = K.allergenWhere(d), found = Object.keys(where).filter((k) => where[k].some((x) => x !== 'ticked by hand'));
+    if (S.forId !== d.id) { S.forId = d.id; S.extra = ((d.r && d.r.allergens) || d.n.allergens || []).filter((k) => !found.includes(k)); }
+    const last = S.i >= S.ids.length - 1;
+    const go = (save) => {
+      if (save) K.confirmAllergens(d, S.extra.slice());
+      if (last) { ui.sheet = null; K.toast(save ? 'Allergens confirmed' : 'Done'); } else S.i++;
+      K.render();
+    };
+    return K.sheet(S.ids.length > 1 ? 'Allergens · ' + (S.i + 1) + ' of ' + S.ids.length : 'Allergens', h('div', { class: 'stack alc' },
+      h('div', { class: 'alc-dish' }, K.dishThumb(d, 'sm'), h('div', null, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null)),
+      d.ings.length ? h('details', { class: 'alc-ings' }, h('summary', null, 'What is in it (' + d.ings.length + ')'), h('p', null, d.ings.join(', '))) : h('p', { class: 'muted' }, 'No ingredients written for this dish: tick everything it has.'),
+      h('p', { class: 'hint' }, 'Tick every allergen in this dish. The ones found in the ingredients are already on.'),
+      h('div', { class: 'alp-grid alc-grid', role: 'group', 'aria-label': 'Allergens in ' + d.name }, (K.ALLERGENS || []).map((a) => {
+        const auto = found.includes(a[0]), on = auto || S.extra.includes(a[0]);
+        return h('button', { type: 'button', class: 'alp' + (auto ? ' auto' : ''), 'aria-pressed': on ? 'true' : 'false', disabled: auto ? true : null,
+          onclick: () => { S.extra = on ? S.extra.filter((x) => x !== a[0]) : S.extra.concat([a[0]]); K.render(); },
+        }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), h('span', null, a[1], auto ? h('small', null, where[a[0]].filter((x) => x !== 'ticked by hand').slice(0, 2).join(', ')) : null));
+      })),
+      found.length ? h('p', { class: 'hint' }, 'One found by mistake? Correct the ingredient in the kitchen book; it cannot be switched off here.') : null,
+      h('div', { class: 'btns' },
+        h('button', { class: 'btn primary', type: 'button', onclick: () => go(true) }, K.icon('check'), last ? 'Confirm' : 'Confirm and next'),
+        S.ids.length > 1 ? h('button', { class: 'btn', type: 'button', onclick: () => go(false) }, 'Skip') : null)));
+  };
+
+  /* ---------- the tasting menu ---------- */
+  function tastingCard() {
+    const t = K.tasting();
+    if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
+      K.icon('list'), h('span', null, h('b', null, 'Set up the tasting menu'), h('span', null, 'Pick its courses from the dishes, in order.')), K.icon('next')) : null;
+    return h('section', { class: 'tasting' },
+      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '')), h('h2', null, t.name)),
+        K.canEdit() ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } }, K.icon('edit'), 'Edit') : null),
+      t.note ? h('p', { class: 'muted' }, t.note) : null,
+      h('ol', { class: 'ts-list' }, t.courses.map((d, i) => h('li', null, h('button', { type: 'button', onclick: () => K.go('dish', { id: d.id }) },
+        h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null))))));
+  }
+  /* for a guest with allergies: each course as it is, or what to serve in its place */
+  function tastingFor(sel) {
+    const t = K.tasting();
+    if (!t.courses.length) return null;
+    const inMenu = t.courses.map((d) => d.id);
+    const pool = K.dishes().filter((d) => d.onMenu && !inMenu.includes(d.id)).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
+    const rows = t.courses.map((d, i) => {
+      const v = K.allergyVerdict(d, sel);
+      /* swaps: the same section first, confirmed dishes before unconfirmed ones */
+      const swaps = v.state !== 'no' ? [] : pool.slice().sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || (a.v.state === 'ok' ? 0 : 1) - (b.v.state === 'ok' ? 0 : 1)).slice(0, 3);
+      return h('li', { class: 'tf-row alr-' + v.state },
+        h('span', { class: 'ts-n mono' }, String(i + 1)),
+        h('div', { class: 'tf-txt' },
+          h('button', { type: 'button', class: 'tf-name', onclick: () => K.go('dish', { id: d.id }) }, d.name),
+          v.hits.length ? h('span', { class: 'alr-why' }, v.hits.map((hh) => h('span', null, h('b', null, K.AL[hh.k]), whereText(hh, 2)))) : v.state === 'ask' ? h('span', { class: 'muted tf-ask' }, 'Not confirmed yet: ask the kitchen') : null,
+          swaps.length ? h('div', { class: 'tf-swap' }, h('span', { class: 'label' }, 'Serve instead'), swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), onclick: () => K.go('dish', { id: x.d.id }) }, x.d.name, x.v.state === 'ask' ? ' ?' : '')))
+            : v.state === 'no' ? h('span', { class: 'muted tf-ask' }, 'Nothing else on the menu is safe: ask the kitchen to adapt it') : null),
+        h('span', { class: 'alr-mark', 'aria-hidden': 'true' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'no' ? 'close' : 'alert')));
+    });
+    const asIs = t.courses.filter((d) => K.allergyVerdict(d, sel).state !== 'no').length;
+    return h('section', { class: 'group tf' }, h('h2', { class: 'group-title' }, t.name, h('span', { class: 'n' }, asIs + ' of ' + t.courses.length + ' as they are')),
+      h('p', { class: 'hint' }, 'Suggestions only, with “?” on dishes not confirmed yet. The kitchen decides the swap.'),
+      h('ol', { class: 'tf-list' }, rows));
+  }
+  K.SHEETS.tasting = function (S) {
+    const cur = D.tasting || {};
+    if (!S.f) S.f = { name: cur.name || 'Tasting menu', price: cur.price || '', note: cur.note || '', courses: (cur.courses || []).filter((id) => K.dish(id)) };
+    const f = S.f, all = K.dishes().filter((d) => !f.courses.includes(d.id));
+    const move = (i, by) => { const c = f.courses, j = i + by; if (j < 0 || j >= c.length) return; const t = c[i]; c[i] = c[j]; c[j] = t; K.render(); };
+    const inp = (k, attrs) => h('input', Object.assign({ class: 'input', id: 'ts-' + k, value: f[k], oninput: (e) => { f[k] = e.target.value; } }, attrs || {}));
+    return K.sheet('The tasting menu', h('form', { class: 'stack', onsubmit: (e) => {
+      e.preventDefault();
+      K.saveSetting('tasting', { name: f.name.trim() || 'Tasting menu', price: f.price.trim(), note: f.note.trim(), courses: f.courses }).then(() => K.toast('Tasting menu saved'));
+      ui.sheet = null; K.render();
+    } },
+      h('div', { class: 'two' }, K.field('Name', inp('name')), K.field('Price', inp('price', { inputmode: 'decimal' }))),
+      K.field('Note', inp('note', { placeholder: 'For the whole table · wine pairing +45' })),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Courses, in order'),
+        f.courses.length ? h('ol', { class: 'ts-edit' }, f.courses.map((id, i) => h('li', null, h('span', { class: 'ts-n mono' }, String(i + 1)), h('b', null, K.dish(id).name),
+          h('span', { class: 'sr-btns' },
+            h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Move up', disabled: i === 0, onclick: () => move(i, -1) }, K.icon('up')),
+            h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Move down', disabled: i === f.courses.length - 1, onclick: () => move(i, 1) }, K.icon('down')),
+            h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Remove', onclick: () => { f.courses.splice(i, 1); K.render(); } }, K.icon('close')))))) : h('p', { class: 'muted' }, 'No courses yet.'),
+        all.length ? K.select([['', 'Add a course…']].concat(all.map((d) => [d.id, d.name])), '', (v) => { if (v) { f.courses.push(v); K.render(); } }, { 'aria-label': 'Add a course' }) : null,
+        h('p', { class: 'hint' }, 'A course that is not in the list yet? Add it to the food bible first (Food → Add).')),
+      h('button', { class: 'btn primary', type: 'submit' }, 'Save')), { wide: true });
+  };
 
   /* the menu's order: breakfast, starters, mains, desserts; anything else after, by name */
   const ORDER = ['breakfast', 'brunch', 'bread', 'starter', 'salad', 'soup', 'main', 'meat', 'fish', 'side', 'garnish', 'dessert', 'pastry'];
@@ -190,9 +288,10 @@
           : h('p', { class: 'say empty-say' }, K.canEdit() ? 'Nothing written yet for the table. Tap Edit to add what to say.' : 'The floor manager has not written what to say yet.'),
         h('section', { class: 'allergens' },
           h('div', { class: 'al-head' }, h('span', { class: 'label' }, 'Allergens'),
-            d.r ? h('span', { class: 'al-status' + (al.checked ? ' ok' : '') }, al.checked ? 'Checked by the head chef' : 'Found from the kitchen’s ingredients · not yet checked') : null),
+            h('span', { class: 'al-status' + (al.checked ? ' ok' : '') }, al.checked ? 'Confirmed' : 'Found from the ingredients · not confirmed yet')),
           al.keys.length ? alChips(al.keys, true) : h('p', { class: 'none' }, 'None of the 14 allergens found.'),
-          h('p', { class: 'hint' }, 'Always check with the kitchen for a guest with an allergy.')))));
+          h('p', { class: 'hint' }, 'Always check with the kitchen for a guest with an allergy.'),
+          K.canCheck(d) ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'alcheck', ids: [d.id], i: 0 }; K.render(); } }, K.icon('check'), al.checked ? 'Check again' : 'Confirm the allergens')) : null))));
 
     if (n.story) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'The story'), h('p', { class: 'prose' }, n.story)));
     if ((n.niche || []).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Ingredients guests ask about'),
@@ -232,7 +331,7 @@
   K.SHEETS.dishedit = function (S) {
     const d = K.dish(S.id), n = (d && d.n) || {}, own = d && !d.r;
     if (!S.f) {
-      S.f = { name: n.name || (d ? d.name : ''), en: n.en || (d ? d.en : ''), section: n.section || '', price: n.price || '', order: n.order || '', pitch: n.pitch || '', story: n.story || '',
+      S.f = { menuName: n.menuName || '', name: n.name || (d ? d.name : ''), en: n.en || (d ? d.en : ''), section: n.section || '', price: n.price || '', order: n.order || '', pitch: n.pitch || '', story: n.story || '',
         facts: n.facts || '', niche: (n.niche || []).map((x) => x.n + (x.what ? ' — ' + x.what : '')).join('\n'), pairs: (n.pairs || []).slice(), pairText: n.pairText || '',
         hide: !!n.hide, ings: (n.ings || []).join('\n'), allergens: (n.allergens || []).slice() };
     }
@@ -244,7 +343,7 @@
       const niche = lines(f.niche).map((l) => { const m = l.match(/^(.+?)\s*(?:—|–| - |:)\s*(.+)$/); return m ? { n: m[1].trim(), what: m[2].trim() } : { n: l, what: '' }; });
       const patch = { en: f.en.trim(), section: f.section.trim(), price: f.price.trim(), order: f.order === '' ? undefined : +f.order || 0, pitch: f.pitch.trim(), story: f.story.trim(), facts: f.facts.trim(), niche: niche, pairs: f.pairs, pairText: f.pairText.trim(), hide: f.hide };
       if (own || !d) { patch.name = f.name.trim(); patch.ings = lines(f.ings); patch.allergens = f.allergens; if (!patch.name) { K.toast('Give the dish a name.', { tone: 'bad' }); return; } }
-      else patch.recipe = d.r.id;
+      else { patch.recipe = d.r.id; patch.menuName = f.menuName.trim(); }
       const id = d ? d.id : 'own-' + K.uid();
       K.saveNote(id, patch).then(() => K.toast('Saved'));
       ui.sheet = null;
@@ -252,7 +351,8 @@
     };
     const wines = K.winesSorted();
     return K.sheet(d ? 'Edit ' + d.name : 'A dish of the floor’s own', h('form', { class: 'stack', onsubmit: save },
-      own || !d ? K.field('Name on the menu', inp('name', { required: true })) : h('p', { class: 'hint' }, 'The name, the photo and the ingredients come from the kitchen book. Here you write what the floor needs.'),
+      own || !d ? K.field('Name on the menu', inp('name', { required: true })) : K.field('Name on the menu', inp('menuName', { placeholder: d.kname }), 'The kitchen calls it “' + d.kname + '”. Leave empty to use that; write the name as printed on the menu to correct it for the floor.'),
+      own || !d ? null : h('p', { class: 'hint' }, 'The name, the photo and the ingredients come from the kitchen book. Here you write what the floor needs.'),
       K.field('In English', inp('en'), d && d.r && K.en(d.name) ? 'From the kitchen’s translation list: ' + K.en(d.name) : 'How you say it to a guest who does not speak Bulgarian.'),
       h('div', { class: 'two' }, K.field('Section', inp('section', { placeholder: (d && d.r && d.r.category) || 'Starters' })), K.field('Price', inp('price', { inputmode: 'decimal', placeholder: '18' }))),
       K.field('What to say at the table', area('pitch', 4, 'Two or three sentences a waiter says when bringing it.')),
