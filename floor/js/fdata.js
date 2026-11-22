@@ -131,9 +131,24 @@
   /* for a guest with these allergies: 'no' (it has one of them), 'ok' (none, and the head chef checked the
      dish's allergens) or 'ask' (none found, but nobody has checked yet: the kitchen confirms) */
   K.allergyVerdict = function (d, sel) {
-    const where = K.allergenWhere(d), hits = sel.filter((k) => where[k]).map((k) => ({ k: k, where: where[k] }));
-    return { state: hits.length ? 'no' : K.dishChecked(d) ? 'ok' : 'ask', hits: hits };
+    const where = K.allergenWhere(d), n = d.n, bread = n.bread ? n.breadAl || [] : [];
+    const hits = [], notes = [];
+    let fix = true;
+    sel.forEach((k) => {
+      /* lactose intolerance is milk, except that a dish whose only dairy is butter is fine */
+      const real = k === 'lactose' ? 'milk' : k;
+      if (!where[real]) return;
+      if (k === 'lactose' && n.butterOnly) { notes.push('The only dairy is butter'); return; }
+      const inBread = bread.includes(real);
+      if (!inBread) fix = false;
+      hits.push({ k: k, where: where[real], bread: inBread });
+    });
+    /* 'mod': everything in the way is only in the bread, and the dish can be served without it */
+    const state = !hits.length ? (K.dishChecked(d) ? 'ok' : 'ask') : fix ? 'mod' : 'no';
+    if (state === 'mod') notes.unshift('Serve without the bread');
+    return { state: state, hits: hits, notes: notes };
   };
+  K.alName = (k) => (k === 'lactose' ? 'Lactose' : K.AL[k]);
   /* an illustration from the kitchen book for a dish without a photo */
   K.dishArt = (d) => (d && d.r && !d.photo && (window.KOMAT_ART || []).includes(d.r.id) ? 'assets/photos/art/' + d.r.id + '.jpg' : '');
 
@@ -180,6 +195,8 @@
       glassCl: w.glassCl || '', say: w.say || '', nose: w.nose || '', palate: w.palate || '', story: w.story || '', facts: w.facts || '', serve: w.serve || '', decant: w.decant || '',
       glass: w.glass || '', pairs: Array.isArray(w.pairs) ? w.pairs : [], par: w.par === '' || w.par == null ? 3 : +w.par, order: +w.order || 0, example: !!w.example, updated: w.updated || 0,
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
+      /* the name of this bottle's article in Hype, the till */
+      hype: w.hype || '',
       /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
       focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
@@ -229,7 +246,7 @@
     } });
   };
   K.countBottles = function (w, n) {
-    const doc = { n: Math.max(0, Math.round(+n) || 0), at: Date.now(), by: myId(), name: K.myName() };
+    const doc = { n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() };
     D.cellar = Object.assign({}, D.cellar, { [w.id]: doc });
     K.refresh(true);
     return K.db.doc('cellar/' + w.id).set(doc).catch(K.writeFailed);
