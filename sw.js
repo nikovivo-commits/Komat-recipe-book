@@ -1,7 +1,7 @@
 /* Offline support for the stand-alone site. The app itself comes from the network when it can,
    so updates arrive straight away, and from the cache when the kitchen Wi-Fi drops.
    Photos and fonts come from the cache first, so pages open fast. */
-const CACHE = 'komat-v164';
+const CACHE = 'komat-v165';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'data/translations.js', 'data/produce.js', 'data/art.js', 'data/recipes.js', 'data/settings.js', 'vendor/firebase.js', 'firebase-config.js',
@@ -49,9 +49,12 @@ self.addEventListener('push', (e) => {
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  /* the installed kitchen app owns index.html only (the floor app lives underneath it), so a tap opens that page */
+  const u = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope);
+  if (u.href.split('#')[0] === self.registration.scope) u.pathname += 'index.html';
+  const url = u.href;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-    const c = cs.find((x) => x.url.startsWith(self.registration.scope));
+    const c = cs.find((x) => x.url.startsWith(self.registration.scope) && !x.url.startsWith(self.registration.scope + 'floor/'));
     if (c) return c.focus().then((w) => (w && w.navigate ? w.navigate(url) : w)).catch(() => self.clients.openWindow(url));
     return self.clients.openWindow(url);
   }));
