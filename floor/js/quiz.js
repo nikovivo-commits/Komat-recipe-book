@@ -54,7 +54,7 @@
     return { topic: topic, q: q, a: a, opts: shuffle([a].concat(wrong)), why: why || '', img: img || '' };
   }
   function wineQs() {
-    const out = [], wines = D.wines.filter((w) => !w.off), titles = wines.map(K.wineTitle);
+    const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly), titles = wines.map(K.wineTitle);
     wines.forEach((w) => {
       const t = K.wineTitle(w);
       if (w.grapes) out.push(mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES), w.story && short(w.story, 140)));

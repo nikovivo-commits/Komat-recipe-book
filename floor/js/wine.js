@@ -39,7 +39,7 @@
 
   /* ---------- the list ---------- */
   K.V.wine = function () {
-    const body = h('div', { class: 'page' }), all = K.winesSorted();
+    const body = h('div', { class: 'page' }), all = K.listWines();
     const onList = all.filter((w) => !w.off), glass = onList.filter((w) => w.byGlass && !K.isDrink(w)).length, nd = onList.filter(K.isDrink).length, nw = onList.length - nd;
     body.append(K.pageHead('Wine & drinks', onList.length ? nw + ' wines' + (nd ? ' · ' + nd + ' drinks' : '') + (glass ? ' · ' + glass + ' by the glass' : '') : 'Every bottle, its label and its story', null, '', 'wine-head has-search'));
     const w = h('div', { class: 'wrap' });
@@ -62,7 +62,7 @@
     if (!box) return;
     box.textContent = '';
     if (!D.winesLoaded) { box.append(K.loadingBox('Loading the wines')); return; }
-    let all = K.winesSorted().filter((w) => K.matches(hay(w), ui.wq));
+    let all = K.listWines().filter((w) => K.matches(hay(w), ui.wq));
     if (ui.colour === 'glass') all = all.filter((w) => w.byGlass && !K.isDrink(w));
     else if (ui.colour) all = all.filter((w) => w.colour === ui.colour);
     if (!D.wines.length) {
@@ -129,7 +129,7 @@
     if (dishes.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Goes with'),
       h('div', { class: 'mini-list' }, dishes.map((d) => h('button', { type: 'button', class: 'mini-dish', onclick: () => K.go('dish', { id: d.id }) }, K.dishThumb(d, 'sm'), h('span', null, d.name, d.en && d.en !== d.name ? h('small', null, d.en) : null))))));
     if (st === 'out' || st === 'low') {
-      const alt = K.winesSorted().filter((x) => x.id !== w.id && !x.off && x.colour === w.colour && ['ok', 'low'].includes(K.stockState(x))).slice(0, 4);
+      const alt = K.listWines().filter((x) => x.id !== w.id && !x.off && x.colour === w.colour && ['ok', 'low'].includes(K.stockState(x))).slice(0, 4);
       if (alt.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'If it runs out, offer'), h('div', { class: 'grid' }, alt.map(K.wineCard))));
     }
     return {
@@ -203,7 +203,7 @@
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
       if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
-      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), hype: (w && w.hype) || '', size: (w && w.size) || 0, byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), hype: (w && w.hype) || '', size: (w && w.size) || 0, byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();

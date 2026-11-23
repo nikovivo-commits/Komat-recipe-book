@@ -110,8 +110,17 @@
       h('div', { class: 'hb-btns' },
         D.hypeUrl ? h('button', { type: 'button', class: 'btn primary small', disabled: ui.hypeBusy ? true : null, onclick: go }, ui.hypeBusy ? 'Reading…' : 'Refresh stock') : null,
         K.canEdit() && hs ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'hype', fromSheet: true }; K.render(); } }, 'Pair bottles') : null,
+        K.canEdit() && hs && K.hypeLoose().length ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'hypeall' }; K.render(); } }, 'Add ' + K.hypeLoose().length + ' more from Hype') : null,
         K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: () => { ui.sheet = { type: 'hypesheet' }; K.render(); } }, 'Link') : null));
   }
+  K.SHEETS.hypeall = function () {
+    const loose = K.hypeLoose(), neg = loose.filter((r) => r.qty < 0).length;
+    return K.sheet('Everything in Hype into the stock', h('div', { class: 'stack' },
+      h('p', null, loose.length + ' Hype products are not paired with a bottle on your drinks list' + (neg ? ', ' + neg + ' of them below zero' : '') + '.'),
+      h('p', null, 'Adding them puts each one in Stock under its Hype name, with Hype’s number as it is, minus included. You can then check, flag and order them like the rest. They stay out of the Drinks tab and the quiz.'),
+      h('p', { class: 'hint' }, 'Pair your own bottles first (“Pair bottles”): a product added here that is really one of your listed bottles would show twice.'),
+      h('button', { class: 'btn primary wide', type: 'button', onclick: () => { ui.sheet = null; K.render(); K.toast('Adding…'); K.addHypeLoose().then((n) => K.toast(n + ' Hype products added to the stock')); } }, 'Add ' + loose.length + ' products')));
+  };
   /* every drink Hype knows, as it stands in the sheet: by category, filtered by warehouse */
   function hypeList(w) {
     const rows = D.hypeRows || [], whs = [], cats = [];

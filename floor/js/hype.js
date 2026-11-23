@@ -193,7 +193,7 @@
         h('button', { class: 'btn primary wide', type: 'button', onclick: () => K.pickFile('.csv,.txt,.xls,.html,text/csv,text/plain', false, (f) => f[0].arrayBuffer().then((b) => take(S, decode(b)), () => K.toast('That file could not be read.', { tone: 'bad' }))) }, K.icon('upload'), 'Open the Hype file'),
         h('p', { class: 'hint' }, 'You check every pairing before anything is saved. Bottles already paired stay paired, so the next time is two taps.')));
     }
-    const wines = K.winesSorted().filter((w) => !w.off);
+    const wines = K.winesSorted().filter((w) => !w.off && !w.stockOnly);
     /* choosing the article for one bottle */
     if (S.pick) {
       const w = K.wine(S.pick), q = tokens(S.q || '');

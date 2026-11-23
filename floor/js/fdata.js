@@ -225,6 +225,8 @@
       hype: w.hype || '',
       /* the memo for ordering: who delivers it, and how many litres one bottle holds (for products Hype keeps in litres) */
       supplier: w.supplier || '', size: +w.size || 0,
+      /* a Hype product kept for the stock only: counted and ordered, never shown to guests or in the drinks bible */
+      stockOnly: !!w.stockOnly,
       /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
       focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
@@ -235,6 +237,25 @@
     const o = K.COLOURS.findIndex((c) => c[0] === a.colour) - K.COLOURS.findIndex((c) => c[0] === b.colour);
     return o || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
   });
+  /* the drinks the floor talks about: everything except the stock-only products */
+  K.listWines = () => K.winesSorted().filter((w) => !w.stockOnly);
+  /* Hype products no bottle of ours is paired with */
+  K.hypeLoose = function () { const used = {}; D.wines.forEach((w) => { if (w.hype) used[w.hype] = 1; }); return Object.keys(D.hypeIdx || {}).filter((n) => !used[n]).map((n) => D.hypeIdx[n]); };
+  /* a short, stable id from a Hype name, whatever alphabet it is written in */
+  const hash = (t) => { let a = 5381, b = 52711; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = (a * 33) ^ c; b = (b * 33) ^ c; } return ((a >>> 0) * 4096 + (b >>> 0)).toString(36); };
+  const KIND = [[/бел/i, 'white'], [/червен/i, 'red'], [/розе/i, 'rose'], [/пенлив/i, 'sparkling'], [/десерт/i, 'sweet'], [/вин/i, 'white'], [/бира/i, 'beer'], [/безалкохол|общи/i, 'soft'], [/ликьор|анасон/i, 'liqueur']];
+  /* every loose Hype product becomes a stock-only bottle, so it can be checked, flagged and ordered like the rest */
+  K.addHypeLoose = function () {
+    const loose = K.hypeLoose(), now = Date.now();
+    const docs = loose.map((r, i) => {
+      const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
+      return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now } };
+    });
+    /* all at once: one redraw, then the writes */
+    D.wines = D.wines.concat(docs.map((x) => K.normWine(Object.assign({ id: x.id }, x.doc))));
+    K.refresh(true);
+    return Promise.all(docs.map((x) => K.db.doc('wines/' + x.id).set(x.doc))).then(() => docs.length, (e) => { K.writeFailed(e); return 0; });
+  };
   K.wineTitle = (w) => [w.producer, w.name].filter(Boolean).join(' ') + (w.vintage ? ' ' + w.vintage : '');
   K.price = (p) => { const s = String(p || '').trim(); return !s ? '' : /^[\d.,]+$/.test(s) ? s.replace('.', ',') + ' €' : s; };
 

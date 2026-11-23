@@ -129,7 +129,7 @@
   K.brandMark = brandMark;
   function badge(tab) {
     if (K.mode === 'pending' || ui.auth) return null;
-    if (tab === 'stock') { const n = D.wines.filter((w) => !w.off && !w.nostock && K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' wines out' }, String(n)) : null; }
+    if (tab === 'stock') { const n = D.wines.filter((w) => !w.off && !w.nostock && !w.stockOnly && K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' wines out' }, String(n)) : null; }
     return null;
   }
   function tabButtons(cls) {
