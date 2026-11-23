@@ -400,3 +400,52 @@ button.fs-cell { cursor: pointer; }
 .hb-old { color: var(--low); font-weight: 700; }
 .hb-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .sr-main + .sr-n + .hy-tag { align-self: center; }
+
+/* Hype stock: the export time, the 12-hour warning, numbers below zero, the full Hype list */
+.hb-exp { font-weight: 700; }
+.hb-warn { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 10px; border-radius: var(--r-sm); background: var(--urgent-soft); color: var(--urgent); font-size: .88rem; }
+.hb-warn .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.hype-bar.old { border-color: var(--urgent); }
+.hy-view { margin-bottom: 12px; }
+.hy-cat { margin: 8px 0; width: 100%; }
+.hy-count { margin: 4px 0 8px; font-size: .88rem; }
+.hy-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 50px; padding: 8px 12px; border: 1px solid var(--line); border-left: 4px solid var(--ready); border-radius: var(--r-sm); background: var(--surface); }
+.hy-item .sr-txt { display: grid; min-width: 0; } .hy-item .sr-txt b { overflow-wrap: anywhere; }
+.hy-q { display: grid; justify-items: end; font-weight: 800; white-space: nowrap; }
+.hy-q small, .neg-tag { font: 800 .66rem/1.2 var(--sans); text-transform: uppercase; letter-spacing: .04em; }
+.hy-item.zero { border-left-color: var(--muted); } .hy-item.zero .hy-q { color: var(--muted); }
+.hy-item.neg { border-left-color: var(--urgent); background: var(--urgent-soft); } .hy-item.neg .hy-q { color: var(--urgent); }
+.stock-row.neg .sr-n { color: var(--urgent); display: grid; justify-items: end; } .neg-tag { color: var(--urgent); }
+
+/* the order list and the memo of minimums and suppliers */
+.ord-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ord-list li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.memo-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 6px 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.memo-row .sr-txt { display: grid; min-width: 0; }
+.memo-row .memo-par { text-align: center; }
+.memo-row .memo-sup { grid-column: 1 / -1; }
+.stock-row .hy-tag { display: block; }
+
+/* open bottles: how long each has been open, and what to do with it */
+.open-box { display: grid; gap: 10px; padding: 12px 14px; margin-bottom: 12px; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.open-box.due { border-color: var(--urgent); }
+.ob-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ob-head .n { margin-left: 8px; color: var(--muted); font-weight: 700; }
+.empty-open p { margin: 0; font-size: .9rem; }
+.ob-warn { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 10px; border-radius: var(--r-sm); background: var(--urgent-soft); color: var(--urgent); font-size: .9rem; }
+.ob-warn .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.ob-list { display: grid; gap: 8px; }
+.ob-row { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-left: 4px solid var(--ready); border-radius: var(--r-sm); }
+.ob-row.due { border-left-color: var(--urgent); background: var(--urgent-soft); }
+.ob-main { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
+.ob-main .sr-txt { display: grid; min-width: 0; }
+.ob-age { font-size: .88rem; color: var(--muted); } .ob-age.due { color: var(--urgent); font-weight: 800; }
+.ob-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.ob-btns .btn { min-height: 44px; flex: 1 1 auto; }
+.ob-btns .btn.ok { border-color: var(--ready); color: var(--ready); }
+.ob-btns .btn.bad { border-color: var(--urgent); color: var(--urgent); }
+.bin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bin-btn { display: grid; justify-items: center; gap: 6px; min-height: 96px; padding: 10px; }
+.bin-glass { width: 22px; height: 46px; border: 2px solid currentColor; border-radius: 3px 3px 6px 6px; background: linear-gradient(to top, var(--urgent) calc(var(--f) * 100%), transparent 0); }
+
+.ord-list.diff li.lost b { color: var(--urgent); } .ord-list.diff li.found b { color: var(--ready); }

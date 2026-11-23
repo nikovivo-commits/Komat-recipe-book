@@ -393,7 +393,7 @@
       ui.sheet = null;
       if (!d) K.go('dish', { id: id }); else K.render();
     };
-    const wines = K.winesSorted();
+    const wines = K.listWines();
     return K.sheet(d ? 'Edit ' + d.name : 'A dish of the floor’s own', h('form', { class: 'stack', onsubmit: save },
       own || !d ? K.field('Name on the menu', inp('name', { required: true })) : K.field('Name on the menu', inp('menuName', { placeholder: d.kname }), 'The kitchen calls it “' + d.kname + '”. Leave empty to use that; write the name as printed on the menu to correct it for the floor.'),
       own || !d ? null : h('p', { class: 'hint' }, 'The name, the photo and the ingredients come from the kitchen book. Here you write what the floor needs.'),

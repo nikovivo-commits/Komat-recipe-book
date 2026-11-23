@@ -39,7 +39,7 @@
 
   /* ---------- the list ---------- */
   K.V.wine = function () {
-    const body = h('div', { class: 'page' }), all = K.winesSorted();
+    const body = h('div', { class: 'page' }), all = K.listWines();
     const onList = all.filter((w) => !w.off), glass = onList.filter((w) => w.byGlass && !K.isDrink(w)).length, nd = onList.filter(K.isDrink).length, nw = onList.length - nd;
     body.append(K.pageHead('Wine & drinks', onList.length ? nw + ' wines' + (nd ? ' · ' + nd + ' drinks' : '') + (glass ? ' · ' + glass + ' by the glass' : '') : 'Every bottle, its label and its story', null, '', 'wine-head has-search'));
     const w = h('div', { class: 'wrap' });
@@ -62,7 +62,7 @@
     if (!box) return;
     box.textContent = '';
     if (!D.winesLoaded) { box.append(K.loadingBox('Loading the wines')); return; }
-    let all = K.winesSorted().filter((w) => K.matches(hay(w), ui.wq));
+    let all = K.listWines().filter((w) => K.matches(hay(w), ui.wq));
     if (ui.colour === 'glass') all = all.filter((w) => w.byGlass && !K.isDrink(w));
     else if (ui.colour) all = all.filter((w) => w.colour === ui.colour);
     if (!D.wines.length) {
@@ -109,9 +109,15 @@
         w.nostock ? null : h('section', { class: 'stock-box st-' + st },
           h('div', { class: 'sb-top' }, h('span', { class: 'label' }, K.isDrink(w) ? 'In stock now' : 'In the cellar now'), K.stockBadge(w, true)),
           h('p', { class: 'hint' }, st === 'none' ? 'Nobody has counted it yet. Count it in Stock.' : st === 'out' ? 'Out: tell the guest and offer something close.' : st === 'low' ? 'Running low: ' + n + ' left, the floor manager keeps at least ' + w.par + '.' : 'Plenty for tonight.'),
-          K.hypeRow(w) ? h('p', { class: 'hint' }, 'From Hype: “' + w.hype + '”' + (D.hypeStock ? ', read ' + K.hm(D.hypeStock.at) + '. Refresh it in Stock.' : '.')) : K.canWrite() ? h('div', { class: 'btns' },
+          K.hypeRow(w) ? h('div', { class: 'stack' }, h('p', { class: 'hint' + (K.hypeOld() || n < 0 ? ' hb-old' : '') },
+            K.soldSince(w) == null ? 'This is Hype’s own number (“' + w.hype + '”), not checked by hand yet. Count it if it looks wrong; from then on Hype’s sales are taken off your count.'
+              : 'Counted ' + D.cellar[w.id].n + ', and Hype has taken off ' + K.soldSince(w) + ' since.' + (D.hypeStock && D.hypeStock.exported ? ' Hype read ' + K.hm(D.hypeStock.exported) + ' on ' + K.prettyDate(K.ymd(new Date(D.hypeStock.exported)), { day: 'numeric', month: 'short' }) + '.' : '') + (K.hypeOld() ? ' More than 12 hours old: check the shelf.' : '') + (n < 0 ? ' Below zero: the count or Hype is wrong, count it again.' : '')),
+            w.supplier ? h('p', { class: 'hint' }, 'Order from: ' + w.supplier) : null,
+            K.canWrite() && !K.isDrink(w) ? h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { K.openNote(w, 'open'); K.toast(w.name + ' opened. It asks to be tasted in ' + K.OPEN_DAYS + ' days.'); } }, K.icon('glass'), 'Opened a bottle for glasses')) : null,
+            K.canWrite() ? h('div', { class: 'btns' }, h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, 'Count')) : null)
+          : K.canWrite() ? h('div', { class: 'btns' },
             h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'sold') }, K.icon('minus'), ['spirit', 'liqueur'].includes(w.colour) ? 'Finished a bottle' : K.isDrink(w) ? 'Sold one' : 'Sold a bottle'),
-            w.byGlass && !K.isDrink(w) ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => K.moveBottles(w, -1, 'glass') }, K.icon('glass'), 'Opened for glasses') : null,
+            w.byGlass && !K.isDrink(w) ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => { K.moveBottles(w, -1, 'glass'); K.openNote(w, 'open'); } }, K.icon('glass'), 'Opened for glasses') : null,
             h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, 'Count')) : null),
         w.say ? h('blockquote', { class: 'say' }, K.icon('quote'), h('div', null, h('span', { class: 'label' }, 'What to say at the table'), h('p', null, w.say))) : null)));
     if (w.nose || w.palate) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'In the glass'),
@@ -123,7 +129,7 @@
     if (dishes.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Goes with'),
       h('div', { class: 'mini-list' }, dishes.map((d) => h('button', { type: 'button', class: 'mini-dish', onclick: () => K.go('dish', { id: d.id }) }, K.dishThumb(d, 'sm'), h('span', null, d.name, d.en && d.en !== d.name ? h('small', null, d.en) : null))))));
     if (st === 'out' || st === 'low') {
-      const alt = K.winesSorted().filter((x) => x.id !== w.id && !x.off && x.colour === w.colour && ['ok', 'low'].includes(K.stockState(x))).slice(0, 4);
+      const alt = K.listWines().filter((x) => x.id !== w.id && !x.off && x.colour === w.colour && ['ok', 'low'].includes(K.stockState(x))).slice(0, 4);
       if (alt.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'If it runs out, offer'), h('div', { class: 'grid' }, alt.map(K.wineCard))));
     }
     return {
@@ -177,7 +183,7 @@
   }
 
   /* ---------- editing ---------- */
-  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order'];
+  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier'];
   K.SHEETS.wineedit = function (S) {
     const w = S.id ? K.wine(S.id) : null;
     if (!S.f) {
@@ -197,7 +203,7 @@
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
       if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
-      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), hype: (w && w.hype) || '', byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), hype: (w && w.hype) || '', size: (w && w.size) || 0, byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();
@@ -235,7 +241,9 @@
         dishes.length ? h('div', { class: 'check-list' }, dishes.map((d) => h('label', { class: 'check' },
           h('input', { type: 'checkbox', checked: f.pairs.includes(d.id), onchange: (e) => { f.pairs = e.target.checked ? f.pairs.concat([d.id]) : f.pairs.filter((x) => x !== d.id); } }),
           h('span', null, d.name)))) : h('p', { class: 'hint' }, 'No dishes in the food bible yet.')),
-      h('div', { class: 'two' }, K.field('Keep at least (bottles)', inp('par', { inputmode: 'numeric' }), 'Below this it shows as Low.'), K.field('Order on the list', inp('order', { inputmode: 'numeric' }))),
+      h('div', { class: 'two' }, K.field('Keep at least (bottles)', inp('par', { inputmode: 'numeric' }), 'Below this it shows as Low and goes on the order list.'), K.field('Order on the list', inp('order', { inputmode: 'numeric' }))),
+      K.field('Order it from', inp('supplier', { placeholder: 'The supplier', list: 'sup-list' }), 'The order list is grouped by supplier, to bundle deliveries.'),
+      h('datalist', { id: 'sup-list' }, K.suppliers().map((x) => h('option', { value: x }))),
       h('label', { class: 'check big' }, h('input', { type: 'checkbox', checked: f.off, onchange: (e) => { f.off = e.target.checked; } }), h('span', null, 'Off the list (kept, not offered)')),
       h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'submit', disabled: !!S.busy }, 'Save'),
         w ? h('button', { class: 'btn danger', type: 'button', onclick: () => {

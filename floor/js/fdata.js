@@ -223,15 +223,39 @@
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
       /* the name of this bottle's article in Hype, the till */
       hype: w.hype || '',
+      /* the memo for ordering: who delivers it, and how many litres one bottle holds (for products Hype keeps in litres) */
+      supplier: w.supplier || '', size: +w.size || 0,
+      /* a Hype product kept for the stock only: counted and ordered, never shown to guests or in the drinks bible */
+      stockOnly: !!w.stockOnly,
       /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
       focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
   };
+  K.suppliers = () => { const o = []; D.wines.forEach((w) => { if (w.supplier && !o.includes(w.supplier)) o.push(w.supplier); }); return o.sort((a, b) => a.localeCompare(b)); };
   K.wine = (id) => D.wines.find((w) => w.id === id) || null;
   K.winesSorted = () => D.wines.slice().sort((a, b) => {
     const o = K.COLOURS.findIndex((c) => c[0] === a.colour) - K.COLOURS.findIndex((c) => c[0] === b.colour);
     return o || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
   });
+  /* the drinks the floor talks about: everything except the stock-only products */
+  K.listWines = () => K.winesSorted().filter((w) => !w.stockOnly);
+  /* Hype products no bottle of ours is paired with */
+  K.hypeLoose = function () { const used = {}; D.wines.forEach((w) => { if (w.hype) used[w.hype] = 1; }); return Object.keys(D.hypeIdx || {}).filter((n) => !used[n]).map((n) => D.hypeIdx[n]); };
+  /* a short, stable id from a Hype name, whatever alphabet it is written in */
+  const hash = (t) => { let a = 5381, b = 52711; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = (a * 33) ^ c; b = (b * 33) ^ c; } return ((a >>> 0) * 4096 + (b >>> 0)).toString(36); };
+  const KIND = [[/бел/i, 'white'], [/червен/i, 'red'], [/розе/i, 'rose'], [/пенлив/i, 'sparkling'], [/десерт/i, 'sweet'], [/вин/i, 'white'], [/бира/i, 'beer'], [/безалкохол|общи/i, 'soft'], [/ликьор|анасон/i, 'liqueur']];
+  /* every loose Hype product becomes a stock-only bottle, so it can be checked, flagged and ordered like the rest */
+  K.addHypeLoose = function () {
+    const loose = K.hypeLoose(), now = Date.now();
+    const docs = loose.map((r, i) => {
+      const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
+      return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now } };
+    });
+    /* all at once: one redraw, then the writes */
+    D.wines = D.wines.concat(docs.map((x) => K.normWine(Object.assign({ id: x.id }, x.doc))));
+    K.refresh(true);
+    return Promise.all(docs.map((x) => K.db.doc('wines/' + x.id).set(x.doc))).then(() => docs.length, (e) => { K.writeFailed(e); return 0; });
+  };
   K.wineTitle = (w) => [w.producer, w.name].filter(Boolean).join(' ') + (w.vintage ? ' ' + w.vintage : '');
   K.price = (p) => { const s = String(p || '').trim(); return !s ? '' : /^[\d.,]+$/.test(s) ? s.replace('.', ',') + ' €' : s; };
 
@@ -252,24 +276,34 @@
   const DRINKS = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;
   K.setHypeStock = function (doc) {
     D.hypeStock = doc && Array.isArray(doc.rows) ? doc : null;
-    const idx = {};
+    const idx = {}, list = [];
     ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
       const name = String(r[0] || '').trim(), q = K.parseQty(r[2], r[3]);
       /* drinks only: the kitchen's stock is none of the floor book's business */
       if (!name || q[0] == null || (!D.hypeStock.bar && r[4] && (!DRINKS.test(r[4]) || /топли|hot/i.test(r[4])))) return;
-      const e = idx[name] || (idx[name] = { name: name, qty: 0, unit: q[1], cat: r[4] || '', wh: [] });
-      e.qty += q[0]; if (r[1] && !e.wh.includes(r[1])) e.wh.push(r[1]);
+      const row = { name: name, wh: String(r[1] || '').trim(), qty: Math.round(q[0] * 1000) / 1000, unit: q[1], cat: String(r[4] || '').trim() };
+      list.push(row);
+      /* a product kept in two places: the floor's bottle is the one behind the bar */
+      if (!idx[name] || (/^бар$/i.test(row.wh) && !/^бар$/i.test(idx[name].wh))) idx[name] = row;
     });
-    D.hypeIdx = idx;
+    D.hypeIdx = idx; D.hypeRows = list;
   };
   /* when Hype exported the numbers: a time in ms, or 0 when the sheet's text is not a date we can read */
   K.hypeTime = function (v) {
     if (typeof v === 'number') return v;
     const t = String(v || '').trim(), m = t.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:[ ,T]+(\d{1,2}):(\d{2}))?/);
     if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)).getTime();
-    const d = Date.parse(t.replace(' ', 'T'));
+    /* "2026-11-23 1:18", as the sheet writes it (Sofia time, which is also the phones' time) */
+    const y = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/);
+    if (y) return new Date(+y[1], +y[2] - 1, +y[3], +(y[4] || 0), +(y[5] || 0)).getTime();
+    const d = Date.parse(t);
     return isNaN(d) ? 0 : d;
   };
+  /* "−2.4 L", "5", "0.7 L": a minus that cannot be missed, the unit unless it is pieces */
+  K.qtyText = (n, unit) => (n < 0 ? '−' : '') + String(Math.abs(n)) + (unit && unit !== 'pc' ? ' ' + unit : '');
+  /* older than this, the numbers are shown with a warning */
+  K.HYPE_OLD = 12 * 3600000;
+  K.hypeOld = () => { const hs = D.hypeStock, t = hs ? hs.exported || hs.modified : 0; return !!(t && Date.now() - t > K.HYPE_OLD); };
   K.hypeRow = (w) => (w && w.hype && D.hypeIdx && D.hypeIdx[w.hype]) || null;
   /* read the sheet again through its link; whoever runs the floor book also saves it for every other phone */
   K.refreshHype = function () {
@@ -285,15 +319,58 @@
   };
   K.saveHypeUrl = function (url) { D.hypeUrl = url; return K.db.doc('fohsettings/hype').set({ url: url, updated: Date.now() }).catch(K.writeFailed); };
 
+  /* litres in one bottle, for a product Hype keeps in litres: the memo, else what its Hype name says, else the usual size */
+  /* ---------- open bottles of wine: opened for glasses, to be tasted again after three days ---------- */
+  const NOTE = ['open', 'ok', 'gone'];   /* moves that only keep track of an open bottle and change no stock */
+  K.OPEN_DAYS = 3;
+  K.openBottles = function () {
+    const open = {}, now = Date.now();
+    D.moves.slice().sort((a, b) => a.at - b.at).forEach((m) => {
+      if (m.why === 'open') open[m.id] = { id: m.id, w: K.wine(m.w), at: m.at, who: m.name || '', ok: 0 };
+      else if (m.ref && open[m.ref]) { if (m.why === 'ok') open[m.ref].ok = m.at; else if (m.why === 'gone' || m.why === 'bin') delete open[m.ref]; }
+    });
+    return Object.keys(open).map((k) => open[k]).filter((o) => o.w).map((o) => {
+      o.days = Math.floor((now - o.at) / 86400000);
+      /* from the third day it is tasted every day it stays open */
+      o.due = o.days >= K.OPEN_DAYS && now - Math.max(o.ok, 0) > 20 * 3600000;
+      return o;
+    }).sort((a, b) => a.at - b.at);
+  };
+  /* one line in the open bottle's story: opened, tasted and fine, finished, or thrown away with what was left in it */
+  K.openNote = function (w, why, ref, frac) {
+    const id = K.uid(), doc = { w: w.id, n: 0, at: Date.now(), by: myId(), name: K.myName(), why: why };
+    if (ref) doc.ref = ref;
+    if (frac) doc.frac = frac;
+    D.moves = D.moves.concat([Object.assign({ id: id }, doc)]);
+    K.refresh(true);
+    return K.db.doc('cellarmoves/' + id).set(doc).catch((e) => { D.moves = D.moves.filter((m) => m.id !== id); K.writeFailed(e); });
+  };
+
+  K.bottleL = function (w) {
+    if (w.size) return w.size;
+    const m = String(w.hype || '').match(/(?:^|\s)(0[.,]\d{1,3}|1[.,]\d{1,2}|[1-3])\s?(?:л|l)\b/i);
+    if (m) return parseFloat(m[1].replace(',', '.'));
+    return ['spirit', 'liqueur'].includes(w.colour) ? 0.7 : w.colour === 'beer' ? 0.33 : 0.75;
+  };
+  /* Hype's number for a bottle, in bottles */
+  K.hypeBottles = (w, qty) => (K.hypeRow(w) && K.hypeRow(w).unit === 'L' ? qty / K.bottleL(w) : qty);
+  /* Bottles on the shelf = our own count, minus what Hype has taken off since that count (its sales, glass by glass,
+     through its recipes), plus what was entered by hand. Hype's own total is not used: it drifts below zero. */
   K.stockOf = function (id) {
-    const hr = K.hypeRow(K.wine(id));
-    if (hr) return Math.max(0, Math.round(hr.qty * 100) / 100);
-    const c = D.cellar[id];
+    const c = D.cellar[id], w = K.wine(id), hr = K.hypeRow(w);
     const since = c ? c.at || 0 : 0;
     let n = c ? +c.n || 0 : 0, moved = false;
-    D.moves.forEach((m) => { if (m.w === id && m.at > since) { n += +m.n || 0; moved = true; } });
+    D.moves.forEach((m) => { if (m.w === id && m.at > since && !NOTE.includes(m.why)) { n += (+m.n || 0) + (+m.frac || 0); moved = true; } });
+    /* never checked by hand: Hype's own number is the starting point, right or wrong, until a stock check corrects it */
+    if (!c && hr) return Math.round((K.hypeBottles(w, hr.qty) + n) * 10) / 10;   /* n: waste written here, which Hype never hears of */
     if (!c && !moved) return null;
+    if (c && hr && c.hq != null) return Math.round((n + K.hypeBottles(w, hr.qty - c.hq)) * 10) / 10;
     return Math.max(0, n);
+  };
+  /* what Hype has taken off since the count, in bottles; null when the bottle does not follow Hype */
+  K.soldSince = function (w) {
+    const c = D.cellar[w.id], hr = K.hypeRow(w);
+    return c && hr && c.hq != null ? Math.round(K.hypeBottles(w, c.hq - hr.qty) * 10) / 10 : null;
   };
   /* 'out', 'low', 'ok', or 'none' when nobody has counted it yet */
   K.stockState = function (w) {
@@ -304,8 +381,7 @@
   };
   K.stockBadge = function (w, big) {
     const st = K.stockState(w), n = K.stockOf(w.id), h = K.h;
-    const hr = K.hypeRow(w), unit = hr && hr.unit !== 'pc' ? hr.unit : '';
-    const txt = st === 'none' ? 'Not counted' : st === 'out' ? 'Out · 86' : unit ? n + ' ' + unit : n + (n === 1 ? ' bottle' : ' bottles');
+    const txt = st === 'none' ? 'Not counted' : n < 0 ? 'Below zero (' + K.qtyText(n) + '): count it' : st === 'out' ? 'Out · 86' : n + (n === 1 ? ' bottle' : ' bottles');
     return h('span', { class: 'stk stk-' + st + (big ? ' big' : '') }, h('span', { class: 'stk-dot', 'aria-hidden': 'true' }), txt);
   };
   const myId = () => (K.me && K.me.id) || 'this-phone';
@@ -325,6 +401,12 @@
   };
   K.countBottles = function (w, n) {
     const doc = { n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() };
+    /* what the book expected before this check: the difference is what went missing, or turned up */
+    const was = K.stockOf(w.id);
+    if (was != null) doc.was = was;
+    /* what Hype showed at the moment of the count: later sales are measured from here */
+    const hr = K.hypeRow(w);
+    if (hr) { doc.hq = hr.qty; doc.hat = (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0; }
     D.cellar = Object.assign({}, D.cellar, { [w.id]: doc });
     K.refresh(true);
     return K.db.doc('cellar/' + w.id).set(doc).catch(K.writeFailed);
