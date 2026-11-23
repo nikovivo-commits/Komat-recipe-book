@@ -495,6 +495,134 @@
     }
    ],
    "facts": ""
+  },
+  {
+   "menuName": "Хляб и масло",
+   "en": "Bread & butter",
+   "section": "Tasting menu",
+   "order": 101,
+   "only": "tasting",
+   "menuBg": "хляб с квас, масло",
+   "menuEn": "sourdough bread, butter",
+   "ings": [
+    "хляб с квас (брашно)",
+    "масло"
+   ],
+   "pitch": "Our sourdough bread with butter, to start the tasting menu.",
+   "niche": [
+    {
+     "n": "хляб с квас",
+     "what": "Sourdough bread: raised with a natural starter instead of yeast."
+    }
+   ],
+   "facts": ""
+  },
+  {
+   "menuName": "Хапки",
+   "en": "Bites",
+   "section": "Tasting menu",
+   "order": 102,
+   "only": "tasting",
+   "menuBg": "глад, копнеж, уют",
+   "menuEn": "awakening, curiosity, comfort promise",
+   "pitch": "Three small bites to open the menu. First a skewer of fermented vegetables with tomato powder. Then a damga with krokmach and mushroom duxelles, dusted with freeze-dried cep. Last a croquette of duck confit and béchamel.",
+   "facts": "On the menu the three are called awakening, curiosity and comfort promise, in that order.\nThe croquette has béchamel (milk, butter, flour) and a crumb coating: check with the kitchen for a guest with an allergy.",
+   "niche": [
+    {
+     "n": "ферментирали зеленчуци",
+     "what": "Lacto-fermented vegetables: pickled in salt brine, not vinegar, which makes them sour and lively."
+    },
+    {
+     "n": "крокмач",
+     "what": "Krokmach: a traditional Bulgarian fermented milk product, thick, salty and tangy. Ours is similar to our katak, but made from sheep’s milk."
+    },
+    {
+     "n": "дюксел",
+     "what": "Duxelles: mushrooms chopped very fine and cooked down slowly until dry and intense."
+    },
+    {
+     "n": "манатарка",
+     "what": "Cep (porcini): a wild mushroom with a deep, nutty taste. Here it is freeze-dried and ground to a powder."
+    },
+    {
+     "n": "конфи",
+     "what": "Confit: cooked slowly in its own fat until very tender."
+    },
+    {
+     "n": "бешамел",
+     "what": "Béchamel: a white sauce of milk thickened with butter and flour."
+    }
+   ],
+   "ings": [
+    "ферментирали зеленчуци",
+    "домат на прах",
+    "крокмач",
+    "гъби дюксел",
+    "манатарка лиофилизирана",
+    "патица конфи",
+    "бешамел (мляко, масло, брашно)",
+    "галета"
+   ]
+  },
+  {
+   "menuName": "Уагиу",
+   "en": "Wagyu beef",
+   "section": "Tasting menu",
+   "order": 106,
+   "only": "tasting",
+   "menuBg": "смръчкула, кейл, опушен жълтък с пилешки гарум и телешко жу",
+   "menuEn": "morel mushrooms, kale, smoked egg yolk with chicken garum and beef jus",
+   "ings": [
+    "телешко уагиу",
+    "смръчкула",
+    "кейл",
+    "яйчен жълтък",
+    "пилешки гарум",
+    "телешко жу"
+   ],
+   "pitch": "Wagyu beef with morel mushrooms and kale, a smoked egg yolk with chicken garum, and beef jus.",
+   "niche": [
+    {
+     "n": "уагиу",
+     "what": "Wagyu: Japanese-breed beef known for its fine marbling of fat, which makes it very tender and rich."
+    },
+    {
+     "n": "смръчкула",
+     "what": "Morel: a wild spring mushroom with a honeycomb cap and a deep, earthy taste."
+    },
+    {
+     "n": "гарум",
+     "what": "Garum: a fermented sauce, salty and full of umami. Classic garum is made from fish; ours here is made from chicken."
+    },
+    {
+     "n": "жу",
+     "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
+    }
+   ],
+   "facts": ""
+  },
+  {
+   "menuName": "Сорбе от лимон",
+   "en": "Lemon sorbet",
+   "section": "Tasting menu",
+   "order": 107,
+   "only": "tasting",
+   "menuBg": "гранита с краставица, босилек и джин",
+   "menuEn": "cucumber, basil and gin granita",
+   "ings": [
+    "лимон",
+    "краставица",
+    "босилек",
+    "джин"
+   ],
+   "pitch": "A lemon sorbet with a granita of cucumber, basil and gin, to refresh before dessert.",
+   "niche": [
+    {
+     "n": "гранита",
+     "what": "Granita: a coarse, crystalline ice, scraped rather than churned."
+    }
+   ],
+   "facts": "It has gin: tell a guest who does not drink alcohol, and the kitchen can leave it out."
   }
  ],
  "docs": {
@@ -4098,5 +4226,66 @@
    "glassCl": "",
    "updated": 0
   }
+ },
+ "tasting": {
+  "name": "Tasting menu",
+  "price": "80",
+  "pairing": "35",
+  "pairingName": "Bulgarian wine pairing",
+  "note": "For the entire table",
+  "welcome": {
+   "id": "edoardo-miroglio-classic-method-brut-2019",
+   "text": "Brut Classic Method, Edoardo Miroglio, Thracian Lowlands, 2019"
+  },
+  "extra": {
+   "key": "Caviar serving",
+   "price": "70"
+  },
+  "courses": [
+   {
+    "key": "Bread & butter"
+   },
+   {
+    "key": "Bites"
+   },
+   {
+    "key": "Beef tartare",
+    "wine": {
+     "id": "bononia-dimyat-2023",
+     "text": "Dimyat, Bononia Estate, Northwestern Bulgaria, 2023"
+    }
+   },
+   {
+    "key": "Gyoza",
+    "wine": {
+     "id": "dragoshinov-winery-estate-chardonnay-2025",
+     "text": "Chardonnay, Dragoshinov Winery Estate, Danubian Plain, 2025"
+    }
+   },
+   {
+    "key": "Rock sea bass",
+    "wine": {
+     "id": "magura-gruner-veltliner-2024",
+     "text": "Grüner Veltliner, Magura Winery, Northwestern Bulgaria, 2023"
+    }
+   },
+   {
+    "key": "Wagyu beef",
+    "wine": {
+     "id": "bratanov-three-blend-red-2019",
+     "text": "Bratanov Tri Blend, Bratanov Winery, Thracian Lowlands, 2021"
+    }
+   },
+   {
+    "key": "Lemon sorbet"
+   },
+   {
+    "key": "Kazandibi",
+    "wine": {
+     "id": "tsarev-brod-gergana-ice",
+     "text": "Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023"
+    }
+   }
+  ]
  }
 }

@@ -91,7 +91,7 @@
   }
   function allergyResults() {
     const sel = alSel();
-    const all = K.dishes().filter((d) => d.onMenu).sort((a, b) => secOrder(a.section, b.section) || a.name.localeCompare(b.name));
+    const all = K.dishes().filter((d) => d.onMenu && d.n.only !== 'tasting').sort((a, b) => secOrder(a.section, b.section) || a.name.localeCompare(b.name));
     if (!sel.length) return h('div', { class: 'empty' }, h('strong', null, 'Tick the guest’s allergies or diet'), 'The menu splits into what they can eat, what the kitchen should confirm, and what they cannot have.');
     const v = all.map((d) => ({ d: d, v: K.allergyVerdict(d, sel) }));
     const ok = v.filter((x) => x.v.state === 'ok'), mod = v.filter((x) => x.v.state === 'mod'), ask = v.filter((x) => x.v.state === 'ask'), no = v.filter((x) => x.v.state === 'no');
@@ -176,53 +176,84 @@
   };
 
   /* ---------- the tasting menu ---------- */
+  /* the wine poured with a course: the line as the menu prints it; a tap opens the bottle when it is on the list */
+  function wineLine(label, wn) {
+    const w = wn.id ? K.wine(wn.id) : null, txt = [K.icon('glass'), h('span', null, label ? h('b', null, label + ': ') : null, wn.text)];
+    return w ? h('button', { type: 'button', class: 'ts-wine', onclick: () => K.go('winepage', { id: w.id }) }, txt) : h('p', { class: 'ts-wine' }, txt);
+  }
   function tastingCard() {
     const t = K.tasting();
     if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
       K.icon('list'), h('span', null, h('b', null, 'Set up the tasting menu'), h('span', null, 'Pick its courses from the dishes, in order.')), K.icon('next')) : null;
     return h('section', { class: 'tasting' },
-      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '')), h('h2', null, t.name)),
+      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '') + (t.pairing ? ' · ' + t.pairingName.toLowerCase() + ' ' + K.price(t.pairing) : '')), h('h2', null, t.name)),
         K.canEdit() ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } }, K.icon('edit'), 'Edit') : null),
       t.note ? h('p', { class: 'muted' }, t.note) : null,
+      t.welcome ? wineLine('To start', t.welcome) : null,
       h('ol', { class: 'ts-list' }, t.courses.map((d, i) => h('li', null, h('button', { type: 'button', onclick: () => K.go('dish', { id: d.id }) },
-        h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null))))));
+        h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null)),
+        t.wines[d.id] ? wineLine('', t.wines[d.id]) : null))),
+      h('button', { type: 'button', class: 'btn ts-build', onclick: () => { ui.foodTab = 'allergy'; K.render(); window.scrollTo(0, 0); } }, K.icon('shield'), 'Build it for a guest with allergies'),
+      t.extra ? h('button', { type: 'button', class: 'ts-extra', onclick: () => K.go('dish', { id: t.extra.dish.id }) }, h('span', null, h('b', null, 'Can be added: ' + (t.extra.dish.en || t.extra.dish.name)), t.extra.price ? ' · ' + K.price(t.extra.price) : ''), K.icon('next')) : null);
   }
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {
     const t = K.tasting();
     if (!t.courses.length) return null;
-    const inMenu = t.courses.map((d) => d.id);
-    const pool = K.dishes().filter((d) => d.onMenu && !inMenu.includes(d.id)).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
-    const rows = t.courses.map((d, i) => {
+    const inMenu = t.courses.map((d) => d.id), pick = (ui.tfPick = ui.tfPick || {});
+    const pool = K.dishes().filter((d) => d.onMenu && d.n.only !== 'tasting' && !inMenu.includes(d.id)).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
+    /* the menu as this guest gets it: each course as it is, changed, or replaced by the dish chosen for it */
+    const used = {};
+    const plan = t.courses.map((d) => {
       const v = K.allergyVerdict(d, sel);
       /* swaps: the same section first, confirmed dishes before unconfirmed ones */
-      const swaps = v.state !== 'no' ? [] : pool.slice().sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || (a.v.state === 'ok' ? 0 : 1) - (b.v.state === 'ok' ? 0 : 1)).slice(0, 3);
+      const swaps = v.state !== 'no' ? [] : pool.slice().sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || (a.v.state === 'ok' ? 0 : 1) - (b.v.state === 'ok' ? 0 : 1)).slice(0, 4);
+      /* unless one was tapped, the first dish no earlier course already took: a guest should not get the same plate twice */
+      const chosen = swaps.find((x) => x.d.id === pick[d.id]) || swaps.find((x) => !used[x.d.id]) || swaps[0] || null;
+      if (chosen) used[chosen.d.id] = 1;
+      return { d: d, v: v, swaps: swaps, chosen: chosen };
+    });
+    const rows = plan.map((c, i) => {
+      const d = c.d, v = c.v;
       return h('li', { class: 'tf-row alr-' + v.state },
         h('span', { class: 'ts-n mono' }, String(i + 1)),
         h('div', { class: 'tf-txt' },
-          h('button', { type: 'button', class: 'tf-name', onclick: () => K.go('dish', { id: d.id }) }, d.name),
+          h('button', { type: 'button', class: 'tf-name' + (v.state === 'no' ? ' struck' : ''), onclick: () => K.go('dish', { id: d.id }) }, d.name),
           v.state === 'mod' ? h('span', { class: 'alr-fix' }, 'Serve without the bread') : v.hits.length ? h('span', { class: 'alr-why' }, v.hits.map((hh) => h('span', null, h('b', null, K.alName(hh.k)), whereText(hh, 2)))) : v.state === 'ask' ? h('span', { class: 'muted tf-ask' }, 'Not confirmed yet: ask the kitchen') : null,
-          swaps.length ? h('div', { class: 'tf-swap' }, h('span', { class: 'label' }, 'Serve instead'), swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), onclick: () => K.go('dish', { id: x.d.id }) }, x.d.name, x.v.state === 'ask' ? ' ?' : '')))
+          c.swaps.length ? h('div', { class: 'tf-swap', role: 'group', 'aria-label': 'Serve instead of ' + d.name }, h('span', { class: 'label' }, 'Serve instead'),
+            c.swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), 'aria-pressed': c.chosen === x ? 'true' : 'false', onclick: () => { pick[d.id] = x.d.id; K.render(); } }, x.d.en || x.d.name, x.v.state === 'ask' ? ' ?' : '')))
             : v.state === 'no' ? h('span', { class: 'muted tf-ask' }, 'Nothing else on the menu is safe: ask the kitchen to adapt it') : null),
         h('span', { class: 'alr-mark', 'aria-hidden': 'true' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'mod' ? 'edit' : v.state === 'no' ? 'close' : 'alert')));
     });
-    const asIs = t.courses.filter((d) => K.allergyVerdict(d, sel).state !== 'no').length;
-    return h('section', { class: 'group tf' }, h('h2', { class: 'group-title' }, t.name, h('span', { class: 'n' }, asIs + ' of ' + t.courses.length + ' as they are')),
-      h('p', { class: 'hint' }, 'Suggestions only, with “?” on dishes not confirmed yet. The kitchen decides the swap.'),
-      h('ol', { class: 'tf-list' }, rows));
+    const asIs = plan.filter((c) => c.v.state !== 'no').length;
+    /* the note for the kitchen: who it is for and every course, with what changes */
+    const line = (c, i) => (i + 1) + '. ' + (c.v.state === 'no' ? (c.chosen ? (c.chosen.d.en || c.chosen.d.name) + ' (instead of ' + (c.d.en || c.d.name) + ')' + (c.chosen.v.state === 'ask' ? ' - CONFIRM' : '') : (c.d.en || c.d.name) + ' - CANNOT, kitchen to adapt')
+      : (c.d.en || c.d.name) + (c.v.state === 'mod' ? ' - NO BREAD' : c.v.state === 'ask' ? ' - CONFIRM' : ''));
+    const text = t.name + ' for a guest: ' + sel.map(K.alName).join(', ') + '\n' + plan.map(line).join('\n');
+    const changed = plan.filter((c) => c.v.state !== 'ok').length;
+    return h('section', { class: 'group tf' }, h('h2', { class: 'group-title' }, t.name + ' for this guest', h('span', { class: 'n' }, asIs + ' of ' + t.courses.length + ' as they are')),
+      h('p', { class: 'hint' }, 'Tap a dish under “Serve instead” to choose the swap. “?” means its allergens are not confirmed yet. The kitchen has the last word.'),
+      h('ol', { class: 'tf-list' }, rows),
+      h('div', { class: 'tf-out' },
+        h('span', { class: 'label' }, 'For the kitchen'),
+        h('ol', { class: 'tf-final' }, plan.map((c) => h('li', { class: c.v.state === 'ok' ? '' : 'chg' },
+          c.v.state === 'no' ? (c.chosen ? [h('b', null, c.chosen.d.en || c.chosen.d.name), h('small', null, ' instead of ' + (c.d.en || c.d.name) + (c.chosen.v.state === 'ask' ? ' · confirm' : ''))] : [h('b', null, c.d.en || c.d.name), h('small', null, ' cannot have it · kitchen to adapt')])
+            : [h('b', null, c.d.en || c.d.name), c.v.state === 'mod' ? h('small', null, ' no bread') : c.v.state === 'ask' ? h('small', null, ' confirm') : null]))),
+        h('button', { type: 'button', class: 'btn primary wide', onclick: () => navigator.clipboard.writeText(text).then(() => K.toast('Copied: paste it to the kitchen'), () => K.toast('This device would not copy.')) }, K.icon('copy'), changed ? 'Copy this menu for the kitchen' : 'Copy for the kitchen')));
   }
   K.SHEETS.tasting = function (S) {
     const cur = D.tasting || {};
-    if (!S.f) S.f = { name: cur.name || 'Tasting menu', price: cur.price || '', note: cur.note || '', courses: (cur.courses || []).filter((id) => K.dish(id)) };
+    if (!S.f) S.f = { name: cur.name || 'Tasting menu', price: cur.price || '', pairing: cur.pairing || '', note: cur.note || '', courses: (cur.courses || []).filter((id) => K.dish(id)) };
     const f = S.f, all = K.dishes().filter((d) => !f.courses.includes(d.id));
     const move = (i, by) => { const c = f.courses, j = i + by; if (j < 0 || j >= c.length) return; const t = c[i]; c[i] = c[j]; c[j] = t; K.render(); };
     const inp = (k, attrs) => h('input', Object.assign({ class: 'input', id: 'ts-' + k, value: f[k], oninput: (e) => { f[k] = e.target.value; } }, attrs || {}));
     return K.sheet('The tasting menu', h('form', { class: 'stack', onsubmit: (e) => {
       e.preventDefault();
-      K.saveSetting('tasting', { name: f.name.trim() || 'Tasting menu', price: f.price.trim(), note: f.note.trim(), courses: f.courses }).then(() => K.toast('Tasting menu saved'));
+      K.saveSetting('tasting', Object.assign({}, cur, { name: f.name.trim() || 'Tasting menu', price: f.price.trim(), pairing: f.pairing.trim(), note: f.note.trim(), courses: f.courses })).then(() => K.toast('Tasting menu saved'));
       ui.sheet = null; K.render();
     } },
       h('div', { class: 'two' }, K.field('Name', inp('name')), K.field('Price', inp('price', { inputmode: 'decimal' }))),
+      K.field('Wine pairing price', inp('pairing', { inputmode: 'decimal' })),
       K.field('Note', inp('note', { placeholder: 'For the whole table · wine pairing +45' })),
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Courses, in order'),
         f.courses.length ? h('ol', { class: 'ts-edit' }, f.courses.map((id, i) => h('li', null, h('span', { class: 'ts-n mono' }, String(i + 1)), h('b', null, K.dish(id).name),

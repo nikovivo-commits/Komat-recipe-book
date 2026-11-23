@@ -866,3 +866,21 @@ body.scrolled .top { border-bottom-color: var(--line); }
 /* the pad never grows wider than the screen, however long the bottle's name */
 .ct-pad { grid-template-columns: minmax(0, 1fr); }
 .ct-pad-top { min-width: 0; }
+
+/* the tasting menu: a wine under its course, and what can be added */
+.tasting { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.ts-wine { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin: 0; padding: 2px 0 8px 38px; border: 0; background: none; color: var(--apron-text); font-size: .85rem; line-height: 1.35; text-align: left; }
+.tasting > .ts-wine { padding-left: 0; }
+.ts-wine .ico { flex: none; width: 15px; height: 15px; margin-top: 2px; }
+.ts-list li { border-bottom: 1px solid var(--line); } .ts-list li:last-child { border-bottom: 0; } .ts-list button { border-bottom: 0; }
+.ts-extra { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px dashed #6D6B8A; background: none; color: var(--ink); text-align: left; }
+.ts-extra .ico { width: 18px; height: 18px; color: var(--muted); }
+
+/* the tasting menu built for one guest: the chosen swap, and the list for the kitchen */
+.tf-chip[aria-pressed="true"] { background: #FFFFFF; border-color: #FFFFFF; color: #1F1F2D; }
+.tf-name.struck { text-decoration: line-through; text-decoration-color: var(--urgent); color: var(--soft); }
+.tf-out { display: grid; gap: 10px; margin-top: 14px; padding: 14px; border-radius: 16px; border: 1px solid var(--apron-line); background: var(--apron-soft); }
+.tf-final { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+.tf-final small { color: var(--soft); }
+.tf-final li.chg b { color: var(--low); }
+.ts-build { justify-self: start; border-color: var(--apron-line); color: #D0C6FF; }

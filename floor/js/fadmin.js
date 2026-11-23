@@ -127,7 +127,7 @@
       }));
       return Promise.all(add.map((p) => K.db.doc(p).set(docs[p])).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
         K.toast([fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
-        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
+        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
         else ui.sheet = null;
         K.render();
       });
@@ -167,7 +167,8 @@
   }
   /* every line with its best kitchen dish; when two lines want the same dish, the better fit keeps it */
   function matchMenu(menu) {
-    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id, score: m.score }; });
+    /* a course that only the tasting menu has is the floor's own unless the kitchen book has it */
+    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' ? '__own' : ''), score: m.score }; });
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
@@ -184,7 +185,10 @@
         used[x.to] = 1;
         K.saveNote(x.to, Object.assign({ recipe: x.to }, e));
       });
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in');
+      /* the tasting menu that comes with the list: its courses, wines and prices, once every course is in the book */
+      const t = S.house ? K.tastingFrom(S.house, (e) => { const d = K.dishes(true).find((x) => x.n.menuBg === e.menuBg); return d ? d.id : ''; }) : null;
+      if (t) K.saveSetting('tasting', t);
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : ''));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),

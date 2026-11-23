@@ -226,8 +226,10 @@
       const e = K.clone(m), name = e.menuName || e.en || 'Dish';
       delete e.menuName; delete e.match;
       /* the menu line stands in for the recipe, so the allergy check has ingredients to read */
-      docs['dishnotes/own-demo-' + i] = Object.assign(e, { name: name, onMenu: true, ings: String(m.menuBg || m.menuEn || '').split(/,\s*/).filter(Boolean) });
+      docs['dishnotes/own-demo-' + i] = Object.assign(e, { name: name, onMenu: true, ings: m.ings || String(m.menuBg || m.menuEn || '').split(/,\s*/).filter(Boolean) });
     });
+    const t = K.tastingFrom(house, (e) => { const i = (house.menu || []).indexOf(e); return i < 0 ? '' : 'own-demo-' + i; });
+    if (t) docs['fohsettings/tasting'] = t;
     const ids = Object.keys(docs).filter((p) => p.indexOf('wines/') === 0 && !docs[p].nostock && !docs[p].off).map((p) => p.slice(6));
     ids.forEach((id, i) => {
       const par = docs['wines/' + id].par == null ? 3 : +docs['wines/' + id].par;

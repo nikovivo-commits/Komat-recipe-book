@@ -112,7 +112,23 @@
   /* the tasting menu: its courses, in order */
   K.tasting = function () {
     const t = D.tasting || {};
-    return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean) };
+    return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean),
+      /* the wine pairing: its price, the glass poured to start, a wine per course ({id, text}: the list's bottle and the line as printed) */
+      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {},
+      /* what can be added to it, like the caviar */
+      extra: t.extra && K.dish(t.extra.dish) ? { dish: K.dish(t.extra.dish), price: t.extra.price || '' } : null };
+  };
+  /* the tasting menu that comes with the app (house.json), with its courses found among the dishes in the book.
+     `find(entry)` gives the id of the dish made from a menu line, or ''. Null when a course is not in the book yet. */
+  K.tastingFrom = function (house, find) {
+    const t = house && house.tasting, by = {};
+    if (!t) return null;
+    (house.menu || []).forEach((m) => { by[m.en] = m; });
+    const ids = t.courses.map((c) => (by[c.key] ? find(by[c.key]) : '')), wines = {};
+    if (ids.some((id) => !id)) return null;
+    t.courses.forEach((c, i) => { if (c.wine) wines[ids[i]] = c.wine; });
+    const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
+    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
   };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
   K.allergenWhere = function (d) {
@@ -125,6 +141,8 @@
       d.r.components.forEach((c) => scan(c.name, c.ingredients));
     }
     scan('', (d.n.ings || []).map((x) => ({ n: x })));
+    /* the dish's own name counts too: a “cheese board” has milk even if nobody wrote its ingredients */
+    [d.name, d.en].filter(Boolean).forEach((nm) => K.allergensIn(nm).forEach((k) => add(k, 'its name')));
     ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'ticked by hand'); });
     return out;
   };
