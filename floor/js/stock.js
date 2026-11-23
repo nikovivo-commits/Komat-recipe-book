@@ -84,7 +84,7 @@
   /* ---------- open bottles: opened for glasses, tasted again after three days ---------- */
   K.V.open = function () {
     const body = h('div', { class: 'wrap page op' }), list = K.openBottles().slice().sort((a, b) => (b.due ? 1 : 0) - (a.due ? 1 : 0) || a.at - b.at);
-    body.append(h('h1', { class: 'ptitle' }, 'Open bottles'), h('p', { class: 'psub' }, 'A wine open for glasses is tasted again after ' + K.OPEN_DAYS + ' days.'));
+    body.append(h('h1', { class: 'ptitle' }, 'Open bottles'), h('p', { class: 'psub' }, 'A wine open for glasses is tasted again after ' + K.OPEN_DAYS + ' days. A glass is ' + K.GLASS_ML + ' ml: five to a bottle. A tasting-pairing pour is ' + K.PAIR_ML + ' ml: nine to a bottle.'));
     if (K.canWrite()) body.append(h('button', { type: 'button', class: 'btn primary wide op-add', onclick: () => { ui.sheet = { type: 'openadd' }; K.render(); } }, K.icon('plus'), 'I opened a bottle'));
     if (!list.length) body.append(h('div', { class: 'empty' }, h('strong', null, 'No bottle is open'), 'When you open a wine for glasses, add it here. After ' + K.OPEN_DAYS + ' days it asks to be tasted.'));
     body.append(h('div', { class: 'op-list' }, list.map((o) => {
@@ -123,9 +123,10 @@
     return K.sheet('Throw away · ' + w.name, h('div', { class: 'stack' },
       h('p', null, 'How much was left in the bottle?'),
       h('div', { class: 'bin-grid' },
-        [[0.25, 'A quarter'], [0.5, 'Half'], [0.75, 'Three quarters'], [1, 'Almost full']].map((x) => h('button', { type: 'button', class: 'btn bin-btn', onclick: () => bin(x[0], x[1].toLowerCase()) }, h('span', { class: 'bin-glass', style: '--f:' + x[0] }), x[1]))),
+        /* in glasses: that is how the floor thinks of an open bottle, and how Hype takes it off (0.2 of a bottle each) */
+        Array.from({ length: Math.max(1, K.poursIn(w) - 1) }, (_, i) => [(i + 1) / K.poursIn(w), i + 1 === 1 ? '1 glass' : (i + 1) + ' glasses']).concat([[1, 'Almost full']]).map((x) => h('button', { type: 'button', class: 'btn bin-btn', onclick: () => bin(x[0], x[1].toLowerCase()) }, h('span', { class: 'bin-glass', style: '--f:' + x[0] }), x[1]))),
       h('button', { type: 'button', class: 'btn wide', onclick: () => bin(0, '') }, 'Only a drop'),
-      h('p', { class: 'hint' }, 'What was left is taken off the stock as waste, so the numbers stay right.')));
+      h('p', { class: 'hint' }, 'A glass is ' + K.glassMl(w) + ' ml, so a full bottle is ' + K.poursIn(w) + ' glasses. What was left is taken off the stock as waste, so the numbers stay right.')));
   };
 
   /* ---------- the manager's page: the count, the order list, what the count found, the link with Hype ---------- */
@@ -257,7 +258,7 @@
     const pct = (x) => (x.c.sold > 0 && x.d < 0 ? Math.round((-x.d / x.c.sold) * 100) : null);
     const rung = rows.filter((x) => x.c.sold > 0), soldAll = Math.round(rung.reduce((s, x) => s + x.c.sold, 0) * 10) / 10, goneAll = Math.round(rung.reduce((s, x) => s + x.c.sold - x.d, 0) * 10) / 10;
     const line = (x) => h('li', { class: x.d < 0 ? 'lost' : 'found' }, h('b', { class: 'mono' }, (x.d > 0 ? '+' : '−') + Math.abs(x.d)),
-      h('span', null, x.w.stockOnly ? x.w.name : K.wineTitle(x.w), h('small', { class: 'muted' }, ' expected ' + K.qtyText(x.c.was) + ', ' + (x.c.auto ? 'not found on the shelf' : 'counted ' + x.c.n) + (x.c.sold > 0 ? ' · Hype sold ' + x.c.sold + (pct(x) != null ? ', ' + pct(x) + '% more is gone' : '') : '') + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
+      h('span', null, x.w.stockOnly ? x.w.name : K.wineTitle(x.w), h('small', { class: 'muted' }, (!K.isDrink(x.w) && Math.abs(x.d) % 1 ? ' about ' + Math.round(Math.abs(x.d) * K.poursIn(x.w)) + ' glasses ·' : '') + ' expected ' + K.qtyText(x.c.was) + ', ' + (x.c.auto ? 'not found on the shelf' : 'counted ' + x.c.n) + (x.c.sold > 0 ? ' · Hype sold ' + x.c.sold + (pct(x) != null ? ', ' + pct(x) + '% more is gone' : '') : '') + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
     return K.sheet('Differences', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'From each bottle’s last stock check: what the book expected against what was on the shelf. A minus is missing bottles: not rung up, broken, poured freely, or a delivery Hype has that never arrived. A plus is usually a delivery not entered in Hype.'),
       D.take && D.take.done && !rows.length ? h('p', { class: 'banner' }, h('b', null, 'The count ended ' + when(D.take.done) + '. '), 'A first count sets the starting numbers, so it has nothing to be compared with. From the next count on, this shows what went missing and what turned up.') : null,

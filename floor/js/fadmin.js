@@ -119,14 +119,26 @@
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
       /* bottles already in the book keep everything; one that has no picture yet gets the one that comes with the list */
       const pics = Object.keys(docs).filter((p) => p.startsWith('wines/') && docs[p].label).map((p) => [K.wine(p.slice(6)), docs[p].label, docs[p].focus || null]).filter((x) => x[0] && !x[0].label);
+      /* a bottle already in the book takes what it lacks from the list: its notes, how it is made, its grape, its appellation */
+      const FILL = ['nose', 'palate', 'made', 'story', 'grapes', 'appellation', 'region', 'country', 'body'];
+      let noted = 0;
+      Object.keys(docs).filter((p) => p.startsWith('wines/')).forEach((p) => {
+        const w = K.wine(p.slice(6)), patch = {};
+        if (!w) return;
+        FILL.forEach((k) => { if (!w[k] && docs[p][k]) patch[k] = docs[p][k]; });
+        /* a line still exactly as the list first wrote it takes the list's new wording; one changed by hand is kept */
+        Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
+        if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
+      });
       /* dishes already loaded from this menu get its corrected ingredient explanations */
       let fixed = 0;
       (j.menu || []).forEach((e) => Object.keys(D.notes).forEach((id) => {
         const n = D.notes[id];
         if (e.menuBg && n.menuBg === e.menuBg && e.niche && JSON.stringify(n.niche || []) !== JSON.stringify(e.niche)) { K.saveNote(id, { niche: e.niche }); fixed++; }
       }));
-      return Promise.all(add.map((p) => K.db.doc(p).set(docs[p])).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
-        K.toast([fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+      const fresh = (o) => { const c = Object.assign({}, o); delete c.was; return c; };
+      return Promise.all(add.map((p) => K.db.doc(p).set(fresh(docs[p]))).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
+        K.toast([noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
         else ui.sheet = null;
         K.render();
@@ -188,7 +200,16 @@
       /* the tasting menu that comes with the list: its courses, wines and prices, once every course is in the book */
       const t = S.house ? K.tastingFrom(S.house, (e) => { const d = K.dishes(true).find((x) => x.n.menuBg === e.menuBg); return d ? d.id : ''; }) : null;
       if (t) K.saveSetting('tasting', t);
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : ''));
+      /* the house pairings that come with the list: written onto every dish that has none of its own */
+      let paired = 0;
+      (S.house && S.house.pairings || []).forEach((pr) => {
+        const e = (S.house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
+        if (!d || (d.n.pairs || []).length) return;
+        const ok = pr.wines.filter((x) => K.wine(x.id)), why = {};
+        ok.forEach((x) => { if (x.why) why[x.id] = x.why; });
+        if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why }); paired++; }
+      });
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),

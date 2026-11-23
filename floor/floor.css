@@ -884,3 +884,34 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .tf-final small { color: var(--soft); }
 .tf-final li.chg b { color: var(--low); }
 .ts-build { justify-self: start; border-color: var(--apron-line); color: #D0C6FF; }
+
+/* a wine's origin, and the button for what to pour with a dish */
+.mchip.origin b { font-weight: 800; }
+.mchip.origin.bg { color: var(--ready); border-color: rgba(62, 241, 140, .45); }
+.mchip.origin.fo { color: var(--apron-text); border-color: var(--apron-line); }
+.w-origin { margin: 10px 0 0; }
+.pour-btn { justify-self: start; border-color: var(--apron-line); color: #D0C6FF; }
+.mini-dish small { display: block; color: var(--muted); font-weight: 500; }
+
+/* what to pour with a dish: one wine at each price */
+.pr-tier { display: grid; gap: 6px; }
+.pr-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pr-h b { font: 800 .8rem/1.2 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--apron-text); }
+.pr-h .muted { font-size: .82rem; }
+.pr-wine { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; }
+.pr-origin { font-size: .8rem; font-weight: 700; color: var(--soft); }
+.pr-price { display: grid; justify-items: end; font: 800 1.05rem/1.1 var(--sans); white-space: nowrap; }
+.pr-price small { font: 500 .7rem/1.3 var(--sans); color: var(--muted); }
+.pr-tasting { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--apron-line); background: var(--apron-soft); color: var(--ink); text-align: left; }
+.pr-tasting .ico { flex: none; width: 18px; height: 18px; color: var(--apron-text); }
+
+/* a dish the kitchen makes for a stricter diet on request; the pour sizes on the tasting card */
+.diet-tag.can { border-style: dashed; }
+.ts-pour { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: .88rem; color: var(--soft); }
+.ts-pour .ico { flex: none; width: 16px; height: 16px; margin-top: 2px; color: var(--apron-text); }
+.ts-pour b { color: var(--ink); }
+.bin-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+
+.pr-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
+.pr-more .to-rows { margin-top: 6px; }
+.alc-bread .chip[aria-pressed="true"] { background: var(--urgent-soft); border-color: var(--urgent); color: var(--ink); }
