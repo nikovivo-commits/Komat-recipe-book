@@ -160,7 +160,7 @@
       K.saveHypeUrl(url);
       K.toast('Reading the sheet…');
       K.refreshHype().then((d) => { ui.sheet = { type: 'hype', fromSheet: true }; K.render(); K.toast(d.rows.length + ' products read from the sheet'); },
-        () => K.toast('Saved, but the sheet could not be read. Check that the web app is set to “Anyone”.', { tone: 'bad' }));
+        (e) => K.toast(e && /http|shape|fetch/i.test(String(e.message)) ? 'Saved, but the sheet could not be read. Check that the web app is set to “Anyone”.' : 'The sheet was read, but something went wrong showing it. Close this and press Refresh stock.', { tone: 'bad' }));
     };
     return K.sheet('The Hype stock sheet', h('form', { class: 'stack', onsubmit: save },
       h('p', null, 'The app reads the “Bar_Stock” tab of your Google Sheet (or “Stock”, drinks only, when there is no such tab) through a small script that lives in the sheet. You set it up once:'),

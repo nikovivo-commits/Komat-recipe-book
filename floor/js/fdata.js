@@ -275,6 +275,7 @@
   /* rows as the sheet gives them: [name, warehouse, quantity, unit, category, barcode] */
   const DRINKS = /вин|алкохол|бира|раки|уиски|джин|водка|коняк|бренди|ром|ликьор|анасон|напитк|wine|beer|spirit|drink/i;
   K.setHypeStock = function (doc) {
+    if (doc && !Array.isArray(doc.rows) && typeof doc.json === 'string') { try { doc = Object.assign({}, doc, { rows: JSON.parse(doc.json) }); } catch (e) { doc = null; } }
     D.hypeStock = doc && Array.isArray(doc.rows) ? doc : null;
     const idx = {}, list = [];
     ((D.hypeStock && D.hypeStock.rows) || []).forEach((r) => {
@@ -313,7 +314,12 @@
       const doc = { at: Date.now(), modified: +j.modified || 0, exported: K.hypeTime(j.exported), exportedRaw: String(j.exported || ''), bar: !!j.bar, by: K.myName(), rows: j.rows.map((r) => [String(r[0] || ''), String(r[1] || ''), r[2] == null ? '' : r[2], String(r[3] || ''), String(r[4] || ''), String(r[5] || '')]) };
       K.setHypeStock(doc);
       K.refresh(true);
-      if (K.canEdit()) K.db.doc('fohsettings/hypestock').set(doc).catch(K.writeFailed);
+      /* saved for the other phones. The database takes no list of lists, so the rows travel as one text. */
+      if (K.canEdit()) {
+        const saved = Object.assign({}, doc, { json: JSON.stringify(doc.rows) });
+        delete saved.rows;
+        try { K.db.doc('fohsettings/hypestock').set(saved).catch(K.writeFailed); } catch (e) { K.writeFailed(e); }
+      }
       return doc;
     });
   };
