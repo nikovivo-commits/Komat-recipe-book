@@ -94,7 +94,8 @@
   K.dish = (id) => K.dishes(true).find((d) => d.id === id) || null;
   K.dishAllergens = function (d) {
     const found = K.detectAllergens ? K.detectAllergens([d.ings.map((n) => ({ n: n }))]) : {};
-    const keys = Object.keys(found).concat((d.r && d.r.allergens) || [], d.n.allergens || []);
+    /* the same list the allergy check works from: the ingredients, the dish's name, the line on the menu, and what was ticked by hand */
+    const keys = Object.keys(K.allergenWhere(d));
     return { keys: K.orderAl ? K.orderAl(keys) : keys, found: found, checked: K.dishChecked(d) };
   };
   /* someone with the right to has gone through the dish's allergens and confirmed them */
@@ -130,6 +131,14 @@
     const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
     return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
   };
+  /* the allergens the printed menu line points to: {key: ['the menu line (горчица)']} */
+  K.fromMenu = (src) => String(src).indexOf('the menu line') === 0;
+  K.menuAllergens = function (d) {
+    const out = {};
+    [d.n.menuBg, d.n.menuEn].forEach((line) => String(line || '').split(/,\s*/).map((x) => x.trim()).filter(Boolean)
+      .forEach((item) => K.allergensIn(item).forEach((k) => { if (!out[k]) out[k] = ['the menu line (' + item + ')']; })));
+    return out;
+  };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
   K.allergenWhere = function (d) {
     const out = {}, add = (k, s) => { (out[k] = out[k] || []); if (!out[k].includes(s)) out[k].push(s); };
@@ -143,6 +152,10 @@
     scan('', (d.n.ings || []).map((x) => ({ n: x })));
     /* the dish's own name counts too: a “cheese board” has milk even if nobody wrote its ingredients */
     [d.name, d.en].filter(Boolean).forEach((nm) => K.allergensIn(nm).forEach((k) => add(k, 'its name')));
+    /* the line printed on the menu counts too: the kitchen's recipe can be a season behind it. What is read off
+       that line can be unticked by whoever confirms the dish (`notAl`); what the ingredients show cannot. */
+    const menu = K.menuAllergens(d), off = d.n.notAl || [];
+    Object.keys(menu).forEach((k) => { if (!off.includes(k)) menu[k].forEach((s) => add(k, s)); });
     ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'ticked by hand'); });
     return out;
   };
@@ -243,7 +256,7 @@
   K.normWine = function (w) {
     return {
       id: w.id, name: w.name || 'Wine', producer: w.producer || '', country: w.country || '', region: w.region || '', grapes: w.grapes || '', vintage: w.vintage || '',
-      colour: K.COL[w.colour] ? w.colour : 'red', style: w.style || '', label: w.label || '', byGlass: !!w.byGlass, glassPrice: w.glassPrice || '', bottlePrice: w.bottlePrice || '',
+      colour: K.COL[w.colour] ? w.colour : 'red', style: w.style || '', label: /no[_-]?image|placeholder/i.test(w.label || '') ? '' : w.label || '', byGlass: !!w.byGlass, glassPrice: w.glassPrice || '', bottlePrice: w.bottlePrice || '',
       glassCl: w.glassCl || '', say: w.say || '', nose: w.nose || '', palate: w.palate || '', story: w.story || '', facts: w.facts || '', serve: w.serve || '', decant: w.decant || '',
       glass: w.glass || '', pairs: Array.isArray(w.pairs) ? w.pairs : [], par: w.par === '' || w.par == null ? 3 : +w.par, order: +w.order || 0, example: !!w.example, updated: w.updated || 0,
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,

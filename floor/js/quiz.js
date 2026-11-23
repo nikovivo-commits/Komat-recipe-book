@@ -97,15 +97,18 @@
     const whats = [];
     dishes.forEach((d) => (d.n.niche || []).forEach((x) => { if (x.what) whats.push(short(K.T(x.what), 80)); }));
     Object.keys(D.gloss).forEach((id) => { if (D.gloss[id].what) whats.push(short(K.T(D.gloss[id].what), 80)); });
+    /* everything a dish is known to have, in one text: its menu line, its ingredients, what guests ask about */
+    const textOf = (y) => [y.n.menuBg, y.n.menuEn, y.ings.join(' | '), (y.n.niche || []).map((z) => z.n).join(' | ')].join(' | ').toLowerCase();
+    const has = (y, name) => { const n = String(name || '').split(/[,(]/)[0].trim().toLowerCase(); return !!n && textOf(y).includes(n); };
     dishes.forEach((d) => {
       if (d.en && d.en !== d.name) out.push(mk('food', 'How do you say ' + d.name + ' in English?', d.en, ens.concat(['Chef’s special', 'Garden salad', 'Slow-cooked beef']), d.n.pitch && short(d.n.pitch, 140)));
       const al = K.dishAllergens(d).keys;
       if (al.length) {
         const a = al[Math.floor(Math.random() * al.length)];
-        out.push(mk('food', 'Which allergen is in ' + d.name + '?', K.AL[a], allAl.filter((k) => !al.includes(k)).map((k) => K.AL[k]), d.name + ' has: ' + al.map((k) => K.AL[k]).join(', ') + '.'));
+        out.push(mk('food', 'Which allergen is in ' + d.name + '?', K.AL[a], allAl.filter((k) => !al.includes(k) && !K.menuAllergens(d)[k]).map((k) => K.AL[k]), d.name + ' has: ' + al.map((k) => K.AL[k]).join(', ') + '.'));
       }
       const others = [];
-      dishes.forEach((x) => { if (x !== d) x.ings.forEach((i) => { if (!d.ings.some((j) => K.ingKey(j) === K.ingKey(i))) others.push(i); }); });
+      dishes.forEach((x) => { if (x !== d) x.ings.forEach((i) => { if (!d.ings.some((j) => K.ingKey(j) === K.ingKey(i)) && !has(d, i)) others.push(i); }); });
       const mine = d.ings.filter((i) => i.length < 40);
       if (others.length && mine.length >= 3) {
         const a = others[Math.floor(Math.random() * others.length)];
@@ -113,7 +116,7 @@
         if (q) out.push(q);
       }
       (d.n.niche || []).forEach((x) => {
-        out.push(mk('food', 'Which dish has ' + x.n + '?', d.name, names, x.what));
+        out.push(mk('food', 'Which dish has ' + x.n + '?', d.name, dishes.filter((y) => y === d || !has(y, x.n)).map((y) => y.name), x.what));
         if (x.what) out.push(mk('food', 'What is ' + x.n + '?', short(K.T(x.what), 80), whats, 'In ' + d.name + '.'));
       });
       if (d.price) out.push(mk('food', 'How much is ' + d.name + '?', K.price(d.price), dishes.filter((x) => x.price).map((x) => K.price(x.price)).concat([+d.price + 2, +d.price - 2, +d.price + 4].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));

@@ -128,9 +128,13 @@
   K.SHEETS.alcheck = function (S) {
     const d = K.dish(S.ids[S.i]);
     if (!d) { ui.sheet = null; return null; }
-    const where = K.allergenWhere(d), found = Object.keys(where).filter((k) => where[k].some((x) => x !== 'ticked by hand'));
+    const where = K.allergenWhere(d);
+    /* found in the ingredients: fixed. Read off the menu line only: ticked, but whoever confirms can untick it */
+    const found = Object.keys(where).filter((k) => where[k].some((x) => x !== 'ticked by hand' && !K.fromMenu(x)));
+    const soft = Object.keys(K.menuAllergens(d)).filter((k) => !found.includes(k));
     if (S.forId !== d.id) {
       S.forId = d.id; S.extra = ((d.r && d.r.allergens) || d.n.allergens || []).filter((k) => !found.includes(k));
+      soft.forEach((k) => { if (!(d.n.notAl || []).includes(k) && !S.extra.includes(k)) S.extra.push(k); });
       S.butter = d.n.butterOnly ? '1' : ''; S.diet = d.n.diet || ''; S.bread = d.n.bread ? '1' : ''; S.breadAl = d.n.bread ? (d.n.breadAl || []).slice() : null;
       S.can = d.n.canDiet || ''; S.canHow = d.n.canHow || ''; S.canAl = d.n.canDiet ? (d.n.canAl || []).slice() : null;
     }
@@ -145,8 +149,8 @@
     const last = S.i >= S.ids.length - 1;
     const go = (save) => {
       if (save) {
-        const flags = { butterOnly: !!(S.butter && isOn('milk')), bread: !!S.bread, breadAl: S.bread ? breadAl : [], diet: S.diet, canDiet: can, canHow: can ? S.canHow.trim() : '', canAl: can ? canAl : [] };
-        if (flags.butterOnly || flags.bread || flags.diet || flags.canDiet || D.notes[d.id]) K.saveNote(d.id, flags);
+        const flags = { butterOnly: !!(S.butter && isOn('milk')), bread: !!S.bread, breadAl: S.bread ? breadAl : [], diet: S.diet, canDiet: can, canHow: can ? S.canHow.trim() : '', canAl: can ? canAl : [], notAl: soft.filter((k) => !S.extra.includes(k)) };
+        if (flags.butterOnly || flags.bread || flags.diet || flags.canDiet || flags.notAl.length || D.notes[d.id]) K.saveNote(d.id, flags);
         K.confirmAllergens(d, S.extra.slice());
       }
       if (last) { ui.sheet = null; K.toast(save ? 'Allergens confirmed' : 'Done'); } else S.i++;
@@ -160,7 +164,7 @@
         const auto = found.includes(a[0]), on = auto || S.extra.includes(a[0]);
         return h('button', { type: 'button', class: 'alp' + (auto ? ' auto' : ''), 'aria-pressed': on ? 'true' : 'false', disabled: auto ? true : null,
           onclick: () => { S.extra = on ? S.extra.filter((x) => x !== a[0]) : S.extra.concat([a[0]]); K.render(); },
-        }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), h('span', null, a[1], auto ? h('small', null, where[a[0]].filter((x) => x !== 'ticked by hand').slice(0, 2).join(', ')) : null));
+        }, h('span', { class: 'alp-box', 'aria-hidden': 'true' }, K.icon('check')), h('span', null, a[1], auto ? h('small', null, where[a[0]].filter((x) => x !== 'ticked by hand' && !K.fromMenu(x)).slice(0, 2).join(', ')) : soft.includes(a[0]) && on ? h('small', null, 'on the menu') : null));
       })),
       found.length ? h('p', { class: 'hint' }, 'One found by mistake? Correct the ingredient in the kitchen book; it cannot be switched off here.') : null,
       isOn('milk') ? h('div', { class: 'alc-q' }, h('b', null, 'The dairy in this dish is'),
