@@ -14,17 +14,33 @@
     trophy: '<path d="M8 3.5h8v5.5a4 4 0 0 1-8 0z"/><path d="M8 5.5H4.5a3.5 3.5 0 0 0 3.7 4.4M16 5.5h3.5a3.5 3.5 0 0 1-3.7 4.4M12 13v3.5M9 20.5h6M10 16.5h4l.6 4h-5.2z"/>',
     leaf: '<path d="M5 19c0-8 5-13 15-14-1 10-6 15-14 15"/><path d="M5 19l8-8"/>',
     quote: '<path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    team: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 14.3A6 6 0 0 1 21 20"/>',
+    shield: '<path d="M12 3l7 3v5.5c0 4.4-3 7.7-7 9.5-4-1.8-7-5.1-7-9.5V6z"/><path d="M9 12l2.2 2.2L15.2 10"/>',
+    refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>',
+    sliders: '<path d="M5 7h7M18 7h1M5 12h2M12 12h7M5 17h9M19 17h0"/><circle cx="15" cy="7" r="2"/><circle cx="9.5" cy="12" r="2"/><circle cx="16.5" cy="17" r="2"/>',
+    truck: '<path d="M3 6h11v10H3zM14 9h4l3 3.5V16h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/>',
+    scale: '<path d="M12 4v16M6 20h12M5 8h14M5 8l-2.5 6a3 3 0 0 0 5 0zM19 8l-2.5 6a3 3 0 0 0 5 0z"/>',
+    swap: '<path d="M7 4v14M3.5 14.5L7 18l3.5-3.5M17 20V6M13.5 9.5L17 6l3.5 3.5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    backspace: '<path d="M9 6h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 18H9l-6-6z"/><path d="M12 9.5l5 5M17 9.5l-5 5"/>',
+    share: '<path d="M12 15V4M8 7.5L12 3.5l4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>',
+    clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M8.5 10h7M8.5 14h7M8.5 18h4"/>',
     kitchen: '<path d="M7 14.5V20h10v-5.5"/><path d="M7 14.5a4 4 0 0 1-1.6-7.6A4.5 4.5 0 0 1 12 4a4.5 4.5 0 0 1 6.6 2.9A4 4 0 0 1 17 14.5z"/><path d="M7 17h10"/>',
   });
 
-  const TABS = [['food', 'Food', 'plate'], ['wine', 'Drinks', 'glass'], ['stock', 'Stock', 'bottle'], ['quiz', 'Quiz', 'trophy'], ['schedule', 'Schedule', 'rota']];
-  const TAB_OF = { dish: 'food', winepage: 'wine' };
+  /* five tabs; the quiz and the schedule share the last one */
+  const TABS = [['tonight', 'Tonight', 'moon'], ['food', 'Food', 'plate'], ['wine', 'Drinks', 'glass'], ['stock', 'Stock', 'bottle'], ['team', 'Team', 'team']];
+  const TAB_OF = { dish: 'food', winepage: 'wine', count: 'stock', open: 'stock', manage: 'stock', order: 'stock', hypelist: 'stock', quiz: 'team', schedule: 'team' };
+  /* pages with an address of their own (the dish and drink pages carry an id and are handled apart) */
+  const VIEWS = ['tonight', 'food', 'wine', 'stock', 'quiz', 'schedule', 'count', 'open', 'manage', 'order', 'hypelist'];
+  const teamView = () => (ui.team = ui.team || K.store.get('fohTeam', 'schedule'));
 
   /* ---------- navigation ---------- */
   function hashFor() {
     if (ui.view === 'dish' && ui.id) return 'd.' + ui.id;
     if (ui.view === 'winepage' && ui.id) return 'w.' + ui.id;
-    return TABS.some((t) => t[0] === ui.view) ? ui.view : '';
+    return VIEWS.includes(ui.view) ? ui.view : '';
   }
   function fromHash(hs) {
     hs = String(hs || '').replace(/^#/, '');
@@ -32,7 +48,8 @@
     if (m) { ui.view = 'dish'; ui.id = decodeURIComponent(m[1]); return true; }
     m = hs.match(/^w\.(.+)$/);
     if (m) { ui.view = 'winepage'; ui.id = decodeURIComponent(m[1]); return true; }
-    if (TABS.some((t) => t[0] === hs)) { ui.view = hs; return true; }
+    if (hs === 'team') { ui.view = teamView(); return true; }
+    if (VIEWS.includes(hs)) { ui.view = hs; return true; }
     return false;
   }
   /* the page sits under <base href="../">, so history entries name this page's own address */
@@ -53,13 +70,14 @@
   window.addEventListener('popstate', () => {
     ui.sheet = null;
     scrollMem[pageKey()] = window.scrollY;
-    if (!fromHash(location.hash)) ui.view = 'food';
+    if (!fromHash(location.hash)) ui.view = 'tonight';
     render(true);
     if (scrollMem[pageKey()]) window.scrollTo(0, scrollMem[pageKey()]);
   });
   K.back = function (fallback) {
     if (history.state && history.state.k) { history.back(); return; }
-    K.go(fallback || TAB_OF[ui.view] || 'food', { restore: true });
+    const to = fallback || TAB_OF[ui.view] || 'tonight';
+    K.go(to === 'team' ? teamView() : to, { restore: true });
   };
 
   /* ---------- rendering ---------- */
@@ -117,7 +135,14 @@
     if (K.mode === 'firebase' && ui.auth) return K.V.login();
     if (ui.view === 'dish' && D.loaded && !K.dish(ui.id)) ui.view = 'food';
     if (ui.view === 'winepage' && D.winesLoaded && !K.wine(ui.id)) ui.view = 'wine';
-    return (K.V[ui.view] || K.V.food)();
+    const out = (K.V[ui.view] || K.V.tonight)();
+    /* the quiz and the schedule live under one tab: a switch under the page's title goes from one to the other */
+    if ((ui.view === 'quiz' || ui.view === 'schedule') && out.tabs !== false && !out.top && out.body && out.body.children) {
+      ui.team = ui.view; K.store.set('fohTeam', ui.view);
+      const sw = h('div', { class: 'wrap team-switch' }, K.seg([['schedule', 'Schedule'], ['quiz', 'Quiz']], ui.view, (v) => { if (v !== ui.view) K.go(v); }, { class: 'seg', 'aria-label': 'Team' }));
+      out.body.insertBefore(sw, out.body.children[1] || null);
+    }
+    return out;
   }
   function loading(msg) {
     return h('div', { class: 'boot' }, h('div', { class: 'boot-mark' }, brandMark()), h('p', { class: 'muted' }, msg));
@@ -129,7 +154,7 @@
   K.brandMark = brandMark;
   function badge(tab) {
     if (K.mode === 'pending' || ui.auth) return null;
-    if (tab === 'stock') { const n = D.wines.filter((w) => !w.off && !w.nostock && !w.stockOnly && K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' wines out' }, String(n)) : null; }
+    if (tab === 'stock') { const n = K.takeList().filter((w) => K.stockState(w) === 'out').length; return n ? h('span', { class: 'badge', 'aria-label': n + ' drinks out' }, String(n)) : null; }
     return null;
   }
   function tabButtons(cls) {
@@ -138,12 +163,13 @@
       h('span', { class: 'tab-ico' }, K.icon(t[2]), badge(t[0])), h('span', { class: 'tab-lbl' }, t[1])));
   }
   function tabTap(tab) {
-    if (ui.view !== tab) { if (ui.quiz && ui.quiz.stage === 'play' && tab !== 'quiz') K.quitQuiz && K.quitQuiz(); K.go(tab); return; }
+    const to = tab === 'team' ? teamView() : tab;
+    if (ui.view !== to) { if (ui.quiz && ui.quiz.stage === 'play' && to !== 'quiz') K.quitQuiz && K.quitQuiz(); K.go(to); return; }
     window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   function header() {
     return h('header', { class: 'top over' }, h('div', { class: 'top-in' },
-      h('button', { type: 'button', class: 'brand', 'aria-label': 'Komat floor book', onclick: () => K.go('food') }, brandMark(), h('span', { class: 'floor-tag' }, 'Floor')),
+      h('button', { type: 'button', class: 'brand', 'aria-label': 'Komat floor book', onclick: () => K.go('tonight') }, brandMark(), h('span', { class: 'floor-tag' }, 'Floor')),
       h('nav', { class: 'tabs-desk', 'aria-label': 'Sections' }, tabButtons('dtab')),
       h('span', { class: 'grow' }),
       h('a', { class: 'icon-btn on-dark', href: '../', 'aria-label': 'Open the kitchen book', title: 'The kitchen book' }, K.icon('kitchen')),

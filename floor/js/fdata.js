@@ -18,7 +18,7 @@
     branding: { logo: 'assets/brand/logo.png', heroes: [], pages: {} }, members: {}, names: {}, noWrite: false,
   });
   K.ui = {
-    view: 'food', id: null, sheet: null, q: '', foodTab: 'dishes', sect: '', wq: '', colour: '', stockF: '', sq: '',
+    view: 'tonight', id: null, sheet: null, q: '', foodTab: 'dishes', sect: '', wq: '', colour: '', stockF: '', sq: '',
     schedView: '', week: '', quiz: null, board: 'week',
   };
   K.V = K.V || {};
@@ -227,6 +227,8 @@
       supplier: w.supplier || '', size: +w.size || 0,
       /* a Hype product kept for the stock only: counted and ordered, never shown to guests or in the drinks bible */
       stockOnly: !!w.stockOnly,
+      /* found on the shelf during a count and added to it by hand */
+      extra: !!w.extra,
       /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
       focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
@@ -239,23 +241,14 @@
   });
   /* the drinks the floor talks about: everything except the stock-only products */
   K.listWines = () => K.winesSorted().filter((w) => !w.stockOnly);
-  /* Hype products no bottle of ours is paired with */
-  K.hypeLoose = function () { const used = {}; D.wines.forEach((w) => { if (w.hype) used[w.hype] = 1; }); return Object.keys(D.hypeIdx || {}).filter((n) => !used[n]).map((n) => D.hypeIdx[n]); };
   /* a short, stable id from a Hype name, whatever alphabet it is written in */
   const hash = (t) => { let a = 5381, b = 52711; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = (a * 33) ^ c; b = (b * 33) ^ c; } return ((a >>> 0) * 4096 + (b >>> 0)).toString(36); };
   const KIND = [[/бел/i, 'white'], [/червен/i, 'red'], [/розе/i, 'rose'], [/пенлив/i, 'sparkling'], [/десерт/i, 'sweet'], [/вин/i, 'white'], [/бира/i, 'beer'], [/безалкохол|общи/i, 'soft'], [/ликьор|анасон/i, 'liqueur']];
-  /* every loose Hype product becomes a stock-only bottle, so it can be checked, flagged and ordered like the rest */
-  K.addHypeLoose = function () {
-    const loose = K.hypeLoose(), now = Date.now();
-    const docs = loose.map((r, i) => {
-      const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
-      return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now } };
-    });
-    /* all at once: one redraw, then the writes */
-    D.wines = D.wines.concat(docs.map((x) => K.normWine(Object.assign({ id: x.id }, x.doc))));
-    K.refresh(true);
-    return Promise.all(docs.map((x) => K.db.doc('wines/' + x.id).set(x.doc))).then(() => docs.length, (e) => { K.writeFailed(e); return 0; });
-  };
+  /* a Hype product that is not on the menu, as a stock-only bottle: made when one turns up on the shelf during a count */
+  function looseDoc(r, i, now) {
+    const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
+    return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now || Date.now() } };
+  }
   K.wineTitle = (w) => [w.producer, w.name].filter(Boolean).join(' ') + (w.vintage ? ' ' + w.vintage : '');
   K.price = (p) => { const s = String(p || '').trim(); return !s ? '' : /^[\d.,]+$/.test(s) ? s.replace('.', ',') + ' €' : s; };
 
@@ -367,12 +360,13 @@
     const since = c ? c.at || 0 : 0;
     let n = c ? +c.n || 0 : 0, moved = false;
     D.moves.forEach((m) => { if (m.w === id && m.at > since && !NOTE.includes(m.why)) { n += (+m.n || 0) + (+m.frac || 0); moved = true; } });
-    /* never checked by hand: Hype's own number is the starting point, right or wrong, until a stock check corrects it */
-    if (!c && hr) return Math.round((K.hypeBottles(w, hr.qty) + n) * 10) / 10;   /* n: waste written here, which Hype never hears of */
-    if (!c && !moved) return null;
+    /* never counted: not known. Hype's own total drifts too far to be shown as the stock; it only says what sold since a count. */
+    if (!c && (hr || !moved)) return null;
     if (c && hr && c.hq != null) return Math.round((n + K.hypeBottles(w, hr.qty - c.hq)) * 10) / 10;
     return Math.max(0, n);
   };
+  /* Hype's own number for a drink, in bottles: a hint for managers, never the stock */
+  K.hypeSays = function (w) { const hr = K.hypeRow(w); return hr ? Math.round(K.hypeBottles(w, hr.qty) * 10) / 10 : null; };
   /* what Hype has taken off since the count, in bottles; null when the bottle does not follow Hype */
   K.soldSince = function (w) {
     const c = D.cellar[w.id], hr = K.hypeRow(w);
@@ -405,16 +399,58 @@
       K.db.doc('cellarmoves/' + id).delete().catch(K.writeFailed);
     } });
   };
-  K.countBottles = function (w, n) {
-    const doc = { n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() };
-    /* what the book expected before this check: the difference is what went missing, or turned up */
-    const was = K.stockOf(w.id);
+  /* ---------- the physical count: everyone counts the shelves, each bottle is saved the moment it is typed ---------- */
+  /* the count that is running, or null. It is one line in the settings: when it started, who started it, when it ended. */
+  K.takeOn = () => (D.take && D.take.at && !D.take.done ? D.take : null);
+  /* what a count covers: the drinks on the menu, plus the bottles added by hand as they turn up on the shelf.
+     The rest of what Hype knows (old products, things never on the menu) is left out. */
+  K.takeList = () => K.winesSorted().filter((w) => !w.off && !w.nostock && (!w.stockOnly || w.extra));
+  /* Hype products that are not on the count list, for a bottle found on the shelf that the menu does not have */
+  K.hypeOffList = function (q) {
+    const on = {};
+    K.takeList().forEach((w) => { if (w.hype) on[w.hype] = 1; });
+    return Object.keys(D.hypeIdx || {}).filter((n) => !on[n] && K.matches(n + ' ' + D.hypeIdx[n].cat, q)).map((n) => D.hypeIdx[n]);
+  };
+  /* put one Hype product on the count list; gives back the bottle's id */
+  K.countExtra = function (r) {
+    const have = D.wines.find((w) => w.stockOnly && w.hype === r.name);
+    if (have) { K.saveWine(Object.assign({}, have, { extra: true })); return have.id; }
+    const x = looseDoc(r, 0);
+    K.saveWine(Object.assign({ id: x.id }, x.doc, { extra: true }));
+    return x.id;
+  };
+  K.countedIn = (w, take) => { const c = D.cellar[w.id]; return !!(c && take && c.at >= take.at); };
+  K.startTake = function () {
+    const doc = { at: Date.now(), name: K.myName(), done: 0, hat: (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0 };
+    D.take = doc;
+    K.refresh(true);
+    return K.db.doc('fohsettings/stocktake').set(doc).catch(K.writeFailed);
+  };
+  /* close the count; `zeroRest`: what nobody found is not on the shelf, so it goes to 0 */
+  K.endTake = function (zeroRest) {
+    const take = K.takeOn();
+    if (!take) return Promise.resolve(0);
+    const rest = zeroRest ? K.takeList().filter((w) => !K.countedIn(w, take)) : [];
+    const writes = rest.map((w) => K.countBottles(w, 0, true, { auto: true }));
+    const doc = Object.assign({}, take, { done: Date.now(), endName: K.myName(), zeroed: rest.length });
+    D.take = doc;
+    K.refresh(true);
+    return Promise.all(writes.concat([K.db.doc('fohsettings/stocktake').set(doc).catch(K.writeFailed)])).then(() => rest.length);
+  };
+  /* `quiet`: no redraw (the count page updates its own row, so the keyboard stays up); `extra`: marks kept with the count */
+  K.countBottles = function (w, n, quiet, extra) {
+    const prev = D.cellar[w.id], take = K.takeOn();
+    const doc = Object.assign({ n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() }, extra || {});
+    /* what the book expected before this check: the difference is what went missing, or turned up.
+       Counted a second time in the same stock take, the first expectation stands. */
+    const again = !!(prev && take && prev.at >= take.at);
+    const was = again ? prev.was : K.stockOf(w.id);
     if (was != null) doc.was = was;
     /* what Hype showed at the moment of the count: later sales are measured from here */
     const hr = K.hypeRow(w);
     if (hr) { doc.hq = hr.qty; doc.hat = (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0; }
     D.cellar = Object.assign({}, D.cellar, { [w.id]: doc });
-    K.refresh(true);
+    if (!quiet) K.refresh(true);
     return K.db.doc('cellar/' + w.id).set(doc).catch(K.writeFailed);
   };
 
@@ -499,6 +535,7 @@
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
       D.tasting = m.tasting || null;
+      D.take = m.stocktake || null;
       D.hypeUrl = (m.hype && m.hype.url) || '';
       /* a fresher read made on this phone is not replaced by an older saved one */
       if (m.hypestock && (!D.hypeStock || (m.hypestock.at || 0) >= (D.hypeStock.at || 0))) K.setHypeStock(m.hypestock);

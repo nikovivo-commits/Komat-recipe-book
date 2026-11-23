@@ -110,7 +110,7 @@
           h('div', { class: 'sb-top' }, h('span', { class: 'label' }, K.isDrink(w) ? 'In stock now' : 'In the cellar now'), K.stockBadge(w, true)),
           h('p', { class: 'hint' }, st === 'none' ? 'Nobody has counted it yet. Count it in Stock.' : st === 'out' ? 'Out: tell the guest and offer something close.' : st === 'low' ? 'Running low: ' + n + ' left, the floor manager keeps at least ' + w.par + '.' : 'Plenty for tonight.'),
           K.hypeRow(w) ? h('div', { class: 'stack' }, h('p', { class: 'hint' + (K.hypeOld() || n < 0 ? ' hb-old' : '') },
-            K.soldSince(w) == null ? 'This is Hype’s own number (“' + w.hype + '”), not checked by hand yet. Count it if it looks wrong; from then on Hype’s sales are taken off your count.'
+            K.soldSince(w) == null ? 'Not counted yet. It is matched with “' + w.hype + '” in Hype' + (K.canEdit() ? ' (Hype says ' + K.qtyText(K.hypeSays(w)) + ')' : '') + '. Once it is counted, what Hype sells is taken off the count.'
               : 'Counted ' + D.cellar[w.id].n + ', and Hype has taken off ' + K.soldSince(w) + ' since.' + (D.hypeStock && D.hypeStock.exported ? ' Hype read ' + K.hm(D.hypeStock.exported) + ' on ' + K.prettyDate(K.ymd(new Date(D.hypeStock.exported)), { day: 'numeric', month: 'short' }) + '.' : '') + (K.hypeOld() ? ' More than 12 hours old: check the shelf.' : '') + (n < 0 ? ' Below zero: the count or Hype is wrong, count it again.' : '')),
             w.supplier ? h('p', { class: 'hint' }, 'Order from: ' + w.supplier) : null,
             K.canWrite() && !K.isDrink(w) ? h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { K.openNote(w, 'open'); K.toast(w.name + ' opened. It asks to be tasted in ' + K.OPEN_DAYS + ' days.'); } }, K.icon('glass'), 'Opened a bottle for glasses')) : null,
@@ -183,13 +183,14 @@
   }
 
   /* ---------- editing ---------- */
-  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier'];
+  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier', 'size'];
   K.SHEETS.wineedit = function (S) {
     const w = S.id ? K.wine(S.id) : null;
     if (!S.f) {
       S.f = {};
       FIELDS.forEach((k) => { S.f[k] = w ? (w[k] == null ? '' : String(w[k])) : ''; });
       if (!w) { S.f.colour = 'red'; S.f.par = '3'; S.f.country = 'Bulgaria'; }
+      if (!+S.f.size) S.f.size = '';
       S.f.byGlass = w ? w.byGlass : false; S.f.off = w ? w.off : false; S.f.label = w ? w.label : ''; S.f.pairs = w ? w.pairs.slice() : [];
     }
     const f = S.f;
@@ -202,8 +203,9 @@
       FIELDS.forEach((k) => { doc[k] = String(f[k] || '').trim(); });
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
+      doc.size = +String(doc.size).replace(',', '.') || 0;
       if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
-      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), hype: (w && w.hype) || '', size: (w && w.size) || 0, byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), extra: !!(w && w.extra), hype: (w && w.hype) || '', byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();
@@ -244,6 +246,7 @@
       h('div', { class: 'two' }, K.field('Keep at least (bottles)', inp('par', { inputmode: 'numeric' }), 'Below this it shows as Low and goes on the order list.'), K.field('Order on the list', inp('order', { inputmode: 'numeric' }))),
       K.field('Order it from', inp('supplier', { placeholder: 'The supplier', list: 'sup-list' }), 'The order list is grouped by supplier, to bundle deliveries.'),
       h('datalist', { id: 'sup-list' }, K.suppliers().map((x) => h('option', { value: x }))),
+      K.field('Bottle size (litres)', inp('size', { inputmode: 'decimal', placeholder: w ? String(K.bottleL(w)) : '0.75' }), 'Only matters when Hype keeps this product in litres: its sales are turned into bottles with this size. Empty uses the usual size.'),
       h('label', { class: 'check big' }, h('input', { type: 'checkbox', checked: f.off, onchange: (e) => { f.off = e.target.checked; } }), h('span', null, 'Off the list (kept, not offered)')),
       h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'submit', disabled: !!S.busy }, 'Save'),
         w ? h('button', { class: 'btn danger', type: 'button', onclick: () => {

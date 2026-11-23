@@ -6,8 +6,8 @@
   "start_url": "./#food",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#1F2020",
+  "background_color": "#1F1F2D",
+  "theme_color": "#1F1F2D",
   "icons": [
     {
       "src": "icons/icon-192.png",
