@@ -228,7 +228,7 @@
     return K.sheet('Prices and stock from Hype', h('div', { class: 'stack' },
       h('p', { class: 'muted' }, S.items.length + ' articles in the file · ' + paired.length + ' of ' + wines.length + ' bottles paired'),
       S.sales ? h('p', { class: 'banner' }, h('b', null, 'This looks like a sales report. '), 'Its quantities are what was sold, not what is on the shelf, so stock is switched off. Prices can still be taken.') : null,
-      S.live ? h('p', { class: 'hint' }, 'Pair each bottle with its product in Hype. From then on its stock is the sheet’s number, and Refresh stock updates it.') : h('div', { class: 'hy-opts' },
+      S.live ? h('p', { class: 'hint' }, 'Pair each bottle with its product in Hype. Then count it once: from that count on, what Hype sells is taken off by itself.') : h('div', { class: 'hy-opts' },
         h('label', null, h('input', { type: 'checkbox', checked: S.doStock ? true : null, disabled: S.cols.qty < 0 ? true : null, onchange: (e) => { S.doStock = e.target.checked; } }), 'Set the bottles in stock from Hype'),
         h('label', null, h('input', { type: 'checkbox', checked: S.doPrice ? true : null, disabled: S.cols.price < 0 ? true : null, onchange: (e) => { S.doPrice = e.target.checked; } }), 'Set the prices from Hype')),
       S.live ? null : h('details', null, h('summary', null, 'Wrong numbers? Choose the columns'),
