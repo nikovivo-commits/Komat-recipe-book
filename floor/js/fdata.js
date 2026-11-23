@@ -420,6 +420,14 @@
     return x.id;
   };
   K.countedIn = (w, take) => { const c = D.cellar[w.id]; return !!(c && take && c.at >= take.at); };
+  /* the weekly count: due on a Monday, or whenever the last one is a week old */
+  K.COUNT_DAY = 1;
+  K.countDue = function () {
+    if (K.takeOn() || !K.takeList().length) return null;
+    const last = D.take && D.take.done ? D.take.done : 0, days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+    if (days == null) return { never: true };
+    return days >= 7 || (new Date().getDay() === K.COUNT_DAY && days >= 4) ? { days: days } : null;
+  };
   K.startTake = function () {
     const doc = { at: Date.now(), name: K.myName(), done: 0, hat: (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0 };
     D.take = doc;
@@ -446,6 +454,9 @@
     const again = !!(prev && take && prev.at >= take.at);
     const was = again ? prev.was : K.stockOf(w.id);
     if (was != null) doc.was = was;
+    /* what Hype rang up between the last count and this one, in bottles: the losses are read against it */
+    const sold = again ? prev.sold : K.soldSince(w);
+    if (sold != null) doc.sold = sold;
     /* what Hype showed at the moment of the count: later sales are measured from here */
     const hr = K.hypeRow(w);
     if (hr) { doc.hq = hr.qty; doc.hat = (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0; }

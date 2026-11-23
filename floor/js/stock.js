@@ -141,6 +141,8 @@
         h('span', null, take ? 'Running · ' + done + ' of ' + all.length + ' counted' : last ? 'Last count ended ' + when(last.done) : 'Count what is really on the shelf'))),
       take ? h('div', { class: 'mg-bar', role: 'img', 'aria-label': done + ' of ' + all.length + ' counted' }, h('span', { style: 'width:' + (all.length ? Math.round((done / all.length) * 100) : 0) + '%' })) : null,
       h('button', { type: 'button', class: 'btn light wide', onclick: () => K.go('count') }, take ? 'Keep counting' : 'Start a count')));
+    const due = K.countDue();
+    if (due) body.append(h('p', { class: 'banner' }, h('b', null, due.never ? 'No count has been done yet. ' : 'Time for the weekly count. '), due.never ? 'The first one sets the real numbers.' : 'The last one was ' + due.days + ' days ago.'));
     const need = toOrder(), paired = all.filter((x) => K.hypeRow(x)).length;
     const item = (icon, name, note, onclick) => h('button', { type: 'button', class: 'mg-row', onclick: onclick }, K.icon(icon),
       h('span', { class: 'to-txt' }, h('b', null, name), h('span', { class: 'muted' }, note)), K.icon('next'));
@@ -251,11 +253,16 @@
       .map((x) => Object.assign(x, { d: Math.round((x.c.n - x.c.was) * 10) / 10 })).filter((x) => x.d !== 0).sort((a, b) => a.d - b.d);
     const lost = rows.filter((x) => x.d < 0), found = rows.filter((x) => x.d > 0);
     const sum = (l) => Math.round(l.reduce((s, x) => s + Math.abs(x.d), 0) * 10) / 10;
+    /* against what Hype rang up: 6 bottles sold and 7 gone is 17% more than was paid for */
+    const pct = (x) => (x.c.sold > 0 && x.d < 0 ? Math.round((-x.d / x.c.sold) * 100) : null);
+    const rung = rows.filter((x) => x.c.sold > 0), soldAll = Math.round(rung.reduce((s, x) => s + x.c.sold, 0) * 10) / 10, goneAll = Math.round(rung.reduce((s, x) => s + x.c.sold - x.d, 0) * 10) / 10;
     const line = (x) => h('li', { class: x.d < 0 ? 'lost' : 'found' }, h('b', { class: 'mono' }, (x.d > 0 ? '+' : '−') + Math.abs(x.d)),
-      h('span', null, x.w.stockOnly ? x.w.name : K.wineTitle(x.w), h('small', { class: 'muted' }, ' expected ' + K.qtyText(x.c.was) + ', ' + (x.c.auto ? 'not found on the shelf' : 'counted ' + x.c.n) + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
+      h('span', null, x.w.stockOnly ? x.w.name : K.wineTitle(x.w), h('small', { class: 'muted' }, ' expected ' + K.qtyText(x.c.was) + ', ' + (x.c.auto ? 'not found on the shelf' : 'counted ' + x.c.n) + (x.c.sold > 0 ? ' · Hype sold ' + x.c.sold + (pct(x) != null ? ', ' + pct(x) + '% more is gone' : '') : '') + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
     return K.sheet('Differences', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'From each bottle’s last stock check: what the book expected against what was on the shelf. A minus is missing bottles: not rung up, broken, poured freely, or a delivery Hype has that never arrived. A plus is usually a delivery not entered in Hype.'),
       D.take && D.take.done && !rows.length ? h('p', { class: 'banner' }, h('b', null, 'The count ended ' + when(D.take.done) + '. '), 'A first count sets the starting numbers, so it has nothing to be compared with. From the next count on, this shows what went missing and what turned up.') : null,
+      soldAll > 0 ? h('p', { class: 'banner' }, h('b', null, 'Hype rang up ' + soldAll + ' bottles; ' + goneAll + ' are gone. '),
+        goneAll > soldAll ? 'That is ' + Math.round(((goneAll - soldAll) / soldAll) * 100) + '% more than was paid for, on the drinks listed below.' : 'Nothing is missing on the drinks listed below.') : null,
       !rows.length && !(D.take && D.take.done) ? h('p', { class: 'muted' }, 'No differences yet. They show from the second count on.') : null,
       lost.length ? h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Missing', h('span', { class: 'n' }, sum(lost) + ' bottles')), h('ul', { class: 'ord-list diff' }, lost.map(line))) : null,
       found.length ? h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'More than expected', h('span', { class: 'n' }, sum(found) + ' bottles')), h('ul', { class: 'ord-list diff' }, found.map(line))) : null), { wide: true });

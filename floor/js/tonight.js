@@ -31,6 +31,9 @@
         h('span', { class: 'to-txt' }, h('b', null, 'A stock count is running'), h('span', { class: 'muted' }, done + ' of ' + all.length + ' counted. Tap to count.')), K.icon('next')));
     }
 
+    const weekly = K.canEdit() ? K.countDue() : null;
+    if (weekly && !weekly.never) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => K.go('count') }, K.icon('clipboard'),
+      h('span', { class: 'to-txt' }, h('b', null, 'Time for the weekly count'), h('span', { class: 'muted' }, 'The last one was ' + weekly.days + ' days ago. It shows what went missing.')), K.icon('next')));
     const list = K.takeList(), out = list.filter((x) => K.stockState(x) === 'out'), low = list.filter((x) => K.stockState(x) === 'low');
     const known = list.some((x) => K.stockState(x) !== 'none');
     if (!known) {
