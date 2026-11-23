@@ -183,13 +183,14 @@
   }
 
   /* ---------- editing ---------- */
-  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier'];
+  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier', 'size'];
   K.SHEETS.wineedit = function (S) {
     const w = S.id ? K.wine(S.id) : null;
     if (!S.f) {
       S.f = {};
       FIELDS.forEach((k) => { S.f[k] = w ? (w[k] == null ? '' : String(w[k])) : ''; });
       if (!w) { S.f.colour = 'red'; S.f.par = '3'; S.f.country = 'Bulgaria'; }
+      if (!+S.f.size) S.f.size = '';
       S.f.byGlass = w ? w.byGlass : false; S.f.off = w ? w.off : false; S.f.label = w ? w.label : ''; S.f.pairs = w ? w.pairs.slice() : [];
     }
     const f = S.f;
@@ -202,8 +203,9 @@
       FIELDS.forEach((k) => { doc[k] = String(f[k] || '').trim(); });
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
+      doc.size = +String(doc.size).replace(',', '.') || 0;
       if (K.DRINK_KINDS.includes(doc.colour)) f.byGlass = !!doc.glassPrice;
-      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), hype: (w && w.hype) || '', size: (w && w.size) || 0, byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
+      Object.assign(doc, { focus: w && (f.label || '') === w.label ? w.focus : null, nostock: !!(w && w.nostock), stockOnly: !!(w && w.stockOnly), hype: (w && w.hype) || '', byGlass: f.byGlass, off: f.off, label: f.label || '', pairs: f.pairs, example: w ? w.example && !S.touched : false });
       if (w) doc.id = w.id;
       K.saveWine(doc).then((id) => { K.toast('Saved'); if (!w) K.go('winepage', { id: id }); });
       ui.sheet = null; K.render();
@@ -244,6 +246,7 @@
       h('div', { class: 'two' }, K.field('Keep at least (bottles)', inp('par', { inputmode: 'numeric' }), 'Below this it shows as Low and goes on the order list.'), K.field('Order on the list', inp('order', { inputmode: 'numeric' }))),
       K.field('Order it from', inp('supplier', { placeholder: 'The supplier', list: 'sup-list' }), 'The order list is grouped by supplier, to bundle deliveries.'),
       h('datalist', { id: 'sup-list' }, K.suppliers().map((x) => h('option', { value: x }))),
+      K.field('Bottle size (litres)', inp('size', { inputmode: 'decimal', placeholder: w ? String(K.bottleL(w)) : '0.75' }), 'Only matters when Hype keeps this product in litres: its sales are turned into bottles with this size. Empty uses the usual size.'),
       h('label', { class: 'check big' }, h('input', { type: 'checkbox', checked: f.off, onchange: (e) => { f.off = e.target.checked; } }), h('span', null, 'Off the list (kept, not offered)')),
       h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'submit', disabled: !!S.busy }, 'Save'),
         w ? h('button', { class: 'btn danger', type: 'button', onclick: () => {

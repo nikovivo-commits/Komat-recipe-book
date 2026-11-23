@@ -405,16 +405,42 @@
       K.db.doc('cellarmoves/' + id).delete().catch(K.writeFailed);
     } });
   };
-  K.countBottles = function (w, n) {
-    const doc = { n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() };
-    /* what the book expected before this check: the difference is what went missing, or turned up */
-    const was = K.stockOf(w.id);
+  /* ---------- the physical count: everyone counts the shelves, each bottle is saved the moment it is typed ---------- */
+  /* the count that is running, or null. It is one line in the settings: when it started, who started it, when it ended. */
+  K.takeOn = () => (D.take && D.take.at && !D.take.done ? D.take : null);
+  K.takeList = () => K.winesSorted().filter((w) => !w.off && !w.nostock);
+  K.countedIn = (w, take) => { const c = D.cellar[w.id]; return !!(c && take && c.at >= take.at); };
+  K.startTake = function () {
+    const doc = { at: Date.now(), name: K.myName(), done: 0, hat: (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0 };
+    D.take = doc;
+    K.refresh(true);
+    return K.db.doc('fohsettings/stocktake').set(doc).catch(K.writeFailed);
+  };
+  /* close the count; `zeroRest`: what nobody found is not on the shelf, so it goes to 0 */
+  K.endTake = function (zeroRest) {
+    const take = K.takeOn();
+    if (!take) return Promise.resolve(0);
+    const rest = zeroRest ? K.takeList().filter((w) => !K.countedIn(w, take)) : [];
+    const writes = rest.map((w) => K.countBottles(w, 0, true, { auto: true }));
+    const doc = Object.assign({}, take, { done: Date.now(), endName: K.myName(), zeroed: rest.length });
+    D.take = doc;
+    K.refresh(true);
+    return Promise.all(writes.concat([K.db.doc('fohsettings/stocktake').set(doc).catch(K.writeFailed)])).then(() => rest.length);
+  };
+  /* `quiet`: no redraw (the count page updates its own row, so the keyboard stays up); `extra`: marks kept with the count */
+  K.countBottles = function (w, n, quiet, extra) {
+    const prev = D.cellar[w.id], take = K.takeOn();
+    const doc = Object.assign({ n: Math.max(0, Math.round(+n * 10) / 10 || 0), at: Date.now(), by: myId(), name: K.myName() }, extra || {});
+    /* what the book expected before this check: the difference is what went missing, or turned up.
+       Counted a second time in the same stock take, the first expectation stands. */
+    const again = !!(prev && take && prev.at >= take.at);
+    const was = again ? prev.was : K.stockOf(w.id);
     if (was != null) doc.was = was;
     /* what Hype showed at the moment of the count: later sales are measured from here */
     const hr = K.hypeRow(w);
     if (hr) { doc.hq = hr.qty; doc.hat = (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0; }
     D.cellar = Object.assign({}, D.cellar, { [w.id]: doc });
-    K.refresh(true);
+    if (!quiet) K.refresh(true);
     return K.db.doc('cellar/' + w.id).set(doc).catch(K.writeFailed);
   };
 
@@ -499,6 +525,7 @@
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
       D.tasting = m.tasting || null;
+      D.take = m.stocktake || null;
       D.hypeUrl = (m.hype && m.hype.url) || '';
       /* a fresher read made on this phone is not replaced by an older saved one */
       if (m.hypestock && (!D.hypeStock || (m.hypestock.at || 0) >= (D.hypeStock.at || 0))) K.setHypeStock(m.hypestock);

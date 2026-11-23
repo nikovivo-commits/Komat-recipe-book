@@ -21,6 +21,7 @@
       w.append(K.catRest('No wines to count yet', 'Add the wines in the Wine tab; their bottles are counted here.', h('div', { class: 'btns center' }, h('button', { class: 'btn primary', type: 'button', onclick: () => K.go('wine') }, 'Go to the wine list'))));
       return { body: body };
     }
+    w.append(takeBar());
     w.append(openBox());
     w.append(hypeBar());
     if (D.hypeStock) {
@@ -30,7 +31,7 @@
     w.append(K.searchBox('sq', ui.sq, 'Search a wine or drink', (v) => { ui.sq = v; K.render(); }));
     w.append(h('div', { class: 'chips filters' },
       K.seg([['', 'All'], ['need', 'Low & out'], ['glass', 'By the glass']], ui.stockF, (v) => { ui.stockF = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Show' }),
-      K.canWrite() ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'stocktake', n: {} }; K.render(); } }, K.icon('list'), 'Stock check') : null,
+      K.canWrite() ? h('button', { type: 'button', class: 'chip', onclick: () => K.go('count') }, K.icon('list'), 'Physical count') : null,
       h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'diffs' }; K.render(); } }, 'Differences'),
       h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'orderlist' }; K.render(); } }, 'To order'),
       K.canEdit() ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'memo', f: {} }; K.render(); } }, 'Minimums & suppliers') : null,
@@ -51,6 +52,14 @@
     });
     return { body: body };
   };
+  /* a physical count is running: how far it is, and the way back into it */
+  function takeBar() {
+    const take = K.takeOn();
+    if (!take) return h('span');
+    const all = K.takeList(), done = all.filter((x) => K.countedIn(x, take)).length;
+    return h('button', { type: 'button', class: 'al-nudge take-bar', onclick: () => K.go('count') },
+      K.icon('list'), h('span', null, h('b', null, 'A count is running: ' + done + ' of ' + all.length + ' counted'), h('span', null, 'Tap to keep counting. The numbers below settle when it is finished.')), K.icon('next'));
+  }
   /* open bottles of wine: how long each has been open, and the ones to taste today */
   const dayWord = (d) => (d === 0 ? 'Opened today' : d === 1 ? 'Opened yesterday' : 'Open ' + d + ' days');
   function openBox() {
@@ -184,26 +193,6 @@
       h('button', { class: 'btn primary wide', type: 'submit' }, S.k === 'count' ? 'Save the count' : 'Save')));
   };
 
-  /* the whole cellar in one go: a box per wine, only the ones you fill in are saved */
-  K.SHEETS.stocktake = function (S) {
-    const all = K.winesSorted().filter((w) => !w.off && !w.nostock);
-    const save = (e) => {
-      e.preventDefault();
-      const ids = Object.keys(S.n).filter((id) => String(S.n[id]).trim() !== '' && +S.n[id] >= 0);
-      if (!ids.length) { K.toast('Write the bottles for at least one wine.', { tone: 'bad' }); return; }
-      ids.forEach((id) => { const w = K.wine(id); if (w) K.countBottles(w, +S.n[id]); });
-      ui.sheet = null; K.render();
-      K.toast(ids.length + (ids.length === 1 ? ' wine counted' : ' wines counted'));
-    };
-    return K.sheet('Stock check', h('form', { class: 'stack', onsubmit: save },
-      K.hypeOld() ? h('p', { class: 'banner' }, h('b', null, 'Hype was read more than 12 hours ago. '), 'Ask for a fresh read before counting, or the sales in between are taken off twice.') : null,
-      h('p', { class: 'hint' }, 'Count the shelf and write what is there. Leave a box empty to keep its number. Grey numbers are what the book thinks is there.'),
-      h('div', { class: 'take-list' }, all.map((w) => h('label', { class: 'take-row' }, K.wineLabel(w, 'mini'),
-        h('span', { class: 'sr-txt' }, h('b', null, w.name + (w.vintage ? ' ' + w.vintage : '')), h('span', { class: 'muted' }, w.producer || K.COL[w.colour])),
-        h('input', { class: 'input mono take-in', id: 'tk-' + w.id, inputmode: 'numeric', placeholder: K.stockOf(w.id) == null ? '–' : String(K.stockOf(w.id)), value: S.n[w.id] || '', oninput: (e) => { S.n[w.id] = e.target.value; }, 'aria-label': 'Bottles of ' + w.name })))),
-      h('button', { class: 'btn primary wide', type: 'submit' }, 'Save the counts')), { wide: true });
-  };
-
   /* what each stock check found: the book expected one number, the shelf had another. Losses first. */
   K.SHEETS.diffs = function () {
     const rows = Object.keys(D.cellar).map((id) => ({ w: K.wine(id), c: D.cellar[id] })).filter((x) => x.w && x.c.was != null)
@@ -211,10 +200,11 @@
     const lost = rows.filter((x) => x.d < 0), found = rows.filter((x) => x.d > 0);
     const sum = (l) => Math.round(l.reduce((s, x) => s + Math.abs(x.d), 0) * 10) / 10;
     const line = (x) => h('li', { class: x.d < 0 ? 'lost' : 'found' }, h('b', { class: 'mono' }, (x.d > 0 ? '+' : '−') + Math.abs(x.d)),
-      h('span', null, K.wineTitle(x.w), h('small', { class: 'muted' }, ' expected ' + K.qtyText(x.c.was) + ', counted ' + x.c.n + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
+      h('span', null, x.w.stockOnly ? x.w.name : K.wineTitle(x.w), h('small', { class: 'muted' }, ' expected ' + K.qtyText(x.c.was) + ', ' + (x.c.auto ? 'not found on the shelf' : 'counted ' + x.c.n) + ' · ' + K.prettyDate(K.ymd(new Date(x.c.at)), { day: 'numeric', month: 'short' }) + (x.c.name ? ' · ' + x.c.name : ''))));
     return K.sheet('Differences', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'From each bottle’s last stock check: what the book expected against what was on the shelf. A minus is missing bottles: not rung up, broken, poured freely, or a delivery Hype has that never arrived. A plus is usually a delivery not entered in Hype.'),
-      !rows.length ? h('p', { class: 'muted' }, 'No differences yet. They show after a stock check.') : null,
+      D.take && D.take.done ? h('p', { class: 'banner' }, h('b', null, 'The count ended ' + when(D.take.done) + '. '), 'The first count is measured against Hype’s own numbers, so most of what shows here is Hype being wrong, not bottles lost. The next count shows the real losses.') : null,
+      !rows.length ? h('p', { class: 'muted' }, 'No differences yet. They show after a count.') : null,
       lost.length ? h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Missing', h('span', { class: 'n' }, sum(lost) + ' bottles')), h('ul', { class: 'ord-list diff' }, lost.map(line))) : null,
       found.length ? h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'More than expected', h('span', { class: 'n' }, sum(found) + ' bottles')), h('ul', { class: 'ord-list diff' }, found.map(line))) : null), { wide: true });
   };

@@ -18,12 +18,13 @@
   });
 
   const TABS = [['food', 'Food', 'plate'], ['wine', 'Drinks', 'glass'], ['stock', 'Stock', 'bottle'], ['quiz', 'Quiz', 'trophy'], ['schedule', 'Schedule', 'rota']];
-  const TAB_OF = { dish: 'food', winepage: 'wine' };
+  const TAB_OF = { dish: 'food', winepage: 'wine', count: 'stock' };
 
   /* ---------- navigation ---------- */
   function hashFor() {
     if (ui.view === 'dish' && ui.id) return 'd.' + ui.id;
     if (ui.view === 'winepage' && ui.id) return 'w.' + ui.id;
+    if (ui.view === 'count') return 'count';
     return TABS.some((t) => t[0] === ui.view) ? ui.view : '';
   }
   function fromHash(hs) {
@@ -32,6 +33,7 @@
     if (m) { ui.view = 'dish'; ui.id = decodeURIComponent(m[1]); return true; }
     m = hs.match(/^w\.(.+)$/);
     if (m) { ui.view = 'winepage'; ui.id = decodeURIComponent(m[1]); return true; }
+    if (hs === 'count') { ui.view = 'count'; return true; }
     if (TABS.some((t) => t[0] === hs)) { ui.view = hs; return true; }
     return false;
   }
