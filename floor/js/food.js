@@ -199,7 +199,7 @@
     if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
       K.icon('list'), h('span', null, h('b', null, 'Set up the tasting menu'), h('span', null, 'Pick its courses from the dishes, in order.')), K.icon('next')) : null;
     return h('section', { class: 'tasting' },
-      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '') + (t.pairing ? ' · ' + t.pairingName.toLowerCase() + ' ' + K.price(t.pairing) : '')), h('h2', null, t.name)),
+      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '') + (t.pairing ? ' · ' + K.T(t.pairingName).toLowerCase() + ' ' + K.price(t.pairing) : '')), h('h2', null, t.name)),
         K.canEdit() ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } }, K.icon('edit'), 'Edit') : null),
       t.note ? h('p', { class: 'muted' }, t.note) : null,
       t.pairing ? h('p', { class: 'ts-pour' }, K.icon('glass'), h('span', null, h('b', null, 'Pairing pour: about ' + K.PAIR_ML + ' ml of each wine. '), 'A bottle gives ' + Math.floor(750 / K.PAIR_ML) + ' pours. A normal glass is ' + K.GLASS_ML + ' ml.')) : null,
@@ -208,7 +208,7 @@
         h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null)),
         t.wines[d.id] ? wineLine('', t.wines[d.id]) : null))),
       h('button', { type: 'button', class: 'btn ts-build', onclick: () => { ui.foodTab = 'allergy'; K.render(); window.scrollTo(0, 0); } }, K.icon('shield'), 'Build it for a guest with allergies'),
-      t.extra ? h('button', { type: 'button', class: 'ts-extra', onclick: () => K.go('dish', { id: t.extra.dish.id }) }, h('span', null, h('b', null, 'Can be added: ' + (t.extra.dish.en || t.extra.dish.name)), t.extra.price ? ' · ' + K.price(t.extra.price) : ''), K.icon('next')) : null);
+      t.extra ? h('button', { type: 'button', class: 'ts-extra', onclick: () => K.go('dish', { id: t.extra.dish.id }) }, h('span', null, h('b', null, 'Can be added: ' + K.dn(t.extra.dish)), t.extra.price ? ' · ' + K.price(t.extra.price) : ''), K.icon('next')) : null);
   }
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {
@@ -235,15 +235,18 @@
           h('button', { type: 'button', class: 'tf-name' + (v.state === 'no' ? ' struck' : ''), onclick: () => K.go('dish', { id: d.id }) }, d.name),
           v.state === 'mod' ? h('span', { class: 'alr-fix' }, v.notes.join(' · ')) : v.hits.length ? h('span', { class: 'alr-why' }, v.hits.map((hh) => h('span', null, h('b', null, K.alName(hh.k)), whereText(hh, 2)))) : v.state === 'ask' ? h('span', { class: 'muted tf-ask' }, 'Not confirmed yet: ask the kitchen') : null,
           c.swaps.length ? h('div', { class: 'tf-swap', role: 'group', 'aria-label': 'Serve instead of ' + d.name }, h('span', { class: 'label' }, 'Serve instead'),
-            c.swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), 'aria-pressed': c.chosen === x ? 'true' : 'false', onclick: () => { pick[d.id] = x.d.id; K.render(); } }, x.d.en || x.d.name, x.v.state === 'ask' ? ' ?' : '')))
+            c.swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), 'aria-pressed': c.chosen === x ? 'true' : 'false', onclick: () => { pick[d.id] = x.d.id; K.render(); } }, K.dn(x.d), x.v.state === 'ask' ? ' ?' : '')))
             : v.state === 'no' ? h('span', { class: 'muted tf-ask' }, 'Nothing else on the menu is safe: ask the kitchen to adapt it') : null),
         h('span', { class: 'alr-mark', 'aria-hidden': 'true' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'mod' ? 'edit' : v.state === 'no' ? 'close' : 'alert')));
     });
     const asIs = plan.filter((c) => c.v.state !== 'no').length;
     /* the note for the kitchen: who it is for and every course, with what changes */
-    const line = (c, i) => (i + 1) + '. ' + (c.v.state === 'no' ? (c.chosen ? (c.chosen.d.en || c.chosen.d.name) + ' (instead of ' + (c.d.en || c.d.name) + ')' + (c.chosen.v.state === 'ask' ? ' - CONFIRM' : c.chosen.v.state === 'mod' ? ' - ' + c.chosen.v.notes.join(', ').toUpperCase() : '') : (c.d.en || c.d.name) + ' - CANNOT, kitchen to adapt')
-      : (c.d.en || c.d.name) + (c.v.state === 'mod' ? ' - ' + c.v.notes.join(', ').toUpperCase() : c.v.state === 'ask' ? ' - CONFIRM' : ''));
-    const text = t.name + ' for a guest: ' + sel.map(K.alName).join(', ') + '\n' + plan.map(line).join('\n');
+    /* the note for the kitchen, in the language on screen: Bulgarian names for a Bulgarian kitchen */
+    const nm = (d) => (K.bgMode() ? d.name : K.dn(d)), up = (v) => K.T(v.notes.join(' · ')).toUpperCase();
+    const kitchenLine = (c, i) => (i + 1) + '. ' + (c.v.state === 'no'
+      ? (c.chosen ? nm(c.chosen.d) + K.T(' (instead of ') + nm(c.d) + ')' + (c.chosen.v.state === 'ask' ? K.T(' - CONFIRM') : c.chosen.v.state === 'mod' ? ' - ' + up(c.chosen.v) : '') : nm(c.d) + K.T(' - CANNOT, kitchen to adapt'))
+      : nm(c.d) + (c.v.state === 'mod' ? ' - ' + up(c.v) : c.v.state === 'ask' ? K.T(' - CONFIRM') : ''));
+    const text = K.T(t.name + ' for a guest: ') + sel.map((k) => K.T(K.alName(k))).join(', ') + '\n' + plan.map((c, i) => kitchenLine(c, i)).join('\n');
     const changed = plan.filter((c) => c.v.state !== 'ok').length;
     return h('section', { class: 'group tf' }, h('h2', { class: 'group-title' }, t.name + ' for this guest', h('span', { class: 'n' }, asIs + ' of ' + t.courses.length + ' as they are')),
       h('p', { class: 'hint' }, 'Tap a dish under “Serve instead” to choose the swap. “?” means its allergens are not confirmed yet. The kitchen has the last word.'),
@@ -251,8 +254,8 @@
       h('div', { class: 'tf-out' },
         h('span', { class: 'label' }, 'For the kitchen'),
         h('ol', { class: 'tf-final' }, plan.map((c) => h('li', { class: c.v.state === 'ok' ? '' : 'chg' },
-          c.v.state === 'no' ? (c.chosen ? [h('b', null, c.chosen.d.en || c.chosen.d.name), h('small', null, ' instead of ' + (c.d.en || c.d.name) + (c.chosen.v.state === 'ask' ? ' · confirm' : c.chosen.v.state === 'mod' ? ' · ' + c.chosen.v.notes.join(' · ').toLowerCase() : ''))] : [h('b', null, c.d.en || c.d.name), h('small', null, ' cannot have it · kitchen to adapt')])
-            : [h('b', null, c.d.en || c.d.name), c.v.state === 'mod' ? h('small', null, ' ' + c.v.notes.join(' · ').toLowerCase()) : c.v.state === 'ask' ? h('small', null, ' confirm') : null]))),
+          c.v.state === 'no' ? (c.chosen ? [h('b', null, K.dn(c.chosen.d)), h('small', null, ' instead of ' + K.dn(c.d) + (c.chosen.v.state === 'ask' ? ' · confirm' : c.chosen.v.state === 'mod' ? ' · ' + c.chosen.v.notes.join(' · ').toLowerCase() : ''))] : [h('b', null, K.dn(c.d)), h('small', null, ' cannot have it · kitchen to adapt')])
+            : [h('b', null, K.dn(c.d)), c.v.state === 'mod' ? h('small', null, ' ' + c.v.notes.join(' · ').toLowerCase()) : c.v.state === 'ask' ? h('small', null, ' confirm') : null]))),
         h('button', { type: 'button', class: 'btn primary wide', onclick: () => navigator.clipboard.writeText(text).then(() => K.toast('Copied: paste it to the kitchen'), () => K.toast('This device would not copy.')) }, K.icon('copy'), changed ? 'Copy this menu for the kitchen' : 'Copy for the kitchen')));
   }
   K.SHEETS.tasting = function (S) {
@@ -423,8 +426,10 @@
   K.SHEETS.dishedit = function (S) {
     const d = K.dish(S.id), n = (d && d.n) || {}, own = d && !d.r;
     if (!S.f) {
-      S.f = { menuName: n.menuName || '', name: n.name || (d ? d.name : ''), en: n.en || (d ? d.en : ''), section: n.section || '', price: n.price || '', order: n.order || '', pitch: n.pitch || '', story: n.story || '',
-        facts: n.facts || '', niche: (n.niche || []).map((x) => x.n + (x.what ? ' — ' + x.what : '')).join('\n'), pairs: (n.pairs || []).slice(), pairText: n.pairText || '',
+      /* in Bulgarian the texts for the table are the dish's Bulgarian ones; the English stay as they are */
+      const bgm = K.bgMode() && !!d, b = n.bg || {}, tx = (k) => (bgm ? b[k] || '' : n[k] || '');
+      S.f = { menuName: n.menuName || '', name: n.name || (d ? d.name : ''), en: n.en || (d ? d.en : ''), section: n.section || '', price: n.price || '', order: n.order || '', pitch: tx('pitch'), story: tx('story'),
+        facts: tx('facts'), niche: (n.niche || []).map((x) => { const what = bgm ? (b.niche || {})[x.n] || '' : x.what; return x.n + (what ? ' — ' + what : ''); }).join('\n'), pairs: (n.pairs || []).slice(), pairText: tx('pairText'),
         hide: !!n.hide, ings: (n.ings || []).join('\n'), allergens: (n.allergens || []).slice() };
     }
     const f = S.f;
@@ -434,6 +439,15 @@
       e.preventDefault();
       const niche = lines(f.niche).map((l) => { const m = l.match(/^(.+?)\s*(?:—|–| - |:)\s*(.+)$/); return m ? { n: m[1].trim(), what: m[2].trim() } : { n: l, what: '' }; });
       const patch = { en: f.en.trim(), section: f.section.trim(), price: f.price.trim(), order: f.order === '' ? undefined : +f.order || 0, pitch: f.pitch.trim(), story: f.story.trim(), facts: f.facts.trim(), niche: niche, pairs: f.pairs, pairText: f.pairText.trim(), hide: f.hide };
+      if (K.bgMode() && d) {
+        /* what was typed is the Bulgarian; the English texts go back as they were (a text with no English yet is kept in both) */
+        const was = {}, whats = {};
+        (n.niche || []).forEach((x) => { was[x.n] = x.what; });
+        niche.forEach((x) => { if (x.what) whats[x.n] = x.what; });
+        patch.bg = Object.assign({}, n.bg, { pitch: patch.pitch, story: patch.story, facts: patch.facts, pairText: patch.pairText, niche: whats });
+        ['pitch', 'story', 'facts', 'pairText'].forEach((k) => { patch[k] = n[k] || patch[k]; });
+        patch.niche = niche.map((x) => ({ n: x.n, what: was[x.n] || x.what }));
+      }
       if (own || !d) { patch.name = f.name.trim(); patch.ings = lines(f.ings); patch.allergens = f.allergens; if (!patch.name) { K.toast('Give the dish a name.', { tone: 'bad' }); return; } }
       else { patch.recipe = d.r.id; patch.menuName = f.menuName.trim(); }
       const id = d ? d.id : 'own-' + K.uid();
@@ -443,6 +457,7 @@
     };
     const wines = K.listWines();
     return K.sheet(d ? 'Edit ' + d.name : 'A dish of the floor’s own', h('form', { class: 'stack', onsubmit: save },
+      K.bgMode() && d ? h('p', { class: 'banner' }, 'You are writing the Bulgarian texts. The English ones stay as they are; switch the language in Settings to change them.') : null,
       own || !d ? K.field('Name on the menu', inp('name', { required: true })) : K.field('Name on the menu', inp('menuName', { placeholder: d.kname }), 'The kitchen calls it “' + d.kname + '”. Leave empty to use that; write the name as printed on the menu to correct it for the floor.'),
       own || !d ? null : h('p', { class: 'hint' }, 'The name, the photo and the ingredients come from the kitchen book. Here you write what the floor needs.'),
       K.field('In English', inp('en'), d && d.r && K.en(d.name) ? 'From the kitchen’s translation list: ' + K.en(d.name) : 'How you say it to a guest who does not speak Bulgarian.'),

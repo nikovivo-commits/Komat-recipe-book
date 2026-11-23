@@ -128,7 +128,7 @@
     if (ids.some((id) => !id)) return null;
     t.courses.forEach((c, i) => { if (c.wine) wines[ids[i]] = c.wine; });
     const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
-    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
+    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
   };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
   K.allergenWhere = function (d) {
@@ -249,6 +249,8 @@
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
       /* light, medium or full: how heavy it feels in the mouth */
       body: ['light', 'medium', 'full'].includes(w.body) ? w.body : '',
+      /* the same texts in Bulgarian: {say, nose, palate, made, story, facts} */
+      bg: w.bg && typeof w.bg === 'object' ? w.bg : {},
       /* the name of this bottle's article in Hype, the till */
       hype: w.hype || '',
       /* the memo for ordering: who delivers it, and how many litres one bottle holds (for products Hype keeps in litres) */

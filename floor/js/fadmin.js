@@ -63,7 +63,7 @@
     else if (a === 'removed') card = h('div', { class: 'login-card card' }, h('h2', { class: 'login-title' }, 'This phone was taken off the team'),
       h('p', { class: 'muted' }, 'Ask the floor manager for the floor code to join again.'), h('button', { class: 'btn primary wide', type: 'button', onclick: () => K.Fire.signOut() }, 'OK'));
     else card = joinForm();
-    return { top: top, body: h('div', { class: 'wrap login' }, card), tabs: false };
+    return { top: top, body: h('div', { class: 'wrap login' }, h('div', { class: 'login-lang' }, K.langSwitch()), card), tabs: false };
   };
 
   /* ---------- your name (the device copy has no sign-in) ---------- */
@@ -94,6 +94,7 @@
     const fire = K.mode === 'firebase', ex = D.wines.some((w) => w.example) || Object.keys(D.notes).some((id) => D.notes[id].example);
     return K.sheet('Settings', h('div', { class: 'settings' },
       h('p', { class: 'muted' }, fire ? (K.me.name || 'You') + ' · ' + K.Fire.roleName(K.me.role) : 'This copy keeps everything on this device.'),
+      h('div', { class: 'set-lang' }, h('span', { class: 'label' }, 'Language'), K.langSwitch()),
       !fire ? link('edit', 'Your name', K.myName() || 'Not set', open('name')) : null,
       fire && K.me.admin ? link('lock', 'People and floor code', 'Who has joined, roles, the code waiters join with', () => K.openPeople()) : null,
       K.canEdit() ? link('glass', 'Add a wine', 'With a photo of its label', () => { ui.sheet = { type: 'wineedit', id: null }; K.render(); }) : null,
@@ -127,6 +128,8 @@
         if (!w) return;
         FILL.forEach((k) => { if (!w[k] && docs[p][k]) patch[k] = docs[p][k]; });
         /* a line still exactly as the list first wrote it takes the list's new wording; one changed by hand is kept */
+        const hb = docs[p].bg || {}, wb = w.bg || {}, miss = Object.keys(hb).filter((k) => hb[k] && !wb[k]);
+        if (miss.length) { patch.bg = Object.assign({}, wb); miss.forEach((k) => { patch.bg[k] = hb[k]; }); }
         Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
         if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
       });
@@ -204,10 +207,18 @@
       let paired = 0;
       (S.house && S.house.pairings || []).forEach((pr) => {
         const e = (S.house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
-        if (!d || (d.n.pairs || []).length) return;
-        const ok = pr.wines.filter((x) => K.wine(x.id)), why = {};
-        ok.forEach((x) => { if (x.why) why[x.id] = x.why; });
-        if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why }); paired++; }
+        if (!d) return;
+        /* a dish paired on an earlier load keeps its wines; the reasons it still has word for word get their Bulgarian */
+        if ((d.n.pairs || []).length) {
+          const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
+          let add = 0;
+          pr.wines.forEach((x) => { if (x.whyBg && have[x.id] === x.why && !bgWhy[x.id]) { bgWhy[x.id] = x.whyBg; add++; } });
+          if (add) K.saveNote(d.id, { bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) });
+          return;
+        }
+        const ok = pr.wines.filter((x) => K.wine(x.id)), why = {}, whyBg = {};
+        ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
+        if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
       });
       ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
     };

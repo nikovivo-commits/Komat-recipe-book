@@ -231,8 +231,9 @@
     (house.pairings || []).forEach((pr) => {
       const i = (house.menu || []).findIndex((m) => m.en === pr.dish), why = {};
       if (i < 0) return;
-      pr.wines.forEach((x) => { if (x.why) why[x.id] = x.why; });
-      Object.assign(docs['dishnotes/own-demo-' + i], { pairs: pr.wines.map((x) => x.id), pairWhy: why });
+      const whyBg = {}, note = docs['dishnotes/own-demo-' + i];
+      pr.wines.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
+      Object.assign(note, { pairs: pr.wines.map((x) => x.id), pairWhy: why, bg: Object.assign({}, note.bg, { pairWhy: whyBg }) });
     });
     const t = K.tastingFrom(house, (e) => { const i = (house.menu || []).indexOf(e); return i < 0 ? '' : 'own-demo-' + i; });
     if (t) docs['fohsettings/tasting'] = t;
@@ -263,7 +264,7 @@
     K.demo = !!window.KOMAT_DEMO;
     /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
     const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
-    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v2' : 'komat.floor.db.v1');
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v3' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
     K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };

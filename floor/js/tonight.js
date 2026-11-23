@@ -17,7 +17,7 @@
   K.V.tonight = function () {
     const body = h('div', { class: 'page' }), w = h('div', { class: 'wrap to' });
     body.append(w);
-    const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const day = new Date().toLocaleDateString(K.locale || 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
     w.append(h('div', { class: 'to-top' }, h('p', { class: 'label' }, day), h('h1', { class: 'ptitle' }, 'Tonight'), h('p', { class: 'psub' }, 'What to know before the first table.')));
     w.append(h('div', { class: 'to-acts' },
       h('button', { type: 'button', class: 'to-act primary', onclick: () => { ui.foodTab = 'allergy'; K.go('food'); } }, K.icon('shield'), h('span', null, 'Allergy check')),

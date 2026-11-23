@@ -64,28 +64,28 @@
     /* what a grape usually smells of: one question per grape, from the wines that have no notes of their own */
     const seen = {}, typical = [];
     wines.forEach((w) => { const n = K.wineNotes ? K.wineNotes(w) : null; if (n && n.typical && n.grape && !seen[n.grape]) { seen[n.grape] = 1; typical.push(n); } });
-    typical.forEach((n) => out.push(mk('wine', 'What does ' + n.grape + ' usually smell of?', n.nose, typical.map((x) => x.nose), n.palate + '.')));
+    typical.forEach((n) => out.push(mk('wine', 'What does ' + n.grape + ' usually smell of?', n.nose, typical.map((x) => x.nose), K.T(n.palate) + '.')));
     wines.forEach((w) => {
       const t = K.wineTitle(w);
-      if (w.grapes) out.push(mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES), w.story && short(w.story, 140)));
+      if (w.grapes) out.push(mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES), w.story && short(K.T(w.story), 140)));
       if (w.region) out.push(mk('wine', 'Where does ' + t + ' come from?', w.region, wines.map((x) => x.region).concat(REGIONS), w.region + (w.country ? ', ' + w.country : '') + '.'));
       if (w.label) out.push(mk('wine', 'Whose label is this?', t, titles, w.say, K.media(w.label)));
       if (w.byGlass && w.glassPrice) out.push(mk('wine', 'How much is ' + (K.isDrink(w) ? (w.measure ? w.measure + ' of ' : '') : 'a glass of ') + w.name + '?', K.price(w.glassPrice), wines.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat([+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)))), 'By the glass, ' + K.glassMl(w) + ' ml.'));
       if (w.bottlePrice) out.push(mk('wine', 'How much is a bottle of ' + w.name + '?', K.price(w.bottlePrice), wines.filter((x) => x.bottlePrice).map((x) => K.price(x.bottlePrice)).concat([+w.bottlePrice + 4, +w.bottlePrice - 4, +w.bottlePrice + 8].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
       if (w.serve) out.push(mk('wine', 'At what temperature do we serve ' + w.name + '?', w.serve, wines.map((x) => x.serve).concat(TEMPS), w.glass ? 'In a ' + w.glass.toLowerCase() + '.' : ''));
-      if (w.nose) out.push(mk('wine', 'Which wine smells of ' + short(w.nose, 70).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.palate));
+      if (w.nose) out.push(mk('wine', 'Which wine smells of ' + short(K.T(w.nose), 70).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.palate));
       const o = !K.isDrink(w) && K.origin ? K.origin(w) : null;
       if (o && !o.bg && w.country) out.push(mk('wine', 'Which country is ' + t + ' from?', w.country, wines.map((x) => x.country).concat(['Portugal', 'Argentina', 'Chile', 'Bulgaria']), o.where + '.'));
       if (o && foreign.length >= 3 && home.length >= 3) out.push(o.bg ? mk('wine', 'Which of these wines is Bulgarian?', t, foreign, 'From ' + o.where + '.') : mk('wine', 'Which of these wines is not Bulgarian?', t, home, 'From ' + o.where + '.'));
       if (w.appellation) out.push(mk('wine', 'Which appellation is ' + t + '?', w.appellation, wines.map((x) => x.appellation).concat(['Bordeaux AOC', 'Barolo DOCG', 'Rioja DOCa', 'Chablis AOC', 'Prosecco DOC']), w.region));
-      if (w.made) out.push(mk('wine', 'Which wine is made like this: ' + short(w.made, 90).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.say));
+      if (w.made) out.push(mk('wine', 'Which wine is made like this: ' + short(K.T(w.made), 90).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.say));
       K.dishes().forEach((d) => {
         if (K.housePairs ? K.housePairs(d).includes(w) : (d.n.pairs || []).includes(w.id) || w.pairs.includes(d.id)) {
           const why = (d.n.pairWhy || {})[w.id] || d.n.pairText || w.say;
           /* the other right answers are left out of the wrong ones: a dish has several wines, a wine several dishes */
           const others = K.housePairs ? K.housePairs(d).filter((x) => x !== w).map(K.wineTitle) : [];
-          out.push(mk('wine', 'Which wine do we pour with ' + (d.en || d.name) + '?', t, titles.filter((x) => !others.includes(x)), why));
-          out.push(mk('wine', 'Which dish do we pour ' + t + ' with?', d.en || d.name, K.dishes().filter((x) => x === d || !K.housePairs || !K.housePairs(x).includes(w)).map((x) => x.en || x.name), why));
+          out.push(mk('wine', 'Which wine do we pour with ' + K.dn(d) + '?', t, titles.filter((x) => !others.includes(x)), why));
+          out.push(mk('wine', 'Which dish do we pour ' + t + ' with?', K.dn(d), K.dishes().filter((x) => x === d || !K.housePairs || !K.housePairs(x).includes(w)).map((x) => K.dn(x)), why));
         }
       });
     });
@@ -95,8 +95,8 @@
     const out = [], dishes = K.dishes(), ens = dishes.map((d) => d.en).filter(Boolean), names = dishes.map((d) => d.name);
     const allAl = (K.ALLERGENS || []).map((a) => a[0]);
     const whats = [];
-    dishes.forEach((d) => (d.n.niche || []).forEach((x) => { if (x.what) whats.push(short(x.what, 80)); }));
-    Object.keys(D.gloss).forEach((id) => { if (D.gloss[id].what) whats.push(short(D.gloss[id].what, 80)); });
+    dishes.forEach((d) => (d.n.niche || []).forEach((x) => { if (x.what) whats.push(short(K.T(x.what), 80)); }));
+    Object.keys(D.gloss).forEach((id) => { if (D.gloss[id].what) whats.push(short(K.T(D.gloss[id].what), 80)); });
     dishes.forEach((d) => {
       if (d.en && d.en !== d.name) out.push(mk('food', 'How do you say ' + d.name + ' in English?', d.en, ens.concat(['Chef’s special', 'Garden salad', 'Slow-cooked beef']), d.n.pitch && short(d.n.pitch, 140)));
       const al = K.dishAllergens(d).keys;
@@ -114,14 +114,14 @@
       }
       (d.n.niche || []).forEach((x) => {
         out.push(mk('food', 'Which dish has ' + x.n + '?', d.name, names, x.what));
-        if (x.what) out.push(mk('food', 'What is ' + x.n + '?', short(x.what, 80), whats, 'In ' + d.name + '.'));
+        if (x.what) out.push(mk('food', 'What is ' + x.n + '?', short(K.T(x.what), 80), whats, 'In ' + d.name + '.'));
       });
       if (d.price) out.push(mk('food', 'How much is ' + d.name + '?', K.price(d.price), dishes.filter((x) => x.price).map((x) => K.price(x.price)).concat([+d.price + 2, +d.price - 2, +d.price + 4].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
       if (d.photo || K.dishArt(d)) out.push(mk('food', 'Which dish is this?', d.name, names, d.en, d.photo ? K.media(d.photo) : K.dishArt(d)));
     });
     Object.keys(D.gloss).forEach((id) => {
       const g = D.gloss[id];
-      if (g.name && g.what) out.push(mk('food', 'What is ' + g.name + '?', short(g.what, 80), whats, g.en ? 'In English: ' + g.en + '.' : ''));
+      if (g.name && g.what) out.push(mk('food', 'What is ' + g.name + '?', short(K.T(g.what), 80), whats, g.en ? 'In English: ' + g.en + '.' : ''));
     });
     return out.filter(Boolean);
   }

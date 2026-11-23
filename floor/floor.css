@@ -915,3 +915,8 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .pr-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
 .pr-more .to-rows { margin-top: 6px; }
 .alc-bread .chip[aria-pressed="true"] { background: var(--urgent-soft); border-color: var(--urgent); color: var(--ink); }
+
+/* the language switch in Settings */
+.set-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 10px; }
+.lang-seg { flex: none; }
+.login-lang { display: flex; justify-content: center; margin: 0 0 14px; }

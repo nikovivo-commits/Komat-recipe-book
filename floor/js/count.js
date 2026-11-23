@@ -188,9 +188,9 @@
       K.countBottles(w, v, true);
       /* this row and the progress change in place: a redraw would close the keyboard */
       const r = document.getElementById('ctr-' + w.id);
-      if (r) { r.classList.add('done'); const t = r.querySelector('.ct-res'); if (t) t.textContent = resText(w, take); }
+      if (r) { r.classList.add('done'); const t = r.querySelector('.ct-res'); if (t) t.textContent = K.T(resText(w, take)); }
       const p = progress(take), dn = document.getElementById('ct-done'), fl = document.getElementById('ct-fill');
-      if (dn) dn.textContent = p.done + ' of ' + p.all + ' counted';
+      if (dn) dn.textContent = K.T(p.done + ' of ' + p.all + ' counted');
       if (fl) fl.style.width = p.pct + '%';
     };
     saver[w.id] = save;

@@ -146,12 +146,12 @@
 
   const wineRow = (w, note) => h('button', { type: 'button', class: 'to-row framed', onclick: () => K.go('winepage', { id: w.id }) }, K.wineLabel(w, 'mini'),
     h('span', { class: 'to-txt' }, h('b', null, K.wineTitle(w)), h('span', { class: 'muted' }, note)), K.icon('next'));
-  const about = (w) => { const o = K.origin(w), n = K.wineNotes(w); return [o ? o.kind + ' · ' + o.where : '', n.nose ? low(n.nose.split(',').slice(0, 2).join(',')) : ''].filter(Boolean).join(' · '); };
+  const about = (w) => { const o = K.origin(w), n = K.wineNotes(w); return [o ? o.kind + ' · ' + o.where : '', n.nose ? low(K.T(n.nose).split(',').slice(0, 2).join(',')) : ''].filter(Boolean).join(' · '); };
   K.SHEETS.pair = function (S) {
     const d = K.dish(S.id);
     if (!d) return null;
     const p = K.pairFor(d), t = K.pairTiers(d), tw = K.tasting().wines[d.id], tWine = tw && tw.id ? K.wine(tw.id) : null;
-    const why = (x) => (x.house && (d.n.pairWhy || {})[x.w.id]) || (p.kind && !x.house ? K.styleName(K.wineStyle(x.w)).replace(/^an? /, '').replace(/^./, (c) => c.toUpperCase()) + ': ' + low(K.wineNotes(x.w).nose || about(x.w)) : about(x.w));
+    const why = (x) => (x.house && (d.n.pairWhy || {})[x.w.id]) || (p.kind && !x.house ? K.T(K.styleName(K.wineStyle(x.w))).replace(/^an? /, '').replace(/^./, (c) => c.toUpperCase()) + ': ' + low(K.T(K.wineNotes(x.w).nose) || about(x.w)) : about(x.w));
     const tier = (label, range, x) => h('section', { class: 'pr-tier' },
       h('div', { class: 'pr-h' }, h('b', null, label), h('span', { class: 'muted' }, range)),
       x ? h('button', { type: 'button', class: 'pr-wine', onclick: () => K.go('winepage', { id: x.w.id }) }, K.wineLabel(x.w, 'mini'),
@@ -166,7 +166,7 @@
     const any = t && (t.low || t.mid || t.high);
     const shown = [t && t.low, t && t.mid, t && t.high].filter(Boolean).map((x) => x.w).concat(glass);
     const more = p.house.filter((w) => avail(w) && !shown.includes(w));
-    return K.sheet('What to pour with ' + (d.en || d.name), h('div', { class: 'stack' },
+    return K.sheet('What to pour with ' + K.dn(d), h('div', { class: 'stack' },
       d.n.pairText ? h('p', { class: 'prose' }, d.n.pairText) : null,
       tWine ? h('button', { type: 'button', class: 'pr-tasting', onclick: () => K.go('winepage', { id: tWine.id }) }, K.icon('glass'), h('span', null, h('b', null, 'On the tasting menu: '), K.wineTitle(tWine))) : null,
       p.kind ? h('p', { class: 'hint' }, p.kind[3]) : null,
