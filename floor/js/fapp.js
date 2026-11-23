@@ -105,6 +105,7 @@
     app.append(out.top || header());
     document.body.classList.toggle('over-photo', !out.top && !out.solid);
     if (K.me && K.me.viewer) app.append(h('div', { class: 'viewer-note' }, K.icon('lock'), h('span', null, 'View only: you can look at everything; nothing you tap changes the book.')));
+    if (K.demo) app.append(h('div', { class: 'viewer-note' }, K.icon('sparkle'), h('span', null, 'Demo with sample numbers. It lives in this browser only; nothing here reaches the restaurant.')));
     app.append(h('main', { id: 'main', class: 'main' + (out.wide ? ' wide' : '') }, out.body));
     if (out.tabs !== false) app.append(tabbar());
     if (out.bar) app.append(h('div', { class: 'actionbar' }, h('div', { class: 'actionbar-in' }, out.bar)));
@@ -216,6 +217,27 @@
   }
   K.floorSeed = () => { const d = {}; Object.keys(window.KOMAT_FLOOR_SEED || {}).forEach((p) => { d[p] = K.clone(window.KOMAT_FLOOR_SEED[p]); }); return d; };
 
+  /* what the demo starts with: the printed menu as dishes, the drinks list, a count for every bottle (a few out,
+     a few low) and two wines open for glasses. All of it is sample data in this browser. */
+  function demoSeed(docs, house) {
+    const now = Date.now(), day = 86400000;
+    Object.keys(house.docs || {}).forEach((p) => { docs[p] = K.clone(house.docs[p]); });
+    (house.menu || []).forEach((m, i) => {
+      const e = K.clone(m), name = e.menuName || e.en || 'Dish';
+      delete e.menuName; delete e.match;
+      /* the menu line stands in for the recipe, so the allergy check has ingredients to read */
+      docs['dishnotes/own-demo-' + i] = Object.assign(e, { name: name, onMenu: true, ings: String(m.menuBg || m.menuEn || '').split(/,\s*/).filter(Boolean) });
+    });
+    const ids = Object.keys(docs).filter((p) => p.indexOf('wines/') === 0 && !docs[p].nostock && !docs[p].off).map((p) => p.slice(6));
+    ids.forEach((id, i) => {
+      const par = docs['wines/' + id].par == null ? 3 : +docs['wines/' + id].par;
+      docs['cellar/' + id] = { n: i % 17 === 3 ? 0 : i % 9 === 4 ? Math.max(1, par - 1) : par + 2 + (i % 7), at: now - day, name: 'Demo' };
+    });
+    const wines = ids.filter((id) => !K.DRINK_KINDS.includes(docs['wines/' + id].colour));
+    if (wines[0]) docs['cellarmoves/demo-open-1'] = { w: wines[0], n: 0, at: now - 4 * day, by: 'demo', name: 'Demo', why: 'open' };
+    if (wines[5]) docs['cellarmoves/demo-open-2'] = { w: wines[5], n: 0, at: now - day, by: 'demo', name: 'Demo', why: 'open' };
+  }
+
   async function boot() {
     render();
     if (K.Fire) {
@@ -230,10 +252,13 @@
       return;
     }
     K.mode = 'local';
-    K.db = new K.LocalDB(seed, 'komat.floor.db.v1');
+    K.demo = !!window.KOMAT_DEMO;
+    /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
+    const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v1' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
-    K.me = { id: '', admin: true, canWrite: true, name: K.store.get('fohName', '') };
+    K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };
     fromHash(location.hash);
     try { history.replaceState({ k: 0 }, '', here(location.hash.slice(1) || hashFor())); } catch (e) { /* file:// */ }
     K.subscribe();

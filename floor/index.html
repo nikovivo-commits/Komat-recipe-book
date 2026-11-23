@@ -32,6 +32,10 @@
 <!-- the shared database (stand-alone site only) -->
 <script src="vendor/firebase.js"></script>
 <script src="firebase-config.js"></script>
+<script>
+/* floor/?demo opens a copy with sample data that lives in this browser only: no sign-in, and nothing reaches the restaurant's book */
+if (/[?&]demo(=|&|$)/.test(location.search)) { window.KOMAT_FIREBASE = null; window.KOMAT_DEMO = true; }
+</script>
 <script src="js/core.js"></script>
 <script src="floor/js/fdata.js"></script>
 <script src="js/allergens.js"></script>
