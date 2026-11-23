@@ -18,7 +18,7 @@
     branding: { logo: 'assets/brand/logo.png', heroes: [], pages: {} }, members: {}, names: {}, noWrite: false,
   });
   K.ui = {
-    view: 'food', id: null, sheet: null, q: '', foodTab: 'dishes', sect: '', wq: '', colour: '', stockF: '', sq: '',
+    view: 'tonight', id: null, sheet: null, q: '', foodTab: 'dishes', sect: '', wq: '', colour: '', stockF: '', sq: '',
     schedView: '', week: '', quiz: null, board: 'week',
   };
   K.V = K.V || {};
@@ -241,24 +241,14 @@
   });
   /* the drinks the floor talks about: everything except the stock-only products */
   K.listWines = () => K.winesSorted().filter((w) => !w.stockOnly);
-  /* Hype products no bottle of ours is paired with */
-  K.hypeLoose = function () { const used = {}; D.wines.forEach((w) => { if (w.hype) used[w.hype] = 1; }); return Object.keys(D.hypeIdx || {}).filter((n) => !used[n]).map((n) => D.hypeIdx[n]); };
   /* a short, stable id from a Hype name, whatever alphabet it is written in */
   const hash = (t) => { let a = 5381, b = 52711; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = (a * 33) ^ c; b = (b * 33) ^ c; } return ((a >>> 0) * 4096 + (b >>> 0)).toString(36); };
   const KIND = [[/бел/i, 'white'], [/червен/i, 'red'], [/розе/i, 'rose'], [/пенлив/i, 'sparkling'], [/десерт/i, 'sweet'], [/вин/i, 'white'], [/бира/i, 'beer'], [/безалкохол|общи/i, 'soft'], [/ликьор|анасон/i, 'liqueur']];
-  /* every loose Hype product becomes a stock-only bottle, so it can be checked, flagged and ordered like the rest */
+  /* a Hype product that is not on the menu, as a stock-only bottle: made when one turns up on the shelf during a count */
   function looseDoc(r, i, now) {
     const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
     return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now || Date.now() } };
   }
-  K.addHypeLoose = function () {
-    const loose = K.hypeLoose(), now = Date.now();
-    const docs = loose.map((r, i) => looseDoc(r, i, now));
-    /* all at once: one redraw, then the writes */
-    D.wines = D.wines.concat(docs.map((x) => K.normWine(Object.assign({ id: x.id }, x.doc))));
-    K.refresh(true);
-    return Promise.all(docs.map((x) => K.db.doc('wines/' + x.id).set(x.doc))).then(() => docs.length, (e) => { K.writeFailed(e); return 0; });
-  };
   K.wineTitle = (w) => [w.producer, w.name].filter(Boolean).join(' ') + (w.vintage ? ' ' + w.vintage : '');
   K.price = (p) => { const s = String(p || '').trim(); return !s ? '' : /^[\d.,]+$/.test(s) ? s.replace('.', ',') + ' €' : s; };
 
@@ -370,12 +360,13 @@
     const since = c ? c.at || 0 : 0;
     let n = c ? +c.n || 0 : 0, moved = false;
     D.moves.forEach((m) => { if (m.w === id && m.at > since && !NOTE.includes(m.why)) { n += (+m.n || 0) + (+m.frac || 0); moved = true; } });
-    /* never checked by hand: Hype's own number is the starting point, right or wrong, until a stock check corrects it */
-    if (!c && hr) return Math.round((K.hypeBottles(w, hr.qty) + n) * 10) / 10;   /* n: waste written here, which Hype never hears of */
-    if (!c && !moved) return null;
+    /* never counted: not known. Hype's own total drifts too far to be shown as the stock; it only says what sold since a count. */
+    if (!c && (hr || !moved)) return null;
     if (c && hr && c.hq != null) return Math.round((n + K.hypeBottles(w, hr.qty - c.hq)) * 10) / 10;
     return Math.max(0, n);
   };
+  /* Hype's own number for a drink, in bottles: a hint for managers, never the stock */
+  K.hypeSays = function (w) { const hr = K.hypeRow(w); return hr ? Math.round(K.hypeBottles(w, hr.qty) * 10) / 10 : null; };
   /* what Hype has taken off since the count, in bottles; null when the bottle does not follow Hype */
   K.soldSince = function (w) {
     const c = D.cellar[w.id], hr = K.hypeRow(w);

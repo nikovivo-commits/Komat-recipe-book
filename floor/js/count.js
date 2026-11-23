@@ -39,7 +39,7 @@
             D.hypeUrl ? h('button', { type: 'button', class: 'btn small', disabled: ui.hypeBusy ? true : null, onclick: refresh }, ui.hypeBusy ? 'Reading…' : 'Refresh stock') : null)
             : h('div', { class: 'ct-hype' }, h('span', null, 'The Hype sheet is not connected. The count still works; sales are then taken off by hand.'))),
         h('li', null, h('b', null, 'Count every place a bottle is kept:'), ' the bar, the cellar, the kitchen. One number for all of it.'),
-        h('li', null, h('b', null, 'An open bottle counts as a part:'), ' two full ones and a half-full one is 2.5.')),
+        h('li', null, h('b', null, 'An open bottle counts as a part:'), ' two full ones and a half-full one is 2.5. The pad has a “+ half” key for it.')),
       K.canEdit() ? h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { ui.count = null; K.startTake(); } }, 'Start the count')
         : h('p', { class: 'banner' }, 'The owner or a floor manager starts the count. Once it is started, you can count here.')));
   }
@@ -63,7 +63,9 @@
     body.append(h('div', { class: 'ct-sticky' },
       h('section', { class: 'ct-prog', id: 'ct-prog', role: 'status' },
         h('b', { id: 'ct-done' }, p.done + ' of ' + p.all + ' counted'),
-        K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: finish }, 'Finish') : null,
+        h('span', { class: 'ct-prog-btns' },
+          h('button', { type: 'button', class: 'icon-btn ct-find', 'aria-label': 'Search a bottle', onclick: () => { hidePad(); const el = document.getElementById('cq'); if (el) el.focus(); } }, K.icon('search')),
+          K.canEdit() ? h('button', { type: 'button', class: 'btn small', onclick: finish }, 'Finish') : null),
         h('div', { class: 'ct-bar', 'aria-hidden': 'true' }, h('span', { id: 'ct-fill', style: 'width:' + p.pct + '%' }))),
       K.searchBox('cq', S.q, 'Search a bottle', (v) => { S.q = v; S.keep = {}; K.render(); })));
     body.append(h('p', { class: 'muted ct-since' }, 'Started ' + when(take.at) + (take.name ? ' by ' + take.name : '') + '. Search in English or Bulgarian.'));
@@ -76,9 +78,11 @@
     /* a bottle just counted stays where it is until the list is filtered again, so nothing jumps under the finger */
     const list = all.filter((w) => (!S.kind || w.colour === S.kind) && K.matches(hay(w), S.q)
       && (S.f === 'todo' ? !K.countedIn(w, take) || S.keep[w.id] : S.f === 'done' ? K.countedIn(w, take) : true));
+    if (S.active && !list.some((w) => w.id === S.active)) S.active = null;
+    body.classList.toggle('pad-on', !!S.active);
     if (!list.length) {
       body.append(h('div', { class: 'empty' }, h('strong', null, S.q ? 'No bottle like that' : S.f === 'todo' ? 'Everything here is counted' : 'Nothing counted yet'),
-        S.q ? 'Try the other language. If Hype knows it, it shows below.' : S.f === 'todo' ? 'Look at another kind, or finish the count.' : 'Type a number next to a bottle.'));
+        S.q ? (K.canEdit() ? 'Try the other language. If Hype knows it, it shows below.' : 'Try the other language. If it is not on the list, tell the manager: they can add it.') : S.f === 'todo' ? 'Look at another kind, or finish the count.' : 'Type a number next to a bottle.'));
     }
     const by = {};
     list.forEach((w) => { (by[w.colour] = by[w.colour] || []).push(w); });
@@ -89,7 +93,7 @@
         h('div', { class: 'ct-list' }, rows.map((w) => row(w, take)))));
     });
     /* searched for something the menu does not have: Hype may know it, one tap puts it on the count */
-    const off = S.q.trim().length >= 2 && K.canWrite() ? K.hypeOffList(S.q).slice(0, 8) : [];
+    const off = S.q.trim().length >= 2 && K.canEdit() ? K.hypeOffList(S.q).slice(0, 8) : [];
     if (off.length) {
       body.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'In Hype, not on the menu', h('span', { class: 'n' }, String(off.length))),
         h('p', { class: 'hint' }, 'Is it on the shelf? Add it and count it.'),
@@ -101,8 +105,74 @@
         } }, h('span', { class: 'ct-txt' }, h('b', null, r.name), h('span', { class: 'muted' }, [r.cat, r.wh].filter(Boolean).join(' · '))), h('span', { class: 'ct-add' }, K.icon('plus'), 'Add'))))));
     }
     body.append(h('div', { class: 'ct-foot' },
-      K.canWrite() ? h('button', { type: 'button', class: 'btn wide', onclick: () => { ui.sheet = { type: 'takeadd', f: { name: S.q || '', colour: S.kind || 'red', n: '' } }; K.render(); } }, K.icon('plus'), 'A bottle that is in no list at all') : null,
+      K.canEdit() ? h('button', { type: 'button', class: 'btn wide', onclick: () => { ui.sheet = { type: 'takeadd', f: { name: S.q || '', colour: S.kind || 'red', n: '' } }; K.render(); } }, K.icon('plus'), 'A bottle that is in no list at all') : null,
       K.canEdit() ? h('button', { type: 'button', class: 'btn primary wide', onclick: finish }, 'Finish the count') : h('p', { class: 'hint' }, 'The owner or a floor manager finishes the count.')));
+    if (K.canWrite()) body.append(pad());
+  }
+
+  /* ---------- the number pad: big keys under the thumb, so the phone's own keyboard never opens ---------- */
+  const saver = {};   /* how to save each row on the page, by bottle id */
+  const field = () => (C().active ? document.getElementById('ct-' + C().active) : null);
+  function activate(id) {
+    const S = C();
+    const p0 = document.getElementById('ct-pad');
+    if (!p0 || (S.active === id && !p0.hidden)) return;
+    S.active = id;
+    document.querySelectorAll('.ct-row.active').forEach((r) => r.classList.remove('active'));
+    const r = document.getElementById('ctr-' + id), w = K.wine(id), p = document.getElementById('ct-pad');
+    if (r) r.classList.add('active');
+    if (p) { p.hidden = false; const nm = document.getElementById('ct-pad-name'); if (nm) nm.textContent = w ? title(w) : ''; }
+    const page = document.querySelector('.count-page');
+    if (page) page.classList.add('pad-on');
+    /* the row sits in the gap between the progress strip and the pad */
+    if (r) { const y = r.getBoundingClientRect().top; if (y < 150 || y > window.innerHeight - 470) window.scrollTo({ top: Math.max(0, window.scrollY + y - 170) }); }
+  }
+  function hidePad() {
+    const S = C(), p = document.getElementById('ct-pad'), page = document.querySelector('.count-page'), el = field();
+    S.active = null;
+    document.querySelectorAll('.ct-row.active').forEach((r) => r.classList.remove('active'));
+    if (p) p.hidden = true;
+    if (page) page.classList.remove('pad-on');
+    if (el) el.blur();
+  }
+  function setValue(v) {
+    const S = C(), el = field();
+    if (!el) return;
+    el.value = v; S.n[S.active] = v; el.classList.remove('bad');
+    el.focus({ preventScroll: true });
+  }
+  function press(k) {
+    const el = field();
+    if (!el) return;
+    const v = String(el.value || '');
+    if (k === 'back') setValue(v.slice(0, -1));
+    else if (k === '.') { if (!v.includes('.') && !v.includes(',')) setValue((v || '0') + '.'); }
+    else if (k === 'half') { const n = num(v.replace(/[.,]$/, '')) || 0; setValue(String(Math.round((n + 0.5) * 10) / 10)); }
+    else if (k === 'none') { setValue('0'); next(); }
+    else if (v.replace(/\D/g, '').length < 5) setValue(v === '0' ? k : v + k);
+  }
+  /* save what is typed (an empty box is skipped) and go to the next bottle on the page */
+  function next() {
+    const S = C(), el = field();
+    if (!el) return;
+    if (String(el.value).trim() !== '' && saver[S.active]) saver[S.active](el);
+    if (el.classList.contains('bad')) return;
+    const ins = Array.from(document.querySelectorAll('.ct-in')), nx = ins[ins.indexOf(el) + 1];
+    if (nx) nx.focus(); else { hidePad(); K.toast('That was the last one here. Look at another kind, or finish the count.'); }
+  }
+  function pad() {
+    const S = C(), w = S.active ? K.wine(S.active) : null;
+    const key = (label, k, attrs) => h('button', Object.assign({ type: 'button', class: 'ct-key', onpointerdown: (e) => e.preventDefault(), onclick: () => press(k) }, attrs || {}), label);
+    return h('div', { class: 'ct-pad', id: 'ct-pad', hidden: w ? null : true },
+      h('div', { class: 'ct-pad-top' },
+        h('span', { class: 'ct-pad-name', id: 'ct-pad-name' }, w ? title(w) : ''),
+        h('button', { type: 'button', class: 'ct-quick', onpointerdown: (e) => e.preventDefault(), onclick: () => press('none') }, 'None'),
+        h('button', { type: 'button', class: 'ct-quick', onpointerdown: (e) => e.preventDefault(), onclick: () => press('half') }, '+ half'),
+        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Hide the number pad', onclick: hidePad }, K.icon('down'))),
+      h('div', { class: 'ct-keys', role: 'group', 'aria-label': 'Number pad' },
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => key(d, d)),
+        key('.', '.', { 'aria-label': 'Decimal point' }), key('0', '0'), key(K.icon('backspace'), 'back', { 'aria-label': 'Delete the last digit' })),
+      h('button', { type: 'button', class: 'btn primary ct-next', onpointerdown: (e) => e.preventDefault(), onclick: next }, 'Save and next bottle', K.icon('next')));
   }
   function row(w, take) {
     const S = C(), c = D.cellar[w.id], done = K.countedIn(w, take), hr = K.hypeRow(w);
@@ -123,12 +193,13 @@
       if (dn) dn.textContent = p.done + ' of ' + p.all + ' counted';
       if (fl) fl.style.width = p.pct + '%';
     };
-    const input = h('input', { class: 'input mono ct-in', id: 'ct-' + w.id, inputmode: 'decimal', enterkeyhint: 'next', autocomplete: 'off', placeholder: '–',
+    saver[w.id] = save;
+    const input = h('input', { class: 'input mono ct-in', id: 'ct-' + w.id, inputmode: 'none', enterkeyhint: 'next', autocomplete: 'off', placeholder: '–', onfocus: () => activate(w.id),
       'aria-label': 'Bottles of ' + title(w), value: S.n[w.id] != null ? S.n[w.id] : done ? String(c.n) : '', disabled: K.canWrite() ? null : true,
       oninput: (e) => { S.n[w.id] = e.target.value; e.target.classList.remove('bad'); }, onchange: (e) => save(e.target),
       /* Enter goes to the next bottle, like a till */
       onkeydown: (e) => { if (e.key !== 'Enter') return; e.preventDefault(); const ins = Array.from(document.querySelectorAll('.ct-in')), nx = ins[ins.indexOf(e.target) + 1]; if (nx) nx.focus(); else e.target.blur(); } });
-    return h('div', { class: 'ct-row' + (done ? ' done' : ''), id: 'ctr-' + w.id },
+    return h('div', { class: 'ct-row' + (done ? ' done' : '') + (S.active === w.id ? ' active' : ''), id: 'ctr-' + w.id },
       h('label', { class: 'ct-txt', for: 'ct-' + w.id }, h('b', null, title(w)), sub ? h('span', { class: 'muted' }, sub) : null, h('span', { class: 'ct-res' }, resText(w, take))),
       h('span', { class: 'ct-tick', 'aria-hidden': 'true' }, K.icon('check')), input);
   }
