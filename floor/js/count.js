@@ -24,11 +24,11 @@
   /* ---------- before the count ---------- */
   function start(body) {
     const all = K.takeList(), last = D.take && D.take.done ? D.take : null, hs = D.hypeStock, t = hs ? hs.exported || hs.at : 0;
-    const stale = t && mins(t) > 30, loose = hs ? K.hypeLoose().length : 0;
+    const stale = t && mins(t) > 30;
     const refresh = () => { ui.hypeBusy = true; K.render(); K.refreshHype().then(() => { ui.hypeBusy = false; K.render(); K.toast('Stock refreshed from the sheet'); }, () => { ui.hypeBusy = false; K.render(); K.toast('The sheet could not be read.', { tone: 'bad' }); }); };
     body.append(h('section', { class: 'ct-start' },
       h('h1', { class: 'ct-h1' }, 'Count what is really on the shelf'),
-      h('p', { class: 'muted' }, all.length + ' bottles and drinks to count. Each one is saved as you type it, and several phones can count at the same time.'),
+      h('p', { class: 'muted' }, 'The list is your drinks menu: ' + all.length + ' bottles and drinks. A bottle on the shelf that is not on it, you add as you go. Each number is saved as you type it, and several phones can count at the same time.'),
       last ? h('p', { class: 'hint' }, 'The last count ended ' + when(last.done) + (last.endName ? ' · ' + last.endName : '') + '. ',
         h('button', { type: 'button', class: 'linkish', onclick: () => { ui.sheet = { type: 'diffs' }; K.render(); } }, 'See what it found')) : null,
       h('ol', { class: 'ct-steps' },
@@ -40,7 +40,6 @@
             : h('div', { class: 'ct-hype' }, h('span', null, 'The Hype sheet is not connected. The count still works; sales are then taken off by hand.'))),
         h('li', null, h('b', null, 'Count every place a bottle is kept:'), ' the bar, the cellar, the kitchen. One number for all of it.'),
         h('li', null, h('b', null, 'An open bottle counts as a part:'), ' two full ones and a half-full one is 2.5.')),
-      loose ? h('p', { class: 'banner' }, h('b', null, loose + ' Hype products are not in the stock yet. '), 'To count them too, add them first: Stock → “Add ' + loose + ' more from Hype”.') : null,
       K.canEdit() ? h('button', { class: 'btn primary wide big', type: 'button', onclick: () => { ui.count = null; K.startTake(); } }, 'Start the count')
         : h('p', { class: 'banner' }, 'The owner or a floor manager starts the count. Once it is started, you can count here.')));
   }
@@ -79,7 +78,7 @@
       && (S.f === 'todo' ? !K.countedIn(w, take) || S.keep[w.id] : S.f === 'done' ? K.countedIn(w, take) : true));
     if (!list.length) {
       body.append(h('div', { class: 'empty' }, h('strong', null, S.q ? 'No bottle like that' : S.f === 'todo' ? 'Everything here is counted' : 'Nothing counted yet'),
-        S.q ? 'Try the other language, or add it below.' : S.f === 'todo' ? 'Look at another kind, or finish the count.' : 'Type a number next to a bottle.'));
+        S.q ? 'Try the other language. If Hype knows it, it shows below.' : S.f === 'todo' ? 'Look at another kind, or finish the count.' : 'Type a number next to a bottle.'));
     }
     const by = {};
     list.forEach((w) => { (by[w.colour] = by[w.colour] || []).push(w); });
@@ -89,8 +88,20 @@
       body.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, c[1], h('span', { class: 'n' }, String(rows.length))),
         h('div', { class: 'ct-list' }, rows.map((w) => row(w, take)))));
     });
+    /* searched for something the menu does not have: Hype may know it, one tap puts it on the count */
+    const off = S.q.trim().length >= 2 && K.canWrite() ? K.hypeOffList(S.q).slice(0, 8) : [];
+    if (off.length) {
+      body.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'In Hype, not on the menu', h('span', { class: 'n' }, String(off.length))),
+        h('p', { class: 'hint' }, 'Is it on the shelf? Add it and count it.'),
+        h('div', { class: 'ct-list' }, off.map((r) => h('button', { type: 'button', class: 'ct-off', onclick: () => {
+          const id = K.countExtra(r);
+          S.keep[id] = true; S.f = 'todo'; K.render();
+          const el = document.getElementById('ct-' + id);
+          if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); }
+        } }, h('span', { class: 'ct-txt' }, h('b', null, r.name), h('span', { class: 'muted' }, [r.cat, r.wh].filter(Boolean).join(' · '))), h('span', { class: 'ct-add' }, K.icon('plus'), 'Add'))))));
+    }
     body.append(h('div', { class: 'ct-foot' },
-      K.canWrite() ? h('button', { type: 'button', class: 'btn wide', onclick: () => { ui.sheet = { type: 'takeadd', f: { name: S.q || '', colour: S.kind || 'red', n: '' } }; K.render(); } }, K.icon('plus'), 'A bottle that is not in the list') : null,
+      K.canWrite() ? h('button', { type: 'button', class: 'btn wide', onclick: () => { ui.sheet = { type: 'takeadd', f: { name: S.q || '', colour: S.kind || 'red', n: '' } }; K.render(); } }, K.icon('plus'), 'A bottle that is in no list at all') : null,
       K.canEdit() ? h('button', { type: 'button', class: 'btn primary wide', onclick: finish }, 'Finish the count') : h('p', { class: 'hint' }, 'The owner or a floor manager finishes the count.')));
   }
   function row(w, take) {
@@ -130,7 +141,7 @@
       const name = String(f.name).trim(), v = num(f.n);
       if (!name) { K.toast('Write what it is.', { tone: 'bad' }); return; }
       if (v == null) { K.toast('Write how many there are, like 3 or 2.5.', { tone: 'bad' }); return; }
-      K.saveWine({ name: name, colour: f.colour, stockOnly: true, par: 0, order: 950, byGlass: false, label: '' }).then((id) => {
+      K.saveWine({ name: name, colour: f.colour, stockOnly: true, extra: true, par: 0, order: 950, byGlass: false, label: '' }).then((id) => {
         const w = K.wine(id);
         if (w) { C().keep[id] = true; K.countBottles(w, v); }
         K.toast(name + ' added and counted: ' + v);
@@ -138,7 +149,7 @@
       ui.sheet = null; K.render();
     };
     return K.sheet('Not in the list', h('form', { class: 'stack', onsubmit: save },
-      h('p', { class: 'hint' }, 'Search first, in English and in Bulgarian: most bottles are in the list under one of the two names. If it really is not there, add it here.'),
+      h('p', { class: 'hint' }, 'Search first, in English and in Bulgarian. The search also shows what Hype knows, to add with one tap. If the bottle is nowhere, add it here.'),
       K.field('What is it', h('input', { class: 'input', id: 'ta-name', value: f.name, placeholder: 'Name on the bottle', oninput: (e) => { f.name = e.target.value; } })),
       K.field('Kind', K.select(kinds, f.colour, (v) => { f.colour = v; }, { 'aria-label': 'Kind' })),
       K.field('How many are there', h('input', { class: 'input mono', id: 'ta-n', inputmode: 'decimal', value: f.n, placeholder: '–', oninput: (e) => { f.n = e.target.value; } }), 'An open bottle counts as a part: 2.5.'),
@@ -159,7 +170,7 @@
     return K.sheet('Finish the count', h('div', { class: 'stack' },
       h('p', null, h('b', null, p.done + ' of ' + p.all + ' counted. '), rest ? rest + ' were not counted.' : 'Nothing was left out.'),
       rest ? h('div', { class: 'stack' },
-        h('p', { class: 'hint' }, 'If you walked every shelf, what is left was not there. Setting those to 0 also clears Hype’s numbers below zero.'),
+        h('p', { class: 'hint' }, 'If you walked every shelf, what is left on the list was not there.'),
         h('button', { class: 'btn primary wide wrap-btn', type: 'button', onclick: () => end(true) }, 'Not on the shelf: set those ' + rest + ' to 0'),
         h('button', { class: 'btn wide wrap-btn', type: 'button', onclick: () => end(false) }, 'Leave those ' + rest + ' as they are'))
         : h('button', { class: 'btn primary wide', type: 'button', onclick: () => end(false) }, 'Finish the count'),

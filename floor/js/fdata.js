@@ -227,6 +227,8 @@
       supplier: w.supplier || '', size: +w.size || 0,
       /* a Hype product kept for the stock only: counted and ordered, never shown to guests or in the drinks bible */
       stockOnly: !!w.stockOnly,
+      /* found on the shelf during a count and added to it by hand */
+      extra: !!w.extra,
       /* where the label sits on a bottle picture from the web: [x %, y %, zoom] */
       focus: Array.isArray(w.focus) && w.focus.length === 3 ? w.focus.map(Number) : null,
     };
@@ -245,12 +247,13 @@
   const hash = (t) => { let a = 5381, b = 52711; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = (a * 33) ^ c; b = (b * 33) ^ c; } return ((a >>> 0) * 4096 + (b >>> 0)).toString(36); };
   const KIND = [[/бел/i, 'white'], [/червен/i, 'red'], [/розе/i, 'rose'], [/пенлив/i, 'sparkling'], [/десерт/i, 'sweet'], [/вин/i, 'white'], [/бира/i, 'beer'], [/безалкохол|общи/i, 'soft'], [/ликьор|анасон/i, 'liqueur']];
   /* every loose Hype product becomes a stock-only bottle, so it can be checked, flagged and ordered like the rest */
+  function looseDoc(r, i, now) {
+    const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
+    return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now || Date.now() } };
+  }
   K.addHypeLoose = function () {
     const loose = K.hypeLoose(), now = Date.now();
-    const docs = loose.map((r, i) => {
-      const kind = (KIND.find((k) => k[0].test(r.cat)) || [0, 'spirit'])[1];
-      return { id: 'hype-' + hash(r.name), doc: { name: r.name, colour: kind, style: r.cat, hype: r.name, stockOnly: true, par: 0, order: 900 + i, byGlass: false, label: '', updated: now } };
-    });
+    const docs = loose.map((r, i) => looseDoc(r, i, now));
     /* all at once: one redraw, then the writes */
     D.wines = D.wines.concat(docs.map((x) => K.normWine(Object.assign({ id: x.id }, x.doc))));
     K.refresh(true);
@@ -408,7 +411,23 @@
   /* ---------- the physical count: everyone counts the shelves, each bottle is saved the moment it is typed ---------- */
   /* the count that is running, or null. It is one line in the settings: when it started, who started it, when it ended. */
   K.takeOn = () => (D.take && D.take.at && !D.take.done ? D.take : null);
-  K.takeList = () => K.winesSorted().filter((w) => !w.off && !w.nostock);
+  /* what a count covers: the drinks on the menu, plus the bottles added by hand as they turn up on the shelf.
+     The rest of what Hype knows (old products, things never on the menu) is left out. */
+  K.takeList = () => K.winesSorted().filter((w) => !w.off && !w.nostock && (!w.stockOnly || w.extra));
+  /* Hype products that are not on the count list, for a bottle found on the shelf that the menu does not have */
+  K.hypeOffList = function (q) {
+    const on = {};
+    K.takeList().forEach((w) => { if (w.hype) on[w.hype] = 1; });
+    return Object.keys(D.hypeIdx || {}).filter((n) => !on[n] && K.matches(n + ' ' + D.hypeIdx[n].cat, q)).map((n) => D.hypeIdx[n]);
+  };
+  /* put one Hype product on the count list; gives back the bottle's id */
+  K.countExtra = function (r) {
+    const have = D.wines.find((w) => w.stockOnly && w.hype === r.name);
+    if (have) { K.saveWine(Object.assign({}, have, { extra: true })); return have.id; }
+    const x = looseDoc(r, 0);
+    K.saveWine(Object.assign({ id: x.id }, x.doc, { extra: true }));
+    return x.id;
+  };
   K.countedIn = (w, take) => { const c = D.cellar[w.id]; return !!(c && take && c.at >= take.at); };
   K.startTake = function () {
     const doc = { at: Date.now(), name: K.myName(), done: 0, hat: (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0 };

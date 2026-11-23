@@ -480,3 +480,9 @@ button.fs-cell { cursor: pointer; }
 .ct-in.bad { border-color: var(--urgent); background: var(--urgent-soft); }
 .ct-foot { display: grid; gap: 10px; margin: 20px 0 40px; }
 .take-bar { margin-bottom: 12px; }
+
+.ct-off { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 56px; padding: 8px 12px; border: 1.5px dashed var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; color: inherit; }
+.ct-add { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
+.ct-add .ico { width: 18px; height: 18px; }
+.ct-sticky { grid-template-columns: minmax(0, 1fr); }
+.ct-sticky .search, .ct-sticky .search-in { min-width: 0; }
