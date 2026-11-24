@@ -5638,6 +5638,11 @@
      "id": "andreola-prosecco-primo-brut-2024",
      "why": "Light, peachy bubbles for an easy start.",
      "whyBg": "Леко пенливо с нотки на праскова, за непринудено начало."
+    },
+    {
+     "id": "pol-roger-champagne-brut-reserve-nv",
+     "why": "Champagne whose own flavours are quince jelly and acacia honey: the grand match for the quince.",
+     "whyBg": "Шампанско, което само носи вкус на дюлево желе и акациев мед – най-изисканото към дюлята."
     }
    ]
   },
@@ -5663,6 +5668,16 @@
      "id": "staro-oryahovo-epic-2024",
      "why": "A pale Pinot Noir rosé: light and crisp with the pepper.",
      "whyBg": "Бледо розе от Пино ноар: леко и свежо с чушката."
+    },
+    {
+     "id": "deuce-mavrud-blanc-2025",
+     "why": "A white from the red Mavrud grape: more body than most whites, for the walnut and the pepper.",
+     "whyBg": "Бяло от червения сорт Мавруд – с повече тяло от повечето бели, за ореха и чушката."
+    },
+    {
+     "id": "schiopetto-pinot-grigio-2023",
+     "why": "A full-bodied Pinot Grigio from Collio: enough weight for the tahini and the walnut.",
+     "whyBg": "Плътно Пино гриджо от Колио – с достатъчно тяло за тахана и ореха."
     }
    ]
   },
@@ -5675,9 +5690,9 @@
      "whyBg": "Стегнато и лимонено: балансира кремавото и соленото в хайвера."
     },
     {
-     "id": "edoardo-miroglio-classic-method-brut-2019",
-     "why": "Bubbles lift the mousse and clean the palate.",
-     "whyBg": "Мехурчетата олекотяват муса и освежават небцето."
+     "id": "sieur-darques-cremant-grand-cuvee-brut-nv",
+     "why": "French bubbles made like Champagne: they lift the mousse and clean the salt.",
+     "whyBg": "Френско пенливо, правено като шампанско – повдига муса и изчиства солта."
     },
     {
      "id": "raoul-gautherin-chablis-2023",
@@ -5685,9 +5700,19 @@
      "whyBg": "Шабли: минерално и леко солено, класическата комбинация с рибен хайвер."
     },
     {
+     "id": "daros-blanc-de-noirs-2024",
+     "why": "Light and citrusy, a white made from a red grape.",
+     "whyBg": "Леко и цитрусово, бяло вино от червен сорт."
+    },
+    {
      "id": "midalidare-estate-pas-dose-nv",
      "why": "Bone-dry bubbles with no sugar at all: very clean with the salty roe.",
      "whyBg": "Напълно сухо пенливо, без никаква захар: много чисто със соления хайвер."
+    },
+    {
+     "id": "albert-bichot-chablis-grand-cru-2020",
+     "why": "Chablis Grand Cru: the most mineral white on the list, for a table that wants the best with fish roe.",
+     "whyBg": "Шабли Гран Крю – най-минералното бяло в листата, за маса, която иска най-доброто към хайвера."
     },
     {
      "id": "argiolas-meri-vermentino-2024",
@@ -5695,9 +5720,9 @@
      "whyBg": "Бялото на Сардиния за морски дарове: цитруси и билки."
     },
     {
-     "id": "daros-blanc-de-noirs-2024",
-     "why": "Light and citrusy, a white made from a red grape.",
-     "whyBg": "Леко и цитрусово, бяло вино от червен сорт."
+     "id": "edoardo-miroglio-classic-method-brut-2019",
+     "why": "Bubbles lift the mousse and clean the palate.",
+     "whyBg": "Мехурчетата олекотяват муса и освежават небцето."
     }
    ]
   },
@@ -5720,9 +5745,19 @@
      "whyBg": "Риоха Резерва: мека, с нотки на подправки, испанският отговор на сушените меса."
     },
     {
+     "id": "linar-syrah-2024",
+     "why": "A young, peppery Syrah: spice for the cured meat.",
+     "whyBg": "Младо, пиперливо Сира – подправка към колбасите."
+    },
+    {
      "id": "damianitza-red-ark-2022",
      "why": "Firm and spicy: the winery itself pours it with cured meats.",
      "whyBg": "Стегнато, с нотки на подправки: самата винарна го налива със сушени меса."
+    },
+    {
+     "id": "firriato-nero-davola-harmonium-2019",
+     "why": "Sicily’s Nero d’Avola: dark cherry and clove, soft and smooth with cured meat.",
+     "whyBg": "Сицилианско Неро д’Авола – тъмна череша и карамфил, меко и гладко към колбасите."
     },
     {
      "id": "tipchenitsa-merlot-2022",
@@ -5755,14 +5790,14 @@
      "whyBg": "Френско пенливо, направено като шампанско, на по-достъпна цена."
     },
     {
-     "id": "albert-bichot-chablis-grand-cru-2020",
-     "why": "Chablis Grand Cru: the grandest still wine for caviar.",
-     "whyBg": "Шабли Гран Крю: най-великото тихо вино за хайвер."
-    },
-    {
      "id": "pol-roger-vintage-rose-champagne-2018",
      "why": "Vintage rosé Champagne: for a table that is celebrating.",
      "whyBg": "Реколтно розе шампанско: за маса, която празнува."
+    },
+    {
+     "id": "albert-bichot-chablis-grand-cru-2020",
+     "why": "Chablis Grand Cru: the grandest still wine for caviar.",
+     "whyBg": "Шабли Гран Крю: най-великото тихо вино за хайвер."
     }
    ]
   },
@@ -5790,6 +5825,16 @@
      "whyBg": "Свежо, без дъб: тропически плодове и цитруси за салата."
     },
     {
+     "id": "andreola-prosecco-primo-brut-2024",
+     "why": "Light bubbles with pear and white flowers, like the pear in the salad.",
+     "whyBg": "Леки мехурчета с круша и бели цветя – като крушата в салатата."
+    },
+    {
+     "id": "schiopetto-friulano-2023",
+     "why": "Pear and a hint of almond: it echoes the pear and the walnut.",
+     "whyBg": "Круша и лек бадем – повтаря крушата и ореха в салатата."
+    },
+    {
      "id": "salla-estate-white-blend-2023",
      "why": "Light, with rose blossom and peach.",
      "whyBg": "Леко, с нотки на роза и праскова."
@@ -5805,14 +5850,29 @@
      "whyBg": "Свежо, с билкови нотки: среща се с домата и билките."
     },
     {
-     "id": "domaine-lafage-gallica-2024",
-     "why": "A dry rosé with a note of rosemary, for the roasted pepper and the salty krokmach.",
-     "whyBg": "Сухо розе с нотка на розмарин, за печената чушка и соления крокмач."
+     "id": "walter-buchegger-gruner-veltliner-2024",
+     "why": "Austrian Grüner Veltliner: its light pepper note meets the roasted pepper.",
+     "whyBg": "Австрийски Грюнер велтлинер – леката му пиперлива нотка среща печената чушка."
     },
     {
      "id": "schiopetto-pinot-grigio-2023",
      "why": "Pinot Grigio from Collio: more body and depth than the usual, for the salty krokmach.",
      "whyBg": "Пино гриджо от Collio: с повече тяло и дълбочина от обичайното, за соления крокмач."
+    },
+    {
+     "id": "salla-estate-white-blend-2023",
+     "why": "Light and fresh, with peach and citrus: easy with the tomato and the herbs.",
+     "whyBg": "Леко и свежо, с праскова и цитруси – лесно към домата и билките."
+    },
+    {
+     "id": "domaine-lafage-gallica-2024",
+     "why": "A dry rosé with a note of rosemary, for the roasted pepper and the salty krokmach.",
+     "whyBg": "Сухо розе с нотка на розмарин, за печената чушка и соления крокмач."
+    },
+    {
+     "id": "chateau-desclans-grenache-and-rolle-2024",
+     "why": "A creamy Provence rosé: rosé and roasted pepper are old friends.",
+     "whyBg": "Кремообразно розе от Прованс – розето и печената чушка са стари приятели."
     }
    ]
   },
@@ -5820,9 +5880,9 @@
    "dish": "Bonito",
    "wines": [
     {
-     "id": "magura-gruner-veltliner-2024",
-     "why": "Crisp and peppery: good with the pickles and the horseradish.",
-     "whyBg": "Свежо, с нотка на пипер: добре върви с маринованите зеленчуци и хряна."
+     "id": "argiolas-meri-vermentino-2024",
+     "why": "Sardinia’s seafood white: citrus and herbs, lively against the cured fish.",
+     "whyBg": "Сардинското бяло за морски дарове – цитруси и билки, живо към сушената риба."
     },
     {
      "id": "martin-mullen-riesling-2021",
@@ -5833,6 +5893,26 @@
      "id": "pazo-barrantes-albarino-2019",
      "why": "Albariño from the Atlantic coast of Spain: salty and fresh, made for cured fish.",
      "whyBg": "Албариньо от атлантическия бряг на Испания: солено и свежо, създадено за веяна риба."
+    },
+    {
+     "id": "zhivankin-riesling-2024",
+     "why": "A dry Bulgarian Riesling: lime and green apple cut through the salt.",
+     "whyBg": "Сух български Ризлинг – лайм и зелена ябълка, които режат солта."
+    },
+    {
+     "id": "tsarev-brod-gergana-reserve-brut-2022",
+     "why": "Bulgarian bubbles from the Gergana grape: bubbles with cured fish, something special.",
+     "whyBg": "Българско пенливо от сорта Гергана – мехурчета към сушена риба, нещо специално."
+    },
+    {
+     "id": "raoul-gautherin-chablis-2023",
+     "why": "Chablis: lean and mineral, a classic with cured fish.",
+     "whyBg": "Шабли – стегнато и минерално, класика към сушена риба."
+    },
+    {
+     "id": "magura-gruner-veltliner-2024",
+     "why": "Crisp and peppery: good with the pickles and the horseradish.",
+     "whyBg": "Свежо, с нотка на пипер: добре върви с маринованите зеленчуци и хряна."
     },
     {
      "id": "dragoshinov-riesling-2023",
@@ -5850,9 +5930,9 @@
      "whyBg": "Изборът на дегустационното меню: меко и свежо, оставя телешкото да говори."
     },
     {
-     "id": "chateau-de-la-chaize-morgon-2023",
-     "why": "A light, juicy red, served slightly cool, for guests who want red with beef.",
-     "whyBg": "Леко, сочно червено, сервирано слабо охладено, за гости, които искат червено с телешкото."
+     "id": "deuce-mavrud-blanc-2025",
+     "why": "A white from the red Mavrud grape: something to talk about with the tartare.",
+     "whyBg": "Бяло от червения сорт Мавруд: повод за разговор към тартара."
     },
     {
      "id": "clos-bibliotheque-pinot-noir-2022",
@@ -5860,9 +5940,19 @@
      "whyBg": "Пино ноар: копринено, с червени плодове, класическото червено за тартар."
     },
     {
-     "id": "deuce-mavrud-blanc-2025",
-     "why": "A white from the red Mavrud grape: something to talk about with the tartare.",
-     "whyBg": "Бяло от червения сорт Мавруд: повод за разговор към тартара."
+     "id": "staro-oryahovo-epic-2024",
+     "why": "A pale Pinot Noir rosé: red-fruit freshness without tannin, light on the raw beef.",
+     "whyBg": "Бледо розе от Пино ноар – свежест на червени плодове без танини, леко към суровото телешко."
+    },
+    {
+     "id": "chateau-de-la-chaize-morgon-2023",
+     "why": "A light, juicy red, served slightly cool, for guests who want red with beef.",
+     "whyBg": "Леко, сочно червено, сервирано слабо охладено, за гости, които искат червено с телешкото."
+    },
+    {
+     "id": "domaine-dardhuy-pinot-noir-2022",
+     "why": "Red Burgundy: light and supple, the classic region for tartare.",
+     "whyBg": "Червена Бургундия – леко и гъвкаво, класическият регион към тартар."
     }
    ]
   },
@@ -5875,14 +5965,29 @@
      "whyBg": "Свежестта му олекотява плътния терин."
     },
     {
-     "id": "walter-buchegger-gruner-veltliner-2024",
-     "why": "Austrian Grüner Veltliner with pork and mustard: a classic.",
-     "whyBg": "Австрийски Грюнер велтлинер със свинско и горчица: класика."
+     "id": "dragoshinov-riesling-2023",
+     "why": "A Bulgarian Riesling, only 1,145 bottles: its acidity cuts the rich terrine.",
+     "whyBg": "Български Ризлинг, само 1145 бутилки – свежестта му реже плътния терин."
     },
     {
      "id": "domaine-dardhuy-pinot-noir-2022",
      "why": "Burgundy Pinot Noir: light and silky, pork’s favourite red.",
      "whyBg": "Пино ноар от Бургундия: леко и копринено, любимото червено на свинското."
+    },
+    {
+     "id": "bononia-gamza-2024",
+     "why": "A light, juicy red: cherry fruit for the pork and the mustard.",
+     "whyBg": "Леко, сочно червено – черешов плод към свинското и горчицата."
+    },
+    {
+     "id": "walter-buchegger-gruner-veltliner-2024",
+     "why": "Austrian Grüner Veltliner with pork and mustard: a classic.",
+     "whyBg": "Австрийски Грюнер велтлинер със свинско и горчица: класика."
+    },
+    {
+     "id": "schiopetto-friulano-2023",
+     "why": "From Friuli, where it is poured with cured pork: creamy, a little salty, with an almond finish.",
+     "whyBg": "От Фриули, където го наливат към свинско – кремообразно, леко солено, с бадемов послевкус."
     }
    ]
   },
@@ -5905,14 +6010,24 @@
      "whyBg": "Най-доброто българско Шардоне в листата."
     },
     {
-     "id": "bratanov-three-blend-white-2022",
-     "why": "A full, oak-aged white: round enough for the beef in the gyoza.",
-     "whyBg": "Плътно бяло, отлежало в дъб: достатъчно заоблено за телешкото в гьозата."
+     "id": "bononia-vrachanski-misket-2023",
+     "why": "Very aromatic, with jasmine and mandarin: it plays with the sesame ponzu.",
+     "whyBg": "Много ароматно, с жасмин и мандарина – играе си със сусамовото понзу."
     },
     {
      "id": "bononia-gold-selection-white-blend-2023",
      "why": "Rich and round, with honey and vanilla: Bulgaria’s prize-winning white.",
      "whyBg": "Богато и заоблено, с мед и ванилия: отличеното с награди българско бяло."
+    },
+    {
+     "id": "domaine-dardhuy-montrachet-2021",
+     "why": "Great white Burgundy: rich and nutty, the grandest Chardonnay for the gyoza.",
+     "whyBg": "Голяма бяла Бургундия – плътно и ядково, най-изисканото Шардоне към гьозата."
+    },
+    {
+     "id": "bratanov-three-blend-white-2022",
+     "why": "A full, oak-aged white: round enough for the beef in the gyoza.",
+     "whyBg": "Плътно бяло, отлежало в дъб: достатъчно заоблено за телешкото в гьозата."
     }
    ]
   },
@@ -5920,14 +6035,29 @@
    "dish": "Beluga lentils",
    "wines": [
     {
-     "id": "bononia-gamza-2024",
-     "why": "A light red for the earthy lentils and the mushroom jus.",
-     "whyBg": "Леко червено за землистата леща и гъбеното жу."
+     "id": "bratanov-three-blend-white-2022",
+     "why": "A full, oak-aged white: round enough for the celeriac cream and the mushroom jus.",
+     "whyBg": "Плътно бяло, отлежало в дъб – достатъчно меко за крема от целина и гъбеното жу."
     },
     {
      "id": "downtown-urban-winery-cabernet-franc-reserve-2022",
      "why": "Cabernet Franc: fresh and a little herbal, good with lentils and mushrooms.",
      "whyBg": "Каберне фран: свежо и леко тревисто, добре върви с леща и гъби."
+    },
+    {
+     "id": "castello-di-volpaia-sangiovese-riserva-2019",
+     "why": "Chianti Classico Riserva: savoury and earthy, made for lentils and mushrooms.",
+     "whyBg": "Кианти Класико Ризерва – пикантно и земно, създадено за леща и гъби."
+    },
+    {
+     "id": "bononia-gamza-2024",
+     "why": "A light red for the earthy lentils and the mushroom jus.",
+     "whyBg": "Леко червено за землистата леща и гъбеното жу."
+    },
+    {
+     "id": "chateau-de-la-chaize-morgon-2023",
+     "why": "Gamay from Beaujolais: fresh, with soft, earthy tannins for the mushroom jus.",
+     "whyBg": "Гаме от Божоле – свежо, с меки, земни танини към гъбеното жу."
     },
     {
      "id": "domaine-dardhuy-pinot-noir-2022",
@@ -5955,14 +6085,19 @@
      "whyBg": "Зряло Châteauneuf-du-Pape: подправки и сушени билки, достатъчно богато за фоа гра."
     },
     {
-     "id": "firriato-nero-davola-harmonium-2019",
-     "why": "Sicily’s Nero d’Avola: dark cherry and clove, soft enough for duck.",
-     "whyBg": "Неро д’Авола от Сицилия: тъмна череша и карамфил, достатъчно меко за патица."
+     "id": "linar-syrah-2024",
+     "why": "A young Syrah: dark berries and pepper for the confit duck.",
+     "whyBg": "Младо Сира – тъмни плодове и пипер към патешкото конфи."
     },
     {
      "id": "tipchenitsa-merlot-2022",
      "why": "Soft, plummy Merlot: easy with duck.",
      "whyBg": "Меко Мерло с нотки на слива: лесно се съчетава с патица."
+    },
+    {
+     "id": "firriato-nero-davola-harmonium-2019",
+     "why": "Sicily’s Nero d’Avola: dark cherry and clove, soft enough for duck.",
+     "whyBg": "Неро д’Авола от Сицилия: тъмна череша и карамфил, достатъчно меко за патица."
     }
    ]
   },
@@ -5975,6 +6110,36 @@
      "whyBg": "Изборът на дегустационното меню: свежо, с нотка на пипер, за рибата и зеления домат."
     },
     {
+     "id": "bononia-gold-selection-white-blend-2023",
+     "why": "Rich and round, with honey and vanilla: a white with the weight for the beurre blanc.",
+     "whyBg": "Плътно и заоблено, с мед и ванилия – бяло с достатъчно тяло за бьор блана."
+    },
+    {
+     "id": "domaine-dardhuy-montrachet-2021",
+     "why": "Great white Burgundy: rich and nutty, for the fish and its beurre blanc.",
+     "whyBg": "Велико бяло от Бургундия: богато, с нотки на ядки, за рибата и нейния бьор блан."
+    },
+    {
+     "id": "daros-chardonnay-2023",
+     "why": "Chardonnay and a butter sauce belong together; this is the easy choice.",
+     "whyBg": "Шардоне и маслен сос вървят заедно – това е лесният избор."
+    },
+    {
+     "id": "dragoshinov-winery-estate-chardonnay-2025",
+     "why": "Chardonnay from a tiny family winery: round enough for the beurre blanc, fresh enough for the fish.",
+     "whyBg": "Шардоне от малка семейна винарна – достатъчно меко за бьор блана и достатъчно свежо за рибата."
+    },
+    {
+     "id": "clos-bibliotheque-dimyat-terre-princiere-2023",
+     "why": "Dimyat from a clay amphora: salty and mineral, serious with fish.",
+     "whyBg": "Димят от глинена амфора: солено и минерално, сериозно вино за риба."
+    },
+    {
+     "id": "sieur-darques-cremant-grand-cuvee-brut-nv",
+     "why": "Or bubbles: a French crémant makes the fish course feel like an occasion.",
+     "whyBg": "Или мехурчета – френски креман превръща рибата в повод."
+    },
+    {
      "id": "walter-buchegger-gruner-veltliner-2024",
      "why": "The same grape from its home in Austria.",
      "whyBg": "Същият сорт от родината му, Австрия."
@@ -5983,16 +6148,6 @@
      "id": "raoul-gautherin-chablis-2023",
      "why": "Chablis with white fish and a butter sauce: the classic.",
      "whyBg": "Шабли с бяла риба и маслен сос: класиката."
-    },
-    {
-     "id": "clos-bibliotheque-dimyat-terre-princiere-2023",
-     "why": "Dimyat from a clay amphora: salty and mineral, serious with fish.",
-     "whyBg": "Димят от глинена амфора: солено и минерално, сериозно вино за риба."
-    },
-    {
-     "id": "domaine-dardhuy-montrachet-2021",
-     "why": "Great white Burgundy: rich and nutty, for the fish and its beurre blanc.",
-     "whyBg": "Велико бяло от Бургундия: богато, с нотки на ядки, за рибата и нейния бьор блан."
     },
     {
      "id": "argiolas-meri-vermentino-2024",
@@ -6020,6 +6175,11 @@
      "whyBg": "Нашата собствена лимитирана серия: една-единствена бъчва от Гранд Резерва Мавруд на Драгомир."
     },
     {
+     "id": "daros-syrah-2023",
+     "why": "Peppery Syrah from the warm south-west: spice for the slow-cooked kid.",
+     "whyBg": "Пиперливо Сира от топлия югозапад – подправка към бавно готвеното яре."
+    },
+    {
      "id": "villa-melnik-rare-varietas-bush-vine-2020",
      "why": "A grape that grows only around Melnik: tobacco, herbs and prune for the slow-cooked kid.",
      "whyBg": "Сорт, който расте само около Мелник: тютюн, билки и сушени сливи за бавно готвеното яре."
@@ -6045,24 +6205,19 @@
      "whyBg": "Сира с нотка на пипер: приятел на телешкото."
     },
     {
-     "id": "bratanov-three-blend-red-2019",
-     "why": "Bratanov’s red blend. On the tasting menu we pour it with the wagyu.",
-     "whyBg": "Червеният купаж на Братанов. В дегустационното меню го наливаме с уагюто."
-    },
-    {
-     "id": "castello-di-volpaia-sangiovese-riserva-2019",
-     "why": "Chianti Classico Riserva: firm and savoury, made for beef.",
-     "whyBg": "Chianti Classico Riserva: стегнато и пикантно, създадено за телешко."
-    },
-    {
      "id": "four-friends-black-shadow-2021",
      "why": "Round and juicy, with plum and chocolate: easy to like with beef.",
      "whyBg": "Заоблено и сочно, със слива и шоколад: лесно се харесва с телешко."
     },
     {
-     "id": "damianitza-red-ark-2022",
-     "why": "It has been called Bulgaria’s first icon wine: firm and powerful.",
-     "whyBg": "Наричат го първото иконично вино на България: стегнато и мощно."
+     "id": "paolo-manzone-nebbiolo-2020",
+     "why": "Barolo: firm tannins that want meat.",
+     "whyBg": "Barolo: стегнати танини, които искат месо."
+    },
+    {
+     "id": "maryan-ivan-alexander-grand-cuvee-2023",
+     "why": "A Bordeaux-style blend with black cherry and pepper: a full red at a friendly price.",
+     "whyBg": "Купаж в стил Бордо с черна череша и пипер – плътно червено на добра цена."
     },
     {
      "id": "produttori-di-manduria-primitivo-elegia-riserva-2021",
@@ -6075,9 +6230,19 @@
      "whyBg": "Рубин, отлежавал дълго в дъб: кожа, кафе и черен шоколад."
     },
     {
-     "id": "paolo-manzone-nebbiolo-2020",
-     "why": "Barolo: firm tannins that want meat.",
-     "whyBg": "Barolo: стегнати танини, които искат месо."
+     "id": "bratanov-three-blend-red-2019",
+     "why": "Bratanov’s red blend. On the tasting menu we pour it with the wagyu.",
+     "whyBg": "Червеният купаж на Братанов. В дегустационното меню го наливаме с уагюто."
+    },
+    {
+     "id": "castello-di-volpaia-sangiovese-riserva-2019",
+     "why": "Chianti Classico Riserva: firm and savoury, made for beef.",
+     "whyBg": "Chianti Classico Riserva: стегнато и пикантно, създадено за телешко."
+    },
+    {
+     "id": "damianitza-red-ark-2022",
+     "why": "It has been called Bulgaria’s first icon wine: firm and powerful.",
+     "whyBg": "Наричат го първото иконично вино на България: стегнато и мощно."
     }
    ]
   },
@@ -6100,9 +6265,24 @@
      "whyBg": "Плътно българско червено с тъмни плодове и пипер, за по-твърдите сирена."
     },
     {
-     "id": "edoardo-miroglio-mavrud-reserve-elenovo-2021",
-     "why": "Mavrud Reserve: full and soft, good with aged cheese.",
-     "whyBg": "Мавруд Резерва: плътно и меко, добре върви със зряло сирене."
+     "id": "villa-melnik-rare-varietas-bush-vine-2020",
+     "why": "A grape that grows only around Melnik: the winery itself pours it with mature cheese.",
+     "whyBg": "Сорт, който расте само около Мелник – самата винарна го препоръчва към зрели сирена."
+    },
+    {
+     "id": "dragomir-pitos-2015",
+     "why": "Ten years old, with truffle and leather: a mature red for mature cheese.",
+     "whyBg": "На десет години, с трюфел и кожа – зряло червено към зрели сирена."
+    },
+    {
+     "id": "dragomir-rubin-komat-2021",
+     "why": "Our house Rubin: dark and juicy, easy with the cheese.",
+     "whyBg": "Нашият Рубин – тъмен и сочен, лесен към сирената."
+    },
+    {
+     "id": "four-friends-black-shadow-2021",
+     "why": "Round and juicy: the winery pours it with cheese.",
+     "whyBg": "Заоблено и сочно: винарната го налива със сирена."
     },
     {
      "id": "marques-de-murrieta-reserva-2018",
@@ -6110,9 +6290,9 @@
      "whyBg": "Мека Риоха Резерва: класическото червено за сирена."
     },
     {
-     "id": "four-friends-black-shadow-2021",
-     "why": "Round and juicy: the winery pours it with cheese.",
-     "whyBg": "Заоблено и сочно: винарната го налива със сирена."
+     "id": "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+     "why": "Mavrud Reserve: full and soft, good with aged cheese.",
+     "whyBg": "Мавруд Резерва: плътно и меко, добре върви със зряло сирене."
     }
    ]
   },
@@ -6150,9 +6330,9 @@
    "dish": "Wagyu beef",
    "wines": [
     {
-     "id": "dragomir-rubin-komat-2021",
-     "why": "Our own label: Rubin, dark and juicy.",
-     "whyBg": "Нашият собствен етикет: Рубин, тъмен и сочен."
+     "id": "linar-syrah-2024",
+     "why": "A young, peppery Syrah.",
+     "whyBg": "Младо, пиперливо Сира."
     },
     {
      "id": "bratanov-three-blend-red-2019",
@@ -6163,6 +6343,16 @@
      "id": "dragomir-grand-reserve-rubin-2015",
      "why": "Ten years old, only 790 bottles: mocha, coffee and velvety tannins.",
      "whyBg": "На десет години, само 790 бутилки: мока, кафе и кадифени танини."
+    },
+    {
+     "id": "dragomir-rubin-komat-2021",
+     "why": "Our own label: Rubin, dark and juicy.",
+     "whyBg": "Нашият собствен етикет: Рубин, тъмен и сочен."
+    },
+    {
+     "id": "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+     "why": "Mavrud Reserve: full and soft, with black cherry and spice.",
+     "whyBg": "Мавруд Резерва – плътно и меко, с черна череша и подправки."
     },
     {
      "id": "bratanov-rubin-reserve-2019",
@@ -6186,5 +6376,143 @@
     }
    ]
   }
- ]
+ ],
+ "pairingsWas": {
+  "Quince dip": [
+   "zara-estate-tamyanka-terroir-2024",
+   "tsarev-brod-gergana-reserve-brut-2022",
+   "schiopetto-friulano-2023",
+   "bononia-vrachanski-misket-2023",
+   "andreola-prosecco-primo-brut-2024"
+  ],
+  "Muhammara": [
+   "bratanov-3-blend-2024",
+   "domaine-lafage-gallica-2024",
+   "chateau-desclans-grenache-and-rolle-2024",
+   "staro-oryahovo-epic-2024"
+  ],
+  "Tarama": [
+   "simenta-aligote-2023",
+   "edoardo-miroglio-classic-method-brut-2019",
+   "raoul-gautherin-chablis-2023",
+   "midalidare-estate-pas-dose-nv",
+   "argiolas-meri-vermentino-2024",
+   "daros-blanc-de-noirs-2024"
+  ],
+  "Artisanal charcuterie board": [
+   "bononia-gamza-2024",
+   "chateau-de-la-chaize-morgon-2023",
+   "marques-de-murrieta-reserva-2018",
+   "damianitza-red-ark-2022",
+   "tipchenitsa-merlot-2022"
+  ],
+  "Caviar serving": [
+   "sumarroca-cava-reserva-rose-2023",
+   "edoardo-miroglio-classic-method-brut-2019",
+   "pol-roger-champagne-brut-reserve-nv",
+   "sieur-darques-cremant-grand-cuvee-brut-nv",
+   "albert-bichot-chablis-grand-cru-2020",
+   "pol-roger-vintage-rose-champagne-2018"
+  ],
+  "Mixed greens": [
+   "tsarev-brod-gergana-2024",
+   "gerovassiliou-malagousia-2025",
+   "domaine-la-perriere-sancerre-megalithe-2018",
+   "dragomir-sarva-white-blend-2024",
+   "salla-estate-white-blend-2023"
+  ],
+  "Roasted pepper": [
+   "cenino-sauvignon-blanc-2024",
+   "domaine-lafage-gallica-2024",
+   "schiopetto-pinot-grigio-2023"
+  ],
+  "Bonito": [
+   "magura-gruner-veltliner-2024",
+   "martin-mullen-riesling-2021",
+   "pazo-barrantes-albarino-2019",
+   "dragoshinov-riesling-2023"
+  ],
+  "Beef tartare": [
+   "bononia-dimyat-2023",
+   "chateau-de-la-chaize-morgon-2023",
+   "clos-bibliotheque-pinot-noir-2022",
+   "deuce-mavrud-blanc-2025"
+  ],
+  "Cold pork terrine": [
+   "zhivankin-riesling-2024",
+   "walter-buchegger-gruner-veltliner-2024",
+   "domaine-dardhuy-pinot-noir-2022"
+  ],
+  "Gyoza": [
+   "daros-chardonnay-2023",
+   "dragoshinov-winery-estate-chardonnay-2025",
+   "clos-bibliotheque-chardonnay-terre-princiere-2022",
+   "bratanov-three-blend-white-2022",
+   "bononia-gold-selection-white-blend-2023"
+  ],
+  "Beluga lentils": [
+   "bononia-gamza-2024",
+   "downtown-urban-winery-cabernet-franc-reserve-2022",
+   "domaine-dardhuy-pinot-noir-2022"
+  ],
+  "Duck": [
+   "dragomir-rubin-komat-2021",
+   "chateau-penin-la-fleur-grand-cru-2022",
+   "clos-du-mont-olivet-chateauneuf-du-pape-2015",
+   "firriato-nero-davola-harmonium-2019",
+   "tipchenitsa-merlot-2022"
+  ],
+  "Rock sea bass": [
+   "magura-gruner-veltliner-2024",
+   "walter-buchegger-gruner-veltliner-2024",
+   "raoul-gautherin-chablis-2023",
+   "clos-bibliotheque-dimyat-terre-princiere-2023",
+   "domaine-dardhuy-montrachet-2021",
+   "argiolas-meri-vermentino-2024"
+  ],
+  "Boer goatling": [
+   "dragomir-mavrud-komat-2021",
+   "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+   "dragomir-grand-reserve-mavrud-limited-edition-2021",
+   "villa-melnik-rare-varietas-bush-vine-2020",
+   "dragomir-pitos-2015",
+   "linar-syrah-2024"
+  ],
+  "Beef": [
+   "daros-syrah-2023",
+   "bratanov-three-blend-red-2019",
+   "castello-di-volpaia-sangiovese-riserva-2019",
+   "four-friends-black-shadow-2021",
+   "damianitza-red-ark-2022",
+   "produttori-di-manduria-primitivo-elegia-riserva-2021",
+   "bratanov-rubin-reserve-2019",
+   "paolo-manzone-nebbiolo-2020"
+  ],
+  "Cheese board": [
+   "px-nectar",
+   "tsarev-brod-gergana-ice",
+   "maryan-ivan-alexander-grand-cuvee-2023",
+   "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+   "marques-de-murrieta-reserva-2018",
+   "four-friends-black-shadow-2021"
+  ],
+  "Kazandibi": [
+   "tsarev-brod-gergana-ice",
+   "lecru-zibibbo"
+  ],
+  "Chocolate": [
+   "px-nectar",
+   "lecru-zibibbo"
+  ],
+  "Wagyu beef": [
+   "dragomir-rubin-komat-2021",
+   "bratanov-three-blend-red-2019",
+   "dragomir-grand-reserve-rubin-2015",
+   "bratanov-rubin-reserve-2019",
+   "paolo-manzone-nebbiolo-2020"
+  ],
+  "Bites": [
+   "edoardo-miroglio-classic-method-brut-2019"
+  ]
+ }
 }

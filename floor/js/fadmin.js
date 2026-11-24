@@ -208,8 +208,10 @@
       (S.house && S.house.pairings || []).forEach((pr) => {
         const e = (S.house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
         if (!d) return;
-        /* a dish paired on an earlier load keeps its wines; the reasons it still has word for word get their Bulgarian */
-        if ((d.n.pairs || []).length) {
+        /* a dish paired on an earlier load keeps its wines when a manager changed them; one still paired exactly as
+           the list paired it before takes the list's new choice. The reasons it keeps word for word get their Bulgarian. */
+        const was = ((S.house.pairingsWas || {})[pr.dish] || []).join('|');
+        if ((d.n.pairs || []).length && !(was && (d.n.pairs || []).join('|') === was)) {
           const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
           let add = 0;
           pr.wines.forEach((x) => { if (x.whyBg && have[x.id] === x.why && !bgWhy[x.id]) { bgWhy[x.id] = x.whyBg; add++; } });
