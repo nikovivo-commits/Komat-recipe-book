@@ -235,6 +235,12 @@
       pr.wines.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
       Object.assign(note, { pairs: pr.wines.map((x) => x.id), pairWhy: why, bg: Object.assign({}, note.bg, { pairWhy: whyBg }) });
     });
+    /* what was confirmed in an earlier version of the demo is kept: the answers move onto the fresh sample dishes */
+    (K.demoAnswers ? K.demoAnswers() : []).forEach((n) => {
+      const i = (house.menu || []).findIndex((m) => (n.menuBg && m.menuBg === n.menuBg) || (n.en && m.en === n.en));
+      if (i < 0) return;
+      ['checked', 'allergens', 'notAl', 'diet', 'butterOnly', 'bread', 'breadAl', 'canDiet', 'canHow', 'canAl', 'updated'].forEach((k) => { if (n[k] !== undefined) docs['dishnotes/own-demo-' + i][k] = n[k]; });
+    });
     const t = K.tastingFrom(house, (e) => { const i = (house.menu || []).indexOf(e); return i < 0 ? '' : 'own-demo-' + i; });
     if (t) docs['fohsettings/tasting'] = t;
     const ids = Object.keys(docs).filter((p) => p.indexOf('wines/') === 0 && !docs[p].nostock && !docs[p].off).map((p) => p.slice(6));
@@ -264,7 +270,7 @@
     K.demo = !!window.KOMAT_DEMO;
     /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
     const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
-    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v4' : 'komat.floor.db.v1');
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v7' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
     K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };

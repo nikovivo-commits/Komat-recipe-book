@@ -172,7 +172,12 @@
         if (covers(n.diet, k)) return;
         /* not as it comes, but the kitchen makes it for this diet on request (a salad without its cheese) */
         if (covers(n.canDiet, k)) { bySwap = true; hits.push({ k: k, where: [], swap: true, txt: ': on request' }); }
-        else if (!n.diet) unsure = true;
+        else if (!n.diet) {
+          /* no label yet: ingredients that plainly have meat, fish, milk or egg already rule the dish out; otherwise it is one to ask about */
+          const g = K.dietGuess(d);
+          if (g && K.DIETS.indexOf(g) < K.DIETS.indexOf(k)) { fix = false; hits.push({ k: k, where: [], txt: g === 'meat' ? ': has meat' : g === 'pesc' ? ': has fish' : ': has milk, egg or honey' }); }
+          else unsure = true;
+        }
         else { fix = false; hits.push({ k: k, where: [], txt: n.diet === 'meat' ? ': has meat' : ': the dish is ' + K.DIET[n.diet].toLowerCase() + ' only' }); }
         return;
       }
@@ -197,12 +202,15 @@
   /* who can eat a dish, from anyone to the strictest; a dish carries one label (`diet` on its note) */
   K.DIETS = ['meat', 'pesc', 'veg', 'vegan'];
   K.DIET = { meat: 'Meat', pesc: 'Pescatarian', veg: 'Vegetarian', vegan: 'Vegan' };
-  const MEAT = /мес[оа]|телешк|говежд|свинск|пилешк|пиле\b|агнешк|патиц|патешк|бекон|шунка|прошуто|наденица|кайма|салам|луканка|пастърма|кост(?!емон)|chicken|beef|pork|lamb|duck|bacon|\bham\b|prosciutto|veal|sausage|chorizo|guanciale|pancetta|salami|bone|foie|gelatin|желатин/i;
+  const MEAT = /мес[оа]|телешк|говежд|свинск|пилешк|пиле\b|агнешк|патиц|патешк|бекон|шунка|прошуто|наденица|кайма|салам|луканка|пастърма|кост(?!емон)|chicken|beef|pork|lamb|duck|bacon|\bham\b|prosciutto|veal|sausage|chorizo|guanciale|pancetta|salami|bone|foie|gelatin|желатин|колбас|charcuterie|cured meat|фоа гра|бонфиле|tenderloin|wagyu|уагиу|goatling|kid goat|ярешк|яре |яре,|крачета|trotter|сърца|конфи от пат/i;
   const FISH = /риба|сьомга|аншоа|хайвер|октопод|скарид|калмар|миди|fish|salmon|anchov|caviar|octopus|shrimp|prawn|squid|mussel|tuna|тон\b/i;
   /* what the ingredients suggest, for whoever sets the label; never shown to waiters as a fact */
   K.dietGuess = function (d) {
-    const txt = d.ings.join(' | '), al = Object.keys(K.allergenWhere(d));
-    if (!d.ings.length) return '';
+    /* the dish's own names count: “Патешко” says duck even when the menu line only says “leg confit” */
+    const txt = [d.name, d.en].concat(d.ings).join(' | ') + ' ', where = K.allergenWhere(d);
+    /* an allergen only read off the menu line is a maybe (a “celeriac cream” may have no dairy): it rules nothing out */
+    const al = Object.keys(where).filter((k) => where[k].some((x) => !K.fromMenu(x)));
+    if (!d.ings.length) return MEAT.test(txt) ? 'meat' : '';
     if (MEAT.test(txt)) return 'meat';
     if (FISH.test(txt) || al.some((k) => ['fish', 'crustaceans', 'molluscs'].includes(k))) return 'pesc';
     if (al.includes('milk') || al.includes('eggs') || /\bмед\b|honey/i.test(txt)) return 'veg';

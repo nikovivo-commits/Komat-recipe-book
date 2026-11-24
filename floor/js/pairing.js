@@ -134,13 +134,24 @@
   /* sold by the glass with a dessert or cheese: the sweet wines */
   const byTheGlass = (w) => w.colour === 'sweet' && w.byGlass && !!w.glassPrice;
   /* for a dish, one wine at each price level: the house's own choices first, then the wines whose style suits it */
+  /* a number from a dish's id: two dishes of the same kind start at different bottles, so one wine is not offered everywhere */
+  const turn = (d, n) => { let x = 7; String(d.id).split('').forEach((c) => { x = (x * 31 + c.charCodeAt(0)) % 9973; }); return n ? x % n : 0; };
+  /* for a dish, up to two wines at each price level. The house's own choices come first, in the order they were
+     written (the first is the one to lead with). Where the house chose fewer, wines whose style suits the dish fill in. */
   K.pairTiers = function (d) {
     const p = K.pairFor(d), bands = K.priceBands();
     if (!bands) return null;
-    /* a dessert takes what the house chose and nothing else: no bottle is picked for it by style */
-    const cands = p.house.filter(avail).map((w) => ({ w: w, house: true })).concat(p.kind && p.kind[0] !== 'dessert' ? listed().filter((w) => p.kind[2].includes(K.wineStyle(w)) && avail(w) && !p.house.includes(w))
-      .sort((a, b) => p.kind[2].indexOf(K.wineStyle(a)) - p.kind[2].indexOf(K.wineStyle(b))).map((w) => ({ w: w, house: false })) : []).filter((x) => priceOf(x.w) > 0 && !byTheGlass(x.w));
-    const pick = (lo, hi) => cands.find((x) => priceOf(x.w) >= lo && priceOf(x.w) < hi) || null;
+    const ok = (w) => priceOf(w) > 0 && !byTheGlass(w) && avail(w);
+    const house = p.house.filter(ok).map((w) => ({ w: w, house: true }));
+    /* a dessert takes what the house chose and nothing else: no bottle is picked for it by style; nor for a course
+       only the tasting menu has, which is poured what the menu says */
+    const style = p.kind && p.kind[0] !== 'dessert' && d.n.only !== 'tasting' ? listed().filter((w) => p.kind[2].includes(K.wineStyle(w)) && ok(w) && !p.house.includes(w)).map((w) => ({ w: w, house: false })) : [];
+    const pick = (lo, hi) => {
+      const here = (x) => priceOf(x.w) >= lo && priceOf(x.w) < hi, mine = house.filter(here).slice(0, 2), fill = [];
+      /* the style that suits the dish best first; within a style, start where this dish's turn falls */
+      if (p.kind) p.kind[2].forEach((st) => { const l = style.filter((x) => here(x) && K.wineStyle(x.w) === st), from = turn(d, l.length); l.slice(from).concat(l.slice(0, from)).forEach((x) => fill.push(x)); });
+      return mine.concat(fill).slice(0, 2);
+    };
     return { bands: bands, low: pick(0, bands.low), mid: pick(bands.low, bands.high), high: pick(bands.high, Infinity) };
   };
 
@@ -152,19 +163,20 @@
     if (!d) return null;
     const p = K.pairFor(d), t = K.pairTiers(d), tw = K.tasting().wines[d.id], tWine = tw && tw.id ? K.wine(tw.id) : null;
     const why = (x) => (x.house && (d.n.pairWhy || {})[x.w.id]) || (p.kind && !x.house ? K.T(K.styleName(K.wineStyle(x.w))).replace(/^an? /, '').replace(/^./, (c) => c.toUpperCase()) + ': ' + low(K.T(K.wineNotes(x.w).nose) || about(x.w)) : about(x.w));
-    const tier = (label, range, x) => h('section', { class: 'pr-tier' },
+    const bottle = (x) => h('button', { type: 'button', class: 'pr-wine', onclick: () => K.go('winepage', { id: x.w.id }) }, K.wineLabel(x.w, 'mini'),
+      h('span', { class: 'to-txt' }, h('b', null, K.wineTitle(x.w)), h('span', { class: 'pr-origin' }, K.origin(x.w) ? K.origin(x.w).kind + ' · ' + K.origin(x.w).where : K.COL[x.w.colour]), h('span', { class: 'muted' }, why(x))),
+      h('span', { class: 'pr-price' }, K.price(x.w.bottlePrice), x.w.byGlass && x.w.glassPrice ? h('small', null, K.price(x.w.glassPrice) + ' glass') : null));
+    /* two bottles at each price: the one to lead with, and another so the same wine is not sold to every table */
+    const tier = (label, range, xs) => h('section', { class: 'pr-tier' },
       h('div', { class: 'pr-h' }, h('b', null, label), h('span', { class: 'muted' }, range)),
-      x ? h('button', { type: 'button', class: 'pr-wine', onclick: () => K.go('winepage', { id: x.w.id }) }, K.wineLabel(x.w, 'mini'),
-        h('span', { class: 'to-txt' }, h('b', null, K.wineTitle(x.w)), h('span', { class: 'pr-origin' }, K.origin(x.w) ? K.origin(x.w).kind + ' · ' + K.origin(x.w).where : K.COL[x.w.colour]), h('span', { class: 'muted' }, why(x))),
-        h('span', { class: 'pr-price' }, K.price(x.w.bottlePrice), x.w.byGlass && x.w.glassPrice ? h('small', null, K.price(x.w.glassPrice) + ' glass') : null))
-        : h('p', { class: 'muted' }, 'Nothing at this price suits it.'));
+      xs.length ? xs.map((x, i) => [i ? h('span', { class: 'pr-or' }, 'or') : null, bottle(x)]) : h('p', { class: 'muted' }, 'Nothing at this price suits it.'));
     const e = (n) => Math.round(n) + ' €';
     const glass = p.house.filter((w) => byTheGlass(w) && avail(w)).concat(p.kind && ['dessert', 'cheese'].includes(p.kind[0]) ? listed().filter((w) => byTheGlass(w) && avail(w) && !p.house.includes(w)) : []);
     const glassRow = (w) => h('button', { type: 'button', class: 'pr-wine', onclick: () => K.go('winepage', { id: w.id }) }, K.wineLabel(w, 'mini'),
       h('span', { class: 'to-txt' }, h('b', null, K.wineTitle(w)), h('span', { class: 'pr-origin' }, K.origin(w) ? K.origin(w).kind + ' · ' + K.origin(w).where : K.COL[w.colour]), h('span', { class: 'muted' }, (d.n.pairWhy || {})[w.id] || w.say || about(w))),
       h('span', { class: 'pr-price' }, K.price(w.glassPrice), h('small', null, 'a glass')));
-    const any = t && (t.low || t.mid || t.high);
-    const shown = [t && t.low, t && t.mid, t && t.high].filter(Boolean).map((x) => x.w).concat(glass);
+    const any = t && (t.low.length || t.mid.length || t.high.length);
+    const shown = (t ? t.low.concat(t.mid, t.high) : []).map((x) => x.w).concat(glass);
     const more = p.house.filter((w) => avail(w) && !shown.includes(w));
     return K.sheet('What to pour with ' + K.dn(d), h('div', { class: 'stack' },
       d.n.pairText ? h('p', { class: 'prose' }, d.n.pairText) : null,
@@ -174,7 +186,7 @@
       any ? [glass.length ? h('p', { class: 'hint' }, 'Or a bottle for the table:') : null, tier('Good value', 'up to ' + e(t.bands.low), t.low), tier('The middle', e(t.bands.low) + ' to ' + e(t.bands.high), t.mid), tier('The special bottle', 'from ' + e(t.bands.high), t.high)]
         : glass.length ? null : p.house.length || p.style.length ? h('div', { class: 'to-rows' }, p.house.map((w) => wineRow(w, (d.n.pairWhy || {})[w.id] || about(w))).concat(p.style.map((x) => wineRow(x.w, about(x.w)))))
           : h('p', { class: 'muted' }, 'Nothing on the list stands out for this dish. Ask the manager, who can link a wine to it under Edit.'),
-      any ? h('p', { class: 'hint' }, 'One bottle at each price, from what is in stock. To sell up: offer the middle one first, then say in a few words what the special bottle adds.') : null,
+      any ? h('p', { class: 'hint' }, 'Two bottles at each price, from what is in stock: change which one you offer, so the whole list sells. To sell up: offer the middle first, then say in a few words what the special bottle adds.') : null,
       more.length ? h('details', { class: 'pr-more' }, h('summary', null, 'Also good with it (' + more.length + ')'),
         h('div', { class: 'to-rows' }, more.map((w) => wineRow(w, K.price(w.bottlePrice) + ' · ' + ((d.n.pairWhy || {})[w.id] || about(w)))))) : null,
       any ? null
