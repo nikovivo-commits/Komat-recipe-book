@@ -527,13 +527,20 @@
      "what": "Boer: a breed of goat from South Africa raised for its meat. Kid goat is mild and tender, close to lamb."
     }
    ],
-   "facts": "",
+   "facts": "For a vegan guest the garnish is a dish of its own: the pumpkin terrine with the pumpkin sauce. It can take the place of a main in the tasting menu.",
    "bg": {
     "pitch": "Бавно готвено яре боер с терин от тиква, козе сирене и тиквен сос.",
+    "facts": "За веган гост гарнитурата е самостоятелно ястие: теринът от тиква с тиквения сос. Може да замени основно в дегустационното меню.",
+    "canHow": "само гарнитурата: терин от тиква и тиквен сос, без ярето и козето сирене",
     "niche": {
      "яре боер": "Яре боер: боер е порода кози от Южна Африка, отглеждана за месо. Ярешкото месо е с мек вкус и крехко, близко до агнешкото."
     }
-   }
+   },
+   "canDiet": "vegan",
+   "canAl": [
+    "milk"
+   ],
+   "canHow": "the garnish on its own: pumpkin terrine and pumpkin sauce, without the kid and the goat cheese"
   },
   {
    "menuName": "Телешко бонфиле",

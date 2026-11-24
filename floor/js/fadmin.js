@@ -103,6 +103,7 @@
       K.canEdit() ? link('rota', 'The floor team', 'The people on the schedule', open('team')) : null,
       K.canEdit() && !ex ? link('sparkle', 'Load the example wines', 'Six Bulgarian wines and notes, to see how it works', () => { ui.sheet = null; K.loadExamples(); K.render(); }) : null,
       K.canEdit() && ex ? link('trash', 'Remove the examples', 'The example wines, dish notes and questions', () => { ui.sheet = null; K.removeExamples(); K.render(); }) : null,
+      !K.demo && K.canEdit() && K.demoAnswers().length ? link('check', 'Bring over what I confirmed in the demo', K.demoAnswers().length + ' dishes: allergens, who can eat them, bread', open('fromdemo')) : null,
       K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', loadHouse) : null,
       K.canEdit() ? link('download', 'Prices and stock from Hype', 'Read a file exported from the till: bottles in stock and prices', open('hype')) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
@@ -187,6 +188,63 @@
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
+  /* ---------- what was confirmed in the demo, brought into the real book ----------
+     The demo keeps its data in the browser, at the same address as the real app, so the book can read it on the
+     device where the demo was used. For each demo dish somebody worked on: the allergens settled on, who can eat it,
+     the bread, what it can be made into. A dish is found in the book by its line on the menu, or its name. */
+  const ANSWERS = ['diet', 'butterOnly', 'bread', 'breadAl', 'canDiet', 'canHow', 'canAl', 'notAl'];
+  const answered = (n) => !!(n.updated && (n.checked || n.diet || n.bread || n.canDiet || n.butterOnly || (n.allergens || []).length || (n.notAl || []).length));
+  K.demoAnswers = function () {
+    const best = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!/^komat\.floor\.demo\.v\d+$/.test(key)) continue;
+        const docs = JSON.parse(localStorage.getItem(key) || '{}');
+        Object.keys(docs).forEach((p) => {
+          const n = docs[p], k = n && (n.menuBg || n.en || n.name);
+          if (p.indexOf('dishnotes/') !== 0 || !k || !answered(n)) return;
+          if (!best[k] || (n.updated || 0) > (best[k].updated || 0)) best[k] = n;
+        });
+      }
+    } catch (e) { /* this browser keeps nothing */ }
+    return Object.keys(best).map((k) => best[k]);
+  };
+  /* the allergens a demo dish ended with, once confirmed: found in its ingredients and menu line, plus what was ticked, minus what was unticked */
+  const demoSet = (n) => (n.checked ? Object.keys(K.allergenWhere({ id: 'demo', name: n.name, en: n.en, ings: n.ings || [], parts: [], r: null, n: n })) : null);
+  K.SHEETS.fromdemo = function (S) {
+    if (!S.items) S.items = K.demoAnswers().map((n) => ({ n: n, set: demoSet(n), d: K.dishes(true).find((x) => (n.menuBg && x.n.menuBg === n.menuBg) || (n.en && x.en === n.en) || x.name === n.name) || null }))
+      .sort((a, b) => (a.d ? 0 : 1) - (b.d ? 0 : 1) || String(a.n.name).localeCompare(String(b.n.name)));
+    const hardOf = (d) => { const w = K.allergenWhere(d); return Object.keys(w).filter((k) => w[k].some((x) => x !== 'ticked by hand' && !K.fromMenu(x))); };
+    const can = S.items.filter((x) => x.d), lost = S.items.filter((x) => !x.d);
+    const apply = () => {
+      let done = 0, noRight = 0;
+      can.forEach((x) => {
+        const n = x.n, d = x.d, hard = hardOf(d), soft = Object.keys(K.menuAllergens(d)).filter((k) => !hard.includes(k));
+        const flags = { butterOnly: !!n.butterOnly, bread: !!n.bread, breadAl: n.breadAl || [], diet: n.diet || '', canDiet: n.canDiet || '', canHow: n.canHow || '', canAl: n.canAl || [] };
+        if (x.set) flags.notAl = soft.filter((k) => !x.set.includes(k));
+        K.saveNote(d.id, flags);
+        if (x.set) { if (K.canCheck(d)) K.confirmAllergens(d, x.set.filter((k) => !hard.includes(k))); else noRight++; }
+        done++;
+      });
+      ui.sheet = null; K.render();
+      K.toast(done + ' dishes brought over from the demo' + (noRight ? ' · ' + noRight + ' still need a chef or the owner to confirm' : ''));
+    };
+    const names = (l) => K.orderAl(l).map((k) => K.AL[k]).join(', ');
+    const row = (x) => {
+      const n = x.n, hard = x.d ? hardOf(x.d) : [], more = x.set ? hard.filter((k) => !x.set.includes(k)) : [];
+      return h('li', { class: 'fd-row' + (x.d ? '' : ' none') },
+        h('b', null, x.d ? x.d.name : n.name), n.en ? h('span', { class: 'card-en' }, n.en) : null,
+        x.set ? h('span', null, x.set.length ? 'Allergens: ' + names(x.set) : 'No allergens') : h('span', { class: 'muted' }, 'Allergens not confirmed in the demo'),
+        more.length ? h('span', { class: 'fd-more' }, 'The kitchen’s recipe also has: ' + names(more) + '. It stays until the recipe is corrected.') : null,
+        n.diet || n.canDiet || n.bread || n.butterOnly ? h('span', { class: 'muted' }, [n.diet ? K.DIET[n.diet] : '', n.canDiet ? K.canText(n) : '', n.bread ? 'Served with bread' + ((n.breadAl || []).length ? ', can go without' : '') : '', n.butterOnly ? 'The only dairy is butter' : ''].filter(Boolean).join(' · ')) : null);
+    };
+    return K.sheet('From the demo', h('div', { class: 'stack' },
+      h('p', { class: 'hint' }, 'What was confirmed in the demo on this device, matched to the dishes in the book by their line on the menu. Check it, then bring it over. An allergen the kitchen’s own recipe shows cannot be removed here.'),
+      can.length ? h('ul', { class: 'fd-list' }, can.map(row)) : h('p', { class: 'muted' }, 'None of the demo’s dishes are in the book yet. Load the house menu first.'),
+      lost.length ? [h('p', { class: 'hint' }, 'Not in the book yet (load the house menu first):'), h('ul', { class: 'fd-list' }, lost.map(row))] : null,
+      h('button', { class: 'btn primary wide', type: 'button', disabled: !can.length, onclick: apply }, K.icon('check'), 'Bring over ' + can.length + ' dishes')), { wide: true });
+  };
   K.SHEETS.menuimport = function (S) {
     const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
     const n = S.items.filter((x) => x.to).length;
@@ -195,6 +253,9 @@
       S.items.forEach((x, i) => {
         if (!x.to) return;
         const e = Object.assign({}, x.e); delete e.match;
+        /* what somebody has already answered about the dish (who can eat it, the bread, what it can be made into) stays */
+        const cur = D.notes[x.to === '__own' ? 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-')) : x.to] || {};
+        ANSWERS.forEach((k) => { if (cur[k] !== undefined) delete e[k]; });
         if (x.to === '__own') { const id = 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-')); e.name = e.menuName; delete e.menuName; K.saveNote(id, e); return; }
         if (used[x.to]) return;
         used[x.to] = 1;

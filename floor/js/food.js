@@ -224,6 +224,8 @@
     if (/starter|salad|soup|предяст|салат/.test(s)) return 'starter';
     return /wagyu|уагиу|beef|телешк|duck|патиц|патешк|lamb|агне|goat|яре|sea bass|милокоп/.test(nm) ? 'main' : /sorbet|сорбе|dessert|десерт/.test(nm) ? 'sweet' : /bread|хляб/.test(nm) ? 'mezze' : 'starter';
   };
+  /* which stand-in comes first: one that is fine as it is, then one that is fine with a change, then one still to confirm */
+  const RANK = { ok: 0, mod: 1, ask: 2 };
   const NO_SWAP = { main: 'No other main course is safe: ask the kitchen to adapt it', starter: 'No other starter is safe: ask the kitchen to adapt it', sweet: 'No other dessert is safe: ask the kitchen to adapt it', mezze: 'Nothing to serve in its place: ask the kitchen to adapt it' };
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {
@@ -240,7 +242,7 @@
       /* swaps: the same section first, confirmed dishes before unconfirmed ones */
       /* only a dish of the same kind stands in: a main for a main, a starter for a starter, a dessert for a dessert.
          A dip is a plate to share, so it replaces the bread course at most, never a plated one. */
-      const swaps = v.state !== 'no' ? [] : pool.filter((x) => courseKind(x.d) === courseKind(d)).sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || (a.v.state === 'ok' ? 0 : 1) - (b.v.state === 'ok' ? 0 : 1)).slice(0, 4);
+      const swaps = v.state !== 'no' ? [] : pool.filter((x) => courseKind(x.d) === courseKind(d)).sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || RANK[a.v.state] - RANK[b.v.state]).slice(0, 4);
       /* unless one was tapped, the first dish no earlier course already took: a guest should not get the same plate twice */
       const chosen = swaps.find((x) => x.d.id === pick[d.id]) || swaps.find((x) => !used[x.d.id]) || swaps[0] || null;
       if (chosen) used[chosen.d.id] = 1;
