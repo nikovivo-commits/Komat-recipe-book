@@ -28,7 +28,20 @@
      "what": "Sourdough bread: raised with a natural starter instead of yeast."
     }
    ],
-   "facts": "A vegetarian option is available: ask the kitchen."
+   "facts": "A vegetarian option is available: ask the kitchen.",
+   "bg": {
+    "pitch": "Разядка от дюля с катък, сумак и карамелизиран лук, поднесена с нашия хляб с квас. Сладка, кисела и кремообразна едновременно.",
+    "facts": "Има вегетариански вариант: питай кухнята.",
+    "niche": {
+     "катък": "Катък: гъст, приятно кисел български ферментирал млечен продукт за мазане, нещо средно между кисело мляко и прясно сирене. Нашият е от краве мляко.",
+     "сумак": "Сумак: тъмночервена подправка от сушени плодчета, с лимонова киселинка.",
+     "хляб с квас": "Хляб с квас: втасва с естествен квас вместо с мая."
+    }
+   },
+   "bread": true,
+   "breadAl": [
+    "gluten"
+   ]
   },
   {
    "menuName": "Мухамара",
@@ -54,7 +67,19 @@
      "what": "Tahini: a paste of ground sesame seeds. Sesame is an allergen."
     }
    ],
-   "facts": "A vegan option is available: ask the kitchen."
+   "facts": "A vegan option is available: ask the kitchen.",
+   "bg": {
+    "pitch": "Разядка от печени чушки и орехи с домат и тахан, поднесена с нашия хляб с квас.",
+    "facts": "Има веган вариант: питай кухнята.",
+    "niche": {
+     "мухамара": "Мухамара: разядка от червени чушки и орехи от Халеб в Сирия; името значи „зачервена“.",
+     "тахан": "Тахан: паста от смлян сусам. Сусамът е алерген."
+    }
+   },
+   "bread": true,
+   "breadAl": [
+    "gluten"
+   ]
   },
   {
    "menuName": "Тарама",
@@ -76,7 +101,22 @@
      "what": "Tarama: salted, cured fish roe, here from cod, whipped into a mousse. Known from Greek and Turkish meze."
     }
    ],
-   "facts": ""
+   "facts": "The tarama itself is made with bread, so it has gluten even without the bread on the side.",
+   "bg": {
+    "pitch": "Лек мус от хайвер от треска с лимонов сок, поднесен с нашия хляб с квас.",
+    "facts": "В самата тарама има хляб, затова съдържа глутен и без хляба отстрани.",
+    "niche": {
+     "тарама": "Тарама: осолен и отлежал рибен хайвер, тук от треска, разбит на мус. Позната е от гръцките и турските мезета."
+    }
+   },
+   "bread": true,
+   "breadAl": [],
+   "ings": [
+    "хайвер от треска",
+    "хляб (в самата тарама)",
+    "лимонов сок",
+    "хляб с квас"
+   ]
   },
   {
    "menuName": "Дъска със занаятчийски колбаси",
@@ -92,7 +132,11 @@
    ],
    "pitch": "A board of cured meats from small producers.",
    "niche": [],
-   "facts": "Ask the kitchen which meats are on the board today."
+   "facts": "Ask the kitchen which meats are on the board today.",
+   "bg": {
+    "pitch": "Дъска с колбаси от малки производители.",
+    "facts": "Питай кухнята кои колбаси са на дъската днес."
+   }
   },
   {
    "menuName": "Хайвер от есетра",
@@ -117,7 +161,14 @@
      "what": "Sturgeon: the fish whose roe is true caviar."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "30 грама български хайвер от есетра, поднесен по класическия начин – с блини, див лук, заквасена сметана и яйце.",
+    "niche": {
+     "блини": "Блини: малки, меки палачинки, класическата основа за хайвер. Нашите са с обикновено пшенично брашно, не с елда, затова съдържат глутен.",
+     "есетра": "Есетра: рибата, чийто хайвер е истинският черен хайвер."
+    }
+   }
   },
   {
    "menuName": "Листни салати",
@@ -133,7 +184,7 @@
     "mixed greens",
     "leaf salad"
    ],
-   "pitch": "Mixed leaves with seasonal fruit, walnut and kostemon, in an elderflower and mustard vinaigrette.",
+   "pitch": "Mixed leaves with pear, walnut and cheese, in an elderflower and mustard vinaigrette. The fruit changes with the season: now it is pear.",
    "niche": [
     {
      "n": "бъз",
@@ -141,10 +192,31 @@
     },
     {
      "n": "костемон",
-     "what": ""
+     "what": "Kostemon: the cheese on this salad. It is left out for a vegan guest."
     }
    ],
-   "facts": "A vegetarian option is available: ask the kitchen."
+   "facts": "The seasonal fruit now is pear.\nCan be made vegan: without the cheese. Write it on the order.",
+   "canDiet": "vegan",
+   "canHow": "without the cheese",
+   "canAl": [
+    "milk"
+   ],
+   "ings": [
+    "листни салати",
+    "круша (сезонен плод)",
+    "орех",
+    "костемон (сирене)",
+    "винегрет от бъз и горчица"
+   ],
+   "bg": {
+    "pitch": "Микс от листни салати с круша, орех и сирене, с винегрет от бъз и горчица. Плодът се сменя със сезона – сега е круша.",
+    "facts": "Сезонният плод в момента е круша.\nМоже да стане веган: без сиренето. Запиши го в поръчката.",
+    "canHow": "без сиренето",
+    "niche": {
+     "бъз": "Бъз: ароматният бял цвят на бъзовото дърво, с цветен и леко меден вкус.",
+     "костемон": "Костемон: сиренето в тази салата. За веган гост се пропуска."
+    }
+   }
   },
   {
    "menuName": "Печена чушка",
@@ -169,7 +241,15 @@
      "what": "Consommé: a clear, concentrated broth."
     }
    ],
-   "facts": "A vegetarian option is available: ask the kitchen."
+   "facts": "A vegetarian option is available: ask the kitchen.",
+   "bg": {
+    "pitch": "Печена чушка с домат с билки и крокмач, завършена с бистро консоме от чушки.",
+    "facts": "Има вегетариански вариант: питай кухнята.",
+    "niche": {
+     "крокмач": "Крокмач: традиционен български ферментирал млечен продукт – гъст, солен и приятно кисел. Нашият прилича на нашия катък, но е от овче мляко.",
+     "консоме": "Консоме: бистър, концентриран бульон."
+    }
+   }
   },
   {
    "menuName": "Веян паламуд",
@@ -195,7 +275,14 @@
      "what": "Ayran: a cold, salted yoghurt drink. Here it is made into a sauce with horseradish (hryan), which gives it a gentle heat."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Веян паламуд с мариновани зеленчуци, копър и сос от айрян с хрян.",
+    "niche": {
+     "веян паламуд": "Веян паламуд: паламуд, черноморска риба от семейството на тона, осолен и сушен на вятъра – стар начин за запазване на рибата по българското крайбрежие.",
+     "айрян": "Айрян: студена, подсолена напитка от кисело мляко. Тук от него се прави сос с хрян, който му придава лека лютивина."
+    }
+   }
   },
   {
    "menuName": "Телешки тартар",
@@ -216,7 +303,14 @@
      "what": "Ponzu: a Japanese sauce of citrus juice and soy sauce. It has soy."
     }
    ],
-   "facts": "The beef and the yolk are raw: tell guests who are pregnant or ask."
+   "facts": "The beef and the yolk are raw: tell guests who are pregnant or ask.",
+   "bg": {
+    "pitch": "Ръчно нарязано сурово телешко бонфиле с гъби, жълтък и понзу, поднесено с нашия хляб с квас.",
+    "facts": "Телешкото и жълтъкът са сурови: кажи го на гости, които са бременни или питат.",
+    "niche": {
+     "понзу": "Понзу: японски сос от цитрусов сок и соев сос. Съдържа соя."
+    }
+   }
   },
   {
    "menuName": "Студена пача",
@@ -242,7 +336,14 @@
      "what": "Lacto-fermented vegetables: pickled in salt brine, not vinegar, the way sauerkraut is."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Нашият прочит на пачата: студен терин от свински крачета и сърца, с домашно ферментирали зеленчуци, зърнеста горчица и препечен бриош.",
+    "niche": {
+     "пача": "Пача: традиционно българско желирано ястие от бавно сварено свинско, стегнато в собствения си бульон.",
+     "домашни ферментации": "Домашни ферментации: зеленчуци с млечнокисела ферментация – в солена саламура, а не в оцет, както се прави киселото зеле."
+    }
+   }
   },
   {
    "menuName": "Гьози",
@@ -268,7 +369,15 @@
      "what": "Ponzu (citrus and soy) blended with sesame paste."
     }
    ],
-   "facts": "They have shellfish (shrimp) as well as beef: say so when you describe them."
+   "facts": "They have shellfish (shrimp) as well as beef: say so when you describe them.",
+   "bg": {
+    "pitch": "Запечени на тиган гьози с плънка от телешко блек ангъс и скариди, със сусамово понзу.",
+    "facts": "Освен телешко имат и ракообразни (скариди): казвай го, когато ги описваш.",
+    "niche": {
+     "гьози": "Гьози: японски пелмени – хрупкави от едната страна и приготвени на пара от другата.",
+     "сусамово понзу": "Сусамово понзу: понзу (цитрус и соя), смесено със сусамов тахан."
+    }
+   }
   },
   {
    "menuName": "Леща белуга",
@@ -299,7 +408,16 @@
      "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
-   "facts": "A vegan option is available: ask the kitchen."
+   "facts": "A vegan option is available: ask the kitchen.",
+   "bg": {
+    "pitch": "Черна леща белуга с фалафел, сирене от кашу, крем от целина, праз и гъбено жу.",
+    "facts": "Има веган вариант: питай кухнята.",
+    "niche": {
+     "леща белуга": "Леща белуга: дребна, лъскава черна леща, кръстена на хайвера, на който прилича.",
+     "сирене от кашу": "Сирене от кашу: растително сирене от ядки кашу. Ядките са алерген.",
+     "жу": "Жу: концентриран сос. В нашата кухня е или телешко, или гъбено, според ястието: при лещата е гъбено. За гост, който не яде телешко, провери в кухнята кое от двете е в чинията."
+    }
+   }
   },
   {
    "menuName": "Патешко",
@@ -334,7 +452,16 @@
      "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Патешки бут конфи с лимец, фоа гра, зелена ябълка и жу.",
+    "niche": {
+     "конфи": "Конфи: готвено бавно в собствената си мазнина, докато стане много крехко.",
+     "лимец": "Лимец: една от най-старите пшеници, с ядков вкус. Съдържа глутен.",
+     "фоа гра": "Фоа гра: богатият на вкус черен дроб на угоена патица.",
+     "жу": "Жу: концентриран сос. В нашата кухня е или телешко, или гъбено, според ястието: при лещата е гъбено. За гост, който не яде телешко, провери в кухнята кое от двете е в чинията."
+    }
+   }
   },
   {
    "menuName": "Милокоп",
@@ -368,7 +495,16 @@
      "what": "A long, pale, sweet Bulgarian pepper."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Милокоп с картоф фондан, доматен бьор блан, чорбаджийска чушка и зелен домат.",
+    "niche": {
+     "милокоп": "Милокоп: морска риба с плътно бяло месо; в английското ни меню е „rock sea bass“.",
+     "бьор блан": "Бьор блан: френски маслен сос – маслото се разбива в редукция от вино и шалот.",
+     "картоф фондан": "Картоф фондан: зачервен в масло, после сготвен до омекване в бульон.",
+     "чорбаджийска чушка": "Чорбаджийска чушка: дълга, светла и сладка българска чушка."
+    }
+   }
   },
   {
    "menuName": "Яре боер",
@@ -391,7 +527,13 @@
      "what": "Boer: a breed of goat from South Africa raised for its meat. Kid goat is mild and tender, close to lamb."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Бавно готвено яре боер с терин от тиква, козе сирене и тиквен сос.",
+    "niche": {
+     "яре боер": "Яре боер: боер е порода кози от Южна Африка, отглеждана за месо. Ярешкото месо е с мек вкус и крехко, близко до агнешкото."
+    }
+   }
   },
   {
    "menuName": "Телешко бонфиле",
@@ -417,7 +559,15 @@
      "what": "Hollandaise: a warm sauce of egg yolks and butter."
     }
    ],
-   "facts": "Ask how the guest would like the beef cooked."
+   "facts": "Ask how the guest would like the beef cooked.",
+   "bg": {
+    "pitch": "Телешко бонфиле с глазирани бейби картофи, холандез с левурда и зряло сирене.",
+    "facts": "Питай госта как иска да е изпечено телешкото.",
+    "niche": {
+     "левурда": "Левурда: пролетно листо с вкус на мек чесън.",
+     "холандез": "Холандез: топъл сос от жълтъци и масло."
+    }
+   }
   },
   {
    "menuName": "Дъска със сирена",
@@ -433,7 +583,11 @@
    ],
    "pitch": "A board of cheeses, served with marmalade.",
    "niche": [],
-   "facts": "Ask the kitchen which cheeses are on the board today."
+   "facts": "Ask the kitchen which cheeses are on the board today.",
+   "bg": {
+    "pitch": "Дъска със сирена, сервирани с мармалад.",
+    "facts": "Питай кухнята кои сирена са на дъската днес."
+   }
   },
   {
    "menuName": "Загори тенджера",
@@ -463,7 +617,15 @@
      "what": "Sahlep: a flour from wild orchid tubers that thickens and perfumes milk desserts."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Нашето казандиби: млечен пудинг, карамелизиран на дъното на тенджерата, с аромат на мастиха и сахлеп и с шамфъстък.",
+    "niche": {
+     "казандиби": "Казандиби: турски млечен пудинг, чието име значи „дъно на казана“; дъното нарочно се оставя да загори и се карамелизира. Нашето българско име „загори тенджера“ казва същото.",
+     "мастиха": "Мастиха: смола от дърво от гръцкия остров Хиос, с боров, леко сладък вкус.",
+     "сахлеп": "Сахлеп: брашно от грудки на дива орхидея, което сгъстява и ароматизира млечните десерти."
+    }
+   }
   },
   {
    "menuName": "Шоколад",
@@ -494,7 +656,183 @@
      "what": "Juniper: the berry that gives gin its taste."
     }
    ],
-   "facts": ""
+   "facts": "",
+   "bg": {
+    "pitch": "Шоколадов десерт, подсладен с мусковадо, със замразени и лиофилизирани плодове, бор и хвойна.",
+    "niche": {
+     "мусковадо": "Мусковадо: нерафинирана тръстикова захар, тъмна и лепкава, с вкус на меласа.",
+     "лиофилизирани плодове": "Лиофилизирани плодове: сушени в замразено състояние, затова остават хрупкави и запазват цвета и вкуса си.",
+     "хвойна": "Хвойна: плодчето, което дава вкуса на джина."
+    }
+   }
+  },
+  {
+   "menuName": "Хляб и масло",
+   "en": "Bread & butter",
+   "section": "Tasting menu",
+   "order": 101,
+   "only": "tasting",
+   "menuBg": "хляб с квас, масло",
+   "menuEn": "sourdough bread, butter",
+   "ings": [
+    "хляб с квас (брашно)",
+    "масло"
+   ],
+   "pitch": "Our sourdough bread with butter, to start the tasting menu.",
+   "niche": [
+    {
+     "n": "хляб с квас",
+     "what": "Sourdough bread: raised with a natural starter instead of yeast."
+    }
+   ],
+   "facts": "",
+   "bg": {
+    "pitch": "Нашият хляб с квас с масло – за начало на дегустационното меню.",
+    "niche": {
+     "хляб с квас": "Хляб с квас: втасва с естествен квас вместо с мая."
+    }
+   }
+  },
+  {
+   "menuName": "Хапки",
+   "en": "Bites",
+   "section": "Tasting menu",
+   "order": 102,
+   "only": "tasting",
+   "menuBg": "глад, копнеж, уют",
+   "menuEn": "awakening, curiosity, comfort promise",
+   "pitch": "Three small bites to open the menu. First a skewer of fermented vegetables with tomato powder. Then a damga with krokmach and mushroom duxelles, dusted with freeze-dried cep. Last a croquette of duck confit and béchamel.",
+   "facts": "On the menu the three are called awakening, curiosity and comfort promise, in that order.\nThe croquette has béchamel (milk, butter, flour) and a crumb coating: check with the kitchen for a guest with an allergy.\nThe damga is fried batter: ask the kitchen what is in it for a guest with a gluten, egg or milk allergy.",
+   "niche": [
+    {
+     "n": "ферментирали зеленчуци",
+     "what": "Lacto-fermented vegetables: pickled in salt brine, not vinegar, which makes them sour and lively."
+    },
+    {
+     "n": "дамга",
+     "what": "Damga: a rosette. A hot iron stamp (the “damga”) is dipped in a thin batter and then in hot oil, which gives a crisp, lacy shell that is filled. The batter is in the kitchen book under “Батер за розетка (дамга)”."
+    },
+    {
+     "n": "крокмач",
+     "what": "Krokmach: a traditional Bulgarian fermented milk product, thick, salty and tangy. Ours is similar to our katak, but made from sheep’s milk."
+    },
+    {
+     "n": "дюксел",
+     "what": "Duxelles: mushrooms chopped very fine and cooked down slowly until dry and intense."
+    },
+    {
+     "n": "манатарка",
+     "what": "Cep (porcini): a wild mushroom with a deep, nutty taste. Here it is freeze-dried and ground to a powder."
+    },
+    {
+     "n": "конфи",
+     "what": "Confit: cooked slowly in its own fat until very tender."
+    },
+    {
+     "n": "бешамел",
+     "what": "Béchamel: a white sauce of milk thickened with butter and flour."
+    }
+   ],
+   "ings": [
+    "ферментирали зеленчуци",
+    "домат на прах",
+    "дамга (батер за розетка)",
+    "крокмач",
+    "гъби дюксел",
+    "манатарка лиофилизирана",
+    "патица конфи",
+    "бешамел (мляко, масло, брашно)",
+    "галета"
+   ],
+   "bg": {
+    "pitch": "Три малки хапки за начало на менюто. Първо – шишче от ферментирали зеленчуци с доматена пудра. После – дамга с крокмач и гъбен дюксел, поръсена с лиофилизирана манатарка. Накрая – крокет от патешко конфи и бешамел.",
+    "facts": "В менюто трите се казват глад, копнеж и уют, в този ред.\nКрокетът е с бешамел (мляко, масло, брашно) и панировка с галета: за гост с алергия провери в кухнята.\nДамгата е пържено рядко тесто: за гост с алергия към глутен, яйца или мляко питай кухнята какво има в тестото.",
+    "niche": {
+     "ферментирали зеленчуци": "Ферментирали зеленчуци: зеленчуци с млечнокисела ферментация – в солена саламура, а не в оцет, затова са кисели и с жив вкус.",
+     "дамга": "Дамга: розетка. Нагорещен железен печат (самата „дамга“) се потапя в рядко тесто и после в горещо олио – получава се хрупкава, ажурна черупка, която се пълни. Тестото е в кухненската книга под „Батер за розетка (дамга)“.",
+     "крокмач": "Крокмач: традиционен български ферментирал млечен продукт – гъст, солен и приятно кисел. Нашият прилича на нашия катък, но е от овче мляко.",
+     "дюксел": "Дюксел: много ситно нарязани гъби, готвени бавно, докато станат сухи и с наситен вкус.",
+     "манатарка": "Манатарка: дива гъба с дълбок, ядков вкус. Тук е лиофилизирана и смляна на прах.",
+     "конфи": "Конфи: готвено бавно в собствената си мазнина, докато стане много крехко.",
+     "бешамел": "Бешамел: бял сос от мляко, сгъстено с масло и брашно."
+    }
+   }
+  },
+  {
+   "menuName": "Уагиу",
+   "en": "Wagyu beef",
+   "section": "Tasting menu",
+   "order": 106,
+   "only": "tasting",
+   "menuBg": "смръчкула, кейл, опушен жълтък с пилешки гарум и телешко жу",
+   "menuEn": "morel mushrooms, kale, smoked egg yolk with chicken garum and beef jus",
+   "ings": [
+    "телешко уагиу",
+    "смръчкула",
+    "кейл",
+    "яйчен жълтък",
+    "пилешки гарум",
+    "телешко жу"
+   ],
+   "pitch": "Wagyu beef with morel mushrooms and kale, a smoked egg yolk with chicken garum, and beef jus.",
+   "niche": [
+    {
+     "n": "уагиу",
+     "what": "Wagyu: Japanese-breed beef known for its fine marbling of fat, which makes it very tender and rich."
+    },
+    {
+     "n": "смръчкула",
+     "what": "Morel: a wild spring mushroom with a honeycomb cap and a deep, earthy taste."
+    },
+    {
+     "n": "гарум",
+     "what": "Garum: a fermented sauce, salty and full of umami. Classic garum is made from fish; ours here is made from chicken."
+    },
+    {
+     "n": "жу",
+     "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
+    }
+   ],
+   "facts": "",
+   "bg": {
+    "pitch": "Телешко уагиу със смръчкула и кейл, опушен жълтък с пилешки гарум и телешко жу.",
+    "niche": {
+     "уагиу": "Уагиу: телешко от японска порода, известно с фината си мраморна шарка от мазнина, която го прави много крехко и богато на вкус.",
+     "смръчкула": "Смръчкула: дива пролетна гъба с шапка като пчелна пита и дълбок, землист вкус.",
+     "гарум": "Гарум: ферментирал сос, солен и пълен с умами. Класическият гарум се прави от риба; нашият тук е от пилешко.",
+     "жу": "Жу: концентриран сос. В нашата кухня е или телешко, или гъбено, според ястието: при лещата е гъбено. За гост, който не яде телешко, провери в кухнята кое от двете е в чинията."
+    }
+   }
+  },
+  {
+   "menuName": "Сорбе от лимон",
+   "en": "Lemon sorbet",
+   "section": "Tasting menu",
+   "order": 107,
+   "only": "tasting",
+   "menuBg": "гранита с краставица, босилек и джин",
+   "menuEn": "cucumber, basil and gin granita",
+   "ings": [
+    "лимон",
+    "краставица",
+    "босилек",
+    "джин"
+   ],
+   "pitch": "A lemon sorbet with a granita of cucumber, basil and gin, to refresh before dessert.",
+   "niche": [
+    {
+     "n": "гранита",
+     "what": "Granita: a coarse, crystalline ice, scraped rather than churned."
+    }
+   ],
+   "facts": "It has gin: tell a guest who does not drink alcohol, and the kitchen can leave it out.",
+   "bg": {
+    "pitch": "Сорбе от лимон с гранита от краставица, босилек и джин – за освежаване преди десерта.",
+    "facts": "Има джин: кажи го на гост, който не пие алкохол – кухнята може да го направи без джин.",
+    "niche": {
+     "гранита": "Гранита: едър, кристален лед, който се стърже, вместо да се разбива."
+    }
+   }
   }
  ],
  "docs": {
@@ -506,10 +844,10 @@
    "country": "Bulgaria",
    "vintage": "NV",
    "bottlePrice": "62",
-   "grapes": "",
+   "grapes": "Chardonnay",
    "style": "traditional method, no added sugar",
-   "say": "A bone-dry Bulgarian sparkling wine: “pas dosé” means no sugar is added at the end.",
-   "story": "",
+   "say": "A bone-dry Bulgarian sparkling wine, all Chardonnay, made like Champagne with three years on the lees. Toasted bread, apple and lemon, and no sugar added at all.",
+   "story": "Midalidare is in the village of Mogilovo near Chirpan and is known for its sparkling wines. 'Pas Dosé' means no sugar is added, and this wine has been named Bulgarian National Champion at the Champagne & Sparkling Wine World Championships.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -524,7 +862,21 @@
     51.3,
     59.4,
     3.59
-   ]
+   ],
+   "nose": "Toasted bread, sweet apple, lemon, light hazelnut, peach blossom",
+   "palate": "Powerful, very dry and fresh; citrus and apple; long mineral finish",
+   "body": "medium",
+   "made": "Traditional method (second fermentation in the bottle), at least 36 months on the lees, no sugar added at the end.",
+   "was": {
+    "say": "A bone-dry Bulgarian sparkling wine: “pas dosé” means no sugar is added at the end."
+   },
+   "bg": {
+    "say": "Напълно сухо българско пенливо вино, изцяло от Шардоне, направено като шампанско, с три години върху утайката. Препечен хляб, ябълка и лимон, без никаква добавена захар.",
+    "nose": "Препечен хляб, сладка ябълка, лимон, лек лешник, прасковен цвят",
+    "palate": "Мощно, много сухо и свежо; цитруси и ябълка; дълъг минерален послевкус",
+    "made": "Класически метод (втора ферментация в бутилката), поне 36 месеца върху утайката, без добавена захар накрая.",
+    "story": "Мидалидаре е в село Могилово край Чирпан и е известна с пенливите си вина. „Pas Dosé“ означава, че не се добавя захар, а това вино е обявено за национален шампион на България на Champagne & Sparkling Wine World Championships."
+   }
   },
   "wines/edoardo-miroglio-classic-method-brut-2019": {
    "colour": "sparkling",
@@ -536,8 +888,8 @@
    "bottlePrice": "49",
    "grapes": "",
    "style": "traditional method, brut",
-   "say": "A Bulgarian sparkling wine made like Champagne, with the second fermentation in the bottle.",
-   "story": "",
+   "say": "Bulgarian bubbles made the Champagne way, from the Miroglio family’s winery at Elenovo. Dry and fresh: it is the wine our tasting menu opens with.",
+   "story": "The Edoardo Miroglio winery is in the village of Elenovo near Nova Zagora. It was founded by an Italian textile businessman from Piedmont, whose family also owns the Tenuta Carretta winery in Alba; today his son Franco runs it.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -552,7 +904,14 @@
     49.9,
     67.8,
     2.47
-   ]
+   ],
+   "was": {
+    "say": "A Bulgarian sparkling wine made like Champagne, with the second fermentation in the bottle."
+   },
+   "bg": {
+    "say": "Българско пенливо вино, направено като шампанско, от винарната на семейство Миролио в Еленово. Сухо и свежо: с него започва нашето дегустационно меню.",
+    "story": "Винарна Едоардо Миролио е в село Еленово край Нова Загора. Основал я е италиански текстилен предприемач от Пиемонт, чието семейство притежава и винарната Tenuta Carretta в Алба; днес я ръководи синът му Франко."
+   }
   },
   "wines/tsarev-brod-gergana-reserve-brut-2022": {
    "colour": "sparkling",
@@ -564,8 +923,8 @@
    "bottlePrice": "58",
    "grapes": "Gergana",
    "style": "brut",
-   "say": "Gergana from Tsarev Brod, Danubian Plain. A Bulgarian white variety: fresh and aromatic, with citrus and white flowers.",
-   "story": "",
+   "say": "Sparkling wine from Gergana, a Bulgarian grape that only Tsarev Brod grows. Made like Champagne, two years on the lees: toast, honey and yellow fruit; soft but dry.",
+   "story": "Gergana is a Bulgarian grape, a cross of Dimyat and Muscat Ottonel, that had almost disappeared until the family winery Tsarev Brod near Shumen revived it. For this sparkling wine the grapes are picked early, at the start of September, while the acidity is still high.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -580,7 +939,21 @@
     49.9,
     67.3,
     2.47
-   ]
+   ],
+   "nose": "Toast, butter, honey, yellow fruit",
+   "palate": "Soft and juicy but dry, mineral, with a buttery lemon finish",
+   "body": "medium",
+   "made": "Traditional method: second fermentation in the bottle, then about two years on the lees.",
+   "was": {
+    "say": "Gergana from Tsarev Brod, Danubian Plain. A Bulgarian white variety: fresh and aromatic, with citrus and white flowers."
+   },
+   "bg": {
+    "say": "Пенливо вино от Гергана – български сорт, който отглежда само Царев брод. Направено като шампанско, с две години върху утайката: препечен хляб, мед и жълти плодове; меко, но сухо.",
+    "nose": "Препечен хляб, масло, мед, жълти плодове",
+    "palate": "Меко и сочно, но сухо, минерално, с послевкус на масло и лимон",
+    "made": "Класически метод: втора ферментация в бутилката, след това около две години върху утайката.",
+    "story": "Гергана е български сорт, кръстоска между Димят и Мускат отонел, който почти беше изчезнал, докато семейната винарна Царев брод край Шумен не го възроди. За това пенливо вино гроздето се бере рано, в началото на септември, докато киселинността е още висока."
+   }
   },
   "wines/sumarroca-cava-reserva-rose-2023": {
    "colour": "sparkling",
@@ -590,10 +963,10 @@
    "country": "Spain",
    "vintage": "2023",
    "bottlePrice": "37",
-   "grapes": "",
+   "grapes": "Pinot Noir, Macabeo",
    "style": "cava, rosé",
-   "say": "A pink Cava from near Barcelona, made by the traditional method: red berries and fine bubbles.",
-   "story": "",
+   "say": "An organic pink Cava from near Barcelona, mostly Pinot Noir, made like Champagne. Strawberry and red fruit; dry, fruity and round.",
+   "story": "A certified organic rosé cava. The Pinot Noir comes from Sumarroca's own vineyards at Finca Sumarroca, and all of the estate's vineyards are farmed organically.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -608,7 +981,22 @@
     50.1,
     67.5,
     2.61
-   ]
+   ],
+   "nose": "Strawberry, red fruits, floral notes",
+   "palate": "Fruity and rounded, with a delicate finish",
+   "body": "medium",
+   "made": "Traditional-method cava: fermented in temperature-controlled stainless steel, then aged 15 months or more in the bottle.",
+   "appellation": "Cava DO",
+   "was": {
+    "say": "A pink Cava from near Barcelona, made by the traditional method: red berries and fine bubbles."
+   },
+   "bg": {
+    "say": "Био розе кава от района на Барселона, предимно Пино ноар, направена като шампанско. Ягода и червени плодове; суха, плодова и заоблена.",
+    "nose": "Ягода, червени плодове, цветни нотки",
+    "palate": "Плодово и заоблено, с деликатен послевкус",
+    "made": "Кава по класически метод: ферментира в неръждаема стомана с контролирана температура, след това отлежава 15 или повече месеца в бутилката.",
+    "story": "Сертифицирана био розе кава. Пино ноарът идва от собствените лозя на Sumarroca във Finca Sumarroca, а всички лозя на имението се отглеждат биологично."
+   }
   },
   "wines/andreola-prosecco-primo-brut-2024": {
    "colour": "sparkling",
@@ -620,8 +1008,8 @@
    "bottlePrice": "54",
    "grapes": "Glera",
    "style": "brut",
-   "say": "Glera from Andreola, Valdobbiadene. The Prosecco grape: pear, apple and white flowers, light bubbles.",
-   "story": "",
+   "say": "Prosecco from the steep hills of Valdobbiadene, the best part of the Prosecco area, where everything is picked by hand. Peach, apple and white flowers; very dry, with soft bubbles.",
+   "story": "It comes from about four hectares of very steep hillside vineyards at Col San Martino, in Valdobbiadene, where all the work is done by hand. The name '26° Primo' marks the estate's 26th year, 2009, when Stefano Pola took over and the area became a DOCG.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -636,7 +1024,22 @@
     49.9,
     70.2,
     2.38
-   ]
+   ],
+   "nose": "Peach, apple, citrus, wisteria, rose, acacia flowers",
+   "palate": "Very dry, round and smooth, with a long, salty-mineral finish",
+   "body": "light",
+   "made": "Tank-method (Charmat) sparkling wine: second fermentation in a pressurised tank, with one to three months on the lees.",
+   "appellation": "Valdobbiadene Prosecco Superiore DOCG Rive di Col San Martino",
+   "was": {
+    "say": "Glera from Andreola, Valdobbiadene. The Prosecco grape: pear, apple and white flowers, light bubbles."
+   },
+   "bg": {
+    "say": "Просеко от стръмните хълмове на Valdobbiadene – най-добрата част от района на просекото, където всичко се бере на ръка. Праскова, ябълка и бели цветя; много сухо, с меки мехурчета.",
+    "nose": "Праскова, ябълка, цитруси, глициния, роза, акациев цвят",
+    "palate": "Много сухо, заоблено и гладко, с дълъг солено-минерален послевкус",
+    "made": "Пенливо вино по резервоарен метод (Шарма): втора ферментация в резервоар под налягане, с един до три месеца върху утайката.",
+    "story": "Идва от около четири хектара много стръмни лозя по склоновете на Col San Martino, във Valdobbiadene, където цялата работа се върши на ръка. Името „26° Primo“ отбелязва 26-ата година на имението – 2009, когато Stefano Pola поема управлението, а районът става DOCG."
+   }
   },
   "wines/sieur-darques-cremant-grand-cuvee-brut-nv": {
    "colour": "sparkling",
@@ -646,10 +1049,10 @@
    "country": "France",
    "vintage": "NV",
    "bottlePrice": "54",
-   "grapes": "",
+   "grapes": "Chardonnay, Chenin Blanc, Mauzac",
    "style": "crémant, brut",
-   "say": "A French sparkling wine from Limoux, made by the same method as Champagne.",
-   "story": "",
+   "say": "French bubbles from Limoux, made the same way as Champagne. Limoux says its monks made sparkling wine in 1531, before Champagne did. Green apple, pear and honey; fresh and creamy.",
+   "story": "Made by the Sieur d'Arques growers' cooperative in Limoux, in the Languedoc. The '1531' on the label is the year when monks at the nearby Abbey of Saint-Hilaire are said to have made the world's first sparkling wine.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -664,7 +1067,22 @@
     50.1,
     66.6,
     2.98
-   ]
+   ],
+   "nose": "Green apple, pear, acacia honey, elderflower",
+   "palate": "Fresh and creamy, lively bubbles, sweet-and-sour balance, long finish",
+   "body": "medium",
+   "made": "Traditional method: second fermentation in the bottle, then about 11 months on the lees.",
+   "appellation": "Crémant de Limoux AOC",
+   "was": {
+    "say": "A French sparkling wine from Limoux, made by the same method as Champagne."
+   },
+   "bg": {
+    "say": "Френско пенливо вино от Limoux, направено по същия начин като шампанското. В Limoux казват, че техните монаси са правили пенливо вино още през 1531 г. – преди Шампан. Зелена ябълка, круша и мед; свежо и кремообразно.",
+    "nose": "Зелена ябълка, круша, акациев мед, бъзов цвят",
+    "palate": "Свежо и кремообразно, живи мехурчета, баланс между сладко и кисело, дълъг послевкус",
+    "made": "Класически метод: втора ферментация в бутилката, след това около 11 месеца върху утайката.",
+    "story": "Прави го кооперацията на лозарите Sieur d’Arques в Limoux, в Лангедок. „1531“ на етикета е годината, в която, както се разказва, монасите от близкото абатство Saint-Hilaire са направили първото пенливо вино в света."
+   }
   },
   "wines/pol-roger-champagne-brut-reserve-nv": {
    "colour": "sparkling",
@@ -676,8 +1094,8 @@
    "bottlePrice": "144",
    "grapes": "Pinot Noir, Pinot Meunier, Chardonnay",
    "style": "brut",
-   "say": "Pol Roger’s classic Champagne: fine bubbles, brioche and green apple.",
-   "story": "Light in colour, silky, with red cherry, raspberry and an earthy note.",
+   "say": "Champagne from a family house founded in 1849, famous as Winston Churchill’s favourite. Four years on the lees: green apple, pear and brioche.",
+   "story": "Pol Roger was founded in 1849 in Épernay and is still run by the family. It is well known as Winston Churchill's favourite Champagne.",
    "facts": "Pol Roger was Winston Churchill’s favourite Champagne house.",
    "glassPrice": "",
    "byGlass": false,
@@ -689,10 +1107,27 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.1,
-    1.0
-   ]
+    1
+   ],
+   "nose": "Green apple, pear, honeysuckle, brioche",
+   "palate": "Flavours of quince jelly, apricot jam and acacia honey",
+   "body": "medium",
+   "made": "Traditional method: a blend from 30 villages with 25% reserve wines, aged about four years on the lees.",
+   "appellation": "Champagne AOC",
+   "was": {
+    "say": "Pol Roger’s classic Champagne: fine bubbles, brioche and green apple.",
+    "story": "Light in colour, silky, with red cherry, raspberry and an earthy note."
+   },
+   "bg": {
+    "say": "Шампанско от семейна къща, основана през 1849 г., прочута като любимата на Уинстън Чърчил. Четири години върху утайката: зелена ябълка, круша и бриош.",
+    "nose": "Зелена ябълка, круша, орлови нокти, бриош",
+    "palate": "Вкус на желе от дюли, конфитюр от кайсии и акациев мед",
+    "made": "Класически метод: купаж от 30 села с 25% резервни вина, отлежал около четири години върху утайката.",
+    "story": "Pol Roger е основана през 1849 г. в Еперне и все още се управлява от семейството. Добре известна е като любимото шампанско на Уинстън Чърчил.",
+    "facts": "Pol Roger беше любимата шампанска къща на Уинстън Чърчил."
+   }
   },
   "wines/pol-roger-vintage-rose-champagne-2018": {
    "colour": "sparkling",
@@ -704,8 +1139,8 @@
    "bottlePrice": "210",
    "grapes": "Pinot Noir, Chardonnay",
    "style": "vintage rosé",
-   "say": "A vintage rosé Champagne from a single year, 2018: red berries, depth and fine bubbles.",
-   "story": "Light in colour, silky, with red cherry, raspberry and an earthy note.",
+   "say": "Vintage rosé Champagne from one year only, 2018: Pol Roger never makes rosé without a vintage. Wild strawberry, cherry and rose petals; silky and full.",
+   "story": "Pol Roger makes rosé only in vintage years, never as a non-vintage. The colour comes from adding about 15% still red Pinot Noir to the blend, and the bottles age in cellars 33 metres underground.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -717,10 +1152,26 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    72.0,
-    62.0,
+    72,
+    62,
     2.6
-   ]
+   ],
+   "nose": "Wild strawberries, black cherries, rose petals",
+   "palate": "Silky and full-bodied, with red berry, plum, pastry and citrus notes",
+   "body": "full",
+   "made": "Traditional method: the house's vintage blend with about 15% still red Pinot Noir added before the second fermentation; riddled by hand.",
+   "appellation": "Champagne AOC",
+   "was": {
+    "say": "A vintage rosé Champagne from a single year, 2018: red berries, depth and fine bubbles.",
+    "story": "Light in colour, silky, with red cherry, raspberry and an earthy note."
+   },
+   "bg": {
+    "say": "Реколтно розе шампанско само от една година – 2018: Pol Roger никога не прави розе без реколта. Горска ягода, череша и листенца от роза; копринено и плътно.",
+    "nose": "Горски ягоди, черни череши, листенца от роза",
+    "palate": "Копринено, с плътно тяло, с нотки на червени горски плодове, слива, сладкиши и цитруси",
+    "made": "Класически метод: реколтният купаж на къщата, към който преди втората ферментация се добавя около 15% тихо червено Пино ноар; бутилките се въртят на ръка.",
+    "story": "Pol Roger прави розе само в реколтни години, никога без реколта. Цветът идва от добавянето на около 15% тихо червено Пино ноар към купажа, а бутилките отлежават в изби на 33 метра под земята."
+   }
   },
   "wines/tsarev-brod-gergana-2024": {
    "colour": "white",
@@ -732,8 +1183,8 @@
    "bottlePrice": "35",
    "grapes": "Gergana",
    "style": "",
-   "say": "Gergana from Tsarev Brod, Danubian Plain. A Bulgarian white variety: fresh and aromatic, with citrus and white flowers.",
-   "story": "",
+   "say": "Gergana is a Bulgarian grape that had almost disappeared; Tsarev Brod, near Shumen, has the only vineyard. Dry and aromatic: apple, melon and white flowers.",
+   "story": "Tsarev Brod is a family winery near Shumen in north-east Bulgaria, and it says it has the only Gergana vineyard in the country. Gergana is a Bulgarian cross of Dimyat and Muscat Ottonel, and this dry white is the winery's best-known wine.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -745,10 +1196,24 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     65.6,
     2.99
-   ]
+   ],
+   "nose": "Ripe apple, citrus, melon, small white flowers",
+   "palate": "Medium body, juicy and fresh, with an aromatic finish",
+   "body": "medium",
+   "made": "Fermented cool in stainless steel, then kept on the fine lees for five to seven months before bottling in spring.",
+   "was": {
+    "say": "Gergana from Tsarev Brod, Danubian Plain. A Bulgarian white variety: fresh and aromatic, with citrus and white flowers."
+   },
+   "bg": {
+    "say": "Гергана е български сорт, който почти беше изчезнал; единственото лозе е на Царев брод, край Шумен. Сухо и ароматно: ябълка, пъпеш и бели цветя.",
+    "nose": "Зряла ябълка, цитруси, пъпеш, дребни бели цветя",
+    "palate": "Средно тяло, сочно и свежо, с ароматен послевкус",
+    "made": "Ферментира на хладно в неръждаема стомана, след това остава върху фината утайка пет до седем месеца, преди да се бутилира през пролетта.",
+    "story": "Царев брод е семейна винарна край Шумен, в Североизточна България, и по нейните думи има единственото лозе с Гергана в страната. Гергана е българска кръстоска между Димят и Мускат отонел, а това сухо бяло е най-известното вино на винарната."
+   }
   },
   "wines/simenta-aligote-2023": {
    "colour": "white",
@@ -760,8 +1225,8 @@
    "bottlePrice": "38",
    "grapes": "Aligoté",
    "style": "",
-   "say": "Aligoté from Simenta, Danubian Plain. Crisp and lean: green apple, lemon, a light body.",
-   "story": "",
+   "say": "Aligoté from limestone soils near the Madara plateau, in north-east Bulgaria. Apple, pear and white flowers; soft and easy, with a mineral touch.",
+   "story": "Simenta's vineyards lie near the Madara plateau in north-east Bulgaria, on limestone soils. The winery concentrates on white wines, and Aligoté is the grape it cares about most.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -773,10 +1238,22 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.6,
     2.36
-   ]
+   ],
+   "nose": "Yellow apple, pear, white flowers",
+   "palate": "Medium body, soft acidity that lets the fruit show, a mineral touch",
+   "body": "medium",
+   "was": {
+    "say": "Aligoté from Simenta, Danubian Plain. Crisp and lean: green apple, lemon, a light body."
+   },
+   "bg": {
+    "say": "Алиготе от варовикови почви край Мадарското плато, в Североизточна България. Ябълка, круша и бели цветя; меко и леко за пиене, с минерална нотка.",
+    "nose": "Жълта ябълка, круша, бели цветя",
+    "palate": "Средно тяло, мека свежест, която оставя плода да се покаже, минерална нотка",
+    "story": "Лозята на Симента са край Мадарското плато в Североизточна България, на варовикови почви. Винарната залага на белите вина, а Алиготе е сортът, на който държи най-много."
+   }
   },
   "wines/dragoshinov-riesling-2023": {
    "colour": "white",
@@ -788,8 +1265,8 @@
    "bottlePrice": "72",
    "grapes": "Riesling",
    "style": "",
-   "say": "Riesling from Dragoshinov, Danubian Plain. High acidity, with lime, green apple and a mineral, sometimes petrol-like note.",
-   "story": "",
+   "say": "A dry Riesling from a tiny family winery near Veliko Tarnovo: only 1,145 bottles. Lychee, melon and honeycomb, with the light petrol note good Riesling has.",
+   "story": "Dragoshinov is a small family winery in Natsovtsi near Veliko Tarnovo, started in 2018 by winemaker Daniel Dragoshinov. The Riesling grapes come from a vineyard near Venchan, by Provadia, and only 1,145 bottles were made.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -801,10 +1278,24 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.2,
     3.37
-   ]
+   ],
+   "nose": "Lychee, melon, honeycomb, a light petrol note",
+   "palate": "Tightly structured, balanced acidity, mineral and tropical fruit, long finish",
+   "body": "medium",
+   "made": "Picked on 30 September 2023 and bottled on 3 April 2024; only 1,145 bottles. The winery does not say steel or oak.",
+   "was": {
+    "say": "Riesling from Dragoshinov, Danubian Plain. High acidity, with lime, green apple and a mineral, sometimes petrol-like note."
+   },
+   "bg": {
+    "say": "Сух Ризлинг от съвсем малка семейна винарна край Велико Търново: само 1145 бутилки. Личи, пъпеш и медена пита, с леката петролна нотка, типична за добрия Ризлинг.",
+    "nose": "Личи, пъпеш, медена пита, лека петролна нотка",
+    "palate": "Стегната структура, балансирана свежест, минералност и тропически плодове, дълъг послевкус",
+    "made": "Гроздето е брано на 30 септември 2023 г., а виното е бутилирано на 3 април 2024 г.; само 1145 бутилки. Винарната не казва дали е в стомана или в дъб.",
+    "story": "Драгошинов е малка семейна винарна в Нацовци край Велико Търново, създадена през 2018 г. от винаря Даниел Драгошинов. Гроздето за Ризлинга е от лозе край Венчан, до Провадия, и са направени само 1145 бутилки."
+   }
   },
   "wines/zhivankin-riesling-2024": {
    "colour": "white",
@@ -816,7 +1307,7 @@
    "bottlePrice": "32",
    "grapes": "Riesling",
    "style": "",
-   "say": "Riesling from Zhivankin, Eastern Thracian Valley. High acidity, with lime, green apple and a mineral, sometimes petrol-like note.",
+   "say": "A dry Bulgarian Riesling: green apple, lime and wet stone. Tight, mineral and very fresh.",
    "story": "",
    "facts": "",
    "glassPrice": "",
@@ -829,10 +1320,21 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.5,
     3.28
-   ]
+   ],
+   "nose": "Green apple, lime, wet stone",
+   "palate": "Tight and mineral, bright acidity, long elegant finish",
+   "body": "medium",
+   "was": {
+    "say": "Riesling from Zhivankin, Eastern Thracian Valley. High acidity, with lime, green apple and a mineral, sometimes petrol-like note."
+   },
+   "bg": {
+    "say": "Сух български Ризлинг: зелена ябълка, лайм и мокър камък. Стегнат, минерален и много свеж.",
+    "nose": "Зелена ябълка, лайм, мокър камък",
+    "palate": "Стегнато и минерално, ярка свежест, дълъг елегантен послевкус"
+   }
   },
   "wines/dragomir-sarva-white-blend-2024": {
    "colour": "white",
@@ -842,10 +1344,10 @@
    "country": "Bulgaria",
    "vintage": "2024",
    "bottlePrice": "38",
-   "grapes": "",
+   "grapes": "Chardonnay, Sauvignon Blanc, Dimyat",
    "style": "white blend",
-   "say": "From Dragomir, Thracian Valley.",
-   "story": "",
+   "say": "A fresh white blend from Dragomir in Plovdiv: Chardonnay, Sauvignon Blanc and the Bulgarian grape Dimyat. No oak: tropical fruit, citrus peel and white flowers.",
+   "story": "Dragomir is a small boutique winery in Plovdiv. It selects grapes from different vineyards across the Thracian Lowlands instead of relying on one estate.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -860,7 +1362,21 @@
     49.9,
     64.5,
     3.24
-   ]
+   ],
+   "nose": "Tropical fruit, citrus peel, white flowers",
+   "palate": "Juicy and smooth, with a refreshing finish",
+   "body": "light",
+   "made": "Each grape is fermented separately in stainless steel and then blended; no oak ageing.",
+   "was": {
+    "say": "From Dragomir, Thracian Valley."
+   },
+   "bg": {
+    "say": "Свеж бял купаж от Драгомир в Пловдив: Шардоне, Совиньон блан и българския сорт Димят. Без дъб: тропически плодове, цитрусова кора и бели цветя.",
+    "nose": "Тропически плодове, цитрусова кора, бели цветя",
+    "palate": "Сочно и гладко, с освежаващ послевкус",
+    "made": "Всеки сорт ферментира отделно в неръждаема стомана и след това се купажира; без отлежаване в дъб.",
+    "story": "Драгомир е малка бутикова винарна в Пловдив. Подбира грозде от различни лозя из Тракийската низина, вместо да разчита на едно имение."
+   }
   },
   "wines/zara-estate-tamyanka-terroir-2024": {
    "colour": "white",
@@ -872,8 +1388,8 @@
    "bottlePrice": "42",
    "grapes": "Tamyanka",
    "style": "",
-   "say": "Tamyanka from Zara Estate, Thracian Valley. The Bulgarian Muscat: very aromatic, grapey and floral, usually dry.",
-   "story": "",
+   "say": "Tamyanka is the Bulgarian name for Muscat. This one is from Sakar, in the south-east: very aromatic, with flowers and fresh grapes on the nose.",
+   "story": "Zaara Estate is a boutique winery with its own hotel, restaurant and spa in the village of Glavan, in the Sakar mountain of south-east Bulgaria. Tamyanka is the Bulgarian name for the grape Muscat Blanc à Petits Grains.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -883,7 +1399,14 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Tamyanka from Zara Estate, Thracian Valley. The Bulgarian Muscat: very aromatic, grapey and floral, usually dry."
+   },
+   "bg": {
+    "say": "Тамянка е българското име на Мускат. Тази е от Сакар, на югоизток: много ароматна, с цветя и прясно грозде в аромата.",
+    "story": "Заара Естейт е бутикова винарна със собствен хотел, ресторант и спа в село Главан, в Сакар планина, Югоизточна България. Тамянка е българското име на сорта Мускат блан а пти грен."
+   }
   },
   "wines/bratanov-three-blend-white-2022": {
    "colour": "white",
@@ -893,10 +1416,10 @@
    "country": "Bulgaria",
    "vintage": "2022",
    "bottlePrice": "41",
-   "grapes": "",
+   "grapes": "Chardonnay, Viognier, Tamyanka",
    "style": "white blend",
-   "say": "From Bratanov, Thracian Valley.",
-   "story": "",
+   "say": "Chardonnay, Viognier and Tamyanka from old vines in Sakar, fermented with wild yeasts and aged ten months in Bulgarian oak. A full, round white: pear, citrus peel and vanilla.",
+   "story": "Bratanov is a family winery in the village of Shishmanovo in the South Sakar hills, known in Bulgaria as a pioneer of fermenting with wild yeasts. The grapes for this blend come mostly from old vines.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -911,7 +1434,21 @@
     63.9,
     63.5,
     1.6
-   ]
+   ],
+   "nose": "Pear, citrus peel, vanilla",
+   "palate": "Oak-aged, with pear, citrus peel and vanilla flavours",
+   "body": "full",
+   "made": "The three grapes are fermented together with wild yeasts and aged about 10 months in 400-litre Bulgarian oak barrels.",
+   "was": {
+    "say": "From Bratanov, Thracian Valley."
+   },
+   "bg": {
+    "say": "Шардоне, Вионие и Тамянка от стари лозя в Сакар, ферментирали с диви дрожди и отлежали десет месеца в български дъб. Плътно, заоблено бяло: круша, цитрусова кора и ванилия.",
+    "nose": "Круша, цитрусова кора, ванилия",
+    "palate": "Отлежало в дъб, с вкус на круша, цитрусова кора и ванилия",
+    "made": "Трите сорта ферментират заедно с диви дрожди и отлежават около 10 месеца в 400-литрови бъчви от български дъб.",
+    "story": "Братанов е семейна винарна в село Шишманово, в хълмовете на Южен Сакар, известна в България като пионер във ферментацията с диви дрожди. Гроздето за този купаж идва предимно от стари лозя."
+   }
   },
   "wines/cenino-sauvignon-blanc-2024": {
    "colour": "white",
@@ -923,7 +1460,7 @@
    "bottlePrice": "44",
    "grapes": "Sauvignon Blanc",
    "style": "",
-   "say": "Sauvignon Blanc from Cenino, Thracian Valley. Zesty and aromatic: gooseberry, citrus, cut grass.",
+   "say": "A Bulgarian Sauvignon Blanc: citrus, fresh grass and green apple, with a long, fresh finish.",
    "story": "",
    "facts": "",
    "glassPrice": "",
@@ -939,7 +1476,18 @@
     50.3,
     67.1,
     2.49
-   ]
+   ],
+   "nose": "Citrus, fresh grass, green apple",
+   "palate": "Firm body, with a long, fresh finish",
+   "body": "medium",
+   "was": {
+    "say": "Sauvignon Blanc from Cenino, Thracian Valley. Zesty and aromatic: gooseberry, citrus, cut grass."
+   },
+   "bg": {
+    "say": "Български Совиньон блан: цитруси, прясна трева и зелена ябълка, с дълъг, свеж послевкус.",
+    "nose": "Цитруси, прясна трева, зелена ябълка",
+    "palate": "Стегнато тяло, с дълъг, свеж послевкус"
+   }
   },
   "wines/deuce-mavrud-blanc-2025": {
    "colour": "white",
@@ -951,8 +1499,8 @@
    "bottlePrice": "51",
    "grapes": "Mavrud",
    "style": "white from a red grape",
-   "say": "A white wine made from the red Mavrud grape: the juice is pressed off the skins before it takes colour.",
-   "story": "Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins.",
+   "say": "A white wine made from Mavrud, Bulgaria’s famous red grape: the juice is pressed off the skins before it takes colour. Something most guests have never tried.",
+   "story": "Mavrud is Bulgaria’s oldest native red grape. Here the juice is pressed straight off the skins, before it takes any colour, so the wine stays white: a “blanc de noirs”.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -962,7 +1510,15 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "A white wine made from the red Mavrud grape: the juice is pressed off the skins before it takes colour.",
+    "story": "Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins."
+   },
+   "bg": {
+    "say": "Бяло вино от Мавруд, прочутия български червен сорт: сокът се отделя от ципите, преди да поеме цвят. Нещо, което повечето гости не са опитвали досега.",
+    "story": "Мавруд е най-старият местен червен сорт в България. Тук сокът се отделя от ципите веднага, преди да поеме какъвто и да е цвят, и виното остава бяло: „blanc de noirs“."
+   }
   },
   "wines/daros-chardonnay-2023": {
    "colour": "white",
@@ -974,7 +1530,7 @@
    "bottlePrice": "33",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "Chardonnay from Daros, Struma Valley. From crisp apple and citrus to rich and buttery when aged in oak.",
+   "say": "Chardonnay from Villa Daros, a young winery near Kresna, in the warm south-west of Bulgaria. The best-value Chardonnay on our list.",
    "story": "",
    "facts": "",
    "glassPrice": "",
@@ -985,7 +1541,13 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Chardonnay from Daros, Struma Valley. From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Шардоне от Вила Дарос – млада винарна край Кресна, в топлия югозапад на България. Най-доброто Шардоне за цената си в нашата листа."
+   }
   },
   "wines/daros-blanc-de-noirs-2024": {
    "colour": "white",
@@ -995,10 +1557,10 @@
    "country": "Bulgaria",
    "vintage": "2024",
    "bottlePrice": "33",
-   "grapes": "",
+   "grapes": "Sangiovese",
    "style": "white from red grapes",
-   "say": "“Blanc de noirs” means a white wine made from red grapes.",
-   "story": "",
+   "say": "A white wine made from a red grape: Sangiovese, the grape of Chianti, grown in the south-west of Bulgaria. Light, with flowers and citrus.",
+   "story": "This is a white wine made from Sangiovese, the red grape best known from Tuscany. It is sold under the Villa Daros label.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1013,7 +1575,20 @@
     49.9,
     67.8,
     2.67
-   ]
+   ],
+   "nose": "Flowers, citrus",
+   "palate": "Citrus and floral flavours",
+   "made": "A white wine made from the red grape Sangiovese.",
+   "was": {
+    "say": "“Blanc de noirs” means a white wine made from red grapes."
+   },
+   "bg": {
+    "say": "Бяло вино от червен сорт: Санджовезе, сорта на Chianti, отглеждан в Югозападна България. Леко, с цветя и цитруси.",
+    "nose": "Цветя, цитруси",
+    "palate": "Вкус на цитруси и цветя",
+    "made": "Бяло вино, направено от червения сорт Санджовезе.",
+    "story": "Това е бяло вино от Санджовезе – червения сорт, най-познат от Тоскана. Продава се с етикета на Вила Дарос."
+   }
   },
   "wines/magura-gruner-veltliner-2024": {
    "colour": "white",
@@ -1025,8 +1600,8 @@
    "bottlePrice": "37",
    "grapes": "Grüner Veltliner",
    "style": "",
-   "say": "Grüner Veltliner from Magura, North-western Bulgaria. Austria’s signature white: citrus, green apple and a white-pepper spice.",
-   "story": "",
+   "say": "Grüner Veltliner is Austria’s grape; this one grows by the Belogradchik rocks in north-west Bulgaria. Lemon, green apple and light herbs; fresh and mineral. Our tasting menu pours it with the sea bass.",
+   "story": "The winery calls this wine 'The Creator'. It comes from a northern vineyard near the Belogradchik rocks and the Magura cave in north-west Bulgaria, and it won a silver medal at the Balkans International Wine Competition 2025.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1041,7 +1616,19 @@
     50.1,
     67.4,
     2.78
-   ]
+   ],
+   "nose": "Lemon, lime, green apple, pear, light herbal notes",
+   "palate": "Fresh and mineral, with good structure",
+   "body": "medium",
+   "was": {
+    "say": "Grüner Veltliner from Magura, North-western Bulgaria. Austria’s signature white: citrus, green apple and a white-pepper spice."
+   },
+   "bg": {
+    "say": "Грюнер велтлинер е сортът на Австрия; този расте край Белоградчишките скали в Северозападна България. Лимон, зелена ябълка и леки билки; свежо и минерално. В нашето дегустационно меню го сервираме с лаврака.",
+    "nose": "Лимон, лайм, зелена ябълка, круша, леки билкови нотки",
+    "palate": "Свежо и минерално, с добра структура",
+    "story": "Винарната нарича това вино „The Creator“. То идва от северно лозе край Белоградчишките скали и пещерата Магура в Северозападна България и спечели сребърен медал на Balkans International Wine Competition 2025."
+   }
   },
   "wines/bononia-dimyat-2023": {
    "colour": "white",
@@ -1053,8 +1640,8 @@
    "bottlePrice": "43",
    "grapes": "Dimyat",
    "style": "",
-   "say": "Dimyat from Bononia, North-western Bulgaria. An old Bulgarian white grape: light and fresh, with peach and pear.",
-   "story": "",
+   "say": "Dimyat is an old Bulgarian grape. This one comes from the bank of the Danube near Vidin: lemon peel, white peach and herbs, with a slightly salty finish. Our tasting menu pours it with the beef tartare.",
+   "story": "Dimyat is an old native Bulgarian white grape. Bononia Estate sits on the bank of the Danube near Vidin, in a building from 1895 that was one of Bulgaria's first breweries before the Yotov family turned it into a winery.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1067,9 +1654,21 @@
    "updated": 0,
    "focus": [
     49.9,
-    67.0,
+    67,
     2.72
-   ]
+   ],
+   "nose": "Lemon peel, fresh herbs, white peach, acacia blossom",
+   "palate": "Medium body, fresh citrus acidity, fine and slightly salty finish",
+   "body": "medium",
+   "was": {
+    "say": "Dimyat from Bononia, North-western Bulgaria. An old Bulgarian white grape: light and fresh, with peach and pear."
+   },
+   "bg": {
+    "say": "Димят е стар български сорт. Този идва от брега на Дунав край Видин: лимонова кора, бяла праскова и билки, с леко солен послевкус. В нашето дегустационно меню го сервираме с телешкия тартар.",
+    "nose": "Лимонова кора, свежи билки, бяла праскова, акациев цвят",
+    "palate": "Средно тяло, цитрусова свежест, фин и леко солен послевкус",
+    "story": "Димят е стар местен български бял сорт. Винарна Бонония е на брега на Дунав край Видин, в сграда от 1895 г., която е била една от първите пивоварни в България, преди семейство Йотови да я превърне във винарна."
+   }
   },
   "wines/bononia-vrachanski-misket-2023": {
    "colour": "white",
@@ -1081,8 +1680,8 @@
    "bottlePrice": "43",
    "grapes": "Vrachanski Misket",
    "style": "",
-   "say": "Vrachanski Misket from Bononia, North-western Bulgaria. An aromatic Bulgarian white: muscat-like, floral and fruity.",
-   "story": "",
+   "say": "A rare, very aromatic Bulgarian grape, named after the town of Vratsa. Jasmine, mandarin and grapefruit on the nose; light, dry and lively in the mouth.",
+   "story": "Vrachanski Misket is a rare, very aromatic Bulgarian grape named after the town of Vratsa in the north-west. Bononia Estate is the Yotov family's winery on the Danube near Vidin, housed in an 1895 building that used to be a brewery.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1097,7 +1696,21 @@
     50.1,
     65.7,
     3.03
-   ]
+   ],
+   "nose": "Hyacinth, jasmine, mandarin, orange peel, grapefruit",
+   "palate": "Light and lively, lemony fruit, fresh acidity, stony mineral feel, grapefruit-pith finish",
+   "body": "light",
+   "made": "Unoaked; aged on its fine lees for five months.",
+   "was": {
+    "say": "Vrachanski Misket from Bononia, North-western Bulgaria. An aromatic Bulgarian white: muscat-like, floral and fruity."
+   },
+   "bg": {
+    "say": "Рядък, много ароматен български сорт, кръстен на град Враца. Жасмин, мандарина и грейпфрут в аромата; леко, сухо и живо на вкус.",
+    "nose": "Зюмбюл, жасмин, мандарина, портокалова кора, грейпфрут",
+    "palate": "Леко и живо, лимонов плод, свежест, минерално усещане за камък, послевкус на бялото на грейпфрутовата кора",
+    "made": "Без дъб; отлежава пет месеца върху фината си утайка.",
+    "story": "Врачански мискет е рядък, много ароматен български сорт, кръстен на град Враца в Северозапада. Бонония е винарната на семейство Йотови на Дунав край Видин, в сграда от 1895 г., която някога е била пивоварна."
+   }
   },
   "wines/dragoshinov-winery-estate-chardonnay-2025": {
    "colour": "white",
@@ -1109,8 +1722,8 @@
    "bottlePrice": "72",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "Chardonnay from Dragoshinov Winery Estate, Danubian Plain. From crisp apple and citrus to rich and buttery when aged in oak.",
-   "story": "",
+   "say": "Chardonnay from a very small family winery near Veliko Tarnovo, which makes only about 10,000 bottles a year. Our tasting menu pours it with the gyoza.",
+   "story": "Dragoshinov is a very small family winery in the village of Natsovtsi near Veliko Tarnovo, opened in 2018 and making only around 10,000 bottles a year. It has no vineyards of its own and buys grapes from partner growers.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1120,7 +1733,14 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Chardonnay from Dragoshinov Winery Estate, Danubian Plain. From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Шардоне от много малка семейна винарна край Велико Търново, която прави само около 10 000 бутилки годишно. В нашето дегустационно меню го сервираме с гьозата.",
+    "story": "Драгошинов е много малка семейна винарна в село Нацовци край Велико Търново, открита през 2018 г., която прави само около 10 000 бутилки годишно. Няма собствени лозя и купува грозде от партньори лозари."
+   }
   },
   "wines/bononia-gold-selection-white-blend-2023": {
    "colour": "white",
@@ -1130,10 +1750,10 @@
    "country": "Bulgaria",
    "vintage": "2023",
    "bottlePrice": "59",
-   "grapes": "",
+   "grapes": "Chardonnay, Riesling, Traminer",
    "style": "white blend",
-   "say": "From Bononia, North-western Bulgaria.",
-   "story": "",
+   "say": "Chardonnay, Riesling and Traminer, six months in new French oak; only about 2,000 bottles. Rich and round: honey, peach and vanilla. It took Bulgaria’s top prize at the Balkans International Wine Competition.",
+   "story": "The 2023 vintage was named Best of Show for Bulgaria at the Balkans International Wine Competition, with 96 points and Bulgaria's first platinum medal there. Only about 2,000 bottles were made, at Bononia Estate on the Danube near Vidin.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1148,7 +1768,21 @@
     63.3,
     63.5,
     1.6
-   ]
+   ],
+   "nose": "Honey, peach, citrus, vanilla",
+   "palate": "Rich and dense, soft vanilla from the oak, with a fresh mineral lift",
+   "body": "full",
+   "made": "Aged six months in new French oak barrels; a limited run of about 2,000 bottles.",
+   "was": {
+    "say": "From Bononia, North-western Bulgaria."
+   },
+   "bg": {
+    "say": "Шардоне, Ризлинг и Траминер, шест месеца в нов френски дъб; само около 2000 бутилки. Богато и заоблено: мед, праскова и ванилия. Спечели най-високото отличие за България на Balkans International Wine Competition.",
+    "nose": "Мед, праскова, цитруси, ванилия",
+    "palate": "Богато и плътно, мека ванилия от дъба, със свеж минерален акцент",
+    "made": "Отлежава шест месеца в нови бъчви от френски дъб; лимитирана серия от около 2000 бутилки.",
+    "story": "Реколта 2023 е обявена за „Best of Show“ за България на Balkans International Wine Competition – с 96 точки и първия платинен медал за България там. Направени са само около 2000 бутилки, във винарна Бонония на Дунав край Видин."
+   }
   },
   "wines/salla-estate-white-blend-2023": {
    "colour": "white",
@@ -1158,10 +1792,10 @@
    "country": "Bulgaria",
    "vintage": "2023",
    "bottlePrice": "35",
-   "grapes": "",
+   "grapes": "Sauvignon Blanc, Chardonnay, Riesling",
    "style": "white blend",
-   "say": "From Salla Estate, Black Sea region.",
-   "story": "",
+   "say": "Sauvignon Blanc, Chardonnay and Riesling from a boutique estate inland from Varna. Light and fresh: rose blossom, peach and citrus.",
+   "story": "Salla Estate is a boutique winery in the village of Blaskovo, in Varna province, inland from the Black Sea. The grapes come from its own 30 hectares of vines on a south-west slope right next to the cellar.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1176,7 +1810,19 @@
     49.6,
     67.3,
     2.72
-   ]
+   ],
+   "nose": "Rose blossom, peach, citrus",
+   "palate": "Fresh and balanced, dry, light to medium in body",
+   "body": "light",
+   "was": {
+    "say": "From Salla Estate, Black Sea region."
+   },
+   "bg": {
+    "say": "Совиньон блан, Шардоне и Ризлинг от бутиково имение във вътрешността на Варненско. Леко и свежо: цвят от роза, праскова и цитруси.",
+    "nose": "Цвят от роза, праскова, цитруси",
+    "palate": "Свежо и балансирано, сухо, с леко до средно тяло",
+    "story": "Сала Естейт е бутикова винарна в село Блъсково, област Варна, навътре от Черно море. Гроздето идва от собствените ѝ 30 хектара лозя на югозападен склон, точно до избата."
+   }
   },
   "wines/clos-bibliotheque-chardonnay-terre-princiere-2022": {
    "colour": "white",
@@ -1188,8 +1834,8 @@
    "bottlePrice": "120",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "Chardonnay from Clos Bibliothèque, Black Sea region. From crisp apple and citrus to rich and buttery when aged in oak.",
-   "story": "",
+   "say": "The top Bulgarian Chardonnay on our list. Organic, from limestone full of sea fossils near Varna, aged 18 months in a Burgundy barrel and a clay amphora: ripe apple, nuts and a mineral finish.",
+   "story": "Clos Bibliothèque is a small winery at the village of Nevsha, inland from Varna. Terre Princière is its east-facing vineyard that catches the first morning sun, on poor limestone soil full of sea fossils millions of years old.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1204,7 +1850,21 @@
     49.9,
     67.4,
     2.43
-   ]
+   ],
+   "nose": "Ripe apple, tropical fruit, nuts, lemon",
+   "palate": "Ripe fruit and nutty notes with a pleasant mineral aftertaste",
+   "body": "medium",
+   "made": "Organic farming with biodynamic practices; aged 18 months in a new 500-litre Burgundy oak barrel and a ceramic amphora.",
+   "was": {
+    "say": "Chardonnay from Clos Bibliothèque, Black Sea region. From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Най-доброто българско Шардоне в нашата листа. Био, от варовикови почви край Варна, пълни с морски вкаменелости, отлежало 18 месеца в бургундска бъчва и глинена амфора: зряла ябълка, ядки и минерален послевкус.",
+    "nose": "Зряла ябълка, тропически плодове, ядки, лимон",
+    "palate": "Зрели плодове и нотки на ядки, с приятен минерален послевкус",
+    "made": "Биологично земеделие с биодинамични практики; отлежава 18 месеца в нова 500-литрова бъчва от бургундски дъб и в керамична амфора.",
+    "story": "Clos Bibliothèque е малка винарна край село Невша, във вътрешността на Варненско. Terre Princière е нейното лозе с източно изложение, което улавя първото утринно слънце, върху бедна варовикова почва, пълна с морски вкаменелости на милиони години."
+   }
   },
   "wines/clos-bibliotheque-dimyat-terre-princiere-2023": {
    "colour": "white",
@@ -1216,8 +1876,8 @@
    "bottlePrice": "120",
    "grapes": "Dimyat",
    "style": "",
-   "say": "Dimyat from Clos Bibliothèque, Black Sea region. An old Bulgarian white grape: light and fresh, with peach and pear.",
-   "story": "",
+   "say": "The old Bulgarian grape Dimyat, taken seriously: organic bush vines and 18 months in a clay amphora, with no oak. Salty and mineral, with grapefruit and apricot.",
+   "story": "Dimyat is an old Bulgarian white grape. Clos Bibliothèque, a small winery at the village of Nevsha inland from Varna, farms it organically as low bush vines and ages the wine for a year and a half in a clay amphora instead of a barrel.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1232,7 +1892,21 @@
     50.3,
     67.5,
     2.45
-   ]
+   ],
+   "nose": "Delicate grapefruit and apricot",
+   "palate": "Salty, mineral character up front, with delicate grapefruit and apricot behind",
+   "body": "medium",
+   "made": "Organic, bush-trained vines; aged 18 months in a ceramic amphora, with no oak.",
+   "was": {
+    "say": "Dimyat from Clos Bibliothèque, Black Sea region. An old Bulgarian white grape: light and fresh, with peach and pear."
+   },
+   "bg": {
+    "say": "Старият български сорт Димят, към който тук се отнасят сериозно: био лози, оформени като ниски храсти, и 18 месеца в глинена амфора, без дъб. Солено и минерално, с грейпфрут и кайсия.",
+    "nose": "Деликатен грейпфрут и кайсия",
+    "palate": "Отначало солен, минерален характер, а след него – деликатен грейпфрут и кайсия",
+    "made": "Био лози, оформени като ниски храсти; отлежава 18 месеца в керамична амфора, без дъб.",
+    "story": "Димят е стар български бял сорт. Clos Bibliothèque, малка винарна край село Невша, във вътрешността на Варненско, го отглежда биологично, като ниски храстовидни лози, и оставя виното да отлежава година и половина в глинена амфора вместо в бъчва."
+   }
   },
   "wines/argiolas-meri-vermentino-2024": {
    "colour": "white",
@@ -1244,8 +1918,8 @@
    "bottlePrice": "46",
    "grapes": "Vermentino",
    "style": "",
-   "say": "Vermentino from Argiolas, Sardinia. Fresh and salty: citrus, green almond, herbs.",
-   "story": "",
+   "say": "Vermentino from Sardinia, the island’s own white. Citrus, white flowers and herbs; very fresh and lively. A wine for seafood.",
+   "story": "Argiolas is a family winery in Serdiana, in Sardinia. Merì was first made in 2011; the grapes are chilled with dry ice during picking to keep the aromas and to use less sulphur.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1260,7 +1934,22 @@
     49.9,
     67.1,
     1.93
-   ]
+   ],
+   "nose": "Citrus, fresh fruit, white flowers, herbs",
+   "palate": "Lively and very fresh, balanced and delicate, with juicy acidity",
+   "body": "light",
+   "made": "Grapes are chilled with dry ice as they are picked, gently pressed, then fermented cool (16-17°C) for 15-20 days.",
+   "appellation": "Vermentino di Sardegna DOC",
+   "was": {
+    "say": "Vermentino from Argiolas, Sardinia. Fresh and salty: citrus, green almond, herbs."
+   },
+   "bg": {
+    "say": "Верментино от Сардиния – местното бяло на острова. Цитруси, бели цветя и билки; много свежо и живо. Вино за морски дарове.",
+    "nose": "Цитруси, пресни плодове, бели цветя, билки",
+    "palate": "Живо и много свежо, балансирано и деликатно, със сочна киселинност",
+    "made": "Гроздето се охлажда със сух лед още при брането, пресова се внимателно и след това ферментира на хладно (16-17°C) 15-20 дни.",
+    "story": "Argiolas е семейна винарна в Serdiana, в Сардиния. Merì е направено за първи път през 2011 г.; гроздето се охлажда със сух лед по време на брането, за да се запазят ароматите и да се използва по-малко сяра."
+   }
   },
   "wines/schiopetto-pinot-grigio-2023": {
    "colour": "white",
@@ -1272,8 +1961,8 @@
    "bottlePrice": "78",
    "grapes": "Pinot Grigio",
    "style": "",
-   "say": "Pinot Grigio from Schiopetto, Collio DOC. Dry and clean: pear, apple and a light almond finish.",
-   "story": "",
+   "say": "Not the usual Pinot Grigio: from Collio, on Italy’s border with Slovenia, by the family that made the region famous. Full-bodied, with apple, white peach and a flinty note.",
+   "story": "Mario Schiopetto founded the estate in 1965 in Capriva del Friuli and pioneered stainless-steel winemaking in the region. The estate has made this Pinot Grigio since 1968; the 2023 was scored 95 points by James Suckling.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1285,10 +1974,25 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.1,
     2.19
-   ]
+   ],
+   "nose": "Apple, white peach, banana, passion fruit, flinty mineral note",
+   "palate": "Full-bodied, with a lemon and fresh pear finish",
+   "body": "full",
+   "made": "Gently pressed and fermented in stainless steel, then aged about 8 months on the lees in steel; no oak.",
+   "appellation": "Collio DOC",
+   "was": {
+    "say": "Pinot Grigio from Schiopetto, Collio DOC. Dry and clean: pear, apple and a light almond finish."
+   },
+   "bg": {
+    "say": "Не е обичайното Пино гриджо: от Collio, на границата на Италия със Словения, от семейството, което прослави региона. С плътно тяло, с ябълка, бяла праскова и нотка на кремък.",
+    "nose": "Ябълка, бяла праскова, банан, маракуя, минерална нотка на кремък",
+    "palate": "Плътно тяло, с послевкус на лимон и прясна круша",
+    "made": "Пресова се внимателно и ферментира в неръждаема стомана, след това отлежава около 8 месеца върху утайката в стомана; без дъб.",
+    "story": "Mario Schiopetto основава имението през 1965 г. в Capriva del Friuli и е пионер в правенето на вино в неръждаема стомана в региона. Имението прави това Пино гриджо от 1968 г.; реколта 2023 получи 95 точки от James Suckling."
+   }
   },
   "wines/schiopetto-friulano-2023": {
    "colour": "white",
@@ -1300,8 +2004,8 @@
    "bottlePrice": "78",
    "grapes": "Friulano",
    "style": "",
-   "say": "Friulano from Schiopetto, Collio DOC. The white of Friuli: pear, herbs and a bitter-almond finish.",
-   "story": "",
+   "say": "Friulano is the local white of Friuli, in north-east Italy. Pear, apricot and a hint of almond; full but fresh, creamy and a little salty.",
+   "story": "Schiopetto has made this Friulano since 1965, the year Mario Schiopetto founded the estate in Capriva del Friuli. The vines grow on 'Ponca', the marl soil of the Collio hills, and about 40,000 bottles are made.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1316,7 +2020,22 @@
     49.8,
     66.6,
     3.63
-   ]
+   ],
+   "nose": "Pear, apricot, a hint of almond, smoky mineral note",
+   "palate": "Full-bodied but fresh, creamy texture, slightly salty, bitter-almond finish",
+   "body": "full",
+   "made": "Hand-picked, gently pressed, fermented 10-12 days in steel tanks and aged 8 months on the lees; no oak.",
+   "appellation": "Collio DOC",
+   "was": {
+    "say": "Friulano from Schiopetto, Collio DOC. The white of Friuli: pear, herbs and a bitter-almond finish."
+   },
+   "bg": {
+    "say": "Фриулано е местното бяло на Фриули, в Североизточна Италия. Круша, кайсия и намек за бадем; плътно, но свежо, кремообразно и леко солено.",
+    "nose": "Круша, кайсия, намек за бадем, опушена минерална нотка",
+    "palate": "Плътно тяло, но свежо, кремообразна текстура, леко солено, послевкус на горчив бадем",
+    "made": "Брано на ръка, внимателно пресовано, ферментира 10-12 дни в стоманени съдове и отлежава 8 месеца върху утайката; без дъб.",
+    "story": "Schiopetto прави това Фриулано от 1965 г. – годината, в която Mario Schiopetto основава имението в Capriva del Friuli. Лозите растат върху „Ponca“, мергелната почва на хълмовете на Collio, и се правят около 40 000 бутилки."
+   }
   },
   "wines/gerovassiliou-malagousia-2025": {
    "colour": "white",
@@ -1328,8 +2047,8 @@
    "bottlePrice": "51",
    "grapes": "Malagousia",
    "style": "",
-   "say": "Malagousia from Gerovassiliou, Epanomi. A rescued Greek variety: peach, citrus and jasmine, aromatic but dry.",
-   "story": "",
+   "say": "Malagousia is a Greek grape that this winemaker saved from disappearing. From near Thessaloniki: pear, mango, citrus and jasmine. Aromatic, but dry.",
+   "story": "Vangelis Gerovassiliou rescued the almost forgotten Greek grape Malagousia, and this wine comes from his own vineyard at Epanomi, near Thessaloniki. The 2024 vintage won Best in Show at the Decanter World Wine Awards 2025.",
    "facts": "Vangelis Gerovassiliou is the winemaker who saved Malagousia from extinction.",
    "glassPrice": "",
    "byGlass": false,
@@ -1341,10 +2060,26 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.7,
-    1.0
-   ]
+    1
+   ],
+   "nose": "Pear, mango, citrus, jasmine, green pepper",
+   "palate": "Lemon-peel flavour on the palate",
+   "body": "medium",
+   "made": "Short skin contact, then fermented partly in stainless steel and partly in seasoned French oak; kept on its lees for a few months.",
+   "appellation": "PGI Epanomi",
+   "was": {
+    "say": "Malagousia from Gerovassiliou, Epanomi. A rescued Greek variety: peach, citrus and jasmine, aromatic but dry."
+   },
+   "bg": {
+    "say": "Малагузия е гръцки сорт, който този винар спаси от изчезване. От района на Солун: круша, манго, цитруси и жасмин. Ароматно, но сухо.",
+    "nose": "Круша, манго, цитруси, жасмин, зелена чушка",
+    "palate": "Вкус на лимонова кора",
+    "made": "Кратък контакт с ципите, след това ферментира отчасти в неръждаема стомана и отчасти във вече използван френски дъб; остава няколко месеца върху утайката.",
+    "story": "Vangelis Gerovassiliou спаси почти забравения гръцки сорт Малагузия, а това вино идва от собственото му лозе в Epanomi, край Солун. Реколта 2024 спечели „Best in Show“ на Decanter World Wine Awards 2025.",
+    "facts": "Vangelis Gerovassiliou е винарят, който спаси Малагузия от изчезване."
+   }
   },
   "wines/walter-buchegger-gruner-veltliner-2024": {
    "colour": "white",
@@ -1356,8 +2091,8 @@
    "bottlePrice": "59",
    "grapes": "Grüner Veltliner",
    "style": "",
-   "say": "Grüner Veltliner from Walter Buchegger, Krems. Austria’s signature white: citrus, green apple and a white-pepper spice.",
-   "story": "",
+   "say": "Grüner Veltliner from its home, the Kremstal in Austria, from a family making wine since 1893. Dry, fresh and lightly peppery.",
+   "story": "The Buchegger family has made wine in Austria's Kremstal since 1893. The vineyards are around Gedersdorf, near Krems, and the cellar is in the village of Dross.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1367,7 +2102,14 @@
    "label": "https://cdn.shopify.com/s/files/1/0594/3538/5028/files/weingut-buchegger-kremstal-gruner-veltliner-holzgasse-750ml-12-2024-454.webp?v=1766028035",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Grüner Veltliner from Walter Buchegger, Krems. Austria’s signature white: citrus, green apple and a white-pepper spice."
+   },
+   "bg": {
+    "say": "Грюнер велтлинер от родината му – Kremstal в Австрия, от семейство, което прави вино от 1893 г. Сухо, свежо, с лека нотка на пипер.",
+    "story": "Семейство Buchegger прави вино в австрийския Kremstal от 1893 г. Лозята са около Gedersdorf, край Krems, а избата е в село Dross."
+   }
   },
   "wines/martin-mullen-riesling-2021": {
    "colour": "white",
@@ -1379,8 +2121,8 @@
    "bottlePrice": "61",
    "grapes": "Riesling",
    "style": "",
-   "say": "Riesling from Martin Müllen, Mosel Valley. High acidity, with lime, green apple and a mineral, sometimes petrol-like note.",
-   "story": "",
+   "say": "Riesling from very steep slate slopes on the Mosel in Germany, picked by hand and aged in old wooden casks. Bright acidity, lime and green apple.",
+   "story": "Martin Müllen's family estate is in Traben-Trarbach on the Middle Mosel, with vines on very steep slate slopes. The grapes are picked by hand, pressed in a basket press, fermented with natural yeasts and aged in old wooden casks.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1395,7 +2137,15 @@
     49.8,
     67.4,
     2.51
-   ]
+   ],
+   "appellation": "Mosel",
+   "was": {
+    "say": "Riesling from Martin Müllen, Mosel Valley. High acidity, with lime, green apple and a mineral, sometimes petrol-like note."
+   },
+   "bg": {
+    "say": "Ризлинг от много стръмни шистови склонове по Мозел в Германия, бран на ръка и отлежал в стари дървени бъчви. Ярка свежест, лайм и зелена ябълка.",
+    "story": "Семейното имение на Martin Müllen е в Traben-Trarbach, на Среден Мозел, с лозя по много стръмни шистови склонове. Гроздето се бере на ръка, пресова се в кошова преса, ферментира с естествени дрожди и отлежава в стари дървени бъчви."
+   }
   },
   "wines/pazo-barrantes-albarino-2019": {
    "colour": "white",
@@ -1407,8 +2157,8 @@
    "bottlePrice": "153",
    "grapes": "Albariño",
    "style": "",
-   "say": "Albariño from Pazo Barrantes, Rías Baixas. From the Atlantic coast of Spain: peach, citrus and a salty freshness.",
-   "story": "",
+   "say": "Albariño from Galicia, on the Atlantic coast of Spain, from the family behind Marqués de Murrieta. Released late, with part aged in acacia barrels: richer and deeper than a usual Albariño.",
+   "story": "Pazo Barrantes is the sister estate of Marqués de Murrieta, in the Salnés Valley of Rías Baixas in Galicia. 2019 was the first vintage of its new style, held back longer before release with part of the wine aged in acacia barrels; Wine Spectator ranked it No. 57 in its Top 100 of 2021.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1420,10 +2170,20 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     66.3,
-    1.0
-   ]
+    1
+   ],
+   "made": "Fermented cool in stainless steel for about 60 days, kept two months on the lees and seven more in tank; 15% aged in acacia barrels; then 16 months in bottle.",
+   "appellation": "Rías Baixas DO",
+   "was": {
+    "say": "Albariño from Pazo Barrantes, Rías Baixas. From the Atlantic coast of Spain: peach, citrus and a salty freshness."
+   },
+   "bg": {
+    "say": "Албариньо от Галисия, на атлантическото крайбрежие на Испания, от семейството, което стои зад Marqués de Murrieta. Пуска се късно, като част от него отлежава в акациеви бъчви: по-богато и по-дълбоко от обичайното Албариньо.",
+    "made": "Ферментира на хладно в неръждаема стомана около 60 дни, остава два месеца върху утайката и още седем в резервоар; 15% отлежава в акациеви бъчви; след това 16 месеца в бутилка.",
+    "story": "Pazo Barrantes е сестринското имение на Marqués de Murrieta, в долината Salnés в Rías Baixas, Галисия. 2019 е първата реколта в новия му стил – виното се задържа по-дълго, преди да бъде пуснато, а част от него отлежава в акациеви бъчви; Wine Spectator го класира под № 57 в своя Топ 100 за 2021 г."
+   }
   },
   "wines/domaine-la-perriere-sancerre-megalithe-2018": {
    "colour": "white",
@@ -1435,8 +2195,8 @@
    "bottlePrice": "130",
    "grapes": "Sauvignon Blanc",
    "style": "",
-   "say": "Sauvignon Blanc from Domaine La Perrière, Loire Valley. Zesty and aromatic: gooseberry, citrus, cut grass.",
-   "story": "",
+   "say": "The top wine of this Sancerre estate, from vines on flint. Sauvignon Blanc, part of it aged in new oak: round and full, with ripe fruit, a light vanilla and a flinty finish.",
+   "story": "Mégalithe is the top wine of Domaine de la Perrière, owned by the Saget family, and was first made in 1998 from vines on flint soil. Part of it is fermented in new oak barrels, and a merchant gives the 2018 an ageing potential of 10 to 15 years.",
    "facts": "Sancerre is always Sauvignon Blanc.",
    "glassPrice": "",
    "byGlass": false,
@@ -1451,7 +2211,23 @@
     50.3,
     67.7,
     1.81
-   ]
+   ],
+   "nose": "Ripe fruit, light vanilla, gunflint, wet stone",
+   "palate": "Round and full in the mouth, with a flinty, mineral character",
+   "body": "full",
+   "made": "About 40% is fermented and aged 8-9 months in new 300-litre Allier oak barrels with lees stirring; the other 60% is made in steel.",
+   "appellation": "Sancerre AOC",
+   "was": {
+    "say": "Sauvignon Blanc from Domaine La Perrière, Loire Valley. Zesty and aromatic: gooseberry, citrus, cut grass."
+   },
+   "bg": {
+    "say": "Върховото вино на това имение в Sancerre, от лози върху кремък. Совиньон блан, част от който отлежава в нов дъб: заоблено и плътно, със зрели плодове, лека ванилия и послевкус на кремък.",
+    "nose": "Зрели плодове, лека ванилия, кремък, мокър камък",
+    "palate": "Заоблено и плътно на вкус, с минерален характер на кремък",
+    "made": "Около 40% ферментира и отлежава 8-9 месеца в нови 300-литрови бъчви от дъб от Allier, с разбъркване на утайката; останалите 60% се правят в стомана.",
+    "story": "Mégalithe е върховото вино на Domaine de la Perrière, собственост на семейство Saget, и е направено за първи път през 1998 г. от лози върху кремъчна почва. Част от него ферментира в нови дъбови бъчви, а един търговец дава на реколта 2018 потенциал за отлежаване от 10 до 15 години.",
+    "facts": "Sancerre винаги е Совиньон блан."
+   }
   },
   "wines/raoul-gautherin-chablis-2023": {
    "colour": "white",
@@ -1463,8 +2239,8 @@
    "bottlePrice": "88",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "Chablis is Chardonnay from the cool north of Burgundy: lean, mineral, green apple and lemon, usually without oak.",
-   "story": "From crisp apple and citrus to rich and buttery when aged in oak.",
+   "say": "Chablis is Chardonnay from the cool north of Burgundy; this family has grown vines there since 1585. No oak: lean, mineral and fresh, with green apple and lemon.",
+   "story": "The Gautherin family has grown vines in Chablis since 1585; today Alain and Adrien Gautherin run the estate of about 17 hectares. This Chablis comes from vines about 38 years old on average and sees no oak.",
    "facts": "Chablis is always Chardonnay.",
    "glassPrice": "",
    "byGlass": false,
@@ -1474,7 +2250,19 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "made": "Aged on the lees in stainless steel; no oak and no lees stirring.",
+   "appellation": "Chablis AOC",
+   "was": {
+    "say": "Chablis is Chardonnay from the cool north of Burgundy: lean, mineral, green apple and lemon, usually without oak.",
+    "story": "From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Шабли е Шардоне от хладния север на Бургундия; това семейство отглежда лозя там от 1585 г. Без дъб: стегнато, минерално и свежо, със зелена ябълка и лимон.",
+    "made": "Отлежава върху утайката в неръждаема стомана; без дъб и без разбъркване на утайката.",
+    "story": "Семейство Gautherin отглежда лозя в Шабли от 1585 г.; днес Alain и Adrien Gautherin ръководят имението от около 17 хектара. Това Шабли идва от лози на средна възраст около 38 години и не вижда дъб.",
+    "facts": "Шабли винаги е Шардоне."
+   }
   },
   "wines/domaine-dardhuy-montrachet-2021": {
    "colour": "white",
@@ -1486,8 +2274,8 @@
    "bottlePrice": "162",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "A white Burgundy from the Montrachet villages, the most famous Chardonnay vineyards in the world: rich, nutty and long.",
-   "story": "From crisp apple and citrus to rich and buttery when aged in oak.",
+   "say": "White Burgundy from the Montrachet villages, home of the most famous Chardonnay in the world. Rich, nutty and long: a bottle for a special evening.",
+   "story": "Domaine d'Ardhuy is a family estate founded in 1927, farming about 37 hectares of vines across Burgundy, from Puligny-Montrachet to Gevrey-Chambertin.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1497,7 +2285,15 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "A white Burgundy from the Montrachet villages, the most famous Chardonnay vineyards in the world: rich, nutty and long.",
+    "story": "From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Бяло бургундско от селата на Montrachet, родината на най-прочутото Шардоне в света. Богато, с вкус на ядки и дълъг послевкус: бутилка за специална вечер.",
+    "story": "Domaine d’Ardhuy е семейно имение, основано през 1927 г., с около 37 хектара лозя из цяла Бургундия, от Puligny-Montrachet до Gevrey-Chambertin."
+   }
   },
   "wines/albert-bichot-chablis-grand-cru-2020": {
    "colour": "white",
@@ -1509,8 +2305,8 @@
    "bottlePrice": "194",
    "grapes": "Chardonnay",
    "style": "",
-   "say": "From the top vineyards of Chablis: more depth and richness than a village Chablis, with the same mineral freshness.",
-   "story": "From crisp apple and citrus to rich and buttery when aged in oak.",
+   "say": "Chablis Grand Cru: from the few best vineyards of Chablis, all on one hillside. More depth and richness than a village Chablis, with the same mineral freshness.",
+   "story": "Albert Bichot's Chablis Grand Cru wines come from its own estate, Domaine Long-Depaquit, in the village of Chablis. The label should name one of the Grand Cru vineyards: Les Clos, Les Vaudésirs, Les Preuses, Bougros, Les Blanchots or La Moutonne, which the estate owns alone.",
    "facts": "Only seven vineyards in Chablis are Grand Cru.",
    "glassPrice": "",
    "byGlass": false,
@@ -1522,10 +2318,20 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.7,
     2.9
-   ]
+   ],
+   "appellation": "Chablis Grand Cru AOC",
+   "was": {
+    "say": "From the top vineyards of Chablis: more depth and richness than a village Chablis, with the same mineral freshness.",
+    "story": "From crisp apple and citrus to rich and buttery when aged in oak."
+   },
+   "bg": {
+    "say": "Chablis Grand Cru: от малкото най-добри лозя на Шабли, всички на един склон. По-дълбоко и по-богато от обикновеното Шабли, със същата минерална свежест.",
+    "story": "Вината Chablis Grand Cru на Albert Bichot идват от собственото му имение Domaine Long-Depaquit в село Шабли. На етикета трябва да пише едно от лозята Grand Cru: Les Clos, Les Vaudésirs, Les Preuses, Bougros, Les Blanchots или La Moutonne, което е собственост единствено на имението.",
+    "facts": "Само седем лозя в Шабли са Grand Cru."
+   }
   },
   "wines/staro-oryahovo-epic-2024": {
    "colour": "rose",
@@ -1535,10 +2341,10 @@
    "country": "Bulgaria",
    "vintage": "2024",
    "bottlePrice": "31",
-   "grapes": "",
+   "grapes": "Pinot Noir",
    "style": "",
-   "say": "From Staro Oryahovo, Black Sea region.",
-   "story": "",
+   "say": "A pale, dry rosé made only from Pinot Noir, from a small family winery near the Black Sea. Strawberry and white peach; light and crisp.",
+   "story": "Staro Oryahovo is a small family winery about 30 km south of Varna, near the Black Sea. Owner and winemaker Simo Simov planted its first vineyards in 2010; this pale pink rosé is made only from Pinot Noir.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1550,10 +2356,22 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     66.6,
     2.64
-   ]
+   ],
+   "nose": "Strawberry, white peach",
+   "palate": "Light, crisp and fruity, with a fresh finish",
+   "body": "light",
+   "was": {
+    "say": "From Staro Oryahovo, Black Sea region."
+   },
+   "bg": {
+    "say": "Светло, сухо розе само от Пино ноар, от малка семейна винарна близо до Черно море. Ягода и бяла праскова; леко и свежо.",
+    "nose": "Ягода, бяла праскова",
+    "palate": "Леко, свежо и плодово, със свеж послевкус",
+    "story": "Старо Оряхово е малка семейна винарна на около 30 км южно от Варна, близо до Черно море. Собственикът и енолог Симо Симов засади първите лозя през 2010 г.; това бледорозово розе е само от Пино ноар."
+   }
   },
   "wines/bratanov-3-blend-2024": {
    "colour": "rose",
@@ -1563,10 +2381,10 @@
    "country": "Bulgaria",
    "vintage": "2024",
    "bottlePrice": "35",
-   "grapes": "",
+   "grapes": "Mavrud, Gamza, Rubin",
    "style": "rosé blend",
-   "say": "From Bratanov, Thracian Lowlands.",
-   "story": "",
+   "say": "A dry rosé from three Bulgarian red grapes: Mavrud, Gamza and Rubin. From the Bratanov family in Sakar, in the south-east.",
+   "story": "Bratanov is a small family winery in the town of Harmanli, in the South Sakar hills of south-east Bulgaria. This rosé is a blend of three Bulgarian red grapes: Mavrud, Gamza and Rubin.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1581,20 +2399,27 @@
     49.6,
     66.9,
     2.47
-   ]
+   ],
+   "was": {
+    "say": "From Bratanov, Thracian Lowlands."
+   },
+   "bg": {
+    "say": "Сухо розе от три български червени сорта: Мавруд, Гъмза и Рубин. От семейство Братанови в Сакар, на югоизток.",
+    "story": "Братанов е малка семейна винарна в град Харманли, сред хълмовете на Южен Сакар в Югоизточна България. Това розе е купаж от три български червени сорта: Мавруд, Гъмза и Рубин."
+   }
   },
   "wines/domaine-lafage-gallica-2024": {
    "colour": "rose",
    "name": "Gallica",
    "producer": "Domaine Lafage",
-   "region": "Côtes Catalanes",
+   "region": "Côtes du Roussillon",
    "country": "France",
    "vintage": "2024",
    "bottlePrice": "58",
-   "grapes": "",
+   "grapes": "Mourvèdre, Grenache Noir, Syrah, Grenache Gris",
    "style": "",
-   "say": "From Domaine Lafage, Côtes Catalanes.",
-   "story": "",
+   "say": "A French rosé from Roussillon, by the Spanish border, partly from hundred-year-old Grenache vines. Dry, with more body than a Provence rosé: blackcurrant, lemon and rosemary.",
+   "story": "A Côtes du Roussillon rosé from the Lafage family, in the far south of France. The Grenache Noir comes from hundred-year-old bush vines in the Aspres hills, and the Mourvèdre grows close to the Mediterranean sea.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1607,9 +2432,25 @@
    "updated": 0,
    "focus": [
     50.4,
-    67.0,
+    67,
     3.5
-   ]
+   ],
+   "nose": "Blackcurrant bud, lemon, fresh rosemary",
+   "palate": "Medium-bodied and intense, tangy and rounded, with a long finish",
+   "body": "medium",
+   "made": "Destemmed and lightly pressed cold, kept on fine lees for a month before fermentation; part is fermented in an oak vat.",
+   "appellation": "Côtes du Roussillon AOP",
+   "was": {
+    "say": "From Domaine Lafage, Côtes Catalanes.",
+    "region": "Côtes Catalanes"
+   },
+   "bg": {
+    "say": "Френско розе от Русийон, до испанската граница, отчасти от стогодишни лози Гренаш. Сухо, с повече тяло от розе от Прованс: касис, лимон и розмарин.",
+    "nose": "Пъпка на касис, лимон, пресен розмарин",
+    "palate": "Със средно тяло и наситен вкус, с приятна киселинка, заоблено, с дълъг послевкус",
+    "made": "Гроздето се отделя от чепките и се пресова леко на студено, после сокът престоява месец върху фината утайка преди ферментацията; част ферментира в дъбов съд.",
+    "story": "Розе Côtes du Roussillon от семейство Lafage, в най-южната част на Франция. Гренаш ноар идва от стогодишни храстовидни лози в хълмовете Aspres, а Мурведър расте близо до Средиземно море."
+   }
   },
   "wines/chateau-desclans-grenache-and-rolle-2024": {
    "colour": "rose",
@@ -1621,8 +2462,8 @@
    "bottlePrice": "99",
    "grapes": "Grenache, Rolle",
    "style": "",
-   "say": "A pale Provence rosé from Château d’Esclans, the estate behind Whispering Angel: delicate, dry and elegant.",
-   "story": "",
+   "say": "The estate rosé of Château d’Esclans in Provence, the house that makes Whispering Angel. Part is fermented in oak: creamy and full, with red berries, peach and grapefruit.",
+   "story": "This is the estate wine of Château d'Esclans, the Provence property best known for Whispering Angel. Part of it is fermented in large oak barrels, which is unusual for a rosé and gives a richer, creamier wine.",
    "facts": "Rolle is the Provençal name for Vermentino.",
    "glassPrice": "",
    "byGlass": false,
@@ -1637,7 +2478,23 @@
     49.9,
     65.2,
     2.83
-   ]
+   ],
+   "nose": "Red berries, peach, grapefruit, flowers, a touch of vanilla and pear",
+   "palate": "Full-bodied and creamy, with light toasty oak and a long finish",
+   "body": "full",
+   "made": "Fermented partly in 600-litre oak barrels and partly in stainless steel, both temperature controlled.",
+   "appellation": "Côtes de Provence AOC",
+   "was": {
+    "say": "A pale Provence rosé from Château d’Esclans, the estate behind Whispering Angel: delicate, dry and elegant."
+   },
+   "bg": {
+    "say": "Розето на самото имение Château d’Esclans в Прованс, къщата, която прави Whispering Angel. Част ферментира в дъб: кремаво и плътно, с червени горски плодове, праскова и грейпфрут.",
+    "nose": "Червени горски плодове, праскова, грейпфрут, цветя, нотка на ванилия и круша",
+    "palate": "Плътно и кремаво, с леки препечени нотки от дъба и дълъг послевкус",
+    "made": "Ферментира отчасти в дъбови бъчви от 600 литра и отчасти в неръждаема стомана, и двете с контрол на температурата.",
+    "story": "Това е виното на самото имение Château d’Esclans в Прованс, най-известно с Whispering Angel. Част от него ферментира в големи дъбови бъчви, което е необичайно за розе и дава по-богато и по-кремаво вино.",
+    "facts": "Рол е провансалското име на Верментино."
+   }
   },
   "wines/maryan-ivan-alexander-grand-cuvee-2023": {
    "colour": "red",
@@ -1647,10 +2504,10 @@
    "country": "Bulgaria",
    "vintage": "2023",
    "bottlePrice": "41",
-   "grapes": "",
+   "grapes": "Cabernet Sauvignon, Cabernet Franc, Merlot",
    "style": "red blend",
-   "say": "From Maryan, Danubian Plain.",
-   "story": "",
+   "say": "A Bordeaux-style blend, mostly Cabernet Sauvignon, a year in oak, from a family winery in the Balkan Mountains. Named after a Bulgarian tsar: black cherry, blackberry, pepper and tobacco.",
+   "story": "The wine is named after Tsar Ivan Alexander, whose 14th-century reign is called the Second Golden Age of medieval Bulgaria. Maryan is a family winery started in 2010 by the Ivanov family in the village of Maryan, near the town of Elena in the Balkan Mountains.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1662,10 +2519,24 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
-    68.0,
+    50,
+    68,
     2.75
-   ]
+   ],
+   "nose": "Wild black cherry, blackberry, blueberry, pepper, tobacco, eucalyptus",
+   "palate": "Dark berry fruit with black pepper and chocolate flavours",
+   "body": "full",
+   "made": "Aged 12 months in 225-litre Bulgarian and French oak barrels.",
+   "was": {
+    "say": "From Maryan, Danubian Plain."
+   },
+   "bg": {
+    "say": "Купаж в стил Бордо, предимно Каберне совиньон, една година в дъб, от семейна винарна в Стара планина. Носи името на български цар: черна череша, къпина, черен пипер и тютюн.",
+    "nose": "Дива черна череша, къпина, боровинка, черен пипер, тютюн, евкалипт",
+    "palate": "Тъмни горски плодове с вкус на черен пипер и шоколад",
+    "made": "Отлежава 12 месеца в бъчви от български и френски дъб по 225 литра.",
+    "story": "Виното носи името на цар Иван Александър, чието управление през XIV век наричат Втория златен век на средновековна България. Марян е семейна винарна, създадена през 2010 г. от семейство Иванови в село Марян, край град Елена в Стара планина."
+   }
   },
   "wines/bononia-gamza-2024": {
    "colour": "red",
@@ -1677,8 +2548,8 @@
    "bottlePrice": "43",
    "grapes": "Gamza",
    "style": "",
-   "say": "Gamza from Bononia, North-western Bulgaria. A light, fresh red from the Danube, known as Kadarka in Hungary: red berries, soft tannins.",
-   "story": "",
+   "say": "Gamza is the traditional red of north-west Bulgaria. Light and juicy: cherry, raspberry and a little spice, with soft tannins. For guests who want a red that is not heavy.",
+   "story": "Gamza is the traditional red grape of north-west Bulgaria, known as Kadarka in other countries, and Bononia grows more than 45 hectares of it. The winery stands on the Danube near Vidin, in an 1895 building that was once one of Bulgaria's first breweries.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1688,7 +2559,21 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Cherry, sour cherry, plum, wild raspberry, a hint of spice",
+   "palate": "Light body, juicy red fruit, soft tannins, gentle spice",
+   "body": "light",
+   "made": "Aged four months in French oak barrels.",
+   "was": {
+    "say": "Gamza from Bononia, North-western Bulgaria. A light, fresh red from the Danube, known as Kadarka in Hungary: red berries, soft tannins."
+   },
+   "bg": {
+    "say": "Гъмза е традиционното червено на Северозападна България. Леко и сочно: череша, малина и малко подправки, с меки танини. За гости, които искат червено, което не е тежко.",
+    "nose": "Череша, вишна, слива, дива малина, нотка подправки",
+    "palate": "Леко тяло, сочни червени плодове, меки танини, деликатни подправки",
+    "made": "Отлежава четири месеца в бъчви от френски дъб.",
+    "story": "Гъмза е традиционният червен сорт на Северозападна България, познат в други страни като Кадарка, а Бонония отглежда над 45 хектара от него. Винарната е на брега на Дунав край Видин, в сграда от 1895 г., която някога е била една от първите пивоварни в България."
+   }
   },
   "wines/tipchenitsa-merlot-2022": {
    "colour": "red",
@@ -1700,8 +2585,8 @@
    "bottlePrice": "55",
    "grapes": "Merlot",
    "style": "",
-   "say": "Merlot from Tipchenitsa, North-western Bulgaria. Round and soft: plum, cherry and a touch of chocolate.",
-   "story": "",
+   "say": "Merlot from a small boutique winery near Vratsa, in north-west Bulgaria. Black cherry and plum; soft and round.",
+   "story": "Tipchenitza is a small boutique winery in the village of Tipchenitsa, near Vratsa in north-west Bulgaria. It has about 28 hectares of its own vineyards on the hills above the village, and its winemaker is Nadia Mineva.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1711,7 +2596,14 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Merlot from Tipchenitsa, North-western Bulgaria. Round and soft: plum, cherry and a touch of chocolate."
+   },
+   "bg": {
+    "say": "Мерло от малка бутикова винарна край Враца, в Северозападна България. Черна череша и слива; меко и заоблено.",
+    "story": "Типченица е малка бутикова винарна в село Типченица, край Враца в Северозападна България. Има около 28 хектара собствени лозя по хълмовете над селото, а енолог е Надя Минева."
+   }
   },
   "wines/edoardo-miroglio-mavrud-reserve-elenovo-2021": {
    "colour": "red",
@@ -1723,8 +2615,8 @@
    "bottlePrice": "58",
    "grapes": "Mavrud",
    "style": "",
-   "say": "Mavrud from Edoardo Miroglio, Thracian Valley. Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins.",
-   "story": "",
+   "say": "Mavrud, one of Bulgaria’s oldest red grapes, aged 18 months in oak. Full and concentrated: black cherry, ripe plum, vanilla and spice, with soft tannins.",
+   "story": "Mavrud is one of Bulgaria's oldest native red grapes. The winery was founded by the Italian Edoardo Miroglio at the village of Elenovo, near Nova Zagora, and its cellar is built as a spiral that goes three floors underground.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1739,7 +2631,21 @@
     49.9,
     67.3,
     2.72
-   ]
+   ],
+   "nose": "Black cherry, ripe plum, vanilla, cedar, spices",
+   "palate": "Full-bodied and concentrated, with fine, soft tannins",
+   "body": "full",
+   "made": "Aged about 18 months in Bulgarian and French oak barrels.",
+   "was": {
+    "say": "Mavrud from Edoardo Miroglio, Thracian Valley. Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins."
+   },
+   "bg": {
+    "say": "Мавруд, един от най-старите червени сортове в България, отлежал 18 месеца в дъб. Плътно и концентрирано: черна череша, зряла слива, ванилия и подправки, с меки танини.",
+    "nose": "Черна череша, зряла слива, ванилия, кедър, подправки",
+    "palate": "Плътно и концентрирано, с фини, меки танини",
+    "made": "Отлежава около 18 месеца в бъчви от български и френски дъб.",
+    "story": "Мавруд е един от най-старите местни червени сортове в България. Винарната е основана от италианеца Едоардо Миролио край село Еленово, близо до Нова Загора, а избата ѝ е построена като спирала, която слиза три етажа под земята."
+   }
   },
   "wines/daros-syrah-2023": {
    "colour": "red",
@@ -1751,8 +2657,8 @@
    "bottlePrice": "39",
    "grapes": "Syrah",
    "style": "",
-   "say": "Syrah from Daros, Struma Valley. Dark berries, black pepper and a savoury, smoky edge.",
-   "story": "",
+   "say": "Syrah from the warm Struma Valley, in the south-west of Bulgaria. Juicy and spicy: black pepper, a floral note and a touch of smoke. Full-bodied.",
+   "story": "Villa Daros is a young winery, founded in 2018 by two families near the town of Kresna in the Struma Valley, in the warm south-west corner of Bulgaria.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1762,7 +2668,19 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Peony, black pepper, leather, lightly smoked meat",
+   "palate": "Juicy and spicy, with a dense, full body",
+   "body": "full",
+   "was": {
+    "say": "Syrah from Daros, Struma Valley. Dark berries, black pepper and a savoury, smoky edge."
+   },
+   "bg": {
+    "say": "Сира от топлата долина на Струма, в Югозападна България. Сочно и пикантно: черен пипер, цветна нотка и лек дим. С плътно тяло.",
+    "nose": "Божур, черен пипер, кожа, леко опушено месо",
+    "palate": "Сочно и пикантно, с плътно, наситено тяло",
+    "story": "Вила Дарос е млада винарна, основана през 2018 г. от две семейства край град Кресна в Долината на Струма, в топлия югозападен край на България."
+   }
   },
   "wines/villa-melnik-rare-varietas-bush-vine-2020": {
    "colour": "red",
@@ -1772,10 +2690,10 @@
    "country": "Bulgaria",
    "vintage": "2020",
    "bottlePrice": "63",
-   "grapes": "",
+   "grapes": "Shiroka Melnik",
    "style": "",
-   "say": "From old bush vines of rare local varieties around Melnik, in the warm south-west.",
-   "story": "",
+   "say": "Shiroka Melnik is a grape that grows only around the town of Melnik, in Bulgaria’s warm south-west. From low bush vines: tobacco, dried herbs, cherry and prune; concentrated but juicy.",
+   "story": "Shiroka Melnik is an old local grape that grows only around the town of Melnik, in Bulgaria's warm south-west. Villa Melnik is a family winery in the village of Harsovo, and this wine comes from its low bush vines, which grow about 80 cm above the sandy soil.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1785,20 +2703,34 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Tobacco, dried herbs, ripe red fruit, cherry, prune, earthy notes",
+   "palate": "Concentrated and juicy, ripe round tannins, good freshness, long firm finish",
+   "body": "full",
+   "made": "Half was fermented and kept in stainless steel with no oak; the other half aged 24 months in used Bulgarian oak barrels.",
+   "was": {
+    "say": "From old bush vines of rare local varieties around Melnik, in the warm south-west."
+   },
+   "bg": {
+    "say": "Широка мелнишка лоза е сорт, който расте само около град Мелник, в топлия югозапад на България. От ниски храстовидни лози: тютюн, сушени билки, череша и сушена слива; концентрирано, но сочно.",
+    "nose": "Тютюн, сушени билки, зрели червени плодове, череша, сушена слива, землисти нотки",
+    "palate": "Концентрирано и сочно, зрели заоблени танини, добра свежест, дълъг и стегнат послевкус",
+    "made": "Половината ферментира и остава в неръждаема стомана, без дъб; другата половина отлежава 24 месеца в употребявани бъчви от български дъб.",
+    "story": "Широка мелнишка лоза е стар местен сорт, който расте само около град Мелник, в топлия югозапад на България. Вила Мелник е семейна винарна в село Хърсово, а това вино идва от нейните ниски храстовидни лози, които растат на около 80 см над песъчливата почва."
+   }
   },
   "wines/damianitza-red-ark-2022": {
    "colour": "red",
    "name": "Red Ark",
    "producer": "Damianitza",
-   "region": "West Thracian Valley",
+   "region": "Struma Valley",
    "country": "Bulgaria",
    "vintage": "2022",
    "bottlePrice": "53",
-   "grapes": "",
+   "grapes": "Cabernet Sauvignon, Rubin, Ruen",
    "style": "red blend",
-   "say": "From Damianitza, West Thracian Valley.",
-   "story": "",
+   "say": "The flagship red of Damianitza, in the Struma Valley; it has been called Bulgaria’s first icon wine. Cabernet Sauvignon with the Bulgarian grapes Rubin and Ruen: firm, powerful and spicy.",
+   "story": "Redark is the flagship red of Damianitza, a winery in the Struma Valley in south-west Bulgaria; it was first made in 2000, and wine writer Caroline Gilby MW called it Bulgaria's first icon wine. Since 2005 the blend has included two Bulgarian grapes, Rubin and Ruen, alongside Cabernet Sauvignon.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1810,10 +2742,25 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.7,
-    1.0
-   ]
+    1
+   ],
+   "nose": "Black olive, sweet vanilla, flowers, a touch of iodine",
+   "palate": "Dry, firm and powerful, spicy, with a long finish of ripe fruit",
+   "body": "full",
+   "made": "Sorted grapes are fermented as whole berries with 3 weeks on the skins, then aged 10 months in French oak barrels.",
+   "was": {
+    "say": "From Damianitza, West Thracian Valley.",
+    "region": "West Thracian Valley"
+   },
+   "bg": {
+    "say": "Водещото червено вино на Дамяница, в Долината на Струма; наричат го първото иконично вино на България. Каберне совиньон с българските сортове Рубин и Руен: стегнато, мощно и пикантно.",
+    "nose": "Черна маслина, сладка ванилия, цветя, нотка йод",
+    "palate": "Сухо, стегнато и мощно, пикантно, с дълъг послевкус на зрели плодове",
+    "made": "Сортираното грозде ферментира на цели зърна, с 3 седмици върху ципите, после отлежава 10 месеца в бъчви от френски дъб.",
+    "story": "Redark е водещото червено вино на Дамяница, винарна в Долината на Струма в Югозападна България; за първи път е направено през 2000 г., а винената авторка Caroline Gilby MW го нарече първото иконично вино на България. От 2005 г. в купажа влизат и два български сорта, Рубин и Руен, заедно с Каберне совиньон."
+   }
   },
   "wines/bratanov-rubin-reserve-2019": {
    "colour": "red",
@@ -1825,8 +2772,8 @@
    "bottlePrice": "90",
    "grapes": "Rubin",
    "style": "",
-   "say": "Rubin from Bratanov, Sakar. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper.",
-   "story": "",
+   "say": "Rubin is a Bulgarian grape, a cross of Nebbiolo and Syrah; the Bratanov family in Sakar has only one hectare of it. Long in oak and unfiltered: spice, leather, coffee and dark chocolate, with firm tannins.",
+   "story": "The Bratanov family winery is near the village of Shishmanovo in South Sakar, where the family replanted vineyards in 2006-2008 after a 50-year break. Rubin is a Bulgarian grape, a crossing of Nebbiolo and Syrah created in Pleven in 1944, and the family has only about one hectare of it.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1836,7 +2783,21 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Spice, lily of the valley, leather, porcini mushroom",
+   "palate": "Salty-savoury with coffee and dark chocolate, firm tannins, restrained freshness, long finish",
+   "body": "full",
+   "made": "Wild-yeast fermentation in steel, then long ageing in oak barrels of different sizes (almost 3 years for the 2017 vintage); bottled unfiltered.",
+   "was": {
+    "say": "Rubin from Bratanov, Sakar. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper."
+   },
+   "bg": {
+    "say": "Рубин е български сорт, кръстоска между Небиоло и Сира; семейство Братанови в Сакар има само един хектар от него. Дълго отлежало в дъб и нефилтрирано: подправки, кожа, кафе и черен шоколад, със стегнати танини.",
+    "nose": "Подправки, момина сълза, кожа, манатарка",
+    "palate": "Солено-пикантен вкус с кафе и черен шоколад, стегнати танини, сдържана свежест, дълъг послевкус",
+    "made": "Ферментация с диви дрожди в стоманени съдове, после дълго отлежаване в дъбови бъчви с различна големина (почти 3 години за реколта 2017); бутилира се нефилтрирано.",
+    "story": "Винарната на семейство Братанови е край село Шишманово в Южен Сакар, където семейството засади лозята наново през 2006–2008 г. след 50-годишно прекъсване. Рубин е български сорт, кръстоска между Небиоло и Сира, създадена в Плевен през 1944 г., и семейството има само около един хектар от него."
+   }
   },
   "wines/clos-bibliotheque-pinot-noir-2022": {
    "colour": "red",
@@ -1848,8 +2809,8 @@
    "bottlePrice": "120",
    "grapes": "Pinot Noir",
    "style": "",
-   "say": "Pinot Noir from Clos Bibliothèque, Black Sea region. Light in colour, silky, with red cherry, raspberry and an earthy note.",
-   "story": "",
+   "say": "A Burgundy-style Pinot Noir from a tiny organic estate near Varna, on limestone full of sea fossils. Cherry, raspberry and sweet spice; elegant, with bright acidity.",
+   "story": "Clos Bibliotheque is a tiny estate near the village of Nevsha, about 60 km from Varna and the Black Sea, where the vines grow in limestone full of ancient sea fossils. Owners Vladislav and Sonya Atanasov, known as importers of fine wine, planted it in 2017 to make Burgundy-style wines; the first vintage sold was 2021.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1864,7 +2825,21 @@
     49.9,
     67.3,
     2.47
-   ]
+   ],
+   "nose": "Cherry, raspberry, strawberry, sweet spices, a little pepper and smoke",
+   "palate": "Medium-bodied, poised and elegant, bright acidity, ripe but tight, slightly salty mineral finish",
+   "body": "medium",
+   "made": "Hand-picked organic grapes, wild-yeast fermentation, then about 18 months in Burgundy oak barrels and ceramic amphorae.",
+   "was": {
+    "say": "Pinot Noir from Clos Bibliothèque, Black Sea region. Light in colour, silky, with red cherry, raspberry and an earthy note."
+   },
+   "bg": {
+    "say": "Пино ноар в бургундски стил от съвсем малко биологично имение край Варна, върху варовик, пълен с морски вкаменелости. Череша, малина и сладки подправки; елегантно, с жива свежест.",
+    "nose": "Череша, малина, ягода, сладки подправки, малко черен пипер и дим",
+    "palate": "Средно тяло, уравновесено и елегантно, жива свежест, зряло, но стегнато, с леко солен минерален послевкус",
+    "made": "Ръчно брано биологично грозде, ферментация с диви дрожди, после около 18 месеца в бургундски дъбови бъчви и керамични амфори.",
+    "story": "Clos Bibliothèque е съвсем малко имение край село Невша, на около 60 км от Варна и Черно море, където лозите растат във варовик, пълен с древни морски вкаменелости. Собствениците Владислав и Соня Атанасови, познати като вносители на фини вина, го засадиха през 2017 г., за да правят вина в бургундски стил; първата реколта, пусната в продажба, е 2021."
+   }
   },
   "wines/downtown-urban-winery-cabernet-franc-reserve-2022": {
    "colour": "red",
@@ -1876,8 +2851,8 @@
    "bottlePrice": "54",
    "grapes": "Cabernet Franc",
    "style": "",
-   "say": "Cabernet Franc from Downtown Urban Winery, East Thracian Valley. Medium-bodied, with red fruit, herbs and a fresh, leafy lift.",
-   "story": "",
+   "say": "Cabernet Franc made in small batches, picked and sorted by hand, ten months in French oak. Blackberry, cherry and roasted red pepper, with sweet spice and dark chocolate.",
+   "story": "Downtown Urban Winery makes small batches of hand-crafted wines with as little intervention as possible. The grapes for this wine were picked by hand on 30 September 2022 into small 10-12 kg crates and chilled overnight before sorting.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1892,7 +2867,21 @@
     50.1,
     67.5,
     2.47
-   ]
+   ],
+   "nose": "Blackberry, cherry, roasted red pepper, candied fruit, cinnamon",
+   "palate": "Medium body, ripe fruit, sweet spice and dark chocolate, mineral freshness, juicy grainy tannins",
+   "body": "medium",
+   "made": "Hand-picked and hand-sorted, fermented in stainless steel, then 10 months in new and second-use French oak barrels.",
+   "was": {
+    "say": "Cabernet Franc from Downtown Urban Winery, East Thracian Valley. Medium-bodied, with red fruit, herbs and a fresh, leafy lift."
+   },
+   "bg": {
+    "say": "Каберне фран, правено в малки партиди, брано и сортирано на ръка, десет месеца във френски дъб. Къпина, череша и печена червена чушка, със сладки подправки и черен шоколад.",
+    "nose": "Къпина, череша, печена червена чушка, захаросани плодове, канела",
+    "palate": "Средно тяло, зрели плодове, сладки подправки и черен шоколад, минерална свежест, сочни, зърнести танини",
+    "made": "Брано и сортирано на ръка, ферментира в неръждаема стомана, после 10 месеца в бъчви от френски дъб, нови и на втора употреба.",
+    "story": "Downtown Urban Winery прави малки партиди вина, изработени на ръка, с възможно най-малко намеса. Гроздето за това вино е брано на ръка на 30 септември 2022 г. в малки касетки от 10–12 кг и е охладено през нощта преди сортирането."
+   }
   },
   "wines/dragomir-mavrud-komat-2021": {
    "colour": "red",
@@ -1904,8 +2893,8 @@
    "bottlePrice": "38",
    "grapes": "Mavrud",
    "style": "",
-   "say": "Mavrud from Dragomir, Thracian Valley. Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins.",
-   "story": "",
+   "say": "Our house Mavrud, bottled for Komat by Dragomir, near Plovdiv. Mavrud is one of Bulgaria’s oldest red grapes: dark fruit, spice and firm tannins.",
+   "story": "Dragomir was started in 2006 by two oenologists, Natalia Gadzheva and Konstantin Stoev, and its winery is in Brestnik, a few kilometres from Plovdiv. They focus on Bulgarian grapes such as Mavrud, Rubin and Dimyat.",
    "facts": "Bottled for Komat by Dragomir.",
    "glassPrice": "",
    "byGlass": false,
@@ -1915,7 +2904,15 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Mavrud from Dragomir, Thracian Valley. Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins."
+   },
+   "bg": {
+    "say": "Нашият собствен Мавруд, бутилиран за Комат от Драгомир, край Пловдив. Мавруд е един от най-старите червени сортове в България: тъмни плодове, подправки и стегнати танини.",
+    "story": "Драгомир е създадена през 2006 г. от двама енолози, Наталия Гаджева и Константин Стоев, а винарната е в Брестник, на няколко километра от Пловдив. Залагат на български сортове като Мавруд, Рубин и Димят.",
+    "facts": "Бутилирано за Комат от Драгомир."
+   }
   },
   "wines/dragomir-rubin-komat-2021": {
    "colour": "red",
@@ -1927,8 +2924,8 @@
    "bottlePrice": "38",
    "grapes": "Rubin",
    "style": "",
-   "say": "Rubin from Dragomir, Thracian Valley. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper.",
-   "story": "",
+   "say": "Our house Rubin, bottled for Komat by Dragomir, near Plovdiv. Rubin is a Bulgarian cross of Nebbiolo and Syrah: dark fruit, violet and pepper; full and juicy.",
+   "story": "Dragomir was started in 2006 by two oenologists, Natalia Gadzheva and Konstantin Stoev, and its winery is in Brestnik, a few kilometres from Plovdiv. They focus on Bulgarian grapes such as Mavrud, Rubin and Dimyat.",
    "facts": "Bottled for Komat by Dragomir.",
    "glassPrice": "",
    "byGlass": false,
@@ -1938,7 +2935,15 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Rubin from Dragomir, Thracian Valley. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper."
+   },
+   "bg": {
+    "say": "Нашият собствен Рубин, бутилиран за Комат от Драгомир, край Пловдив. Рубин е българска кръстоска между Небиоло и Сира: тъмни плодове, теменужка и черен пипер; плътно и сочно.",
+    "story": "Драгомир е създадена през 2006 г. от двама енолози, Наталия Гаджева и Константин Стоев, а винарната е в Брестник, на няколко километра от Пловдив. Залагат на български сортове като Мавруд, Рубин и Димят.",
+    "facts": "Бутилирано за Комат от Драгомир."
+   }
   },
   "wines/linar-syrah-2024": {
    "colour": "red",
@@ -1950,7 +2955,7 @@
    "bottlePrice": "39",
    "grapes": "Syrah",
    "style": "",
-   "say": "Syrah from Linar, Thracian Valley. Dark berries, black pepper and a savoury, smoky edge.",
+   "say": "A young Bulgarian Syrah from the Thracian Valley: dark berries, black pepper and a savoury, smoky edge.",
    "story": "",
    "facts": "",
    "glassPrice": "",
@@ -1961,7 +2966,13 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "say": "Syrah from Linar, Thracian Valley. Dark berries, black pepper and a savoury, smoky edge."
+   },
+   "bg": {
+    "say": "Млада българска Сира от Тракийската низина: тъмни горски плодове, черен пипер и пикантна, опушена нотка."
+   }
   },
   "wines/bratanov-three-blend-red-2019": {
    "colour": "red",
@@ -1971,10 +2982,10 @@
    "country": "Bulgaria",
    "vintage": "2019",
    "bottlePrice": "54",
-   "grapes": "",
+   "grapes": "Cabernet Franc, Merlot, Rubin",
    "style": "red blend",
-   "say": "From Bratanov, Thracian Valley.",
-   "story": "",
+   "say": "Sakar’s answer to a Bordeaux blend: Cabernet Franc and Merlot, with the Bulgarian Rubin in place of Petit Verdot. Plum, blackcurrant and cinnamon; full and dry. Our tasting menu pours it with the wagyu.",
+   "story": "The winery calls this Sakar's answer to a Bordeaux blend: the Bulgarian grape Rubin takes the place of Petit Verdot. It is made by oenologist Maria Stoeva from the Bratanov family's own vineyards near the village of Shishmanovo.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1989,7 +3000,21 @@
     65.3,
     63.5,
     1.6
-   ]
+   ],
+   "nose": "Plum, blackcurrant, cinnamon, a buttery note",
+   "palate": "Full-bodied and dry, with firm tannins and moderate freshness",
+   "body": "full",
+   "made": "Fermented with wild yeasts from the vineyard, according to a UK merchant; oak ageing details not found.",
+   "was": {
+    "say": "From Bratanov, Thracian Valley."
+   },
+   "bg": {
+    "say": "Отговорът на Сакар на бордоския купаж: Каберне фран и Мерло, с българския Рубин на мястото на Пти вердо. Слива, касис и канела; плътно и сухо. В дегустационното ни меню го наливаме към телешкото уагиу.",
+    "nose": "Слива, касис, канела, маслена нотка",
+    "palate": "Плътно и сухо, със стегнати танини и умерена свежест",
+    "made": "Ферментира с диви дрожди от лозето, според британски търговец; данни за отлежаването в дъб не са намерени.",
+    "story": "Винарната го нарича отговора на Сакар на бордоския купаж: българският сорт Рубин заема мястото на Пти вердо. Прави го енологът Мария Стоева от собствените лозя на семейство Братанови край село Шишманово."
+   }
   },
   "wines/four-friends-black-shadow-2021": {
    "colour": "red",
@@ -1999,10 +3024,10 @@
    "country": "Bulgaria",
    "vintage": "2021",
    "bottlePrice": "56",
-   "grapes": "",
+   "grapes": "Merlot, Cabernet Sauvignon, Cabernet Franc, Petit Verdot",
    "style": "",
-   "say": "From Four Friends, Thracian Valley.",
-   "story": "",
+   "say": "A Bordeaux-style blend from four friends who planted their vineyard in 2006 near Stara Zagora. Round and juicy: plum, blackberry, milk chocolate and liquorice, with smooth tannins.",
+   "story": "Four Friends was started by four friends who love Bulgarian wine; they planted their first vines in 2006 near the village of Gorno Botevo, east of Stara Zagora. Black Shadow is their Bordeaux-style blend.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2017,7 +3042,21 @@
     50.1,
     67.4,
     2.61
-   ]
+   ],
+   "nose": "Milk chocolate, plum, liquorice, blackberry",
+   "palate": "Round and juicy, satin-smooth tannins, long spicy finish with cocoa and vanilla",
+   "body": "full",
+   "made": "Aged about 12 months in oak barrels (a merchant's figure for the 2017 vintage).",
+   "was": {
+    "say": "From Four Friends, Thracian Valley."
+   },
+   "bg": {
+    "say": "Купаж в стил Бордо от четирима приятели, засадили лозето си през 2006 г. край Стара Загора. Заоблено и сочно: слива, къпина, млечен шоколад и женско биле, с гладки танини.",
+    "nose": "Млечен шоколад, слива, женско биле, къпина",
+    "palate": "Заоблено и сочно, гладки като сатен танини, дълъг пикантен послевкус с какао и ванилия",
+    "made": "Отлежава около 12 месеца в дъбови бъчви (данни на търговец за реколта 2017).",
+    "story": "Four Friends е създадена от четирима приятели, които обичат българското вино; първите си лози засадиха през 2006 г. край село Горно Ботево, източно от Стара Загора. Black Shadow е техният купаж в стил Бордо."
+   }
   },
   "wines/dragomir-pitos-2015": {
    "colour": "red",
@@ -2027,10 +3066,10 @@
    "country": "Bulgaria",
    "vintage": "2015",
    "bottlePrice": "82",
-   "grapes": "",
+   "grapes": "Rubin, Cabernet Sauvignon, Merlot",
    "style": "",
-   "say": "From Dragomir, Thracian Valley.",
-   "story": "",
+   "say": "Named after the clay jar the Thracians made wine in. Rubin, Cabernet Sauvignon and Merlot, two years in French oak and now ten years old: truffle, black olive and leather. Powerful and juicy.",
+   "story": "Pitos is named after the clay vessel the ancient Thracians used to make and store wine. The Merlot and Cabernet Sauvignon come from Svirkovo in South Sakar and the Rubin from Belashtitsa, at the foot of the Rhodope mountains.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2042,10 +3081,24 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     65.3,
     2.99
-   ]
+   ],
+   "nose": "Truffle, black olive, leather, blueberries in brandy",
+   "palate": "Powerful and juicy, grainy tannins, long finish with a hint of dried tomato",
+   "body": "full",
+   "made": "24 months in French oak barrels (60% new), then 24 months in bottle before release.",
+   "was": {
+    "say": "From Dragomir, Thracian Valley."
+   },
+   "bg": {
+    "say": "Носи името на глинения съд, в който траките са правили вино. Рубин, Каберне совиньон и Мерло, две години във френски дъб и вече на десет години: трюфел, черна маслина и кожа. Мощно и сочно.",
+    "nose": "Трюфел, черна маслина, кожа, боровинки в бренди",
+    "palate": "Мощно и сочно, зърнести танини, дълъг послевкус с нотка на сушен домат",
+    "made": "24 месеца в бъчви от френски дъб (60% нови), после 24 месеца в бутилка, преди да излезе на пазара.",
+    "story": "Pitos носи името на глинения съд, в който древните траки са правили и съхранявали вино. Мерло и Каберне совиньон идват от Свирково в Южен Сакар, а Рубин – от Белащица, в подножието на Родопите."
+   }
   },
   "wines/dragomir-grand-reserve-rubin-2015": {
    "colour": "red",
@@ -2057,8 +3110,8 @@
    "bottlePrice": "130",
    "grapes": "Rubin",
    "style": "",
-   "say": "Rubin from Dragomir, Thracian Valley. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper.",
-   "story": "",
+   "say": "Only 790 bottles: three and a half years in new French oak, then three more in the bottle. Rubin at ten years old: mocha, coffee, earth and sweet red pepper, with velvety tannins and a very long finish.",
+   "story": "Only 790 standard bottles were made. The wine spent three and a half years in new French oak and three more years in bottle before release; the Rubin grapes come from the foothills of the Rhodope mountains.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2070,10 +3123,24 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    49.0,
+    49,
     67.6,
     2.96
-   ]
+   ],
+   "nose": "Ink, sweet red pepper, earthy notes, minerals, mocha, coffee",
+   "palate": "Round and lush, velvety tannins, very long, slightly mineral finish",
+   "body": "full",
+   "made": "Hand-selected grapes fermented in steel, then 42 months in new French oak barrels and 36 months in bottle.",
+   "was": {
+    "say": "Rubin from Dragomir, Thracian Valley. A Bulgarian cross of Nebbiolo and Syrah: ripe dark fruit, violet and pepper."
+   },
+   "bg": {
+    "say": "Само 790 бутилки: три години и половина в нов френски дъб, после още три в бутилка. Рубин на десет години: мока, кафе, землисти нотки и сладка червена чушка, с кадифени танини и много дълъг послевкус.",
+    "nose": "Мастило, сладка червена чушка, землисти нотки, минерали, мока, кафе",
+    "palate": "Заоблено и пищно, кадифени танини, много дълъг, леко минерален послевкус",
+    "made": "Ръчно подбрано грозде, ферментирало в стоманени съдове, после 42 месеца в нови бъчви от френски дъб и 36 месеца в бутилка.",
+    "story": "Направени са само 790 стандартни бутилки. Виното е прекарало три години и половина в нов френски дъб и още три години в бутилка, преди да излезе на пазара; гроздето Рубин идва от подножието на Родопите."
+   }
   },
   "wines/dragomir-grand-reserve-mavrud-limited-edition-2021": {
    "colour": "red",
@@ -2086,7 +3153,7 @@
    "grapes": "Mavrud",
    "style": "",
    "say": "Our own limited edition: a single barrel of Dragomir’s Grand Reserve Mavrud, only 232 bottles, with a label by the artist Pravdoliub Ivanov.",
-   "story": "DOT Sofia, with Dragomir Estate Winery, presents Grand Reserve Mavrud 2021, a limited edition of Bulgaria’s oldest native grape. Just 232 bottles came from a single 225-litre barrel, aged under Dragomir’s private single-barrel programme. The contemporary artist Pravdoliub Ivanov drew the phrase “Love is Liquid” for the label; it comes from his 1998 work “At the Level of the Eyes”.",
+   "story": "A single barrel of Dragomir’s Grand Reserve Mavrud, bottled only for Komat, with a label by the artist Pravdoliub Ivanov. Dragomir was started in 2006 by two oenologists, Natalia Gadzheva and Konstantin Stoev; the winery is in Brestnik, near Plovdiv.",
    "facts": "Only 232 bottles, from one 225 L barrel.\nThe label reads “Love is Liquid”, drawn by Pravdoliub Ivanov.\nAlso in magnum (1.5 l) at 210 € and in 3 l at 600 €.",
    "glassPrice": "",
    "byGlass": false,
@@ -2096,7 +3163,15 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "was": {
+    "story": "DOT Sofia, with Dragomir Estate Winery, presents Grand Reserve Mavrud 2021, a limited edition of Bulgaria’s oldest native grape. Just 232 bottles came from a single 225-litre barrel, aged under Dragomir’s private single-barrel programme. The contemporary artist Pravdoliub Ivanov drew the phrase “Love is Liquid” for the label; it comes from his 1998 work “At the Level of the Eyes”."
+   },
+   "bg": {
+    "say": "Нашата собствена лимитирана серия: една-единствена бъчва от Grand Reserve Mavrud на Драгомир, само 232 бутилки, с етикет от художника Правдолюб Иванов.",
+    "story": "Една-единствена бъчва от Grand Reserve Mavrud на Драгомир, бутилирана само за Комат, с етикет от художника Правдолюб Иванов. Драгомир е създадена през 2006 г. от двама енолози, Наталия Гаджева и Константин Стоев; винарната е в Брестник, край Пловдив.",
+    "facts": "Само 232 бутилки, от една бъчва от 225 л.\nНа етикета пише „Love is Liquid“, рисунката е на Правдолюб Иванов.\nИма го и в магнум (1,5 л) за 210 € и в бутилка от 3 л за 600 €."
+   }
   },
   "wines/chateau-de-la-chaize-morgon-2023": {
    "colour": "red",
@@ -2108,8 +3183,8 @@
    "bottlePrice": "52",
    "grapes": "Gamay",
    "style": "",
-   "say": "Gamay from Château de La Chaize, Beaujolais. Light and juicy: red cherry, strawberry, very little tannin. Good slightly cool.",
-   "story": "",
+   "say": "Morgon is one of the best villages of Beaujolais; the château has made wine since 1676 and is now organic. Gamay: ripe red fruit and spice, fresh, with soft tannins. Good slightly cool.",
+   "story": "Château de La Chaize, in Odenas in Beaujolais, has made wine since 1676 and is a listed French historical monument. The Gruy family bought it in 2017 and turned all the vineyards organic, certified from the 2022 vintage.",
    "facts": "Morgon is one of the ten crus of Beaujolais; our list files it under Burgundy.",
    "glassPrice": "",
    "byGlass": false,
@@ -2121,10 +3196,26 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.8,
-    1.0
-   ]
+    1
+   ],
+   "nose": "Very ripe red fruit, spices",
+   "palate": "Delicate and fresh, with red fruit, good balance and soft, earthy tannins",
+   "body": "medium",
+   "made": "Aged entirely in large wooden vats (foudres).",
+   "appellation": "Morgon AOC",
+   "was": {
+    "say": "Gamay from Château de La Chaize, Beaujolais. Light and juicy: red cherry, strawberry, very little tannin. Good slightly cool."
+   },
+   "bg": {
+    "say": "Morgon е едно от най-добрите села на Божоле; шатото прави вино от 1676 г. и вече е биологично. Гаме: зрели червени плодове и подправки, свежо, с меки танини. Хубаво е леко охладено.",
+    "nose": "Много зрели червени плодове, подправки",
+    "palate": "Деликатно и свежо, с червени плодове, добър баланс и меки, землисти танини",
+    "made": "Отлежава изцяло в големи дървени бъчви (foudres).",
+    "story": "Château de La Chaize, в Odenas в Божоле, прави вино от 1676 г. и е обявено за исторически паметник на Франция. Семейство Gruy го купи през 2017 г. и направи всички лозя биологични, със сертификат от реколта 2022.",
+    "facts": "Morgon е едно от десетте крю на Божоле; в нашата листа е под Бургундия."
+   }
   },
   "wines/chateau-penin-la-fleur-grand-cru-2022": {
    "colour": "red",
@@ -2134,10 +3225,10 @@
    "country": "France",
    "vintage": "2022",
    "bottlePrice": "73",
-   "grapes": "Merlot",
+   "grapes": "Merlot, Cabernet Franc",
    "style": "",
-   "say": "A Saint-Émilion Grand Cru from the right bank of Bordeaux, where Merlot leads: plum, soft tannins, a little oak.",
-   "story": "Round and soft: plum, cherry and a touch of chocolate.",
+   "say": "Saint-Émilion Grand Cru from a tiny vineyard of old vines: mostly Merlot with Cabernet Franc, aged in oak. Plum and soft tannins: a Bordeaux that is easy to like.",
+   "story": "The full name is Château La Fleur Penin, a Saint-Émilion Grand Cru. It is a very small vineyard of about 2.5 hectares in Saint-Pey-d'Armens, bought in 2011 by the Carteyron family of Château Penin; the old vines are mostly Merlot and the wine is aged in oak barrels.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2152,7 +3243,17 @@
     50.6,
     65.7,
     3.21
-   ]
+   ],
+   "appellation": "Saint-Émilion Grand Cru AOC",
+   "was": {
+    "say": "A Saint-Émilion Grand Cru from the right bank of Bordeaux, where Merlot leads: plum, soft tannins, a little oak.",
+    "grapes": "Merlot",
+    "story": "Round and soft: plum, cherry and a touch of chocolate."
+   },
+   "bg": {
+    "say": "Saint-Émilion Grand Cru от съвсем малко лозе със стари лози: предимно Мерло с Каберне фран, отлежало в дъб. Слива и меки танини: Бордо, което лесно се харесва.",
+    "story": "Пълното име е Château La Fleur Penin, Saint-Émilion Grand Cru. Това е много малко лозе от около 2,5 хектара в Saint-Pey-d’Armens, купено през 2011 г. от семейство Carteyron от Château Penin; старите лози са предимно Мерло, а виното отлежава в дъбови бъчви."
+   }
   },
   "wines/domaine-dardhuy-pinot-noir-2022": {
    "colour": "red",
@@ -2164,8 +3265,8 @@
    "bottlePrice": "86",
    "grapes": "Pinot Noir",
    "style": "",
-   "say": "Pinot Noir from Domaine d’Ardhuy, Burgundy. Light in colour, silky, with red cherry, raspberry and an earthy note.",
-   "story": "",
+   "say": "Red Burgundy: Pinot Noir from a family estate founded in 1927. Light and supple, with small red and black fruits and a little spice.",
+   "story": "Domaine d'Ardhuy is a family estate founded in 1927, with vineyards in both the Côte de Nuits and the Côte de Beaune. This is its simplest red Burgundy, made only from Pinot Noir grown in the south of Burgundy.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2175,7 +3276,20 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Small red and black fruits, light spice",
+   "palate": "Supple structure with good freshness",
+   "body": "light",
+   "appellation": "Bourgogne AOC",
+   "was": {
+    "say": "Pinot Noir from Domaine d’Ardhuy, Burgundy. Light in colour, silky, with red cherry, raspberry and an earthy note."
+   },
+   "bg": {
+    "say": "Червено бургундско: Пино ноар от семейно имение, основано през 1927 г. Леко и меко на вкус, с дребни червени и черни плодове и малко подправки.",
+    "nose": "Дребни червени и черни плодове, леки подправки",
+    "palate": "Мека структура с добра свежест",
+    "story": "Domaine d’Ardhuy е семейно имение, основано през 1927 г., с лозя и в Côte de Nuits, и в Côte de Beaune. Това е най-семплото му червено бургундско, направено само от Пино ноар, отгледан в южната част на Бургундия."
+   }
   },
   "wines/clos-du-mont-olivet-chateauneuf-du-pape-2015": {
    "colour": "red",
@@ -2185,10 +3299,10 @@
    "country": "France",
    "vintage": "2015",
    "bottlePrice": "147",
-   "grapes": "Grenache, Syrah, Mourvèdre",
+   "grapes": "Grenache, Syrah, Mourvèdre, Cinsault",
    "style": "",
-   "say": "A mature Châteauneuf-du-Pape from the southern Rhône: Grenache-led, warm and spicy, with dried herbs.",
-   "story": "",
+   "say": "Châteauneuf-du-Pape from a family five generations on the same land, and already ten years old. Mostly Grenache: warm, spicy and soft, with dried herbs.",
+   "story": "Clos du Mont-Olivet is a family estate that has been in Châteauneuf-du-Pape for five generations. This is their classic red: about three quarters Grenache, with Syrah, Mourvèdre and small amounts of old local grapes such as Cinsault and Counoise.",
    "facts": "Châteauneuf-du-Pape means “the Pope’s new castle”: the popes lived in nearby Avignon in the 14th century.",
    "glassPrice": "",
    "byGlass": false,
@@ -2198,7 +3312,17 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "appellation": "Châteauneuf-du-Pape AOC",
+   "was": {
+    "say": "A mature Châteauneuf-du-Pape from the southern Rhône: Grenache-led, warm and spicy, with dried herbs.",
+    "grapes": "Grenache, Syrah, Mourvèdre"
+   },
+   "bg": {
+    "say": "Châteauneuf-du-Pape от семейство, пет поколения на една и съща земя, а виното вече е на десет години. Предимно Гренаш: топло, пикантно и меко, със сушени билки.",
+    "story": "Clos du Mont-Olivet е семейно имение, което е в Châteauneuf-du-Pape от пет поколения. Това е класическото им червено: около три четвърти Гренаш, със Сира, Мурведър и малки количества стари местни сортове като Сенсо и Кунуаз.",
+    "facts": "Châteauneuf-du-Pape означава „новият замък на папата“: през XIV век папите са живели в близкия Авиньон."
+   }
   },
   "wines/produttori-di-manduria-primitivo-elegia-riserva-2021": {
    "colour": "red",
@@ -2210,8 +3334,8 @@
    "bottlePrice": "67",
    "grapes": "Primitivo",
    "style": "",
-   "say": "Primitivo from Produttori di Manduria, Puglia. Rich and ripe: jammy dark fruit, sweet spice, full body.",
-   "story": "",
+   "say": "Primitivo from old bush vines in Puglia, the heel of Italy, a year in French oak. Full, warm and rich: raspberry, blackberry and plum jam. For guests who like a big red.",
+   "story": "Produttori di Manduria is a growers' cooperative founded in 1932 in Manduria, the home of Primitivo in Puglia. Elegia comes from old vines, 35 to 50 years and more, many grown as low bush vines, and is 15% alcohol.",
    "facts": "Primitivo is the same grape as California’s Zinfandel.",
    "glassPrice": "",
    "byGlass": false,
@@ -2224,9 +3348,25 @@
    "updated": 0,
    "focus": [
     50.1,
-    67.0,
+    67,
     1.91
-   ]
+   ],
+   "nose": "Ripe raspberry, blackberry, plum jam, balsamic notes",
+   "palate": "Full, warm and rich, with dark fruit, firm tannins and bright acidity",
+   "body": "full",
+   "made": "Fermented in temperature-controlled steel, then aged 12 months in French oak barriques, some of them new.",
+   "appellation": "Primitivo di Manduria DOC Riserva",
+   "was": {
+    "say": "Primitivo from Produttori di Manduria, Puglia. Rich and ripe: jammy dark fruit, sweet spice, full body."
+   },
+   "bg": {
+    "say": "Примитиво от стари храстовидни лози в Пулия, тока на Италия, една година във френски дъб. Плътно, топло и богато: малина, къпина и сладко от сливи. За гости, които обичат мощни червени вина.",
+    "nose": "Зряла малина, къпина, сладко от сливи, балсамови нотки",
+    "palate": "Плътно, топло и богато, с тъмни плодове, стегнати танини и жива свежест",
+    "made": "Ферментира в стоманени съдове с контрол на температурата, после отлежава 12 месеца в барикови бъчви от френски дъб, част от тях нови.",
+    "story": "Produttori di Manduria е кооперация на лозари, основана през 1932 г. в Manduria, родното място на Примитиво в Пулия. Elegia идва от стари лози, на 35 до 50 и повече години, много от тях гледани като ниски храсти, и е с 15% алкохол.",
+    "facts": "Примитиво е същият сорт като калифорнийския Зинфандел."
+   }
   },
   "wines/firriato-nero-davola-harmonium-2019": {
    "colour": "red",
@@ -2238,8 +3378,8 @@
    "bottlePrice": "83",
    "grapes": "Nero d’Avola",
    "style": "",
-   "say": "Nero d’Avola from Firriato, Sicily. Sicily’s great red grape: black cherry, plum and warm spice.",
-   "story": "",
+   "say": "Sicily’s great red grape, from three single vineyards near Trapani, a year in oak. Dark cherry, plum, clove and tobacco; soft and smooth.",
+   "story": "Harmonium is Firriato's top Nero d'Avola, from the Borgo Guarini estate in the countryside of Trapani, western Sicily. It blends three single vineyards, Ferla, Lepre and Beccaccia, each planted with a different clone of Nero d'Avola.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2251,10 +3391,25 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     66.7,
     3.32
-   ]
+   ],
+   "nose": "Dark cherry, plum, blackberry, clove, tobacco",
+   "palate": "Soft and smooth, with ripe dark fruit and balanced tannins",
+   "body": "full",
+   "made": "Three vineyard plots are fermented separately and blended, then aged 12 months in French and American oak barriques and 6 months in bottle.",
+   "appellation": "Sicilia DOC",
+   "was": {
+    "say": "Nero d’Avola from Firriato, Sicily. Sicily’s great red grape: black cherry, plum and warm spice."
+   },
+   "bg": {
+    "say": "Големият червен сорт на Сицилия, от три отделни лозя край Трапани, една година в дъб. Тъмна череша, слива, карамфил и тютюн; меко и гладко.",
+    "nose": "Тъмна череша, слива, къпина, карамфил, тютюн",
+    "palate": "Меко и гладко, със зрели тъмни плодове и балансирани танини",
+    "made": "Трите лозови парцела ферментират отделно и после се купажират, след това виното отлежава 12 месеца в барикови бъчви от френски и американски дъб и 6 месеца в бутилка.",
+    "story": "Harmonium е най-доброто Неро д’Авола на Firriato, от имението Borgo Guarini в околностите на Трапани, Западна Сицилия. Съчетава три отделни лозя, Ferla, Lepre и Beccaccia, всяко засадено с различен клон на Неро д’Авола."
+   }
   },
   "wines/paolo-manzone-nebbiolo-2020": {
    "colour": "red",
@@ -2266,8 +3421,8 @@
    "bottlePrice": "106",
    "grapes": "Nebbiolo",
    "style": "",
-   "say": "Nebbiolo from Paolo Manzone, Barolo. Pale but powerful: rose, tar and cherry, with high tannin and acidity.",
-   "story": "",
+   "say": "Nebbiolo from Serralunga d’Alba, one of the great Barolo villages, aged over three years before release. Pale in colour but powerful: cherry, mint and herbs, with firm tannins. Best with meat.",
+   "story": "Paolo Manzone and his wife Luisella started their small family estate, about 14 hectares, in 1999 in Serralunga d'Alba, one of the best-known Barolo villages. Their Serralunga wines begin with the Meriame vineyard around the winery.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2277,7 +3432,22 @@
    "label": "",
    "pairs": [],
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "nose": "Mint, lemon verbena, ripe cherry, currant",
+   "palate": "Firm, gripping tannins and lively acidity; austere, with fresh fruit on the finish",
+   "body": "full",
+   "made": "Aged 38 months before release, 24 of them in large oak casks (tonneaux and botti).",
+   "appellation": "Barolo DOCG",
+   "was": {
+    "say": "Nebbiolo from Paolo Manzone, Barolo. Pale but powerful: rose, tar and cherry, with high tannin and acidity."
+   },
+   "bg": {
+    "say": "Небиоло от Serralunga d’Alba, едно от големите села на Бароло, отлежало над три години, преди да излезе на пазара. Светло на цвят, но мощно: череша, мента и билки, със стегнати танини. Най-добре върви с месо.",
+    "nose": "Мента, лимонова върбинка, зряла череша, френско грозде",
+    "palate": "Здрави, стягащи танини и жива свежест; строго, със свежи плодове в послевкуса",
+    "made": "Отлежава 38 месеца, преди да излезе на пазара, 24 от тях в големи дъбови бъчви (tonneaux и botti).",
+    "story": "Paolo Manzone и съпругата му Luisella създадоха малкото си семейно имение, около 14 хектара, през 1999 г. в Serralunga d’Alba, едно от най-известните села на Бароло. Вината им от Serralunga започват с лозето Meriame около винарната."
+   }
   },
   "wines/castello-di-volpaia-sangiovese-riserva-2019": {
    "colour": "red",
@@ -2289,8 +3459,8 @@
    "bottlePrice": "105",
    "grapes": "Sangiovese",
    "style": "",
-   "say": "Sangiovese from Castello di Volpaia, Tuscany. Sour cherry, herbs and leather, with bright acidity.",
-   "story": "",
+   "say": "Chianti Classico Riserva from organic vineyards among the highest in Chianti, two years in oak. Sangiovese: flowers, dark fruit and an earthy note, with fine tannins.",
+   "story": "This is Volpaia's Chianti Classico Riserva, from organic vineyards on sandstone in Radda in Chianti that climb to about 600 metres, among the highest in the area. The family has made it since 1967, and its 2015 vintage was the first Chianti to reach the top three of Wine Spectator's yearly list.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -2302,10 +3472,25 @@
    "glassCl": "",
    "updated": 0,
    "focus": [
-    50.0,
+    50,
     67.1,
     3.27
-   ]
+   ],
+   "nose": "Flowers, lavender, candied blackcurrant, graphite, earth",
+   "palate": "Concentrated, with bright fruit and fine tannins",
+   "body": "medium",
+   "made": "Aged 24 months in Slavonian and French oak casks, then at least 3 months in bottle.",
+   "appellation": "Chianti Classico DOCG Riserva",
+   "was": {
+    "say": "Sangiovese from Castello di Volpaia, Tuscany. Sour cherry, herbs and leather, with bright acidity."
+   },
+   "bg": {
+    "say": "Chianti Classico Riserva от биологични лозя, сред най-високите в Кианти, две години в дъб. Санджовезе: цветя, тъмни плодове и землиста нотка, с фини танини.",
+    "nose": "Цветя, лавандула, захаросан касис, графит, земя",
+    "palate": "Концентрирано, с ярки плодове и фини танини",
+    "made": "Отлежава 24 месеца в големи бъчви от славонски и френски дъб, после поне 3 месеца в бутилка.",
+    "story": "Това е Chianti Classico Riserva на Volpaia, от биологични лозя върху пясъчник в Radda in Chianti, които се изкачват до около 600 метра, сред най-високите в района. Семейството го прави от 1967 г., а реколта 2015 е първото Кианти, стигнало до първите три места в годишната класация на Wine Spectator."
+   }
   },
   "wines/marques-de-murrieta-reserva-2018": {
    "colour": "red",
@@ -2315,10 +3500,10 @@
    "country": "Spain",
    "vintage": "2018",
    "bottlePrice": "77",
-   "grapes": "Tempranillo",
+   "grapes": "Tempranillo, Graciano, Mazuelo, Garnacha",
    "style": "",
-   "say": "Tempranillo from Marqués de Murrieta, Rioja. Red and dark fruit with vanilla and leather from long oak ageing.",
-   "story": "",
+   "say": "Rioja Reserva from one of the oldest wineries in Rioja, founded in 1852. Mostly Tempranillo, almost two years in American oak: plum, cherry and cedar; fresh, elegant and velvety.",
+   "story": "All the grapes come from the winery's own Ygay estate, about 300 hectares of vineyards around the winery in Rioja Alta. Marqués de Murrieta is one of Rioja's oldest wineries, founded in 1852.",
    "facts": "Marqués de Murrieta is one of the oldest wineries in Rioja.",
    "glassPrice": "",
    "byGlass": false,
@@ -2333,7 +3518,24 @@
     50.9,
     68.1,
     1.06
-   ]
+   ],
+   "nose": "Plum, cherry, redcurrant, cedar",
+   "palate": "Fresh and elegant with a velvety feel; ripe blackberry, cedar and chocolate",
+   "body": "medium",
+   "made": "Aged about 21 months in American oak barrels, then around a year and a half in bottle.",
+   "appellation": "Rioja DOCa",
+   "was": {
+    "say": "Tempranillo from Marqués de Murrieta, Rioja. Red and dark fruit with vanilla and leather from long oak ageing.",
+    "grapes": "Tempranillo"
+   },
+   "bg": {
+    "say": "Rioja Reserva от една от най-старите винарни в Риоха, основана през 1852 г. Предимно Темпранило, почти две години в американски дъб: слива, череша и кедър; свежо, елегантно и кадифено.",
+    "nose": "Слива, череша, червено френско грозде, кедър",
+    "palate": "Свежо и елегантно, с кадифено усещане; зряла къпина, кедър и шоколад",
+    "made": "Отлежава около 21 месеца в бъчви от американски дъб, после около година и половина в бутилка.",
+    "story": "Цялото грозде идва от собственото имение Ygay на винарната, около 300 хектара лозя около нея в Риоха Алта. Marqués de Murrieta е една от най-старите винарни в Риоха, основана през 1852 г.",
+    "facts": "Marqués de Murrieta е една от най-старите винарни в Риоха."
+   }
   },
   "wines/tsarev-brod-gergana-ice": {
    "colour": "sweet",
@@ -2345,8 +3547,8 @@
    "bottlePrice": "58",
    "grapes": "Gergana",
    "style": "ice wine",
-   "say": "A Bulgarian ice wine from the Gergana grape: honeyed and fresh at once.",
-   "story": "For an ice wine the grapes are picked frozen, so only the sweet, concentrated juice is pressed.",
+   "say": "A Bulgarian ice wine: the Gergana grapes are picked frozen in December. Rose, apricot jam and candied citrus; sweet, but fresh. Our tasting menu pours it with the dessert.",
+   "story": "Gergana is a nearly forgotten Bulgarian white grape, a crossing of Dimyat and Muscat Ottonel, which this family winery has brought back. The winery is in the village of Tsarev Brod near Shumen, close to the Madara Horseman rock relief, a UNESCO World Heritage Site.",
    "facts": "",
    "glassPrice": "8",
    "byGlass": true,
@@ -2360,8 +3562,23 @@
    "focus": [
     49.3,
     67.5,
-    4.0
-   ]
+    4
+   ],
+   "nose": "Rose Turkish delight, brioche, apricot jam, candied citrus peel",
+   "palate": "Sweet but balanced by fresh acidity, long finish of rose and apricot",
+   "body": "medium",
+   "made": "Grapes are picked frozen in early December and pressed slowly; four-month fermentation, then 12 months in old oak barrels and 6 months in bottle.",
+   "was": {
+    "say": "A Bulgarian ice wine from the Gergana grape: honeyed and fresh at once.",
+    "story": "For an ice wine the grapes are picked frozen, so only the sweet, concentrated juice is pressed."
+   },
+   "bg": {
+    "say": "Българско ледено вино: гроздето Гергана се бере замръзнало през декември. Роза, сладко от кайсии и захаросани цитруси; сладко, но свежо. В дегустационното ни меню го наливаме към десерта.",
+    "nose": "Локум с роза, бриош, сладко от кайсии, захаросани цитрусови кори",
+    "palate": "Сладко, но балансирано от жива свежест, с дълъг послевкус на роза и кайсия",
+    "made": "Гроздето се бере замръзнало в началото на декември и се пресова бавно; четири месеца ферментация, после 12 месеца в стари дъбови бъчви и 6 месеца в бутилка.",
+    "story": "Гергана е почти забравен български бял сорт, кръстоска между Димят и Мускат отонел, който тази семейна винарна върна към живот. Винарната е в село Царев брод край Шумен, близо до скалния релеф Мадарски конник, обект на световното наследство на ЮНЕСКО."
+   }
   },
   "wines/lecru-zibibbo": {
    "colour": "sweet",
@@ -2373,8 +3590,8 @@
    "bottlePrice": "84",
    "grapes": "Zibibbo",
    "style": "passito",
-   "say": "Zibibbo from Firriato, Sicily. The Sicilian name for Muscat of Alexandria: apricot, orange blossom, honey.",
-   "story": "For a passito the grapes are dried to concentrate their sugar.",
+   "say": "A sweet wine from Sicily: part of the grapes are dried in the sun and wind, then steeped in the wine. Orange blossom honey, candied orange, dates and figs. Sweet, but not heavy.",
+   "story": "L'Ecrù comes from Firriato's Borgo Guarini estate near Trapani in western Sicily. The grapes are picked by hand in early September; part are dried in the sun and wind, and the raisins are then added to the wine to infuse, a natural passito of only about 13.5% alcohol.",
    "facts": "",
    "glassPrice": "8",
    "byGlass": true,
@@ -2387,9 +3604,25 @@
    "updated": 0,
    "focus": [
     50.1,
-    71.0,
+    71,
     2.26
-   ]
+   ],
+   "nose": "Orange blossom honey, candied orange peel, dates, dried figs, oriental spices",
+   "palate": "Sweet, soft and deep, yet balanced",
+   "body": "full",
+   "made": "Some grapes are dried in the open air, then the raisins are steeped in the wine; it is not fortified and rests six months in bottle.",
+   "appellation": "Terre Siciliane IGT",
+   "was": {
+    "say": "Zibibbo from Firriato, Sicily. The Sicilian name for Muscat of Alexandria: apricot, orange blossom, honey.",
+    "story": "For a passito the grapes are dried to concentrate their sugar."
+   },
+   "bg": {
+    "say": "Сладко вино от Сицилия: част от гроздето се суши на слънце и вятър, после се накисва във виното. Мед от портокалов цвят, захаросан портокал, фурми и смокини. Сладко, но не тежко.",
+    "nose": "Мед от портокалов цвят, захаросана портокалова кора, фурми, сушени смокини, ориенталски подправки",
+    "palate": "Сладко, меко и дълбоко, но балансирано",
+    "made": "Част от гроздето се суши на открито, после стафидите се накисват във виното; не е подсилено и почива шест месеца в бутилка.",
+    "story": "L’Ecrù идва от имението Borgo Guarini на Firriato край Трапани, в Западна Сицилия. Гроздето се бере на ръка в началото на септември; част се суши на слънце и вятър, а стафидите после се слагат да киснат във виното: естествено пасито с едва около 13,5% алкохол."
+   }
   },
   "wines/px-nectar": {
    "colour": "sweet",
@@ -2401,8 +3634,8 @@
    "bottlePrice": "",
    "grapes": "Pedro Ximénez",
    "style": "sweet sherry",
-   "say": "Pedro Ximénez from González Byass, Jerez. Sun-dried grapes give a very sweet, dark wine: raisins, figs, coffee.",
-   "story": "",
+   "say": "A very sweet, dark sherry from Jerez: the grapes are dried into raisins in the sun, then the wine ages about eight years in oak. Raisins, figs, caramel and coffee: dessert in a glass.",
+   "story": "From González Byass in Jerez, the family house behind Tío Pepe. The Pedro Ximénez grapes are laid out in the sun to turn into raisins before pressing, which gives a wine with about 370 grams of sugar per litre.",
    "facts": "Pedro Ximénez is often shortened to PX.",
    "glassPrice": "8",
    "byGlass": true,
@@ -2417,7 +3650,23 @@
     49.9,
     65.7,
     3.69
-   ]
+   ],
+   "nose": "Raisins, figs, dates, honey",
+   "palate": "Intensely sweet and velvety, with raisin, fig, caramel, coffee and cinnamon",
+   "body": "full",
+   "made": "Grapes are dried in the sun before pressing; the wine is fortified to 15% and aged about 8 to 9 years in American oak casks in a solera.",
+   "appellation": "Jerez-Xérès-Sherry DO",
+   "was": {
+    "say": "Pedro Ximénez from González Byass, Jerez. Sun-dried grapes give a very sweet, dark wine: raisins, figs, coffee."
+   },
+   "bg": {
+    "say": "Много сладко, тъмно шери от Херес: гроздето се суши на слънце, докато стане на стафиди, после виното отлежава около осем години в дъб. Стафиди, смокини, карамел и кафе: десерт в чаша.",
+    "nose": "Стафиди, смокини, фурми, мед",
+    "palate": "Наситено сладко и кадифено, със стафиди, смокини, карамел, кафе и канела",
+    "made": "Гроздето се суши на слънце преди пресоването; виното се подсилва до 15% и отлежава около 8 до 9 години в бъчви от американски дъб по системата солера.",
+    "story": "От González Byass в Херес, семейната къща, която стои зад Tío Pepe. Гроздето Педро Хименес се разстила на слънце, за да стане на стафиди преди пресоването, и така се получава вино с около 370 грама захар на литър.",
+    "facts": "Педро Хименес често се съкращава на PX."
+   }
   },
   "wines/drink-edna": {
    "colour": "spirit",
@@ -2463,7 +3712,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Българска гроздова ракия."
+   }
   },
   "wines/drink-danube-quince": {
    "colour": "spirit",
@@ -2486,7 +3738,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Българска дюлева ракия."
+   }
   },
   "wines/drink-arkana-barrel": {
    "colour": "spirit",
@@ -2509,7 +3764,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Българска ракия, отлежала в бъчва."
+   }
   },
   "wines/drink-magia-apricot": {
    "colour": "spirit",
@@ -2532,7 +3790,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сръбска кайсиева ракия."
+   }
   },
   "wines/drink-nirvana-pear": {
    "colour": "spirit",
@@ -2555,7 +3816,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сръбска крушова ракия."
+   }
   },
   "wines/drink-troyan-plum": {
    "colour": "spirit",
@@ -2578,7 +3842,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сливова ракия от Троян, българския град, най-известен с нея."
+   }
   },
   "wines/drink-cultural-reserve": {
    "colour": "spirit",
@@ -2647,7 +3914,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Френска водка от пшеница."
+   }
   },
   "wines/drink-belvedere": {
    "colour": "spirit",
@@ -2670,7 +3940,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Полска водка от ръж."
+   }
   },
   "wines/drink-reyka": {
    "colour": "spirit",
@@ -2716,7 +3989,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Американска водка от Тексас, от царевица."
+   }
   },
   "wines/drink-dolin": {
    "colour": "spirit",
@@ -2739,7 +4015,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Френски вермут от Шамбери: сух, бял или червен.",
+    "facts": "Имаме сух, бял и червен."
+   }
   },
   "wines/drink-tanqueray": {
    "colour": "spirit",
@@ -2762,7 +4042,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Класически лондонски сух джин със силно изразена хвойна."
+   }
   },
   "wines/drink-tobermory": {
    "colour": "spirit",
@@ -2785,7 +4068,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Шотландски джин от остров Мъл."
+   }
   },
   "wines/drink-hendricks": {
    "colour": "spirit",
@@ -2808,7 +4094,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Шотландски джин, ароматизиран с краставица и роза."
+   }
   },
   "wines/drink-sakurao": {
    "colour": "spirit",
@@ -2831,7 +4120,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Японски джин от Хирошима."
+   }
   },
   "wines/drink-pernod": {
    "colour": "spirit",
@@ -2854,7 +4146,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Френска анасонова спиртна напитка; с вода помътнява."
+   }
   },
   "wines/drink-ouzo-lazaris": {
    "colour": "spirit",
@@ -2877,7 +4172,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Гръцко узо."
+   }
   },
   "wines/drink-saffron-mastic-curiosa": {
    "colour": "spirit",
@@ -2900,7 +4198,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Мастика с шафран."
+   }
   },
   "wines/drink-el-dorado-3-y": {
    "colour": "spirit",
@@ -2923,7 +4224,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Бял ром от Гаяна, отлежал три години."
+   }
   },
   "wines/drink-el-dorado-15-y": {
    "colour": "spirit",
@@ -2946,7 +4250,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Тъмен ром от Гаяна, отлежал петнадесет години."
+   }
   },
   "wines/drink-zacapa-solera-23": {
    "colour": "spirit",
@@ -2969,7 +4276,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сладък, богат гватемалски ром."
+   }
   },
   "wines/drink-diplomatico-reserva": {
    "colour": "spirit",
@@ -2992,7 +4302,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Венецуелски тъмен ром."
+   }
   },
   "wines/drink-plantation-stiggins": {
    "colour": "spirit",
@@ -3015,7 +4328,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Ром, инфузиран с ананас."
+   }
   },
   "wines/drink-black-sea-gold-xo-33-y": {
    "colour": "spirit",
@@ -3038,7 +4354,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Българско бренди от Черноморието."
+   }
   },
   "wines/drink-remy-martin-royal": {
    "colour": "spirit",
@@ -3061,7 +4380,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Коняк."
+   }
   },
   "wines/drink-courvoisier-xo": {
    "colour": "spirit",
@@ -3084,7 +4406,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Коняк XO.",
+    "facts": "XO означава „extra old“, тоест „много стар“."
+   }
   },
   "wines/drink-balvenie": {
    "colour": "spirit",
@@ -3107,7 +4433,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сингъл малц от Спейсайд."
+   }
   },
   "wines/drink-macallan-double-cask-12-y": {
    "colour": "spirit",
@@ -3130,7 +4459,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сингъл малц от Спейсайд, отлежал в дъб, напоен с шери."
+   }
   },
   "wines/drink-lagavulin-18-y": {
    "colour": "spirit",
@@ -3153,7 +4485,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Опушен, торфен сингъл малц от Айла."
+   }
   },
   "wines/drink-laphroaig-10-y": {
    "colour": "spirit",
@@ -3176,7 +4511,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Много опушен, торфен сингъл малц от Айла."
+   }
   },
   "wines/drink-oban-14-y": {
    "colour": "spirit",
@@ -3199,7 +4537,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сингъл малц от Западен Хайленд."
+   }
   },
   "wines/drink-dalmore-king-alexander-iii": {
    "colour": "spirit",
@@ -3222,7 +4563,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сингъл малц от Хайленд."
+   }
   },
   "wines/drink-glenkinchie-12-y": {
    "colour": "spirit",
@@ -3245,7 +4589,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Лек сингъл малц от Лоуленд."
+   }
   },
   "wines/drink-teeling-single-malt": {
    "colour": "spirit",
@@ -3261,14 +4608,17 @@
    "nostock": false,
    "order": 236,
    "par": 1,
-   "label": "https://www.sid-shop.com/media/catalog/product/placeholder/default/no_image2.jpg",
+   "label": "",
    "pairs": [],
    "byGlass": true,
    "bottlePrice": "",
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Ирландски сингъл малц от Дъблин."
+   }
   },
   "wines/drink-bushmills-10-y": {
    "colour": "spirit",
@@ -3291,7 +4641,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Ирландски сингъл малц."
+   }
   },
   "wines/drink-bulleit-bourbon": {
    "colour": "spirit",
@@ -3314,7 +4667,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Бърбън от Кентъки."
+   }
   },
   "wines/drink-woodford-reserve": {
    "colour": "spirit",
@@ -3337,7 +4693,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Бърбън от Кентъки."
+   }
   },
   "wines/drink-hibiki": {
    "colour": "spirit",
@@ -3360,7 +4719,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Японско блендирано уиски."
+   }
   },
   "wines/drink-kavalan-oloroso-sherry-oak": {
    "colour": "spirit",
@@ -3383,7 +4745,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Тайвански сингъл малц, отлежал в бъчви от шери олоросо."
+   }
   },
   "wines/drink-gentleman-jack": {
    "colour": "spirit",
@@ -3406,7 +4771,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Уиски от Тенеси."
+   }
   },
   "wines/drink-olmeca-altos-silver": {
    "colour": "spirit",
@@ -3429,7 +4797,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Неотлежала текила."
+   }
   },
   "wines/drink-olmeca-altos-gold": {
    "colour": "spirit",
@@ -3475,7 +4846,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Ирландски крем ликьор.",
+    "facts": "Съдържа мляко: алерген."
+   }
   },
   "wines/drink-disaronno": {
    "colour": "liqueur",
@@ -3498,7 +4873,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Италианско амарето с вкус на бадем."
+   }
   },
   "wines/drink-disaronno-velvet": {
    "colour": "liqueur",
@@ -3521,7 +4899,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Disaronno във вариант крем ликьор.",
+    "facts": "Съдържа мляко: алерген."
+   }
   },
   "wines/drink-drambuie": {
    "colour": "liqueur",
@@ -3544,7 +4926,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Ликьор от шотландско уиски с мед и билки.",
+    "facts": "В десертната карта е 9; в листата с напитки е 10."
+   }
   },
   "wines/drink-pampelle": {
    "colour": "liqueur",
@@ -3567,7 +4953,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Френски аперитив от грейпфрут."
+   }
   },
   "wines/drink-campari": {
    "colour": "liqueur",
@@ -3590,7 +4979,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Италиански червен битер."
+   }
   },
   "wines/drink-fernet-branca": {
    "colour": "liqueur",
@@ -3613,7 +5005,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Много горчив италиански билков дижестив.",
+    "facts": "В десертната карта е 4; в листата с напитки е 5."
+   }
   },
   "wines/drink-branca-menta": {
    "colour": "liqueur",
@@ -3636,7 +5032,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Fernet Branca с мента.",
+    "facts": "В десертната карта е 4; в листата с напитки е 5."
+   }
   },
   "wines/drink-amaro-montenegro": {
    "colour": "liqueur",
@@ -3659,7 +5059,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Горчиво-сладко италианско амаро.",
+    "facts": "В десертната карта е 5; в листата с напитки е 6."
+   }
   },
   "wines/drink-jagermeister": {
    "colour": "liqueur",
@@ -3682,7 +5086,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Немски билков ликьор."
+   }
   },
   "wines/drink-cherry-liqueur-zarich": {
    "colour": "liqueur",
@@ -3705,7 +5112,11 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Сръбски вишнев ликьор.",
+    "facts": "В десертната карта „Koketa сръбска вишна“ е 5."
+   }
   },
   "wines/drink-black-walnut-liqueur": {
    "colour": "liqueur",
@@ -3728,7 +5139,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "От десертната карта."
+   }
   },
   "wines/drink-rocket-science-pale-ale": {
    "colour": "beer",
@@ -3774,7 +5188,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Българска тъмна бира."
+   }
   },
   "wines/drink-hills-pils": {
    "colour": "beer",
@@ -3843,7 +5260,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "say": "Безалкохолна бира."
+   }
   },
   "wines/drink-bulgarian-craft-drinks": {
    "colour": "soft",
@@ -3866,7 +5286,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "Питай бара какви вкусове имаме днес."
+   }
   },
   "wines/drink-craft-cola": {
    "colour": "soft",
@@ -3912,7 +5335,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "0,25 л е 5, 0,5 л е 7, 1 л е 10.\nПитай бара кои имаме днес."
+   }
   },
   "wines/drink-mineral-water": {
    "colour": "soft",
@@ -3935,7 +5361,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "0,33 л е 3, 0,75 л е 5."
+   }
   },
   "wines/drink-sparkling-water": {
    "colour": "soft",
@@ -3958,7 +5387,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "0,33 л е 3, 0,75 л е 5."
+   }
   },
   "wines/drink-filtered-water": {
    "colour": "soft",
@@ -4004,7 +5436,10 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "Също ристрето и американо."
+   }
   },
   "wines/drink-cappuccino": {
    "colour": "hot",
@@ -4096,7 +5531,660 @@
    "vintage": "",
    "grapes": "",
    "glassCl": "",
-   "updated": 0
+   "updated": 0,
+   "bg": {
+    "facts": "Гостът избира от нашата селекция."
+   }
   }
- }
+ },
+ "tasting": {
+  "name": "Tasting menu",
+  "price": "80",
+  "pairing": "35",
+  "pairingName": "Bulgarian wine pairing",
+  "note": "For the entire table",
+  "welcome": {
+   "id": "edoardo-miroglio-classic-method-brut-2019",
+   "text": "Brut Classic Method, Edoardo Miroglio, Thracian Lowlands, 2019",
+   "textBg": "Брут класически метод, Edoardo Miroglio, България, Тракийска низина, 2019"
+  },
+  "extra": {
+   "key": "Caviar serving",
+   "price": "70"
+  },
+  "courses": [
+   {
+    "key": "Bread & butter"
+   },
+   {
+    "key": "Bites"
+   },
+   {
+    "key": "Beef tartare",
+    "wine": {
+     "id": "bononia-dimyat-2023",
+     "text": "Dimyat, Bononia Estate, Northwestern Bulgaria, 2023",
+     "textBg": "Димят, Bononia Estate, Северозападна България, 2023"
+    }
+   },
+   {
+    "key": "Gyoza",
+    "wine": {
+     "id": "dragoshinov-winery-estate-chardonnay-2025",
+     "text": "Chardonnay, Dragoshinov Winery Estate, Danubian Plain, 2025",
+     "textBg": "Шардоне, Dragoshinov Winery Estate, Дунавска равнина, 2025"
+    }
+   },
+   {
+    "key": "Rock sea bass",
+    "wine": {
+     "id": "magura-gruner-veltliner-2024",
+     "text": "Grüner Veltliner, Magura Winery, Northwestern Bulgaria, 2023",
+     "textBg": "Грюнер велтлинер, Magura Winery, Северозападна България, 2023"
+    }
+   },
+   {
+    "key": "Wagyu beef",
+    "wine": {
+     "id": "bratanov-three-blend-red-2019",
+     "text": "Bratanov Tri Blend, Bratanov Winery, Thracian Lowlands, 2021",
+     "textBg": "Братанов три бленд, Bratanov Winery, Тракийска низина, 2021"
+    }
+   },
+   {
+    "key": "Lemon sorbet"
+   },
+   {
+    "key": "Kazandibi",
+    "wine": {
+     "id": "tsarev-brod-gergana-ice",
+     "text": "Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023",
+     "textBg": "Царев брод айс гергана, Tsarev Brod Winery, Дунавска равнина, 2023"
+    }
+   }
+  ],
+  "bg": {
+   "name": "Дегустационно меню",
+   "note": "Меню за цялата маса",
+   "pairingName": "Секция български вина",
+   "welcome": "Брут класически метод, Edoardo Miroglio, България, Тракийска низина, 2019"
+  }
+ },
+ "pairings": [
+  {
+   "dish": "Quince dip",
+   "wines": [
+    {
+     "id": "zara-estate-tamyanka-terroir-2024",
+     "why": "Very aromatic: its flowers meet the sweetness of the quince.",
+     "whyBg": "Много ароматно: нотките на цветя се срещат със сладостта на дюлята."
+    },
+    {
+     "id": "tsarev-brod-gergana-reserve-brut-2022",
+     "why": "Bulgarian bubbles from the Gergana grape: fresh, they cut through the creamy katak.",
+     "whyBg": "Българско пенливо от сорта Гергана: свежо, олекотява кремавия катък."
+    },
+    {
+     "id": "schiopetto-friulano-2023",
+     "why": "Round, with an almond finish that suits the creamy dip.",
+     "whyBg": "Меко и заоблено, с послевкус на бадем, който подхожда на кремавата разядка."
+    },
+    {
+     "id": "bononia-vrachanski-misket-2023",
+     "why": "Jasmine and mandarin: an aromatic white for the quince.",
+     "whyBg": "Жасмин и мандарина: ароматно бяло за дюлята."
+    },
+    {
+     "id": "andreola-prosecco-primo-brut-2024",
+     "why": "Light, peachy bubbles for an easy start.",
+     "whyBg": "Леко пенливо с нотки на праскова, за непринудено начало."
+    }
+   ]
+  },
+  {
+   "dish": "Muhammara",
+   "wines": [
+    {
+     "id": "bratanov-3-blend-2024",
+     "why": "A dry rosé: fresh enough for the pepper, fruity enough for the walnut.",
+     "whyBg": "Сухо розе: достатъчно свежо за чушката, достатъчно плодово за ореха."
+    },
+    {
+     "id": "domaine-lafage-gallica-2024",
+     "why": "A French rosé from near the Spanish border: dry, with more body for the smoky pepper.",
+     "whyBg": "Френско розе от района край испанската граница: сухо, с повече тяло за опушената чушка."
+    },
+    {
+     "id": "chateau-desclans-grenache-and-rolle-2024",
+     "why": "Provence rosé from the house of Whispering Angel: creamy and full, for the smoky pepper and the walnut.",
+     "whyBg": "Розе от Прованс, от винарната на Whispering Angel: кремаво и плътно, за опушената чушка и ореха."
+    },
+    {
+     "id": "staro-oryahovo-epic-2024",
+     "why": "A pale Pinot Noir rosé: light and crisp with the pepper.",
+     "whyBg": "Бледо розе от Пино ноар: леко и свежо с чушката."
+    }
+   ]
+  },
+  {
+   "dish": "Tarama",
+   "wines": [
+    {
+     "id": "simenta-aligote-2023",
+     "why": "Lean and lemony: it cuts the cream and the salt of the roe.",
+     "whyBg": "Стегнато и лимонено: балансира кремавото и соленото в хайвера."
+    },
+    {
+     "id": "edoardo-miroglio-classic-method-brut-2019",
+     "why": "Bubbles lift the mousse and clean the palate.",
+     "whyBg": "Мехурчетата олекотяват муса и освежават небцето."
+    },
+    {
+     "id": "raoul-gautherin-chablis-2023",
+     "why": "Chablis: mineral and a little salty, the classic with fish roe.",
+     "whyBg": "Шабли: минерално и леко солено, класическата комбинация с рибен хайвер."
+    },
+    {
+     "id": "midalidare-estate-pas-dose-nv",
+     "why": "Bone-dry bubbles with no sugar at all: very clean with the salty roe.",
+     "whyBg": "Напълно сухо пенливо, без никаква захар: много чисто със соления хайвер."
+    },
+    {
+     "id": "argiolas-meri-vermentino-2024",
+     "why": "Sardinia’s seafood white: citrus and herbs.",
+     "whyBg": "Бялото на Сардиния за морски дарове: цитруси и билки."
+    },
+    {
+     "id": "daros-blanc-de-noirs-2024",
+     "why": "Light and citrusy, a white made from a red grape.",
+     "whyBg": "Леко и цитрусово, бяло вино от червен сорт."
+    }
+   ]
+  },
+  {
+   "dish": "Artisanal charcuterie board",
+   "wines": [
+    {
+     "id": "bononia-gamza-2024",
+     "why": "A light, juicy red: cured meat wants fruit, not tannin.",
+     "whyBg": "Леко, сочно червено: сушените меса искат плод, а не танини."
+    },
+    {
+     "id": "chateau-de-la-chaize-morgon-2023",
+     "why": "Gamay from Beaujolais, the classic with charcuterie. Good slightly cool.",
+     "whyBg": "Гаме от Божоле, класическата комбинация с колбаси. Хубаво е леко охладено."
+    },
+    {
+     "id": "marques-de-murrieta-reserva-2018",
+     "why": "Rioja Reserva: smooth and spicy, the Spanish answer to cured meat.",
+     "whyBg": "Риоха Резерва: мека, с нотки на подправки, испанският отговор на сушените меса."
+    },
+    {
+     "id": "damianitza-red-ark-2022",
+     "why": "Firm and spicy: the winery itself pours it with cured meats.",
+     "whyBg": "Стегнато, с нотки на подправки: самата винарна го налива със сушени меса."
+    },
+    {
+     "id": "tipchenitsa-merlot-2022",
+     "why": "Soft, plummy Merlot: easy with cured meat.",
+     "whyBg": "Меко Мерло с нотки на слива: лесно се съчетава със сушени меса."
+    }
+   ]
+  },
+  {
+   "dish": "Caviar serving",
+   "wines": [
+    {
+     "id": "sumarroca-cava-reserva-rose-2023",
+     "why": "Dry Spanish bubbles: fresh and clean against the salt.",
+     "whyBg": "Сухо испанско пенливо: свежо и чисто срещу соленото."
+    },
+    {
+     "id": "edoardo-miroglio-classic-method-brut-2019",
+     "why": "Bulgarian bubbles made the Champagne way. It is what the tasting menu opens with.",
+     "whyBg": "Българско пенливо, направено по метода на шампанското. С него започва дегустационното меню."
+    },
+    {
+     "id": "pol-roger-champagne-brut-reserve-nv",
+     "why": "Champagne and caviar: the classic, and the occasion.",
+     "whyBg": "Шампанско и хайвер: и класика, и повод."
+    },
+    {
+     "id": "sieur-darques-cremant-grand-cuvee-brut-nv",
+     "why": "French bubbles made like Champagne, at a friendlier price.",
+     "whyBg": "Френско пенливо, направено като шампанско, на по-достъпна цена."
+    },
+    {
+     "id": "albert-bichot-chablis-grand-cru-2020",
+     "why": "Chablis Grand Cru: the grandest still wine for caviar.",
+     "whyBg": "Шабли Гран Крю: най-великото тихо вино за хайвер."
+    },
+    {
+     "id": "pol-roger-vintage-rose-champagne-2018",
+     "why": "Vintage rosé Champagne: for a table that is celebrating.",
+     "whyBg": "Реколтно розе шампанско: за маса, която празнува."
+    }
+   ]
+  },
+  {
+   "dish": "Mixed greens",
+   "wines": [
+    {
+     "id": "tsarev-brod-gergana-2024",
+     "why": "Floral and fresh, like the elderflower in the dressing.",
+     "whyBg": "Свежо, с аромат на цветя, като бъза в дресинга."
+    },
+    {
+     "id": "gerovassiliou-malagousia-2025",
+     "why": "A Greek white with pear and jasmine, for the fruit in the salad.",
+     "whyBg": "Гръцко бяло с круша и жасмин, за плода в салатата."
+    },
+    {
+     "id": "domaine-la-perriere-sancerre-megalithe-2018",
+     "why": "Sancerre from flint soil, part aged in oak: round and mineral, for the walnut and the fruit.",
+     "whyBg": "Sancerre от кремъчна почва, частично отлежало в дъб: заоблено и минерално, за ореха и плода."
+    },
+    {
+     "id": "dragomir-sarva-white-blend-2024",
+     "why": "Fresh and unoaked: tropical fruit and citrus for a salad.",
+     "whyBg": "Свежо, без дъб: тропически плодове и цитруси за салата."
+    },
+    {
+     "id": "salla-estate-white-blend-2023",
+     "why": "Light, with rose blossom and peach.",
+     "whyBg": "Леко, с нотки на роза и праскова."
+    }
+   ]
+  },
+  {
+   "dish": "Roasted pepper",
+   "wines": [
+    {
+     "id": "cenino-sauvignon-blanc-2024",
+     "why": "Herbal and crisp: it meets the tomato and the herbs.",
+     "whyBg": "Свежо, с билкови нотки: среща се с домата и билките."
+    },
+    {
+     "id": "domaine-lafage-gallica-2024",
+     "why": "A dry rosé with a note of rosemary, for the roasted pepper and the salty krokmach.",
+     "whyBg": "Сухо розе с нотка на розмарин, за печената чушка и соления крокмач."
+    },
+    {
+     "id": "schiopetto-pinot-grigio-2023",
+     "why": "Pinot Grigio from Collio: more body and depth than the usual, for the salty krokmach.",
+     "whyBg": "Пино гриджо от Collio: с повече тяло и дълбочина от обичайното, за соления крокмач."
+    }
+   ]
+  },
+  {
+   "dish": "Bonito",
+   "wines": [
+    {
+     "id": "magura-gruner-veltliner-2024",
+     "why": "Crisp and peppery: good with the pickles and the horseradish.",
+     "whyBg": "Свежо, с нотка на пипер: добре върви с маринованите зеленчуци и хряна."
+    },
+    {
+     "id": "martin-mullen-riesling-2021",
+     "why": "Mosel Riesling: bright acidity for the salt and the pickles.",
+     "whyBg": "Ризлинг от Мозел: жива свежест за соленото и маринованите зеленчуци."
+    },
+    {
+     "id": "pazo-barrantes-albarino-2019",
+     "why": "Albariño from the Atlantic coast of Spain: salty and fresh, made for cured fish.",
+     "whyBg": "Албариньо от атлантическия бряг на Испания: солено и свежо, създадено за веяна риба."
+    },
+    {
+     "id": "dragoshinov-riesling-2023",
+     "why": "A Bulgarian Riesling, only 1,145 bottles: its acidity suits the pickles.",
+     "whyBg": "Български Ризлинг, само 1145 бутилки: свежестта му подхожда на маринованите зеленчуци."
+    }
+   ]
+  },
+  {
+   "dish": "Beef tartare",
+   "wines": [
+    {
+     "id": "bononia-dimyat-2023",
+     "why": "The tasting menu’s choice: soft and fresh, it lets the beef speak.",
+     "whyBg": "Изборът на дегустационното меню: меко и свежо, оставя телешкото да говори."
+    },
+    {
+     "id": "chateau-de-la-chaize-morgon-2023",
+     "why": "A light, juicy red, served slightly cool, for guests who want red with beef.",
+     "whyBg": "Леко, сочно червено, сервирано слабо охладено, за гости, които искат червено с телешкото."
+    },
+    {
+     "id": "clos-bibliotheque-pinot-noir-2022",
+     "why": "Pinot Noir: silky and red-fruited, the classic red with tartare.",
+     "whyBg": "Пино ноар: копринено, с червени плодове, класическото червено за тартар."
+    },
+    {
+     "id": "deuce-mavrud-blanc-2025",
+     "why": "A white from the red Mavrud grape: something to talk about with the tartare.",
+     "whyBg": "Бяло от червения сорт Мавруд: повод за разговор към тартара."
+    }
+   ]
+  },
+  {
+   "dish": "Cold pork terrine",
+   "wines": [
+    {
+     "id": "zhivankin-riesling-2024",
+     "why": "Fresh acidity cuts the richness of the terrine.",
+     "whyBg": "Свежестта му олекотява плътния терин."
+    },
+    {
+     "id": "walter-buchegger-gruner-veltliner-2024",
+     "why": "Austrian Grüner Veltliner with pork and mustard: a classic.",
+     "whyBg": "Австрийски Грюнер велтлинер със свинско и горчица: класика."
+    },
+    {
+     "id": "domaine-dardhuy-pinot-noir-2022",
+     "why": "Burgundy Pinot Noir: light and silky, pork’s favourite red.",
+     "whyBg": "Пино ноар от Бургундия: леко и копринено, любимото червено на свинското."
+    }
+   ]
+  },
+  {
+   "dish": "Gyoza",
+   "wines": [
+    {
+     "id": "daros-chardonnay-2023",
+     "why": "Chardonnay: round enough for the beef, fresh enough for the shrimp.",
+     "whyBg": "Шардоне: достатъчно заоблено за телешкото, достатъчно свежо за скаридите."
+    },
+    {
+     "id": "dragoshinov-winery-estate-chardonnay-2025",
+     "why": "The tasting menu’s choice: Chardonnay from the Danubian Plain.",
+     "whyBg": "Изборът на дегустационното меню: Шардоне от Дунавската равнина."
+    },
+    {
+     "id": "clos-bibliotheque-chardonnay-terre-princiere-2022",
+     "why": "The top Bulgarian Chardonnay on the list.",
+     "whyBg": "Най-доброто българско Шардоне в листата."
+    },
+    {
+     "id": "bratanov-three-blend-white-2022",
+     "why": "A full, oak-aged white: round enough for the beef in the gyoza.",
+     "whyBg": "Плътно бяло, отлежало в дъб: достатъчно заоблено за телешкото в гьозата."
+    },
+    {
+     "id": "bononia-gold-selection-white-blend-2023",
+     "why": "Rich and round, with honey and vanilla: Bulgaria’s prize-winning white.",
+     "whyBg": "Богато и заоблено, с мед и ванилия: отличеното с награди българско бяло."
+    }
+   ]
+  },
+  {
+   "dish": "Beluga lentils",
+   "wines": [
+    {
+     "id": "bononia-gamza-2024",
+     "why": "A light red for the earthy lentils and the mushroom jus.",
+     "whyBg": "Леко червено за землистата леща и гъбеното жу."
+    },
+    {
+     "id": "downtown-urban-winery-cabernet-franc-reserve-2022",
+     "why": "Cabernet Franc: fresh and a little herbal, good with lentils and mushrooms.",
+     "whyBg": "Каберне фран: свежо и леко тревисто, добре върви с леща и гъби."
+    },
+    {
+     "id": "domaine-dardhuy-pinot-noir-2022",
+     "why": "Burgundy Pinot Noir: earthy and silky, mushrooms love it.",
+     "whyBg": "Пино ноар от Бургундия: землисто и копринено, гъбите го обичат."
+    }
+   ]
+  },
+  {
+   "dish": "Duck",
+   "wines": [
+    {
+     "id": "dragomir-rubin-komat-2021",
+     "why": "Our own label: Rubin, dark fruit and spice for the duck.",
+     "whyBg": "Нашият собствен етикет: Рубин, тъмни плодове и подправки за патицата."
+    },
+    {
+     "id": "chateau-penin-la-fleur-grand-cru-2022",
+     "why": "Merlot from Saint-Émilion: plum and soft tannins, a classic with duck.",
+     "whyBg": "Мерло от Saint-Émilion: слива и меки танини, класическа комбинация с патица."
+    },
+    {
+     "id": "clos-du-mont-olivet-chateauneuf-du-pape-2015",
+     "why": "A mature Châteauneuf-du-Pape: spice and dried herbs, rich enough for the foie gras.",
+     "whyBg": "Зряло Châteauneuf-du-Pape: подправки и сушени билки, достатъчно богато за фоа гра."
+    },
+    {
+     "id": "firriato-nero-davola-harmonium-2019",
+     "why": "Sicily’s Nero d’Avola: dark cherry and clove, soft enough for duck.",
+     "whyBg": "Неро д’Авола от Сицилия: тъмна череша и карамфил, достатъчно меко за патица."
+    },
+    {
+     "id": "tipchenitsa-merlot-2022",
+     "why": "Soft, plummy Merlot: easy with duck.",
+     "whyBg": "Меко Мерло с нотки на слива: лесно се съчетава с патица."
+    }
+   ]
+  },
+  {
+   "dish": "Rock sea bass",
+   "wines": [
+    {
+     "id": "magura-gruner-veltliner-2024",
+     "why": "The tasting menu’s choice: crisp and peppery, for the fish and the green tomato.",
+     "whyBg": "Изборът на дегустационното меню: свежо, с нотка на пипер, за рибата и зеления домат."
+    },
+    {
+     "id": "walter-buchegger-gruner-veltliner-2024",
+     "why": "The same grape from its home in Austria.",
+     "whyBg": "Същият сорт от родината му, Австрия."
+    },
+    {
+     "id": "raoul-gautherin-chablis-2023",
+     "why": "Chablis with white fish and a butter sauce: the classic.",
+     "whyBg": "Шабли с бяла риба и маслен сос: класиката."
+    },
+    {
+     "id": "clos-bibliotheque-dimyat-terre-princiere-2023",
+     "why": "Dimyat from a clay amphora: salty and mineral, serious with fish.",
+     "whyBg": "Димят от глинена амфора: солено и минерално, сериозно вино за риба."
+    },
+    {
+     "id": "domaine-dardhuy-montrachet-2021",
+     "why": "Great white Burgundy: rich and nutty, for the fish and its beurre blanc.",
+     "whyBg": "Велико бяло от Бургундия: богато, с нотки на ядки, за рибата и нейния бьор блан."
+    },
+    {
+     "id": "argiolas-meri-vermentino-2024",
+     "why": "Sardinia’s seafood white: citrus and herbs.",
+     "whyBg": "Бялото на Сардиния за морски дарове: цитруси и билки."
+    }
+   ]
+  },
+  {
+   "dish": "Boer goatling",
+   "wines": [
+    {
+     "id": "dragomir-mavrud-komat-2021",
+     "why": "Our own label: Mavrud, Bulgaria’s great red grape, for the slow-cooked kid.",
+     "whyBg": "Нашият собствен етикет: Мавруд, големият червен сорт на България, за бавно готвеното яре."
+    },
+    {
+     "id": "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+     "why": "Mavrud Reserve from Elenovo: deeper and fuller.",
+     "whyBg": "Мавруд Резерва от Еленово: по-дълбоко и по-плътно."
+    },
+    {
+     "id": "dragomir-grand-reserve-mavrud-limited-edition-2021",
+     "why": "Our own limited edition: a single barrel of Dragomir’s Grand Reserve Mavrud.",
+     "whyBg": "Нашата собствена лимитирана серия: една-единствена бъчва от Гранд Резерва Мавруд на Драгомир."
+    },
+    {
+     "id": "villa-melnik-rare-varietas-bush-vine-2020",
+     "why": "A grape that grows only around Melnik: tobacco, herbs and prune for the slow-cooked kid.",
+     "whyBg": "Сорт, който расте само около Мелник: тютюн, билки и сушени сливи за бавно готвеното яре."
+    },
+    {
+     "id": "dragomir-pitos-2015",
+     "why": "Ten years old: truffle, black olive and leather.",
+     "whyBg": "На десет години: трюфел, черна маслина и кожа."
+    },
+    {
+     "id": "linar-syrah-2024",
+     "why": "A young, peppery Syrah.",
+     "whyBg": "Млада Сира с нотка на пипер."
+    }
+   ]
+  },
+  {
+   "dish": "Beef",
+   "wines": [
+    {
+     "id": "daros-syrah-2023",
+     "why": "Peppery Syrah: a friend of beef.",
+     "whyBg": "Сира с нотка на пипер: приятел на телешкото."
+    },
+    {
+     "id": "bratanov-three-blend-red-2019",
+     "why": "Bratanov’s red blend. On the tasting menu we pour it with the wagyu.",
+     "whyBg": "Червеният купаж на Братанов. В дегустационното меню го наливаме с уагюто."
+    },
+    {
+     "id": "castello-di-volpaia-sangiovese-riserva-2019",
+     "why": "Chianti Classico Riserva: firm and savoury, made for beef.",
+     "whyBg": "Chianti Classico Riserva: стегнато и пикантно, създадено за телешко."
+    },
+    {
+     "id": "four-friends-black-shadow-2021",
+     "why": "Round and juicy, with plum and chocolate: easy to like with beef.",
+     "whyBg": "Заоблено и сочно, със слива и шоколад: лесно се харесва с телешко."
+    },
+    {
+     "id": "damianitza-red-ark-2022",
+     "why": "It has been called Bulgaria’s first icon wine: firm and powerful.",
+     "whyBg": "Наричат го първото иконично вино на България: стегнато и мощно."
+    },
+    {
+     "id": "produttori-di-manduria-primitivo-elegia-riserva-2021",
+     "why": "Big, ripe and warm: for guests who like a rich red.",
+     "whyBg": "Мощно, зряло и топло: за гости, които обичат богато червено."
+    },
+    {
+     "id": "bratanov-rubin-reserve-2019",
+     "why": "Rubin long in oak: leather, coffee and dark chocolate.",
+     "whyBg": "Рубин, отлежавал дълго в дъб: кожа, кафе и черен шоколад."
+    },
+    {
+     "id": "paolo-manzone-nebbiolo-2020",
+     "why": "Barolo: firm tannins that want meat.",
+     "whyBg": "Barolo: стегнати танини, които искат месо."
+    }
+   ]
+  },
+  {
+   "dish": "Cheese board",
+   "wines": [
+    {
+     "id": "px-nectar",
+     "why": "Sweet sherry of raisin and fig, like a second marmalade for the cheese.",
+     "whyBg": "Сладко шери със стафиди и смокини, като втори мармалад за сирената."
+    },
+    {
+     "id": "tsarev-brod-gergana-ice",
+     "why": "A Bulgarian ice wine: sweet and floral against the salt of the cheese.",
+     "whyBg": "Българско ледено вино: сладко, с аромат на цветя, срещу солеността на сирената."
+    },
+    {
+     "id": "maryan-ivan-alexander-grand-cuvee-2023",
+     "why": "A full Bulgarian red with dark fruit and pepper, for the harder cheeses.",
+     "whyBg": "Плътно българско червено с тъмни плодове и пипер, за по-твърдите сирена."
+    },
+    {
+     "id": "edoardo-miroglio-mavrud-reserve-elenovo-2021",
+     "why": "Mavrud Reserve: full and soft, good with aged cheese.",
+     "whyBg": "Мавруд Резерва: плътно и меко, добре върви със зряло сирене."
+    },
+    {
+     "id": "marques-de-murrieta-reserva-2018",
+     "why": "A smooth Rioja Reserva: the classic red with cheese.",
+     "whyBg": "Мека Риоха Резерва: класическото червено за сирена."
+    },
+    {
+     "id": "four-friends-black-shadow-2021",
+     "why": "Round and juicy: the winery pours it with cheese.",
+     "whyBg": "Заоблено и сочно: винарната го налива със сирена."
+    }
+   ]
+  },
+  {
+   "dish": "Kazandibi",
+   "wines": [
+    {
+     "id": "tsarev-brod-gergana-ice",
+     "why": "The tasting menu’s choice: a sweet, floral ice wine with the milk pudding.",
+     "whyBg": "Изборът на дегустационното меню: сладко ледено вино с аромат на цветя към млечния пудинг."
+    },
+    {
+     "id": "lecru-zibibbo",
+     "why": "A Sicilian sweet wine: orange blossom honey and candied orange.",
+     "whyBg": "Сладко вино от Сицилия: мед от портокалов цвят и захаросан портокал."
+    }
+   ]
+  },
+  {
+   "dish": "Chocolate",
+   "wines": [
+    {
+     "id": "px-nectar",
+     "why": "Raisin, coffee and molasses: the classic with chocolate.",
+     "whyBg": "Стафиди, кафе и меласа: класическата комбинация с шоколад."
+    },
+    {
+     "id": "lecru-zibibbo",
+     "why": "Sweet, with candied orange and figs, for the fruit in the dessert.",
+     "whyBg": "Сладко, със захаросан портокал и смокини, за плодовете в десерта."
+    }
+   ]
+  },
+  {
+   "dish": "Wagyu beef",
+   "wines": [
+    {
+     "id": "dragomir-rubin-komat-2021",
+     "why": "Our own label: Rubin, dark and juicy.",
+     "whyBg": "Нашият собствен етикет: Рубин, тъмен и сочен."
+    },
+    {
+     "id": "bratanov-three-blend-red-2019",
+     "why": "The tasting menu’s choice.",
+     "whyBg": "Изборът на дегустационното меню."
+    },
+    {
+     "id": "dragomir-grand-reserve-rubin-2015",
+     "why": "Ten years old, only 790 bottles: mocha, coffee and velvety tannins.",
+     "whyBg": "На десет години, само 790 бутилки: мока, кафе и кадифени танини."
+    },
+    {
+     "id": "bratanov-rubin-reserve-2019",
+     "why": "Rubin long in oak: leather, coffee and dark chocolate.",
+     "whyBg": "Рубин, отлежавал дълго в дъб: кожа, кафе и черен шоколад."
+    },
+    {
+     "id": "paolo-manzone-nebbiolo-2020",
+     "why": "Barolo: firm tannins that want meat.",
+     "whyBg": "Barolo: стегнати танини, които искат месо."
+    }
+   ]
+  },
+  {
+   "dish": "Bites",
+   "wines": [
+    {
+     "id": "edoardo-miroglio-classic-method-brut-2019",
+     "why": "The tasting menu opens with it: bubbles for the first bites.",
+     "whyBg": "С него започва дегустационното меню: пенливо за първите хапки."
+    }
+   ]
+  }
+ ]
 }

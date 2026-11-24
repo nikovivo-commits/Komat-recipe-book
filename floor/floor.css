@@ -866,3 +866,57 @@ body.scrolled .top { border-bottom-color: var(--line); }
 /* the pad never grows wider than the screen, however long the bottle's name */
 .ct-pad { grid-template-columns: minmax(0, 1fr); }
 .ct-pad-top { min-width: 0; }
+
+/* the tasting menu: a wine under its course, and what can be added */
+.tasting { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.ts-wine { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin: 0; padding: 2px 0 8px 38px; border: 0; background: none; color: var(--apron-text); font-size: .85rem; line-height: 1.35; text-align: left; }
+.tasting > .ts-wine { padding-left: 0; }
+.ts-wine .ico { flex: none; width: 15px; height: 15px; margin-top: 2px; }
+.ts-list li { border-bottom: 1px solid var(--line); } .ts-list li:last-child { border-bottom: 0; } .ts-list button { border-bottom: 0; }
+.ts-extra { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px dashed #6D6B8A; background: none; color: var(--ink); text-align: left; }
+.ts-extra .ico { width: 18px; height: 18px; color: var(--muted); }
+
+/* the tasting menu built for one guest: the chosen swap, and the list for the kitchen */
+.tf-chip[aria-pressed="true"] { background: #FFFFFF; border-color: #FFFFFF; color: #1F1F2D; }
+.tf-name.struck { text-decoration: line-through; text-decoration-color: var(--urgent); color: var(--soft); }
+.tf-out { display: grid; gap: 10px; margin-top: 14px; padding: 14px; border-radius: 16px; border: 1px solid var(--apron-line); background: var(--apron-soft); }
+.tf-final { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+.tf-final small { color: var(--soft); }
+.tf-final li.chg b { color: var(--low); }
+.ts-build { justify-self: start; border-color: var(--apron-line); color: #D0C6FF; }
+
+/* a wine's origin, and the button for what to pour with a dish */
+.mchip.origin b { font-weight: 800; }
+.mchip.origin.bg { color: var(--ready); border-color: rgba(62, 241, 140, .45); }
+.mchip.origin.fo { color: var(--apron-text); border-color: var(--apron-line); }
+.w-origin { margin: 10px 0 0; }
+.pour-btn { justify-self: start; border-color: var(--apron-line); color: #D0C6FF; }
+.mini-dish small { display: block; color: var(--muted); font-weight: 500; }
+
+/* what to pour with a dish: one wine at each price */
+.pr-tier { display: grid; gap: 6px; }
+.pr-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pr-h b { font: 800 .8rem/1.2 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--apron-text); }
+.pr-h .muted { font-size: .82rem; }
+.pr-wine { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; }
+.pr-origin { font-size: .8rem; font-weight: 700; color: var(--soft); }
+.pr-price { display: grid; justify-items: end; font: 800 1.05rem/1.1 var(--sans); white-space: nowrap; }
+.pr-price small { font: 500 .7rem/1.3 var(--sans); color: var(--muted); }
+.pr-tasting { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--apron-line); background: var(--apron-soft); color: var(--ink); text-align: left; }
+.pr-tasting .ico { flex: none; width: 18px; height: 18px; color: var(--apron-text); }
+
+/* a dish the kitchen makes for a stricter diet on request; the pour sizes on the tasting card */
+.diet-tag.can { border-style: dashed; }
+.ts-pour { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: .88rem; color: var(--soft); }
+.ts-pour .ico { flex: none; width: 16px; height: 16px; margin-top: 2px; color: var(--apron-text); }
+.ts-pour b { color: var(--ink); }
+.bin-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+
+.pr-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
+.pr-more .to-rows { margin-top: 6px; }
+.alc-bread .chip[aria-pressed="true"] { background: var(--urgent-soft); border-color: var(--urgent); color: var(--ink); }
+
+/* the language switch in Settings */
+.set-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 10px; }
+.lang-seg { flex: none; }
+.login-lang { display: flex; justify-content: center; margin: 0 0 14px; }

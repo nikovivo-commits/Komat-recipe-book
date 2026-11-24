@@ -5,6 +5,8 @@
 
   /* ---------- DOM ---------- */
   /* h('button', {class:'btn', onclick: fn}, 'Label', child, [more]) */
+  /* attributes a person reads or hears: translated where the app has a second language (K.tr) */
+  const TEXT_ATTR = { 'aria-label': 1, placeholder: 1, title: 1, alt: 1 };
   K.h = function h(tag, attrs) {
     const el = document.createElement(tag);
     if (attrs) {
@@ -17,7 +19,7 @@
         else if (k === 'value') el.value = v;
         else if (k === 'checked') el.checked = !!v;
         else if (k === 'selected') el.selected = !!v;
-        else el.setAttribute(k, v === true ? '' : v);
+        else el.setAttribute(k, v === true ? '' : K.tr && TEXT_ATTR[k] ? K.tr(String(v)) : v);
       }
     }
     append(el, Array.prototype.slice.call(arguments, 2));
@@ -27,7 +29,7 @@
     for (const c of kids) {
       if (c == null || c === false) continue;
       if (Array.isArray(c)) append(el, c);
-      else el.append(c.nodeType ? c : document.createTextNode(String(c)));
+      else el.append(c.nodeType ? c : document.createTextNode(K.tr ? K.tr(String(c)) : String(c)));
     }
   }
   const h = K.h;
@@ -55,8 +57,8 @@
   K.todayIdx = () => (K.kitchenNow().getDay() + 6) % 7;
   /* minutes since midnight */
   K.kitchenMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
-  K.hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString('en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
+  K.hm = (t) => new Date(t).toLocaleTimeString(K.locale || 'en-GB', { hour: '2-digit', minute: '2-digit' });
+  K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString(K.locale || 'en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
   K.DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   /* food-safety day-dot label colours, Monday first */
   K.DAY_DOTS = ['#2F6FD0', '#E8C02E', '#D23B2F', '#7A4B2A', '#2E9150', '#EE8A22', '#1B1B1B'];

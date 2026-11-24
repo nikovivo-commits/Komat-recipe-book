@@ -226,8 +226,17 @@
       const e = K.clone(m), name = e.menuName || e.en || 'Dish';
       delete e.menuName; delete e.match;
       /* the menu line stands in for the recipe, so the allergy check has ingredients to read */
-      docs['dishnotes/own-demo-' + i] = Object.assign(e, { name: name, onMenu: true, ings: String(m.menuBg || m.menuEn || '').split(/,\s*/).filter(Boolean) });
+      docs['dishnotes/own-demo-' + i] = Object.assign(e, { name: name, onMenu: true, ings: m.ings || String(m.menuBg || m.menuEn || '').split(/,\s*/).filter(Boolean) });
     });
+    (house.pairings || []).forEach((pr) => {
+      const i = (house.menu || []).findIndex((m) => m.en === pr.dish), why = {};
+      if (i < 0) return;
+      const whyBg = {}, note = docs['dishnotes/own-demo-' + i];
+      pr.wines.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
+      Object.assign(note, { pairs: pr.wines.map((x) => x.id), pairWhy: why, bg: Object.assign({}, note.bg, { pairWhy: whyBg }) });
+    });
+    const t = K.tastingFrom(house, (e) => { const i = (house.menu || []).indexOf(e); return i < 0 ? '' : 'own-demo-' + i; });
+    if (t) docs['fohsettings/tasting'] = t;
     const ids = Object.keys(docs).filter((p) => p.indexOf('wines/') === 0 && !docs[p].nostock && !docs[p].off).map((p) => p.slice(6));
     ids.forEach((id, i) => {
       const par = docs['wines/' + id].par == null ? 3 : +docs['wines/' + id].par;
@@ -255,7 +264,7 @@
     K.demo = !!window.KOMAT_DEMO;
     /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
     const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
-    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v1' : 'komat.floor.db.v1');
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v4' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
     K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };

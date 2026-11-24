@@ -94,7 +94,8 @@
   K.dish = (id) => K.dishes(true).find((d) => d.id === id) || null;
   K.dishAllergens = function (d) {
     const found = K.detectAllergens ? K.detectAllergens([d.ings.map((n) => ({ n: n }))]) : {};
-    const keys = Object.keys(found).concat((d.r && d.r.allergens) || [], d.n.allergens || []);
+    /* the same list the allergy check works from: the ingredients, the dish's name, the line on the menu, and what was ticked by hand */
+    const keys = Object.keys(K.allergenWhere(d));
     return { keys: K.orderAl ? K.orderAl(keys) : keys, found: found, checked: K.dishChecked(d) };
   };
   /* someone with the right to has gone through the dish's allergens and confirmed them */
@@ -112,7 +113,31 @@
   /* the tasting menu: its courses, in order */
   K.tasting = function () {
     const t = D.tasting || {};
-    return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean) };
+    return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean),
+      /* the wine pairing: its price, the glass poured to start, a wine per course ({id, text}: the list's bottle and the line as printed) */
+      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {},
+      /* what can be added to it, like the caviar */
+      extra: t.extra && K.dish(t.extra.dish) ? { dish: K.dish(t.extra.dish), price: t.extra.price || '' } : null };
+  };
+  /* the tasting menu that comes with the app (house.json), with its courses found among the dishes in the book.
+     `find(entry)` gives the id of the dish made from a menu line, or ''. Null when a course is not in the book yet. */
+  K.tastingFrom = function (house, find) {
+    const t = house && house.tasting, by = {};
+    if (!t) return null;
+    (house.menu || []).forEach((m) => { by[m.en] = m; });
+    const ids = t.courses.map((c) => (by[c.key] ? find(by[c.key]) : '')), wines = {};
+    if (ids.some((id) => !id)) return null;
+    t.courses.forEach((c, i) => { if (c.wine) wines[ids[i]] = c.wine; });
+    const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
+    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
+  };
+  /* the allergens the printed menu line points to: {key: ['the menu line (горчица)']} */
+  K.fromMenu = (src) => String(src).indexOf('the menu line') === 0;
+  K.menuAllergens = function (d) {
+    const out = {};
+    [d.n.menuBg, d.n.menuEn].forEach((line) => String(line || '').split(/,\s*/).map((x) => x.trim()).filter(Boolean)
+      .forEach((item) => K.allergensIn(item).forEach((k) => { if (!out[k]) out[k] = ['the menu line (' + item + ')']; })));
+    return out;
   };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
   K.allergenWhere = function (d) {
@@ -125,40 +150,54 @@
       d.r.components.forEach((c) => scan(c.name, c.ingredients));
     }
     scan('', (d.n.ings || []).map((x) => ({ n: x })));
+    /* the dish's own name counts too: a “cheese board” has milk even if nobody wrote its ingredients */
+    [d.name, d.en].filter(Boolean).forEach((nm) => K.allergensIn(nm).forEach((k) => add(k, 'its name')));
+    /* the line printed on the menu counts too: the kitchen's recipe can be a season behind it. What is read off
+       that line can be unticked by whoever confirms the dish (`notAl`); what the ingredients show cannot. */
+    const menu = K.menuAllergens(d), off = d.n.notAl || [];
+    Object.keys(menu).forEach((k) => { if (!off.includes(k)) menu[k].forEach((s) => add(k, s)); });
     ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'ticked by hand'); });
     return out;
   };
   /* for a guest with these allergies: 'no' (it has one of them), 'ok' (none, and the head chef checked the
      dish's allergens) or 'ask' (none found, but nobody has checked yet: the kitchen confirms) */
   K.allergyVerdict = function (d, sel) {
-    const where = K.allergenWhere(d), n = d.n, bread = n.bread ? n.breadAl || [] : [];
+    const where = K.allergenWhere(d), n = d.n, bread = n.bread ? n.breadAl || [] : [], swap = n.canDiet ? n.canAl || [] : [];
     const hits = [], notes = [];
-    let fix = true, unsure = false;
+    let fix = true, unsure = false, byBread = false, bySwap = false;
+    const covers = (label, k) => !!label && K.DIETS.indexOf(label) >= K.DIETS.indexOf(k);
     sel.forEach((k) => {
       /* a diet: the dish's label has to be at least as strict; a dish without a label is one to ask about */
       if (K.DIET[k]) {
-        if (!n.diet) unsure = true;
-        else if (K.DIETS.indexOf(n.diet) < K.DIETS.indexOf(k)) { fix = false; hits.push({ k: k, where: [], txt: n.diet === 'meat' ? ': has meat' : ': the dish is ' + K.DIET[n.diet].toLowerCase() + ' only' }); }
+        if (covers(n.diet, k)) return;
+        /* not as it comes, but the kitchen makes it for this diet on request (a salad without its cheese) */
+        if (covers(n.canDiet, k)) { bySwap = true; hits.push({ k: k, where: [], swap: true, txt: ': on request' }); }
+        else if (!n.diet) unsure = true;
+        else { fix = false; hits.push({ k: k, where: [], txt: n.diet === 'meat' ? ': has meat' : ': the dish is ' + K.DIET[n.diet].toLowerCase() + ' only' }); }
         return;
       }
       /* lactose intolerance is milk, except that a dish whose only dairy is butter is fine */
       const real = k === 'lactose' ? 'milk' : k;
       if (!where[real]) return;
       if (k === 'lactose' && n.butterOnly) { notes.push('The only dairy is butter'); return; }
-      const inBread = bread.includes(real);
-      if (!inBread) fix = false;
-      hits.push({ k: k, where: where[real], bread: inBread });
+      const inBread = bread.includes(real), inSwap = !inBread && swap.includes(real);
+      if (inBread) byBread = true; else if (inSwap) bySwap = true; else fix = false;
+      hits.push({ k: k, where: where[real], bread: inBread, swap: inSwap });
     });
-    /* 'mod': everything in the way is only in the bread, and the dish can be served without it */
+    /* 'mod': everything in the way leaves with the bread, or with the change the kitchen makes on request */
     const state = !hits.length ? (K.dishChecked(d) && !unsure ? 'ok' : 'ask') : fix ? 'mod' : 'no';
-    if (state === 'mod') notes.unshift('Serve without the bread');
+    if (state === 'mod') { if (bySwap) notes.unshift(K.canText(n)); if (byBread) notes.unshift('Serve without the bread'); }
     return { state: state, hits: hits, notes: notes };
   };
+  /* what to write on the order for a dish made for a stricter diet: “Order it vegan: without the cheese” */
+  K.canText = (n) => (n.canDiet ? 'Order it ' + K.DIET[n.canDiet].toLowerCase() + (n.canHow ? ': ' + n.canHow : '') : '');
+  /* the allergens that are gone for sure once a dish is made for that diet */
+  K.CAN_GONE = { vegan: ['milk', 'eggs', 'fish', 'crustaceans', 'molluscs'], veg: ['fish', 'crustaceans', 'molluscs'], pesc: [] };
   K.alName = (k) => (k === 'lactose' ? 'Lactose' : K.DIET[k] || K.AL[k]);
   /* who can eat a dish, from anyone to the strictest; a dish carries one label (`diet` on its note) */
   K.DIETS = ['meat', 'pesc', 'veg', 'vegan'];
   K.DIET = { meat: 'Meat', pesc: 'Pescatarian', veg: 'Vegetarian', vegan: 'Vegan' };
-  const MEAT = /мес[оа]|телешк|говежд|свинск|пилешк|пиле\b|агнешк|патиц|патешк|бекон|шунка|прошуто|наденица|кайма|салам|луканка|пастърма|кост|chicken|beef|pork|lamb|duck|bacon|\bham\b|prosciutto|veal|sausage|chorizo|guanciale|pancetta|salami|bone|foie|gelatin|желатин/i;
+  const MEAT = /мес[оа]|телешк|говежд|свинск|пилешк|пиле\b|агнешк|патиц|патешк|бекон|шунка|прошуто|наденица|кайма|салам|луканка|пастърма|кост(?!емон)|chicken|beef|pork|lamb|duck|bacon|\bham\b|prosciutto|veal|sausage|chorizo|guanciale|pancetta|salami|bone|foie|gelatin|желатин/i;
   const FISH = /риба|сьомга|аншоа|хайвер|октопод|скарид|калмар|миди|fish|salmon|anchov|caviar|octopus|shrimp|prawn|squid|mussel|tuna|тон\b/i;
   /* what the ingredients suggest, for whoever sets the label; never shown to waiters as a fact */
   K.dietGuess = function (d) {
@@ -217,14 +256,20 @@
   K.normWine = function (w) {
     return {
       id: w.id, name: w.name || 'Wine', producer: w.producer || '', country: w.country || '', region: w.region || '', grapes: w.grapes || '', vintage: w.vintage || '',
-      colour: K.COL[w.colour] ? w.colour : 'red', style: w.style || '', label: w.label || '', byGlass: !!w.byGlass, glassPrice: w.glassPrice || '', bottlePrice: w.bottlePrice || '',
+      colour: K.COL[w.colour] ? w.colour : 'red', style: w.style || '', label: /no[_-]?image|placeholder/i.test(w.label || '') ? '' : w.label || '', byGlass: !!w.byGlass, glassPrice: w.glassPrice || '', bottlePrice: w.bottlePrice || '',
       glassCl: w.glassCl || '', say: w.say || '', nose: w.nose || '', palate: w.palate || '', story: w.story || '', facts: w.facts || '', serve: w.serve || '', decant: w.decant || '',
       glass: w.glass || '', pairs: Array.isArray(w.pairs) ? w.pairs : [], par: w.par === '' || w.par == null ? 3 : +w.par, order: +w.order || 0, example: !!w.example, updated: w.updated || 0,
       off: !!w.off, measure: w.measure || '', nostock: !!w.nostock,
+      /* light, medium or full: how heavy it feels in the mouth */
+      body: ['light', 'medium', 'full'].includes(w.body) ? w.body : '',
+      /* the same texts in Bulgarian: {say, nose, palate, made, story, facts} */
+      bg: w.bg && typeof w.bg === 'object' ? w.bg : {},
       /* the name of this bottle's article in Hype, the till */
       hype: w.hype || '',
       /* the memo for ordering: who delivers it, and how many litres one bottle holds (for products Hype keeps in litres) */
       supplier: w.supplier || '', size: +w.size || 0,
+      /* how it is made, and its appellation: said at the table, asked in the quiz */
+      made: w.made || '', appellation: w.appellation || '',
       /* a Hype product kept for the stock only: counted and ordered, never shown to guests or in the drinks bible */
       stockOnly: !!w.stockOnly,
       /* found on the shelf during a count and added to it by hand */
@@ -322,6 +367,11 @@
   /* ---------- open bottles of wine: opened for glasses, to be tasted again after three days ---------- */
   const NOTE = ['open', 'ok', 'gone'];   /* moves that only keep track of an open bottle and change no stock */
   K.OPEN_DAYS = 3;
+  /* the pours: a glass of wine is 150 ml (five to a bottle, 0.2 of a bottle in Hype), a tasting-pairing pour 80 ml (nine to a bottle) */
+  K.GLASS_ML = 150;
+  K.PAIR_ML = 80;
+  K.glassMl = (w) => (w && +w.glassCl ? Math.round(+w.glassCl * 10) : K.GLASS_ML);
+  K.poursIn = (w, ml) => Math.floor((K.bottleL(w) * 1000) / (ml || K.glassMl(w)) + 0.001);
   K.openBottles = function () {
     const open = {}, now = Date.now();
     D.moves.slice().sort((a, b) => a.at - b.at).forEach((m) => {
@@ -420,6 +470,14 @@
     return x.id;
   };
   K.countedIn = (w, take) => { const c = D.cellar[w.id]; return !!(c && take && c.at >= take.at); };
+  /* the weekly count: due on a Monday, or whenever the last one is a week old */
+  K.COUNT_DAY = 1;
+  K.countDue = function () {
+    if (K.takeOn() || !K.takeList().length) return null;
+    const last = D.take && D.take.done ? D.take.done : 0, days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+    if (days == null) return { never: true };
+    return days >= 7 || (new Date().getDay() === K.COUNT_DAY && days >= 4) ? { days: days } : null;
+  };
   K.startTake = function () {
     const doc = { at: Date.now(), name: K.myName(), done: 0, hat: (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0 };
     D.take = doc;
@@ -446,6 +504,9 @@
     const again = !!(prev && take && prev.at >= take.at);
     const was = again ? prev.was : K.stockOf(w.id);
     if (was != null) doc.was = was;
+    /* what Hype rang up between the last count and this one, in bottles: the losses are read against it */
+    const sold = again ? prev.sold : K.soldSince(w);
+    if (sold != null) doc.sold = sold;
     /* what Hype showed at the moment of the count: later sales are measured from here */
     const hr = K.hypeRow(w);
     if (hr) { doc.hq = hr.qty; doc.hat = (D.hypeStock && (D.hypeStock.exported || D.hypeStock.at)) || 0; }

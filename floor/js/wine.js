@@ -26,7 +26,7 @@
     return h('button', { class: 'rcard wcard st-' + st + (w.off ? ' off' : ''), type: 'button', onclick: () => K.go('winepage', { id: w.id }) },
       K.wineLabel(w, 'thumb'),
       h('div', { class: 'card-txt' },
-        h('span', { class: 'kicker wk-' + w.colour }, (K.isDrink(w) && w.style ? w.style : K.COL[w.colour]) + (w.region ? ' · ' + w.region : '')),
+        h('span', { class: 'kicker wk-' + w.colour }, (K.isDrink(w) && w.style ? w.style : K.COL[w.colour]) + (K.isDrink(w) ? (w.region ? ' · ' + w.region : '') : (K.origin(w) ? ' · ' + (K.origin(w).bg ? K.origin(w).where : K.origin(w).where.split(',')[0]) : ''))),
         h('span', { class: 'card-name' }, w.name + (w.vintage ? ' ' + w.vintage : '')),
         w.producer ? h('span', { class: 'card-en' }, w.producer) : null,
         h('span', { class: 'card-meta' },
@@ -50,6 +50,8 @@
       [['', 'All', all.length], ['glass', 'By the glass', glass]].concat(cols.map((c) => [c[0], c[1], all.filter((x) => x.colour === c[0]).length])).map((c) =>
         h('button', { class: 'chip' + (c[0] && c[0] !== 'glass' ? ' wc-' + c[0] : ''), type: 'button', 'aria-pressed': ui.colour === c[0] ? 'true' : 'false', onclick: () => { ui.colour = c[0]; K.render(); } }, c[1], h('span', { class: 'cn' }, String(c[2]))))
         .concat(K.canEdit() ? [h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'wineedit', id: null }; K.render(); } }, K.icon('plus'), 'Add')] : [])));
+    const wines = all.filter((x) => !K.isDrink(x)), bgN = wines.filter((x) => K.origin(x) && K.origin(x).bg).length, foN = wines.filter((x) => K.origin(x) && !K.origin(x).bg).length;
+    if (bgN && foN) w.append(K.seg([['', 'All wines'], ['bg', 'Bulgarian · ' + bgN], ['fo', 'Foreign · ' + foN]], ui.wOrigin || '', (v) => { ui.wOrigin = v; K.render(); }, { class: 'seg small-seg w-origin', 'aria-label': 'Where from' }));
     w.append(h('div', { id: 'wresults' }));
     return { body: body, after: results };
   };
@@ -65,6 +67,7 @@
     let all = K.listWines().filter((w) => K.matches(hay(w), ui.wq));
     if (ui.colour === 'glass') all = all.filter((w) => w.byGlass && !K.isDrink(w));
     else if (ui.colour) all = all.filter((w) => w.colour === ui.colour);
+    if (ui.wOrigin) all = all.filter((w) => !K.isDrink(w) && K.origin(w) && K.origin(w).bg === (ui.wOrigin === 'bg'));
     if (!D.wines.length) {
       box.append(K.catRest('The wine list is empty', K.canEdit() ? 'Add the first wine with a photo of its label, or load the example wines to see how it works.' : 'Wines show here as soon as the floor manager adds them.',
         K.canEdit() ? h('div', { class: 'btns center' },
@@ -99,13 +102,15 @@
         w.producer ? h('p', { class: 'en-name' }, w.producer) : null,
         h('div', { class: 'meta-chips' },
           w.grapes ? h('span', { class: 'mchip' }, K.icon('leaf'), w.grapes) : null,
-          w.region || w.country ? h('span', { class: 'mchip' }, K.icon('globe'), [w.region, w.country].filter((x, i, l) => x && l.indexOf(x) === i).join(', ')) : null,
+          K.origin(w) && !K.isDrink(w) ? h('span', { class: 'mchip origin ' + (K.origin(w).bg ? 'bg' : 'fo') }, K.icon('globe'), h('b', null, K.origin(w).kind), ' · ' + K.origin(w).where)
+            : w.region || w.country ? h('span', { class: 'mchip' }, K.icon('globe'), [w.region, w.country].filter((x, i, l) => x && l.indexOf(x) === i).join(', ')) : null,
+          w.appellation ? h('span', { class: 'mchip' }, w.appellation) : null,
           w.off ? h('span', { class: 'mchip off' }, 'Off the list') : null,
           w.example ? h('span', { class: 'mchip' }, 'Example') : null),
         h('div', { class: 'prices' },
           w.bottlePrice ? h('div', null, h('span', { class: 'label' }, 'Bottle'), h('b', null, K.price(w.bottlePrice))) : null,
           K.isDrink(w) ? (w.glassPrice ? h('div', null, h('span', { class: 'label' }, w.measure || 'Price'), h('b', null, K.price(w.glassPrice))) : null)
-            : w.byGlass ? h('div', null, h('span', { class: 'label' }, 'Glass' + (w.glassCl ? ' · ' + w.glassCl + ' cl' : '')), h('b', null, K.price(w.glassPrice) || 'yes')) : h('div', null, h('span', { class: 'label' }, 'Glass'), h('b', { class: 'muted' }, 'bottle only'))),
+            : w.byGlass ? h('div', null, h('span', { class: 'label' }, 'Glass · ' + K.glassMl(w) + ' ml'), h('b', null, K.price(w.glassPrice) || 'yes')) : h('div', null, h('span', { class: 'label' }, 'Glass'), h('b', { class: 'muted' }, 'bottle only'))),
         w.nostock ? null : h('section', { class: 'stock-box st-' + st },
           h('div', { class: 'sb-top' }, h('span', { class: 'label' }, K.isDrink(w) ? 'In stock now' : 'In the cellar now'), K.stockBadge(w, true)),
           h('p', { class: 'hint' }, st === 'none' ? 'Nobody has counted it yet. Count it in Stock.' : st === 'out' ? 'Out: tell the guest and offer something close.' : st === 'low' ? 'Running low: ' + n + ' left, the floor manager keeps at least ' + w.par + '.' : 'Plenty for tonight.'),
@@ -120,13 +125,22 @@
             w.byGlass && !K.isDrink(w) ? h('button', { class: 'btn', type: 'button', disabled: !n, onclick: () => { K.moveBottles(w, -1, 'glass'); K.openNote(w, 'open'); } }, K.icon('glass'), 'Opened for glasses') : null,
             h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'count', id: w.id }; K.render(); } }, 'Count')) : null),
         w.say ? h('blockquote', { class: 'say' }, K.icon('quote'), h('div', null, h('span', { class: 'label' }, 'What to say at the table'), h('p', null, w.say))) : null)));
-    if (w.nose || w.palate) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'In the glass'),
-      h('dl', { class: 'niche' }, w.nose ? [h('dt', null, 'Nose'), h('dd', null, w.nose)] : null, w.palate ? [h('dt', null, 'Palate'), h('dd', null, w.palate)] : null)));
+    const notes = K.wineNotes(w);
+    if (notes.nose || notes.palate || w.made) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'In the glass'),
+      h('dl', { class: 'niche' }, notes.nose ? [h('dt', null, 'It smells of'), h('dd', null, notes.nose)] : null, notes.palate ? [h('dt', null, 'In the mouth'), h('dd', null, notes.palate)] : null,
+        w.body ? [h('dt', null, 'Body'), h('dd', null, { light: 'Light', medium: 'Medium', full: 'Full' }[w.body])] : null,
+        w.made ? [h('dt', null, 'How it is made'), h('dd', null, w.made)] : null),
+      notes.typical ? h('p', { class: 'hint' }, (notes.grape ? 'These are the notes typical of ' + notes.grape + '.' : 'These are the notes typical of this kind of wine.') + ' Taste the bottle and say what you find.') : null));
     if (w.serve || w.decant || w.glass) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Serving it'),
       h('dl', { class: 'niche' }, w.serve ? [h('dt', null, 'Temperature'), h('dd', null, w.serve)] : null, w.glass ? [h('dt', null, 'Glass'), h('dd', null, w.glass)] : null, w.decant ? [h('dt', null, 'Decanting'), h('dd', null, w.decant)] : null)));
     if (w.story) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'The story'), h('p', { class: 'prose' }, w.story)));
     if (lines(w.facts).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Good to know'), h('ul', { class: 'facts' }, lines(w.facts).map((f) => h('li', null, f)))));
-    if (dishes.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Goes with'),
+    const suits = K.isDrink(w) ? { house: [], style: [] } : K.dishesFor(w);
+    const dishBtn = (d, why) => h('button', { type: 'button', class: 'mini-dish', onclick: () => K.go('dish', { id: d.id }) }, K.dishThumb(d, 'sm'), h('span', null, K.dn(d), why ? h('small', null, why) : null));
+    if (suits.house.length || suits.style.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Goes with'),
+      suits.house.length ? h('div', { class: 'mini-list' }, suits.house.map((d) => dishBtn(d, (d.n.pairWhy || {})[w.id] || 'The house pairing'))) : null,
+      suits.style.length ? [h('p', { class: 'hint' }, 'As ' + K.styleName(suits.s) + ' it also suits:'), h('div', { class: 'mini-list' }, suits.style.map((d) => dishBtn(d)))] : null));
+    else if (dishes.length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Goes with'),
       h('div', { class: 'mini-list' }, dishes.map((d) => h('button', { type: 'button', class: 'mini-dish', onclick: () => K.go('dish', { id: d.id }) }, K.dishThumb(d, 'sm'), h('span', null, d.name, d.en && d.en !== d.name ? h('small', null, d.en) : null))))));
     if (st === 'out' || st === 'low') {
       const alt = K.listWines().filter((x) => x.id !== w.id && !x.off && x.colour === w.colour && ['ok', 'low'].includes(K.stockState(x))).slice(0, 4);
@@ -183,12 +197,15 @@
   }
 
   /* ---------- editing ---------- */
-  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier', 'size'];
+  const FIELDS = ['name', 'producer', 'vintage', 'colour', 'style', 'grapes', 'region', 'country', 'bottlePrice', 'glassPrice', 'glassCl', 'say', 'nose', 'palate', 'story', 'measure', 'facts', 'serve', 'glass', 'decant', 'par', 'order', 'supplier', 'size', 'made', 'appellation'];
+  const BG_TEXT = ['say', 'nose', 'palate', 'made', 'story', 'facts'];
   K.SHEETS.wineedit = function (S) {
     const w = S.id ? K.wine(S.id) : null;
     if (!S.f) {
       S.f = {};
       FIELDS.forEach((k) => { S.f[k] = w ? (w[k] == null ? '' : String(w[k])) : ''; });
+      /* in Bulgarian the texts for the table are the wine's Bulgarian ones; the English stay as they are */
+      if (K.bgMode() && w) BG_TEXT.forEach((k) => { S.f[k] = (w.bg && w.bg[k]) || ''; });
       if (!w) { S.f.colour = 'red'; S.f.par = '3'; S.f.country = 'Bulgaria'; }
       if (!+S.f.size) S.f.size = '';
       S.f.byGlass = w ? w.byGlass : false; S.f.off = w ? w.off : false; S.f.label = w ? w.label : ''; S.f.pairs = w ? w.pairs.slice() : [];
@@ -201,6 +218,8 @@
       if (!f.name.trim()) { K.toast('Give the wine a name.', { tone: 'bad' }); return; }
       const doc = {};
       FIELDS.forEach((k) => { doc[k] = String(f[k] || '').trim(); });
+      doc.bg = Object.assign({}, w && w.bg);
+      if (K.bgMode()) BG_TEXT.forEach((k) => { doc.bg[k] = doc[k]; doc[k] = (w && w[k]) || doc[k]; });
       doc.par = doc.par === '' ? 3 : +doc.par || 0;
       doc.order = doc.order === '' ? 0 : +doc.order || 0;
       doc.size = +String(doc.size).replace(',', '.') || 0;
@@ -221,6 +240,7 @@
           f.label ? h('button', { class: 'btn small', type: 'button', onclick: () => { f.label = ''; K.render(); } }, 'Remove') : null)),
       h('p', { class: 'hint' }, 'Take it straight on, the label filling the picture. Without one the list draws a label from the words below.'));
     return K.sheet(w ? 'Edit ' + w.name : 'Add a wine', h('form', { class: 'stack', oninput: () => { S.touched = true; }, onsubmit: save },
+      K.bgMode() ? h('p', { class: 'banner' }, 'You are writing the Bulgarian texts. The English ones stay as they are; switch the language in Settings to change them.') : null,
       labelBox,
       K.field('Name', inp('name', { required: true, placeholder: 'Mavrud Reserve' })),
       h('div', { class: 'two' }, K.field('Producer', inp('producer')), K.field('Vintage', inp('vintage', { inputmode: 'numeric', placeholder: '2021 or NV' }))),
@@ -235,6 +255,8 @@
       K.field('What to say at the table', area('say', 3, 'One or two sentences to sell it.')),
       K.field('Nose', area('nose', 2, 'Dark cherry, plum, a little smoke')),
       K.field('Palate', area('palate', 2, 'Firm tannins, fresh acidity, long finish')),
+      K.field('How it is made', inp('made', { placeholder: 'Twelve months in French oak' })),
+      K.field('Appellation', inp('appellation', { placeholder: 'Chablis Grand Cru AOC' })),
       K.field('The story', area('story', 3, 'The producer, the place, the grape.')),
       K.field('Good to know', area('facts', 3, 'One fact per line'), 'One per line. They also go into the quiz.'),
       h('div', { class: 'two' }, K.field('Serve at', inp('serve', { placeholder: '16–18 °C' })), K.field('Glass', inp('glass', { placeholder: 'Bordeaux glass' }))),

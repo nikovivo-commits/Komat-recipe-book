@@ -63,7 +63,7 @@
     else if (a === 'removed') card = h('div', { class: 'login-card card' }, h('h2', { class: 'login-title' }, 'This phone was taken off the team'),
       h('p', { class: 'muted' }, 'Ask the floor manager for the floor code to join again.'), h('button', { class: 'btn primary wide', type: 'button', onclick: () => K.Fire.signOut() }, 'OK'));
     else card = joinForm();
-    return { top: top, body: h('div', { class: 'wrap login' }, card), tabs: false };
+    return { top: top, body: h('div', { class: 'wrap login' }, h('div', { class: 'login-lang' }, K.langSwitch()), card), tabs: false };
   };
 
   /* ---------- your name (the device copy has no sign-in) ---------- */
@@ -94,6 +94,7 @@
     const fire = K.mode === 'firebase', ex = D.wines.some((w) => w.example) || Object.keys(D.notes).some((id) => D.notes[id].example);
     return K.sheet('Settings', h('div', { class: 'settings' },
       h('p', { class: 'muted' }, fire ? (K.me.name || 'You') + ' · ' + K.Fire.roleName(K.me.role) : 'This copy keeps everything on this device.'),
+      h('div', { class: 'set-lang' }, h('span', { class: 'label' }, 'Language'), K.langSwitch()),
       !fire ? link('edit', 'Your name', K.myName() || 'Not set', open('name')) : null,
       fire && K.me.admin ? link('lock', 'People and floor code', 'Who has joined, roles, the code waiters join with', () => K.openPeople()) : null,
       K.canEdit() ? link('glass', 'Add a wine', 'With a photo of its label', () => { ui.sheet = { type: 'wineedit', id: null }; K.render(); }) : null,
@@ -119,15 +120,29 @@
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
       /* bottles already in the book keep everything; one that has no picture yet gets the one that comes with the list */
       const pics = Object.keys(docs).filter((p) => p.startsWith('wines/') && docs[p].label).map((p) => [K.wine(p.slice(6)), docs[p].label, docs[p].focus || null]).filter((x) => x[0] && !x[0].label);
+      /* a bottle already in the book takes what it lacks from the list: its notes, how it is made, its grape, its appellation */
+      const FILL = ['nose', 'palate', 'made', 'story', 'grapes', 'appellation', 'region', 'country', 'body'];
+      let noted = 0;
+      Object.keys(docs).filter((p) => p.startsWith('wines/')).forEach((p) => {
+        const w = K.wine(p.slice(6)), patch = {};
+        if (!w) return;
+        FILL.forEach((k) => { if (!w[k] && docs[p][k]) patch[k] = docs[p][k]; });
+        /* a line still exactly as the list first wrote it takes the list's new wording; one changed by hand is kept */
+        const hb = docs[p].bg || {}, wb = w.bg || {}, miss = Object.keys(hb).filter((k) => hb[k] && !wb[k]);
+        if (miss.length) { patch.bg = Object.assign({}, wb); miss.forEach((k) => { patch.bg[k] = hb[k]; }); }
+        Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
+        if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
+      });
       /* dishes already loaded from this menu get its corrected ingredient explanations */
       let fixed = 0;
       (j.menu || []).forEach((e) => Object.keys(D.notes).forEach((id) => {
         const n = D.notes[id];
         if (e.menuBg && n.menuBg === e.menuBg && e.niche && JSON.stringify(n.niche || []) !== JSON.stringify(e.niche)) { K.saveNote(id, { niche: e.niche }); fixed++; }
       }));
-      return Promise.all(add.map((p) => K.db.doc(p).set(docs[p])).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
-        K.toast([fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
-        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu) };
+      const fresh = (o) => { const c = Object.assign({}, o); delete c.was; return c; };
+      return Promise.all(add.map((p) => K.db.doc(p).set(fresh(docs[p]))).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
+        K.toast([noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
         else ui.sheet = null;
         K.render();
       });
@@ -167,7 +182,8 @@
   }
   /* every line with its best kitchen dish; when two lines want the same dish, the better fit keeps it */
   function matchMenu(menu) {
-    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id, score: m.score }; });
+    /* a course that only the tasting menu has is the floor's own unless the kitchen book has it */
+    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' ? '__own' : ''), score: m.score }; });
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
@@ -184,7 +200,27 @@
         used[x.to] = 1;
         K.saveNote(x.to, Object.assign({ recipe: x.to }, e));
       });
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in');
+      /* the tasting menu that comes with the list: its courses, wines and prices, once every course is in the book */
+      const t = S.house ? K.tastingFrom(S.house, (e) => { const d = K.dishes(true).find((x) => x.n.menuBg === e.menuBg); return d ? d.id : ''; }) : null;
+      if (t) K.saveSetting('tasting', t);
+      /* the house pairings that come with the list: written onto every dish that has none of its own */
+      let paired = 0;
+      (S.house && S.house.pairings || []).forEach((pr) => {
+        const e = (S.house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
+        if (!d) return;
+        /* a dish paired on an earlier load keeps its wines; the reasons it still has word for word get their Bulgarian */
+        if ((d.n.pairs || []).length) {
+          const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
+          let add = 0;
+          pr.wines.forEach((x) => { if (x.whyBg && have[x.id] === x.why && !bgWhy[x.id]) { bgWhy[x.id] = x.whyBg; add++; } });
+          if (add) K.saveNote(d.id, { bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) });
+          return;
+        }
+        const ok = pr.wines.filter((x) => K.wine(x.id)), why = {}, whyBg = {};
+        ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
+        if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
+      });
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),
