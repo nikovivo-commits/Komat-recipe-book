@@ -45,6 +45,8 @@
     });
     const t = D.tasting;
     if (t && t.bg) { ['name', 'note', 'pairingName'].forEach((k) => put(t[k], t.bg[k])); if (t.welcome) put(t.welcome.text, t.bg.welcome); }
+    /* the wine printed beside each course, as the Bulgarian menu words it */
+    if (t) Object.keys(t.wines || {}).forEach((id) => put(t.wines[id].text, t.wines[id].textBg));
     return true;
   }
 

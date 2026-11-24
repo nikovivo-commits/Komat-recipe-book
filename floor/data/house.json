@@ -5545,7 +5545,8 @@
   "note": "For the entire table",
   "welcome": {
    "id": "edoardo-miroglio-classic-method-brut-2019",
-   "text": "Brut Classic Method, Edoardo Miroglio, Thracian Lowlands, 2019"
+   "text": "Brut Classic Method, Edoardo Miroglio, Thracian Lowlands, 2019",
+   "textBg": "Брут класически метод, Edoardo Miroglio, България, Тракийска низина, 2019"
   },
   "extra": {
    "key": "Caviar serving",
@@ -5562,28 +5563,32 @@
     "key": "Beef tartare",
     "wine": {
      "id": "bononia-dimyat-2023",
-     "text": "Dimyat, Bononia Estate, Northwestern Bulgaria, 2023"
+     "text": "Dimyat, Bononia Estate, Northwestern Bulgaria, 2023",
+     "textBg": "Димят, Bononia Estate, Северозападна България, 2023"
     }
    },
    {
     "key": "Gyoza",
     "wine": {
      "id": "dragoshinov-winery-estate-chardonnay-2025",
-     "text": "Chardonnay, Dragoshinov Winery Estate, Danubian Plain, 2025"
+     "text": "Chardonnay, Dragoshinov Winery Estate, Danubian Plain, 2025",
+     "textBg": "Шардоне, Dragoshinov Winery Estate, Дунавска равнина, 2025"
     }
    },
    {
     "key": "Rock sea bass",
     "wine": {
      "id": "magura-gruner-veltliner-2024",
-     "text": "Grüner Veltliner, Magura Winery, Northwestern Bulgaria, 2023"
+     "text": "Grüner Veltliner, Magura Winery, Northwestern Bulgaria, 2023",
+     "textBg": "Грюнер велтлинер, Magura Winery, Северозападна България, 2023"
     }
    },
    {
     "key": "Wagyu beef",
     "wine": {
      "id": "bratanov-three-blend-red-2019",
-     "text": "Bratanov Tri Blend, Bratanov Winery, Thracian Lowlands, 2021"
+     "text": "Bratanov Tri Blend, Bratanov Winery, Thracian Lowlands, 2021",
+     "textBg": "Братанов три бленд, Bratanov Winery, Тракийска низина, 2021"
     }
    },
    {
@@ -5593,15 +5598,16 @@
     "key": "Kazandibi",
     "wine": {
      "id": "tsarev-brod-gergana-ice",
-     "text": "Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023"
+     "text": "Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023",
+     "textBg": "Царев брод айс гергана, Tsarev Brod Winery, Дунавска равнина, 2023"
     }
    }
   ],
   "bg": {
    "name": "Дегустационно меню",
-   "note": "За цялата маса",
-   "pairingName": "Български винен пеъринг",
-   "welcome": "Brut Classic Method, Edoardo Miroglio, Тракийска низина, 2019"
+   "note": "Меню за цялата маса",
+   "pairingName": "Секция български вина",
+   "welcome": "Брут класически метод, Edoardo Miroglio, България, Тракийска низина, 2019"
   }
  },
  "pairings": [
