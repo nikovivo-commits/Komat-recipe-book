@@ -179,7 +179,7 @@
   /* the same record, whatever order its fields come in */
   const sorted = (o) => (Array.isArray(o) ? o.map(sorted) : o && typeof o === 'object' ? Object.keys(o).sort().reduce((a, k) => { if (o[k] !== undefined) a[k] = sorted(o[k]); return a; }, {}) : o);
   const sameRec = (a, b) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
-  const HOUSE_V = 2026112602;
+  const HOUSE_V = 2026112603;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);
@@ -321,10 +321,16 @@
   function mergeEntry(cur, e) {
     const out = {}, snap = Object.assign({}, cur.house);
     Object.keys(e).forEach((k) => {
+      if (k === 'was') return;
       if (ANSWERS.includes(k)) {
         /* left empty is not an answer: who can eat it, and what it can be made into, then take what the house says */
         const open = cur[k] === undefined || (k === 'diet' && cur.diet === '') || (['canDiet', 'canHow', 'canAl'].includes(k) && !cur.canDiet);
-        if (open) out[k] = e[k];
+        /* still what the house said last time (remembered beside the note), or what it said before that was remembered
+           (the entry's `was`): then the house's newer word takes its place. An answer somebody set by hand stays. */
+        const last = snap['a_' + k], old = e.was ? e.was[k] : undefined;
+        const fromHouse = last !== undefined ? same(cur[k], last) : old !== undefined && same(cur[k], old);
+        if (open || fromHouse) out[k] = e[k];
+        snap['a_' + k] = e[k];
         return;
       }
       if (k === 'bg') {
