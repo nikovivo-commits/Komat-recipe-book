@@ -67,6 +67,9 @@
     const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly), titles = wines.map(K.wineTitle);
     const isBg = (w) => !K.isDrink(w) && K.origin && K.origin(w) && K.origin(w).bg, isFo = (w) => !K.isDrink(w) && K.origin && K.origin(w) && !K.origin(w).bg;
     const home = wines.filter(isBg).map(K.wineTitle), foreign = wines.filter(isFo).map(K.wineTitle);
+    /* the dishes and the house's wines for each, worked out once (not once per wine and dish) */
+    const dishes = K.dishes(), poured = new Map(dishes.map((d) => [d, K.housePairs ? K.housePairs(d) : null]));
+    const goes = (d, w) => (poured.get(d) ? poured.get(d).includes(w) : (d.n.pairs || []).includes(w.id) || w.pairs.includes(d.id));
     /* what a grape usually smells of: one question per grape, from the wines that have no notes of their own */
     const seen = {}, typical = [];
     wines.forEach((w) => { const n = K.wineNotes ? K.wineNotes(w) : null; if (n && n.typical && n.grape && !seen[n.grape]) { seen[n.grape] = 1; typical.push(n); } });
@@ -85,13 +88,13 @@
       if (o && foreign.length >= 3 && home.length >= 3) out.push(o.bg ? mk('wine', 'Which of these wines is Bulgarian?', t, foreign, 'From ' + o.where + '.') : mk('wine', 'Which of these wines is not Bulgarian?', t, home, 'From ' + o.where + '.'));
       if (w.appellation) out.push(mk('wine', 'Which appellation is ' + t + '?', w.appellation, wines.map((x) => x.appellation).concat(['Bordeaux AOC', 'Barolo DOCG', 'Rioja DOCa', 'Chablis AOC', 'Prosecco DOC']), w.region));
       if (w.made) out.push(mk('wine', 'Which wine is made like this: ' + short(K.T(w.made), 90).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.say));
-      K.dishes().forEach((d) => {
-        if (K.housePairs ? K.housePairs(d).includes(w) : (d.n.pairs || []).includes(w.id) || w.pairs.includes(d.id)) {
+      dishes.forEach((d) => {
+        if (goes(d, w)) {
           const why = (d.n.pairWhy || {})[w.id] || d.n.pairText || w.say;
           /* the other right answers are left out of the wrong ones: a dish has several wines, a wine several dishes */
-          const others = K.housePairs ? K.housePairs(d).filter((x) => x !== w).map(K.wineTitle) : [];
+          const others = poured.get(d) ? poured.get(d).filter((x) => x !== w).map(K.wineTitle) : [];
           out.push(mk('wine', 'Which wine do we pour with ' + K.dn(d) + '?', t, titles.filter((x) => !others.includes(x)), why));
-          out.push(mk('wine', 'Which dish do we pour ' + t + ' with?', K.dn(d), K.dishes().filter((x) => x === d || !K.housePairs || !K.housePairs(x).includes(w)).map((x) => K.dn(x)), why));
+          out.push(mk('wine', 'Which dish do we pour ' + t + ' with?', K.dn(d), dishes.filter((x) => x === d || !poured.get(x) || !poured.get(x).includes(w)).map((x) => K.dn(x)), why));
         }
       });
     });
@@ -340,12 +343,36 @@
   /* ---------- playing ---------- */
   let tick = null;
   function stopClock() { clearInterval(tick); tick = null; }
-  function start(topic) {
+  /* A tap made before the screen it lands on was drawn is not meant for it: a second tap on Play or on Next
+     question, or a tap made while the phone was still busy, arrives when an answer has just appeared under the
+     finger. So a question takes answers only from taps made a moment after it was drawn. */
+  const OPEN_AFTER = 400;
+  let openAt = 0, starting = false;
+  const drawn = () => { openAt = performance.now() + OPEN_AFTER; };
+  const early = (e) => {
+    const now = performance.now(), at = e && e.timeStamp > 0 && e.timeStamp <= now ? e.timeStamp : now;
+    return at < openAt;
+  };
+  function start(topic, e) {
+    if (starting || early(e)) return;
     if (!K.canWrite()) { K.toast('View only: ask the floor manager to make you a waiter to play.'); return; }
     if (K.mode === 'local' && !K.myName()) { ui.sheet = { type: 'name', then: () => start(topic) }; K.render(); return; }
-    ui.quiz = { stage: 'play', topic: topic, qs: round(topic), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
-    K.render(true);
-    clock();
+    /* making the round takes a moment on a phone: the button shows at once that it was pressed, the round is made
+       in the next frame */
+    starting = true;
+    const btn = e && e.currentTarget;
+    if (btn && btn.classList) { btn.classList.add('busy'); btn.setAttribute('aria-busy', 'true'); }
+    let went = false;
+    const go = () => {
+      if (went) return;
+      went = true; starting = false;
+      ui.quiz = { stage: 'play', topic: topic, qs: round(topic), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      K.render(true);
+      drawn();
+      clock();
+    };
+    if (window.requestAnimationFrame) requestAnimationFrame(() => setTimeout(go, 0));
+    setTimeout(go, 150);
   }
   function clock() {
     stopClock();
@@ -359,9 +386,10 @@
       if (left <= 0) answer(-1);
     }, 200);
   }
-  function answer(i) {
+  function answer(i, e) {
     const Q = ui.quiz, q = Q.qs[Q.i];
     if (Q.picked != null) return;
+    if (i >= 0 && early(e)) return;
     stopClock();
     const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
     const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) : 0;
@@ -375,6 +403,7 @@
     if (Q.i + 1 >= Q.qs.length) { finish(); return; }
     Q.i++; Q.picked = null; Q.t0 = Date.now();
     K.render(true);
+    drawn();
     clock();
   }
   function finish() {
@@ -386,6 +415,7 @@
     K.db.doc('quizscores/' + id).set(doc).catch(K.writeFailed);
     if (K.celebrate && Q.right >= Q.qs.length * 0.8) K.celebrate('');
     K.render(true);
+    drawn();
   }
   K.quitQuiz = function () { stopClock(); ui.quiz = null; };
 
@@ -416,7 +446,7 @@
     const w = h('div', { class: 'wrap' });
     body.append(w);
     if (Q && Q.stage === 'done') w.append(doneCard(Q));
-    w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: () => start(t[0]) },
+    w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: (e) => start(t[0], e) },
       K.icon(t[2]), h('b', null, t[1]), h('span', null, t[3]), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))))));
     const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top);
     w.append(h('section', { class: 'group lb' },
@@ -445,7 +475,7 @@
       pos ? h('p', null, pos === 1 ? 'You are top of the board this week.' : 'Number ' + pos + ' on this week’s board.') : null,
       missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
         h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
-      h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => start(Q.topic) }, 'Play again'),
+      h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: (e) => start(Q.topic, e) }, 'Play again'),
         h('button', { class: 'btn', type: 'button', onclick: () => { ui.quiz = null; K.render(); } }, 'Close')));
   }
   function playView(Q) {
@@ -463,7 +493,7 @@
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
         const cls = !done ? '' : o === q.a ? ' right' : i === Q.picked ? ' wrong' : ' dim';
-        return h('button', { type: 'button', class: 'qp-opt' + cls, disabled: done, onclick: () => answer(i) }, h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o));
+        return h('button', { type: 'button', class: 'qp-opt' + cls, disabled: done, onclick: (e) => answer(i, e) }, h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o));
       })),
       done ? h('div', { class: 'qp-after ' + (Q.pts ? 'ok' : 'no') },
         h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite'),

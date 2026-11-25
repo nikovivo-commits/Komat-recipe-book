@@ -312,10 +312,17 @@
   };
   K.suppliers = () => { const o = []; D.wines.forEach((w) => { if (w.supplier && !o.includes(w.supplier)) o.push(w.supplier); }); return o.sort((a, b) => a.localeCompare(b)); };
   K.wine = (id) => D.wines.find((w) => w.id === id) || null;
-  K.winesSorted = () => D.wines.slice().sort((a, b) => {
-    const o = K.COLOURS.findIndex((c) => c[0] === a.colour) - K.COLOURS.findIndex((c) => c[0] === b.colour);
-    return o || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
-  });
+  /* sorted once and kept until the wines change (the list is replaced, never altered, on every change) */
+  let sortedMemo = null;
+  K.winesSorted = () => {
+    if (!sortedMemo || sortedMemo.w !== D.wines || sortedMemo.len !== D.wines.length) {
+      const rank = {};
+      K.COLOURS.forEach((c, i) => { rank[c[0]] = i; });
+      const at = (w) => (rank[w.colour] != null ? rank[w.colour] : -1);
+      sortedMemo = { w: D.wines, len: D.wines.length, l: D.wines.slice().sort((a, b) => at(a) - at(b) || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name)) };
+    }
+    return sortedMemo.l.slice();
+  };
   /* the drinks the floor talks about: everything except the stock-only products */
   K.listWines = () => K.winesSorted().filter((w) => !w.stockOnly);
   /* a short, stable id from a Hype name, whatever alphabet it is written in */

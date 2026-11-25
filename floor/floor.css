@@ -145,6 +145,10 @@ a.btn { text-decoration: none; }
 .qt .qt-go { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 6px 14px; border-radius: 999px; background: var(--apron); color: var(--apron-ink); font-weight: 800; }
 .qt .qt-go .ico { width: 16px; height: 16px; }
 .qt:hover { transform: translateY(-1px); border-color: var(--muted); }
+.qt { touch-action: manipulation; transition: transform .08s ease-out, opacity .12s ease-out; }
+.qt:active, .qt.busy { transform: scale(.985); border-color: var(--apron); }
+.qt.busy .qt-go { filter: brightness(.82); }
+.quiz-topics:has(.busy) .qt:not(.busy) { opacity: .45; }
 .lb { margin-top: 28px; }
 .lb-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 .lb-topic { margin-top: 8px; }
