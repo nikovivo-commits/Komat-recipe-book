@@ -955,3 +955,10 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .al-nudges { display: grid; gap: 8px; }
 .al-all { justify-self: start; }
 .alc-left { margin: 0; }
+
+/* the tasting card's top line: the menu, then the pairing, each kept whole */
+.ts-kick { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.ts-kick span { white-space: nowrap; }
+/* the check-all button wraps instead of widening the page (Bulgarian is longer) */
+.al-nudges { grid-template-columns: minmax(0, 1fr); }
+.al-all { white-space: normal; text-align: left; justify-self: stretch; height: auto; min-height: 48px; padding-top: 8px; padding-bottom: 8px; }

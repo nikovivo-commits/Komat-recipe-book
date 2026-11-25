@@ -42,7 +42,6 @@
         w.append(allergyPicker());
       }
     }
-    if (ui.foodTab === 'dishes' && D.loaded && !ui.q && !ui.sect) w.append(tastingCard());
     if (ui.foodTab === 'dishes' && D.loaded && all.length) {
       const secs = Array.from(new Set(all.map((d) => d.section))).sort(secOrder);
       w.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Section' },
@@ -119,7 +118,6 @@
     return h('div', null,
       h('p', { class: 'al-sum', role: 'status' }, h('b', null, names + ': '), ok.length + ' can eat · ' + (mod.length ? mod.length + ' with a change · ' : '') + (ask.length ? ask.length + ' to confirm · ' : '') + no.length + ' cannot'),
       sel.includes('sulphites') ? h('p', { class: 'banner' }, h('b', null, 'Sulphites: '), 'every wine has them, and so do vinegar dressings. Check the drinks too.') : null,
-      tastingFor(sel),
       block('ok', 'Can eat', 'None of these allergens, and the dish’s allergens have been confirmed.', ok),
       block('mod', 'Can eat with a change', 'Write the change on the order, so the kitchen sees it.', mod),
       sel.includes('lactose') ? h('p', { class: 'hint' }, h('b', null, 'Lactose: '), 'for a guest who avoids lactose but eats butter. For a milk allergy, tick Milk instead.') : null,
@@ -229,7 +227,7 @@
     if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
       K.icon('list'), h('span', null, h('b', null, 'Set up the tasting menu'), h('span', null, 'Pick its courses from the dishes, in order.')), K.icon('next')) : null;
     return h('section', { class: 'tasting' },
-      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '') + (t.pairing ? ' · ' + K.T(t.pairingName).toLowerCase() + ' ' + K.price(t.pairing) : '')), h('h2', null, t.name)),
+      h('div', { class: 'ts-head' }, h('div', null, h('span', { class: 'kicker dish ts-kick' }, h('span', null, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '')), t.pairing ? h('span', null, K.T(t.pairingName).toLowerCase() + ' ' + K.price(t.pairing)) : null), h('h2', null, t.name)),
         K.canEdit() ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } }, K.icon('edit'), 'Edit') : null),
       t.note ? h('p', { class: 'muted' }, t.note) : null,
       t.pairing ? h('p', { class: 'ts-pour' }, K.icon('glass'), h('span', null, h('b', null, 'Pairing pour: about ' + K.PAIR_ML + ' ml of each wine. '), 'A bottle gives ' + Math.floor(750 / K.PAIR_ML) + ' pours. A normal glass is ' + K.GLASS_ML + ' ml.')) : null,
