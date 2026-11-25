@@ -107,6 +107,7 @@
       K.demo && K.demoAnswers().length ? link('copy', 'Copy what I confirmed here', 'To bring it into the real book from another phone or computer', () => {
         navigator.clipboard.writeText(JSON.stringify({ komatDemo: K.demoAnswers() })).then(() => K.toast('Copied. In the real book: Settings → Bring over what I confirmed in the demo → paste.'), () => K.toast('This device would not copy.', { tone: 'bad' }));
       }) : null,
+      K.checkList && K.checkList().length ? link('check', 'Check every dish’s allergens', 'All ' + K.checkList().length + ' dishes, one by one: allergens, who can eat it, bread', () => K.checkAll()) : null,
       K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', () => loadHouse(false)) : null,
       K.canEdit() ? link('download', 'Prices and stock from Hype', 'Read a file exported from the till: bottles in stock and prices', open('hype')) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,

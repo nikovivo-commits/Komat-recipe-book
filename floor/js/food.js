@@ -129,13 +129,23 @@
   }
 
   /* ---------- confirming allergens, dish by dish ---------- */
+  /* the dishes this person may confirm, in the order of the menu */
+  K.checkList = () => K.dishes().filter((d) => d.onMenu && K.canCheck(d)).sort((x, y) => secOrder(x.section, y.section) || (+x.n.order || 0) - (+y.n.order || 0) || x.name.localeCompare(y.name));
+  /* every one of them, one after the other: the ones already confirmed too, to go over them again */
+  K.checkAll = function () {
+    const l = K.checkList();
+    if (!l.length) { K.toast('There is no dish for you to confirm. The chefs and the owner confirm the kitchen’s dishes.'); return; }
+    ui.sheet = { type: 'alcheck', ids: l.map((d) => d.id), i: 0 };
+    K.render();
+  };
   function checkNudge() {
-    const todo = K.dishes().filter((d) => d.onMenu && !K.dishChecked(d) && K.canCheck(d));
+    const mine = K.checkList(), todo = mine.filter((d) => !K.dishChecked(d));
     const total = K.dishes().filter((d) => d.onMenu).length, done = K.dishes().filter((d) => d.onMenu && K.dishChecked(d)).length;
-    if (!todo.length) return total && done < total ? h('p', { class: 'hint al-progress' }, done + ' of ' + total + ' dishes have confirmed allergens. The chefs or the owner confirm the rest.') : null;
-    return h('button', { type: 'button', class: 'al-nudge', onclick: () => { ui.sheet = { type: 'alcheck', ids: todo.map((d) => d.id), i: 0 }; K.render(); } },
+    const all = mine.length ? h('button', { type: 'button', class: 'btn al-all', onclick: K.checkAll }, K.icon('list'), 'Check all ' + mine.length + ' dishes, one by one') : null;
+    if (!todo.length) return h('div', { class: 'al-nudges' }, total && done < total ? h('p', { class: 'hint al-progress' }, done + ' of ' + total + ' dishes have confirmed allergens. The chefs or the owner confirm the rest.') : total ? h('p', { class: 'hint al-progress' }, 'All ' + total + ' dishes have confirmed allergens.') : null, all);
+    return h('div', { class: 'al-nudges' }, h('button', { type: 'button', class: 'al-nudge', onclick: () => { ui.sheet = { type: 'alcheck', ids: todo.map((d) => d.id), i: 0 }; K.render(); } },
       K.icon('check'), h('span', null, h('b', null, 'Confirm the allergens: ' + todo.length + (todo.length === 1 ? ' dish' : ' dishes') + ' to go'),
-        h('span', null, done + ' of ' + total + ' confirmed. One dish at a time, a few seconds each.')), K.icon('next'));
+        h('span', null, done + ' of ' + total + ' confirmed. One dish at a time, a few seconds each.')), K.icon('next')), all);
   }
   K.SHEETS.alcheck = function (S) {
     const d = K.dish(S.ids[S.i]);
@@ -201,7 +211,9 @@
             onclick: () => { S.breadAl = breadAl.includes(k) ? breadAl.filter((x) => x !== k) : breadAl.concat([k]); K.render(); } }, K.AL[k])))) : null),
       h('div', { class: 'btns' },
         h('button', { class: 'btn primary', type: 'button', onclick: () => go(true) }, K.icon('check'), last ? 'Confirm' : 'Confirm and next'),
-        S.ids.length > 1 ? h('button', { class: 'btn', type: 'button', onclick: () => go(false) }, 'Skip') : null)));
+        S.ids.length > 1 ? h('button', { class: 'btn', type: 'button', onclick: () => go(false) }, 'Skip') : null,
+        S.i > 0 ? h('button', { class: 'btn', type: 'button', onclick: () => { S.i--; K.render(); } }, 'Back') : null),
+      S.ids.length > 1 ? h('p', { class: 'hint alc-left' }, K.dishChecked(d) ? 'Already confirmed: change what is wrong, or just confirm again.' : 'Not confirmed yet.') : null));
   };
 
   /* ---------- the tasting menu ---------- */

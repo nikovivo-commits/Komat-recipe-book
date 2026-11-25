@@ -950,3 +950,8 @@ body.scrolled .top { border-bottom-color: var(--line); }
 
 /* a course's line on the tasting card, as on the printed menu */
 .ts-line { display: block; margin-top: 2px; font: 400 .86rem/1.4 var(--sans); color: var(--muted); text-align: left; }
+
+/* going over every dish's allergens */
+.al-nudges { display: grid; gap: 8px; }
+.al-all { justify-self: start; }
+.alc-left { margin: 0; }
