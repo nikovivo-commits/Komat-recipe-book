@@ -484,6 +484,9 @@
       if (went) return;
       went = true; starting = false;
       ui.quiz = { stage: 'play', topic: topic, qs: round(topic), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      /* the round gets a step of its own in the phone's history, so the back button ends the round and shows
+         the quiz page, as Stop does, and does not leave the quiz with the round still running */
+      try { if (!(history.state && history.state.quiz)) history.pushState({ k: 1, quiz: 1 }, '', location.pathname + location.search + location.hash); } catch (e) { /* file:// */ }
       K.render(true);
       drawn();
       clock();
@@ -533,8 +536,26 @@
     if (K.celebrate && Q.right >= Q.qs.length * 0.8) K.celebrate('');
     K.render(true);
     drawn();
+    stepBack();
+  }
+  /* the round's own step in the phone's history is taken back when the round ends */
+  function stepBack() {
+    try { if (history.state && history.state.quiz) { K.quizPop = Date.now(); history.back(); } } catch (e) { /* file:// */ }
   }
   K.quitQuiz = function () { stopClock(); ui.quiz = null; openAt = 0; };
+  /* Stop, or a round given up: back to the quiz page */
+  function stopRound() { K.quitQuiz(); stepBack(); K.render(true); }
+  /* The app left in the background in the middle of a round (the phone locked, another app). A glance away
+     changes nothing: the clock runs on. After a longer absence the round is over, so the quiz does not greet
+     you with an old question that ran out of time while you were away. */
+  const AWAY_MAX = 30000;
+  let awayAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { awayAt = Date.now(); return; }
+    const Q = ui.quiz, away = awayAt ? Date.now() - awayAt : 0;
+    awayAt = 0;
+    if (Q && Q.stage === 'play' && away > AWAY_MAX) { stopRound(); K.toast('The round was stopped: you were away.'); }
+  });
 
   /* ---------- the board ---------- */
   function since(period) {
@@ -618,7 +639,7 @@
         q.why ? h('p', { class: 'muted' }, q.why) : null,
         h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? 'See your score' : 'Next question')) : null);
     return {
-      top: K.subbar('Stop', () => { K.quitQuiz(); K.render(true); }, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
+      top: K.subbar('Stop', stopRound, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
       body: body, tabs: false, solid: true,
     };
   }

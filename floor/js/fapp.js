@@ -68,6 +68,10 @@
     if (K.transition) K.transition(draw); else draw();
   };
   window.addEventListener('popstate', () => {
+    /* the quiz stepping back over its own history entry (a round stopped or finished): nothing to do */
+    if (K.quizPop && Date.now() - K.quizPop < 1500) { K.quizPop = 0; return; }
+    /* the phone's back button in the middle of a round ends the round */
+    if (ui.quiz && ui.quiz.stage === 'play' && K.quitQuiz) K.quitQuiz();
     ui.sheet = null;
     scrollMem[pageKey()] = window.scrollY;
     if (!fromHash(location.hash)) ui.view = 'tonight';
@@ -152,6 +156,9 @@
     if (K.mode === 'firebase' && ui.auth) return K.V.login();
     if (ui.view === 'dish' && D.loaded && !K.dish(ui.id)) ui.view = 'food';
     if (ui.view === 'winepage' && D.winesLoaded && !K.wine(ui.id)) ui.view = 'wine';
+    /* a round lives only on the quiz page: leaving it any way ends the round (and puts away a finished round's
+       score), so the quiz never opens later on an old question that is already answered or out of time */
+    if (ui.view !== 'quiz' && ui.quiz && K.quitQuiz) K.quitQuiz();
     const out = (K.V[ui.view] || K.V.tonight)();
     /* the quiz and the schedule live under one tab: a switch under the page's title goes from one to the other */
     if ((ui.view === 'quiz' || ui.view === 'schedule') && out.tabs !== false && !out.top && out.body && out.body.children) {
