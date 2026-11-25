@@ -468,6 +468,8 @@ body.toasting .timers { transform: translateY(-76px); }
 .toast { pointer-events: none; }
 .toast-act { pointer-events: auto; }
 body:not(.has-tabs) .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+/* hidden means gone: without this the layout rule above kept a message on screen for good */
+.toast[hidden] { display: none; }
 .toast:not([hidden]) { animation: toastin .24s cubic-bezier(.2, 1.2, .4, 1); }
 @keyframes toastin { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 .toast.bad { background: var(--urgent); color: var(--urgent-ink); }

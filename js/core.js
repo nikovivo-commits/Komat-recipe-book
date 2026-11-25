@@ -117,8 +117,10 @@
     box.hidden = false;
     document.body.classList.add('toasting');
     clearTimeout(toastT);
-    /* short, so it never sits over what you are doing */
-    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 3000 : 2000);
+    /* short, so it never sits over what you are doing: two seconds for a few words, more for a long message
+       so it can be read, never more than five */
+    const ms = Math.min(5000, Math.max(opts.undo ? 3000 : 2000, 1200 + String(box.textContent || '').length * 40));
+    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, ms);
   };
 
   /* ---------- icons (24px, stroke) ---------- */

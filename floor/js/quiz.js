@@ -114,7 +114,7 @@
   const tells = (a, b) => { const x = stems(b); return stems(a).some((w) => x.includes(w)); };
   /* how hard a kind of question is: 3 for what takes knowing the whole plate or judging a guest's case, 2 for what
      takes understanding a dish, 1 for what is learnt by heart. Points and time follow (see FACTOR, TIME). */
-  const LEVEL = { guest: 3, swap: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2 };
+  const LEVEL = { guest: 3, swap: 3, plan: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2 };
   const DIETQ = {
     vegan: ['A guest is vegan. Which of these can they eat as it comes?', 'A guest is vegan. Which of these do you not offer?', 'A vegan guest orders ', 'A vegan guest takes the tasting menu. '],
     veg: ['A guest is vegetarian. Which of these can they eat as it comes?', 'A guest is vegetarian. Which of these do you not offer?', 'A vegetarian guest orders ', 'A vegetarian guest takes the tasting menu. '],
@@ -171,14 +171,26 @@
       add('tasting', mk('food', 'How many courses does the tasting menu have?', String(cs.length), [cs.length - 2, cs.length - 1, cs.length + 1, cs.length + 2].map(String), order), 1);
       if (+t.price) add('tasting', mk('food', 'How much is the tasting menu for one guest?', K.price(t.price), [-15, -10, 10, 15].map((x) => K.price(String(+t.price + x))), t.pairing ? K.T('The wine pairing: ') + K.price(t.pairing) : ''), 1);
       if (t.extra) add('tasting', mk('food', 'What can a table add to the tasting menu?', t.extra.dish.name, off.map((d) => d.name), t.extra.price ? K.price(t.extra.price) : ''));
+      /* the menu the house has set for a diet (vegan): which dish takes the place of which course, and the course the kitchen makes itself */
+      const PLANQ = { vegan: ['On the vegan tasting menu, what takes the place of ', 'On the vegan tasting menu, which course does the kitchen replace with one of its own?', 'The vegan tasting menu: '], veg: ['On the vegetarian tasting menu, what takes the place of ', 'On the vegetarian tasting menu, which course does the kitchen replace with one of its own?', 'The vegetarian tasting menu: '], pesc: ['On the pescatarian tasting menu, what takes the place of ', 'On the pescatarian tasting menu, which course does the kitchen replace with one of its own?', 'The pescatarian tasting menu: '] };
+      Object.keys(t.plans || {}).forEach((k) => {
+        const pl = t.plans[k], set = cs.filter((c) => pl[c.id] !== undefined), named = set.filter((c) => pl[c.id] && K.dish(pl[c.id]));
+        if (!PLANQ[k] || named.length < 2) return;
+        const dn = (c) => K.dish(pl[c.id]).name;
+        const all = K.T(PLANQ[k][2]) + set.map((c) => (pl[c.id] ? dn(c) : K.T('the kitchen’s own course')) + K.T(' instead of ') + c.name).join(' · ');
+        named.forEach((c) => add('plan', mk('food', PLANQ[k][0] + c.name + '?', dn(c), off.filter((d) => d.id !== pl[c.id]).map((d) => d.name), all)));
+        set.filter((c) => !pl[c.id]).forEach((c) => add('plan', mk('food', PLANQ[k][1], c.name, cs.filter((x) => x.id !== c.id).map((x) => x.name), all)));
+      });
       if (K.courseKind) keys.forEach((k) => cs.forEach((c) => {
         if (K.allergyVerdict(c, [k]).state !== 'no') return;
+        /* a course the house has settled for this diet is asked above, with the house's answer */
+        if (t.plans && t.plans[k] && t.plans[k][c.id] !== undefined) return;
         const pool = off.map((d) => ({ d: d, v: K.allergyVerdict(d, [k]) })), kind = K.courseKind(c);
-        const right = pool.filter((x) => K.courseKind(x.d) === kind && (x.v.state === 'ok' || x.v.state === 'mod'));
+        const right = pool.filter((x) => K.standsIn(kind, K.courseKind(x.d)) && (x.v.state === 'ok' || x.v.state === 'mod'));
         /* wrong: a dish of another kind (a dip for a main), or one of the right kind the guest cannot have either */
-        const wrong = pool.filter((x) => K.courseKind(x.d) !== kind || x.v.state === 'no');
+        const wrong = pool.filter((x) => !K.standsIn(kind, K.courseKind(x.d)) || x.v.state === 'no');
         if (right.length) add('swap', mk('food', (K.DIET[k] ? DIETQ[k][3] : 'A guest on the tasting menu cannot eat ' + lc(K.alName(k)) + '. ') + 'What can take the place of ' + c.name + '?', one(right).d.name, wrong.map((x) => x.d.name),
-          'A course is only replaced by one of its kind: a main by a main, a starter by a starter, a dessert by a dessert. A dip never replaces a plated course.'));
+          'A course is only replaced by one of its kind: a main by a main, a starter by a starter, a dessert by a dessert. A dip can stand in for the bread or the bites, never for a plated course.'));
       }));
     }
 

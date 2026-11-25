@@ -146,7 +146,7 @@
         if (cur && !cur.house) return;
         const doc = Object.assign({ topic: 'food', house: true, at: Date.now() }, q);
         delete doc.id;
-        if (cur && JSON.stringify(Object.assign({}, cur, { id: undefined, at: 0 })) === JSON.stringify(Object.assign({}, doc, { at: 0 }))) return;
+        if (cur && sameRec(Object.assign({}, cur, { id: undefined, at: 0 }), Object.assign({}, doc, { at: 0 }))) return;
         D.quizq = D.quizq.filter((x) => x.id !== id).concat([Object.assign({ id: id }, doc)]);
         K.db.doc('quizq/' + id).set(doc).catch(K.writeFailed);
         asked++;
@@ -176,7 +176,10 @@
   /* The house menu, wine list, pairings, tasting menu and quiz questions come with the app (floor/data/house.json).
      When the app carries a newer one than the book has, whoever runs the floor book gets it brought in on opening:
      no button to find. Only the real, shared book does this; what was changed by hand is kept, as when loading by hand. */
-  const HOUSE_V = 2026112502;
+  /* the same record, whatever order its fields come in */
+  const sorted = (o) => (Array.isArray(o) ? o.map(sorted) : o && typeof o === 'object' ? Object.keys(o).sort().reduce((a, k) => { if (o[k] !== undefined) a[k] = sorted(o[k]); return a; }, {}) : o);
+  const sameRec = (a, b) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
+  const HOUSE_V = 2026112601;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);
@@ -318,7 +321,12 @@
   function mergeEntry(cur, e) {
     const out = {}, snap = Object.assign({}, cur.house);
     Object.keys(e).forEach((k) => {
-      if (ANSWERS.includes(k)) { if (cur[k] === undefined) out[k] = e[k]; return; }
+      if (ANSWERS.includes(k)) {
+        /* left empty is not an answer: who can eat it, and what it can be made into, then take what the house says */
+        const open = cur[k] === undefined || (k === 'diet' && cur.diet === '') || (['canDiet', 'canHow', 'canAl'].includes(k) && !cur.canDiet);
+        if (open) out[k] = e[k];
+        return;
+      }
       if (k === 'bg') {
         const bg = Object.assign({}, cur.bg);
         Object.keys(e.bg).forEach((bk) => { const was = snap['bg_' + bk]; if (bg[bk] === undefined || was === undefined || same(bg[bk], was)) bg[bk] = e.bg[bk]; snap['bg_' + bk] = e.bg[bk]; });

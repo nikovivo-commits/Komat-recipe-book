@@ -962,3 +962,6 @@ body.scrolled .top { border-bottom-color: var(--line); }
 /* the check-all button wraps instead of widening the page (Bulgarian is longer) */
 .al-nudges { grid-template-columns: minmax(0, 1fr); }
 .al-all { white-space: normal; text-align: left; justify-self: stretch; height: auto; min-height: 48px; padding-top: 8px; padding-bottom: 8px; }
+
+/* the house's own choice for a diet, on the tasting menu built for a guest */
+.tf-house { font: 700 .76rem/1.3 var(--sans); color: var(--apron-text); }
