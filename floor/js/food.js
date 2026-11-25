@@ -265,7 +265,8 @@
     const inMenu = t.courses.map((d) => d.id), pick = (ui.tfPick = ui.tfPick || {});
     /* what can stand in: the à la carte dishes, without the one sold as an extra to the menu (the caviar) */
     const extraId = t.extra && t.extra.dish ? t.extra.dish.id : '';
-    const pool = K.dishes().filter((d) => d.onMenu && d.n.only !== 'tasting' && !inMenu.includes(d.id) && d.id !== extraId).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
+    const named = {}; Object.keys(t.plans).forEach((k) => Object.keys(t.plans[k]).forEach((c) => { if (t.plans[k][c]) named[t.plans[k][c]] = 1; }));
+    const pool = K.dishes().filter((d) => d.onMenu && (d.n.only !== 'tasting' || named[d.id]) && !inMenu.includes(d.id) && d.id !== extraId).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
     /* the menu as this guest gets it: each course as it is, changed, or replaced by the dish chosen for it */
     const used = {};
     /* the house's own plan for a diet (which dish stands in for which course), when the guest's diet has one and nothing else is ticked against it */

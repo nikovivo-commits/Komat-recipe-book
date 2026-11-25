@@ -196,7 +196,9 @@
       hits.push({ k: k, where: where[real], bread: inBread, swap: inSwap });
     });
     /* 'mod': everything in the way leaves with the bread, or with the change the kitchen makes on request */
-    const state = !hits.length ? (K.dishChecked(d) && !unsure ? 'ok' : 'ask') : fix ? 'mod' : 'no';
+    /* only a diet asked, and the dish is labelled for it: that is the answer. With an allergen ticked, the dish has to be checked first. */
+    const dietOnly = sel.length > 0 && sel.every((k) => K.DIET[k]);
+    const state = !hits.length ? ((K.dishChecked(d) || dietOnly) && !unsure ? 'ok' : 'ask') : fix ? 'mod' : 'no';
     if (state === 'mod') { if (bySwap) notes.unshift(K.canText(n)); if (byBread) notes.unshift('Serve without the bread'); }
     return { state: state, hits: hits, notes: notes };
   };
