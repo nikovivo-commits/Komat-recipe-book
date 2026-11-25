@@ -28,10 +28,10 @@
   }
 
   /* the Bulgarian the wines, dishes and tasting menu carry, by their English text */
-  let dyn = {}, seenW = null, seenN = null, seenT = null;
+  let dyn = {}, seenW = null, seenN = null, seenT = null, seenQ = null;
   function fromData() {
-    if (D.wines === seenW && D.notes === seenN && D.tasting === seenT) return false;
-    seenW = D.wines; seenN = D.notes; seenT = D.tasting; dyn = {};
+    if (D.wines === seenW && D.notes === seenN && D.tasting === seenT && D.quizq === seenQ) return false;
+    seenW = D.wines; seenN = D.notes; seenT = D.tasting; seenQ = D.quizq; dyn = {};
     const put = (en, bg) => { if (en && bg && typeof en === 'string' && typeof bg === 'string') dyn[en.trim()] = bg.trim(); };
     const byLine = (en, bg) => { const a = lines(en), b = lines(bg); if (a.length === b.length) a.forEach((x, i) => put(x, b[i])); else put(en, bg); };
     (D.wines || []).forEach((w) => { const b = w.bg; if (!b) return; ['say', 'nose', 'palate', 'made', 'story'].forEach((k) => put(w[k], b[k])); byLine(w.facts, b.facts); });
@@ -43,6 +43,7 @@
       (n.niche || []).forEach((x) => put(x.what, (b.niche || {})[x.n]));
       Object.keys(n.pairWhy || {}).forEach((wid) => put(n.pairWhy[wid], (b.pairWhy || {})[wid]));
     });
+    (D.quizq || []).forEach((q) => { const b = q.bg; if (!b) return; put(q.q, b.q); put(q.a, b.a); put(q.why, b.why); (q.wrong || []).forEach((x, i) => put(x, (b.wrong || [])[i])); });
     const t = D.tasting;
     if (t && t.bg) { ['name', 'note', 'pairingName'].forEach((k) => put(t[k], t.bg[k])); if (t.welcome) put(t.welcome.text, t.bg.welcome); }
     /* the wine printed beside each course, as the Bulgarian menu words it */

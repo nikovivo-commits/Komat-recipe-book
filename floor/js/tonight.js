@@ -65,8 +65,8 @@
         : h('p', { class: 'to-fine' }, K.icon('check'), open.length === 1 ? 'One bottle is open, and it is fine.' : open.length + ' bottles are open, all fine.')));
 
     const t = K.tasting();
-    if (t.courses.length) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => { ui.foodTab = 'dishes'; K.go('food'); } }, K.icon('list'),
-      h('span', { class: 'to-txt' }, h('b', null, t.name), h('span', { class: 'muted' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : ''))), K.icon('next')));
+    if (t.courses.length) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => { ui.foodTab = 'tasting'; K.go('food'); } }, K.icon('list'),
+      h('span', { class: 'to-txt' }, h('b', null, t.name), h('span', { class: 'muted' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '')), h('span', { class: 'muted' }, 'Build it for a guest with allergies')), K.icon('next')));
 
     w.append(h('section', { class: 'to-card to-quiz' },
       h('span', { class: 'to-txt' }, h('h2', null, 'The quiz'), h('span', { class: 'muted' }, 'Ten questions, twenty seconds each')),

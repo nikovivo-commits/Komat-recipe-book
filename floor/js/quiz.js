@@ -106,6 +106,9 @@
   const stems = (s) => (lc(s) + ' ' + latin(s)).split(/[^a-zа-я]+/).filter((w) => w.length >= 4).map((w) => w.slice(0, 4));
   /* does one text give the other away: they share the start of a word, in either alphabet */
   const tells = (a, b) => { const x = stems(b); return stems(a).some((w) => x.includes(w)); };
+  /* how hard a kind of question is: 3 for what takes knowing the whole plate or judging a guest's case, 2 for what
+     takes understanding a dish, 1 for what is learnt by heart. Points and time follow (see FACTOR, TIME). */
+  const LEVEL = { guest: 3, swap: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2 };
   const DIETQ = {
     vegan: ['A guest is vegan. Which of these can they eat as it comes?', 'A guest is vegan. Which of these do you not offer?', 'A vegan guest orders ', 'A vegan guest takes the tasting menu. '],
     veg: ['A guest is vegetarian. Which of these can they eat as it comes?', 'A guest is vegetarian. Which of these do you not offer?', 'A vegetarian guest orders ', 'A vegetarian guest takes the tasting menu. '],
@@ -113,7 +116,7 @@
   };
   function foodQs() {
     const out = [], dishes = K.dishes(), ens = dishes.map((d) => d.en).filter(Boolean), names = dishes.map((d) => d.name);
-    const add = (kind, q) => { if (q) { q.kind = kind; out.push(q); } };
+    const add = (kind, q, level) => { if (q) { q.kind = kind; q.level = level || LEVEL[kind] || 1; out.push(q); } };
     const allAl = (K.ALLERGENS || []).map((a) => a[0]), keys = allAl.concat(['lactose', 'vegan', 'veg', 'pesc']);
     const menu = dishes.filter((d) => d.onMenu && d.n.only !== 'tasting');
     /* everything a dish is known to have, in one text: its menu line, its ingredients, what guests ask about */
@@ -159,8 +162,8 @@
       const onIt = cs.map((c) => c.id).concat(t.extra ? [t.extra.dish.id] : []), off = menu.filter((d) => !onIt.includes(d.id)), order = K.T('The order: ') + cs.map((c) => c.name).join(' → ');
       for (let i = 0; i < cs.length - 1; i++) add('tasting', mk('food', 'On the tasting menu, what comes after ' + cs[i].name + '?', cs[i + 1].name, cs.filter((c, j) => j !== i && j !== i + 1).map((c) => c.name), order));
       for (let i = 0; i < 3 && off.length; i++) add('tasting', mk('food', 'Which of these is not on the tasting menu?', one(off).name, cs.map((c) => c.name), order));
-      add('tasting', mk('food', 'How many courses does the tasting menu have?', String(cs.length), [cs.length - 2, cs.length - 1, cs.length + 1, cs.length + 2].map(String), order));
-      if (+t.price) add('tasting', mk('food', 'How much is the tasting menu for one guest?', K.price(t.price), [-15, -10, 10, 15].map((x) => K.price(String(+t.price + x))), t.pairing ? K.T('The wine pairing: ') + K.price(t.pairing) : ''));
+      add('tasting', mk('food', 'How many courses does the tasting menu have?', String(cs.length), [cs.length - 2, cs.length - 1, cs.length + 1, cs.length + 2].map(String), order), 1);
+      if (+t.price) add('tasting', mk('food', 'How much is the tasting menu for one guest?', K.price(t.price), [-15, -10, 10, 15].map((x) => K.price(String(+t.price + x))), t.pairing ? K.T('The wine pairing: ') + K.price(t.pairing) : ''), 1);
       if (t.extra) add('tasting', mk('food', 'What can a table add to the tasting menu?', t.extra.dish.name, off.map((d) => d.name), t.extra.price ? K.price(t.extra.price) : ''));
       if (K.courseKind) keys.forEach((k) => cs.forEach((c) => {
         if (K.allergyVerdict(c, [k]).state !== 'no') return;
@@ -186,6 +189,53 @@
     const bready = (d) => /хляб|bread|бриош|brioche|блини|blini|галета/.test(textOf(d));
     const withBread = menu.filter((d) => d.n.bread), noBread = menu.filter((d) => !d.n.bread && !bready(d));
     if (withBread.length && noBread.length >= 3) add('bread', mk('food', 'Which of these comes with bread on the side?', one(withBread).name, noBread.map((d) => d.name), 'A guest who cannot eat gluten gets it without the bread, where the dish itself has none.'));
+
+    /* 6b. everything on the plate. Waiters rarely know every part of every dish: these ask for it, and are worth the most.
+           A plate is what the menu prints for the dish, in the reader's language. */
+    const plate = (d) => String((K.flang === 'bg' ? d.n.menuBg : d.n.menuEn || d.n.menuBg) || '').split(/,\s*/).map((x) => x.trim()).filter(Boolean);
+    /* a line that names things instead of listing what is on the plate (the three bites) is left out */
+    const plates = dishes.filter((d) => d.onMenu && !d.n.lineIs).map((d) => ({ d: d, p: plate(d) })).filter((x) => x.p.length >= 3);
+    const parts = [];
+    plates.forEach((x) => x.p.forEach((i) => { if (!parts.some((y) => lc(y) === lc(i))) parts.push(i); }));
+    const onPlate = (d, item) => has(d, item) || plate(d).some((i) => lc(i) === lc(item));
+    const full = (x) => K.T('On the menu: ') + x.p.join(', ');
+    plates.forEach((x) => {
+      const nm = x.d.name + ' ' + (x.d.en || ''), foreign = parts.filter((i) => !onPlate(x.d, i));
+      /* one part left out */
+      const hide = one(x.p.filter((i) => !tells(i, nm)).concat(x.p.slice(0, 0)));
+      if (hide) add('missing', mk('food', 'On the menu ' + x.d.name + ' is: ' + x.p.filter((i) => i !== hide).join(', ') + ', and one more thing. What is it?', hide, foreign, full(x)));
+      /* the whole line, against three with one part swapped for something from another plate */
+      if (foreign.length >= 3) add('exact', mk('food', 'Which line is ' + x.d.name + ', exactly as on the menu?', x.p.join(', '),
+        shuffle(foreign).slice(0, 3).map((f, i) => { const p = x.p.slice(); p[(i + Math.floor(Math.random() * p.length)) % p.length] = f; return p.join(', '); }), ''));
+      /* three of its parts, without its name */
+      const three = shuffle(x.p.filter((i) => !tells(i, nm))).slice(0, 3);
+      if (three.length === 3) add('allthree', mk('food', 'Which dish has ' + three[0] + ', ' + three[1] + ' and ' + three[2] + '?', x.d.name, names, full(x)));
+    });
+    /* a part two dishes share */
+    const sharedSeen = {};
+    shuffle(plates).forEach((a, i, l) => l.slice(i + 1).forEach((b) => {
+      const both = a.p.filter((x) => b.p.some((y) => lc(y) === lc(x)));
+      if (!both.length || (sharedSeen[lc(both[0])] = (sharedSeen[lc(both[0])] || 0) + 1) > 2) return;
+      add('shared', mk('food', 'Which of these is in both ' + a.d.name + ' and ' + b.d.name + '?', both[0], a.p.concat(b.p).filter((x) => !both.some((y) => lc(y) === lc(x))), ''));
+    }));
+    /* the sauce */
+    const SAUCE = /сос|(^|\s)жу($|\s)|винегрет|дресинг|холандез|бьор блан|понзу|sauce|\bjus\b|vinaigrette|dressing|hollandaise|beurre blanc|ponzu/i;
+    const sauces = parts.filter((i) => SAUCE.test(i));
+    plates.forEach((x) => { const s = x.p.filter((i) => SAUCE.test(i)); if (s.length === 1) add('sauce', mk('food', 'Which sauce comes with ' + x.d.name + '?', s[0], sauces.filter((i) => !onPlate(x.d, i)), full(x))); });
+    /* all of a dish's allergens at once: only for dishes whose allergens are confirmed */
+    dishes.filter((d) => d.onMenu && K.dishChecked(d)).forEach((d) => {
+      const al = K.dishAllergens(d).keys, rest = allAl.filter((k) => !al.includes(k)), nm = (l) => K.orderAl(l).map((k) => K.T(K.AL[k])).join(', ');
+      if (al.length < 2 || !rest.length) return;
+      const wrong = [];
+      for (let i = 0; i < 6; i++) { const w = al.slice(); if (i % 3 === 0) w.splice(Math.floor(Math.random() * w.length), 1, one(rest)); else if (i % 3 === 1) w.push(one(rest)); else w.splice(Math.floor(Math.random() * w.length), 1); wrong.push(nm(w)); }
+      add('allergenset', mk('food', 'Which are all the allergens in ' + d.name + '?', nm(al), wrong, ''));
+    });
+    /* which part of the menu a dish is under */
+    const under = {};
+    menu.forEach((d) => { (under[d.section] = under[d.section] || []).push(d); });
+    Object.keys(under).forEach((s) => { const out2 = menu.filter((d) => d.section !== s); if (under[s].length >= 3 && out2.length) add('section', mk('food', 'Which of these is not under ' + s + ' on the menu?', one(out2).name, under[s].map((d) => d.name), '')); });
+    /* what the house knows about itself: the questions that come with the menu, and the managers' own */
+    D.quizq.filter((q) => (q.topic || 'food') === 'food').forEach((q) => add('house', mk('food', q.q, q.a, q.wrong || [], q.why, q.photo ? K.media(q.photo) : ''), +q.level || 2));
 
     /* 7. a dish from its line on the menu, when the line does not name it */
     dishes.forEach((d) => {
@@ -228,31 +278,35 @@
   /* every food question the book can make right now, with its kind: for looking over the quiz, and for the tests */
   K.quizFood = foodQs;
   /* a food round: the situations first, one of each kind in turn, then what is known by heart */
-  const DEEP = ['guest', 'change', 'where', 'swap', 'tasting', 'canbe', 'bread', 'menuline', 'whatisrev'];
   function pickMixed(qs, n) {
-    const by = {}, out = [];
-    qs.forEach((q) => { (by[q.kind] = by[q.kind] || []).push(q); });
-    Object.keys(by).forEach((k) => { by[k] = shuffle(by[k]); });
-    const take = (kinds, max) => {
+    const out = [], pool = { 1: {}, 2: {}, 3: {} };
+    qs.forEach((q) => { const p = pool[q.level || 1]; (p[q.kind] = p[q.kind] || []).push(q); });
+    [1, 2, 3].forEach((l) => Object.keys(pool[l]).forEach((k) => { pool[l][k] = shuffle(pool[l][k]); }));
+    /* from one level: a question of each kind in turn, never the same wording twice */
+    const take = (level, max) => {
+      const by = pool[level];
       let left = true;
-      while (out.length < max && left) {
+      while (max > 0 && left) {
         left = false;
-        shuffle(kinds.slice()).forEach((k) => {
-          if (out.length >= max || !by[k].length) return;
+        shuffle(Object.keys(by)).forEach((k) => {
+          if (max <= 0 || !by[k].length) return;
           const q = by[k].shift();
           left = true;
-          if (!out.some((o) => o.q === q.q)) out.push(q);
+          if (!out.some((o) => o.q === q.q)) { out.push(q); max--; }
         });
       }
     };
-    take(DEEP.filter((k) => by[k]), n - 2);
-    take(Object.keys(by).filter((k) => !DEEP.includes(k)), n);
-    take(DEEP.filter((k) => by[k]), n);
+    const hard = Math.round(n * 3 / 7);
+    take(3, hard); take(2, n - out.length - 1); take(1, n - out.length);
+    take(2, n - out.length); take(3, n - out.length);
     return out;
   }
+  /* what a level is worth, and how long it gets: a hard question pays double and has ten seconds more */
+  const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, 25, 30], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
+  const secsOf = (q) => TIME[(q && q.level) || 1], worth = (q) => Math.round(150 * FACTOR[(q && q.level) || 1]);
   function bankQs(topic) {
     return BANK[topic].map((b) => mk(topic, b[0], b[1], b[2], b[3])).filter(Boolean)
-      .concat(D.quizq.filter((q) => (q.topic || 'food') === topic).map((q) => mk(topic, q.q, q.a, q.wrong || [], q.why, q.photo ? K.media(q.photo) : '')).filter(Boolean));
+      .concat(D.quizq.filter((q) => (q.topic || 'food') === topic && topic !== 'food').map((q) => mk(topic, q.q, q.a, q.wrong || [], q.why, q.photo ? K.media(q.photo) : '')).filter(Boolean));
   }
   /* a round: mostly questions about our own wines and dishes, topped up from the general ones */
   function round(topic) {
@@ -278,9 +332,9 @@
     tick = setInterval(() => {
       const Q = ui.quiz;
       if (!Q || Q.stage !== 'play' || Q.picked != null) { stopClock(); return; }
-      const left = Math.max(0, SECONDS - (Date.now() - Q.t0) / 1000);
+      const secs = secsOf(Q.qs[Q.i]), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
       const bar = document.getElementById('qz-time'), num = document.getElementById('qz-sec');
-      if (bar) bar.style.transform = 'scaleX(' + (left / SECONDS) + ')';
+      if (bar) bar.style.transform = 'scaleX(' + (left / secs) + ')';
       if (num) num.textContent = String(Math.ceil(left));
       if (left <= 0) answer(-1);
     }, 200);
@@ -289,8 +343,8 @@
     const Q = ui.quiz, q = Q.qs[Q.i];
     if (Q.picked != null) return;
     stopClock();
-    const ok = i >= 0 && q.opts[i] === q.a, left = Math.max(0, SECONDS - (Date.now() - Q.t0) / 1000);
-    const pts = ok ? 100 + Math.round(50 * left / SECONDS) : 0;
+    const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) : 0;
     Q.picked = i; Q.pts = pts;
     if (ok) { Q.right++; Q.score += pts; K.vibrate(15); } else K.vibrate([30, 40, 30]);
     Q.log.push({ q: q.q, a: q.a, ok: ok });
@@ -338,7 +392,7 @@
     if (Q && Q.stage === 'play') return playView(Q);
     const body = h('div', { class: 'page' });
     const mine = D.scores.filter((s) => s.uid === ((K.me && K.me.id) || 'this-phone') && s.at >= since('week'));
-    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions, twenty seconds each. Quick answers score more.', null, '', 'quiz-head'));
+    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions. A harder one gives more time and up to double the points; a quick answer scores more.', null, '', 'quiz-head'));
     const w = h('div', { class: 'wrap' });
     body.append(w);
     if (Q && Q.stage === 'done') w.append(doneCard(Q));
@@ -377,14 +431,14 @@
   function playView(Q) {
     const q = Q.qs[Q.i], done = Q.picked != null;
     if (!q) { ui.quiz = null; return K.V.quiz(); }
-    const left = Math.max(0, SECONDS - (Date.now() - Q.t0) / 1000);
+    const secs = secsOf(q), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
     const body = h('div', { class: 'wrap quiz-play' },
       h('div', { class: 'qp-top' },
         h('span', { class: 'mono' }, (Q.i + 1) + ' / ' + Q.qs.length),
         h('span', { class: 'qp-score mono' }, Q.score + ' pts'),
         h('span', { class: 'qp-sec mono', id: 'qz-sec' }, done ? '' : String(Math.ceil(left)))),
-      h('div', { class: 'qp-timer' }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / SECONDS) + ')' } })),
-      h('p', { class: 'kicker' }, q.topic === 'wine' ? 'Wine' : 'Food'),
+      h('div', { class: 'qp-timer' }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {

@@ -134,6 +134,19 @@
         Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
         if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
       });
+      /* the quiz questions that come with the menu (what the house knows about its own dishes): added, and kept up to
+         date while they are as the list wrote them. One a manager has rewritten is left alone. */
+      let asked = 0;
+      (j.quiz || []).forEach((q, i) => {
+        const id = 'house-' + (q.id || i), cur = D.quizq.find((x) => x.id === id);
+        if (cur && !cur.house) return;
+        const doc = Object.assign({ topic: 'food', house: true, at: Date.now() }, q);
+        delete doc.id;
+        if (cur && JSON.stringify(Object.assign({}, cur, { id: undefined, at: 0 })) === JSON.stringify(Object.assign({}, doc, { at: 0 }))) return;
+        D.quizq = D.quizq.filter((x) => x.id !== id).concat([Object.assign({ id: id }, doc)]);
+        K.db.doc('quizq/' + id).set(doc).catch(K.writeFailed);
+        asked++;
+      });
       /* dishes already loaded from this menu get its corrected ingredient explanations */
       let fixed = 0;
       (j.menu || []).forEach((e) => Object.keys(D.notes).forEach((id) => {
@@ -142,7 +155,8 @@
       }));
       const fresh = (o) => { const c = Object.assign({}, o); delete c.was; return c; };
       return Promise.all(add.map((p) => K.db.doc(p).set(fresh(docs[p]))).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
-        K.toast([noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        K.toast([asked ? asked + ' quiz questions added' : '', noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        houseNow = j;
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
         else ui.sheet = null;
         K.render();
@@ -182,9 +196,14 @@
     return { id: best, score: score };
   }
   /* every line with its best kitchen dish; when two lines want the same dish, the better fit keeps it */
+  /* the lines the tasting menu is made of (set while a list with a tasting menu is being loaded) */
+  let houseNow = null;
+  const tastingKeys = () => { const t = houseNow && houseNow.tasting; return t ? t.courses.map((c) => c.key).concat(t.extra ? [t.extra.key] : []) : []; };
   function matchMenu(menu) {
     /* a course that only the tasting menu has is the floor's own unless the kitchen book has it */
-    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' ? '__own' : ''), score: m.score }; });
+    /* so is a course of the tasting menu that the kitchen book has under no name the list knows: without it the menu could not be set */
+    const need = tastingKeys();
+    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' || need.includes(e.en) ? '__own' : ''), score: m.score, need: need.includes(e.en) }; });
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
@@ -283,12 +302,13 @@
         ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
         if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
       });
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : S.house && S.house.tasting ? ' · the tasting menu is NOT set: one of its dishes was skipped' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),
+      S.items.some((x) => x.need && !x.to) ? h('p', { class: 'banner' }, h('b', null, 'The tasting menu needs every one of its dishes. '), 'A line marked “tasting menu” is set to be skipped: choose its kitchen dish, or add it as the floor’s own.') : null,
       h('div', { class: 'mi-list' }, S.items.map((x, i) => h('div', { class: 'mi-row' + (x.to ? '' : ' none') },
-        h('div', { class: 'mi-name' }, h('b', null, x.e.menuName), h('span', { class: 'ing-en' }, x.e.en || '')),
+        h('div', { class: 'mi-name' }, h('b', null, x.e.menuName), h('span', { class: 'ing-en' }, x.e.en || ''), x.need ? h('span', { class: 'pill' }, 'tasting menu') : null),
         K.select(opts, x.to, (v) => { x.to = v; K.render(); }, { class: 'input small', id: 'mi-' + i, 'aria-label': 'Kitchen dish for ' + x.e.menuName })))),
       h('button', { class: 'btn primary wide', type: 'button', disabled: !n, onclick: save }, 'Save ' + n + ' dishes')), { wide: true });
   };
