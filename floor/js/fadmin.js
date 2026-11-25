@@ -176,7 +176,7 @@
   /* The house menu, wine list, pairings, tasting menu and quiz questions come with the app (floor/data/house.json).
      When the app carries a newer one than the book has, whoever runs the floor book gets it brought in on opening:
      no button to find. Only the real, shared book does this; what was changed by hand is kept, as when loading by hand. */
-  const HOUSE_V = 2026112501;
+  const HOUSE_V = 2026112502;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);

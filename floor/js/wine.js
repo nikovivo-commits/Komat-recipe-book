@@ -132,6 +132,7 @@
         w.made ? [h('dt', null, 'How it is made'), h('dd', null, w.made)] : null),
       notes.typical ? h('p', { class: 'hint' }, (notes.grape ? 'These are the notes typical of ' + notes.grape + '.' : 'These are the notes typical of this kind of wine.') + ' Taste the bottle and say what you find.') : null));
     if (w.serve || w.decant || w.glass) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Serving it'),
+      w.colour === 'red' && w.serve ? h('p', { class: 'hint' }, 'A red at today’s room temperature (22–24 °C) is too warm: the alcohol takes over and the freshness goes. Too cold, and its aromas hide. A light red is served coolest, a full, tannic one warmest.') : null,
       h('dl', { class: 'niche' }, w.serve ? [h('dt', null, 'Temperature'), h('dd', null, w.serve)] : null, w.glass ? [h('dt', null, 'Glass'), h('dd', null, w.glass)] : null, w.decant ? [h('dt', null, 'Decanting'), h('dd', null, w.decant)] : null)));
     if (w.story) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'The story'), h('p', { class: 'prose' }, w.story)));
     if (lines(w.facts).length) body.append(h('section', { class: 'part' }, h('h2', { class: 'sec-title' }, 'Good to know'), h('ul', { class: 'facts' }, lines(w.facts).map((f) => h('li', null, f)))));
