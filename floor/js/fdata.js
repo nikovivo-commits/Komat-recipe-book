@@ -115,7 +115,7 @@
     const t = D.tasting || {};
     return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean),
       /* the wine pairing: its price, the glass poured to start, a wine per course ({id, text}: the list's bottle and the line as printed) */
-      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {},
+      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {}, lines: t.lines || {},
       /* what can be added to it, like the caviar */
       extra: t.extra && K.dish(t.extra.dish) ? { dish: K.dish(t.extra.dish), price: t.extra.price || '' } : null };
   };
@@ -128,8 +128,11 @@
     const ids = t.courses.map((c) => (by[c.key] ? find(by[c.key]) : '')), wines = {};
     if (ids.some((id) => !id)) return null;
     t.courses.forEach((c, i) => { if (c.wine) wines[ids[i]] = c.wine; });
+    /* a course the tasting menu prints with a line of its own (the tartare comes without its bread), or with none */
+    const lines = {};
+    t.courses.forEach((c, i) => { if (c.line !== undefined) lines[ids[i]] = { en: c.line, bg: c.lineBg || '' }; });
     const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
-    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
+    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, lines: lines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
   };
   /* the allergens the printed menu line points to: {key: ['the menu line (горчица)']} */
   K.fromMenu = (src) => String(src).indexOf('the menu line') === 0;
@@ -604,6 +607,7 @@
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
       D.tasting = m.tasting || null;
+      D.houseV = (m.house && +m.house.v) || 0; D.settingsLoaded = true;
       D.take = m.stocktake || null;
       D.hypeUrl = (m.hype && m.hype.url) || '';
       /* a fresher read made on this phone is not replaced by an older saved one */

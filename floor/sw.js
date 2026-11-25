@@ -1,6 +1,6 @@
 /* Offline support for the floor book. The app comes from the network when it can, so updates arrive straight
    away, and from the cache when the Wi-Fi drops. Photos and fonts come from the cache first. */
-const CACHE = 'komat-floor-v48';
+const CACHE = 'komat-floor-v49';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'floor.css', 'data/examples.js',
   'js/fdata.js', 'js/fapp.js', 'js/tonight.js', 'js/food.js', 'js/wine.js', 'js/pairing.js', 'js/lang.js', 'data/bg.js', 'js/stock.js', 'js/count.js', 'js/quiz.js', 'js/fschedule.js', 'js/fadmin.js', 'js/hype.js', 'data/ingart.js',

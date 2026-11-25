@@ -1,4 +1,5 @@
 {
+ "v": 2026112501,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -5553,11 +5554,11 @@
   "name": "Tasting menu",
   "price": "80",
   "pairing": "35",
-  "pairingName": "Bulgarian wine pairing",
+  "pairingName": "Wine pairing",
   "note": "For the entire table",
   "welcome": {
    "id": "edoardo-miroglio-classic-method-brut-2019",
-   "text": "Brut Classic Method, Edoardo Miroglio, Thracian Lowlands, 2019",
+   "text": "Brut Classic Method, Edoardo Miroglio, Bulgaria, Thracian Lowlands, 2019",
    "textBg": "Брут класически метод, Edoardo Miroglio, България, Тракийска низина, 2019"
   },
   "extra": {
@@ -5566,10 +5567,14 @@
   },
   "courses": [
    {
-    "key": "Bread & butter"
+    "key": "Bread & butter",
+    "line": "",
+    "lineBg": ""
    },
    {
-    "key": "Bites"
+    "key": "Bites",
+    "line": "awakening, curiosity, comfort promise",
+    "lineBg": "глад, копнеж, уют"
    },
    {
     "key": "Beef tartare",
@@ -5577,7 +5582,9 @@
      "id": "bononia-dimyat-2023",
      "text": "Dimyat, Bononia Estate, Northwestern Bulgaria, 2023",
      "textBg": "Димят, Bononia Estate, Северозападна България, 2023"
-    }
+    },
+    "line": "beef tenderloin, mushrooms, yolk, ponzu",
+    "lineBg": "бонфиле, гъби, жълтък, понзу"
    },
    {
     "key": "Gyoza",
@@ -5610,7 +5617,7 @@
     "key": "Kazandibi",
     "wine": {
      "id": "tsarev-brod-gergana-ice",
-     "text": "Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023",
+     "text": "Carev Brod Ice Gergana, Tsarev Brod Winery, Danubian Plain, 2023",
      "textBg": "Царев брод айс гергана, Tsarev Brod Winery, Дунавска равнина, 2023"
     }
    }

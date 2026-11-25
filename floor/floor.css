@@ -947,3 +947,6 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .to-demo h2 { margin: 0; font: 800 1.05rem/1.25 var(--sans); }
 .fd-paste summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
 .fd-paste { display: grid; gap: 8px; }
+
+/* a course's line on the tasting card, as on the printed menu */
+.ts-line { display: block; margin-top: 2px; font: 400 .86rem/1.4 var(--sans); color: var(--muted); text-align: left; }
