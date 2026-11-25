@@ -765,7 +765,8 @@
      "бешамел": "Бешамел: бял сос от мляко, сгъстено с масло и брашно."
     }
    },
-   "course": "starter"
+   "course": "starter",
+   "lineIs": "names"
   },
   {
    "menuName": "Уагиу",
@@ -6525,5 +6526,359 @@
   "Bites": [
    "edoardo-miroglio-classic-method-brut-2019"
   ]
- }
+ },
+ "quiz": [
+  {
+   "id": "katak-milk",
+   "level": 2,
+   "q": "Our katak is made from which milk?",
+   "a": "Cow’s milk",
+   "wrong": [
+    "Sheep’s milk",
+    "Goat’s milk",
+    "Buffalo milk"
+   ],
+   "why": "Katak: cow’s milk. Krokmach is the one from sheep’s milk.",
+   "bg": {
+    "q": "От какво мляко е нашият катък?",
+    "a": "Краве мляко",
+    "wrong": [
+     "Овче мляко",
+     "Козе мляко",
+     "Биволско мляко"
+    ],
+    "why": "Катъкът е от краве мляко. От овче мляко е крокмачът."
+   }
+  },
+  {
+   "id": "krokmach-milk",
+   "level": 2,
+   "q": "Our krokmach is made from which milk?",
+   "a": "Sheep’s milk",
+   "wrong": [
+    "Cow’s milk",
+    "Goat’s milk",
+    "Buffalo milk"
+   ],
+   "why": "Krokmach is like our katak, but from sheep’s milk.",
+   "bg": {
+    "q": "От какво мляко е нашият крокмач?",
+    "a": "Овче мляко",
+    "wrong": [
+     "Краве мляко",
+     "Козе мляко",
+     "Биволско мляко"
+    ],
+    "why": "Крокмачът прилича на нашия катък, но е от овче мляко."
+   }
+  },
+  {
+   "id": "ayran-sauce",
+   "level": 2,
+   "q": "What is in the ayran sauce on the bonito, besides the ayran?",
+   "a": "Horseradish",
+   "wrong": [
+    "Mustard",
+    "Wasabi",
+    "Garlic"
+   ],
+   "why": "Ayran with horseradish. Ayran is dairy, so the dish has milk.",
+   "bg": {
+    "q": "Какво има в соса от айрян към паламуда, освен айрян?",
+    "a": "Хрян",
+    "wrong": [
+     "Горчица",
+     "Уасаби",
+     "Чесън"
+    ],
+    "why": "Айрян с хрян. Айрянът е млечен, затова в ястието има мляко."
+   }
+  },
+  {
+   "id": "blini-flour",
+   "level": 3,
+   "q": "What flour are the blini with the caviar made with?",
+   "a": "Ordinary wheat flour",
+   "wrong": [
+    "Buckwheat flour",
+    "Rye flour",
+    "Corn flour"
+   ],
+   "why": "Ours are not buckwheat blini: they are wheat, so they have gluten.",
+   "bg": {
+    "q": "С какво брашно са блините към хайвера?",
+    "a": "Обикновено пшенично брашно",
+    "wrong": [
+     "Елдено брашно",
+     "Ръжено брашно",
+     "Царевично брашно"
+    ],
+    "why": "Нашите блини не са от елда: пшенични са и имат глутен."
+   }
+  },
+  {
+   "id": "jus-lentils",
+   "level": 2,
+   "q": "Our jus is beef or mushroom, depending on the dish. Which one goes on the beluga lentils?",
+   "a": "Mushroom jus",
+   "wrong": [
+    "Beef jus",
+    "Both, mixed",
+    "Neither: a butter sauce"
+   ],
+   "why": "The menu says which: mushroom jus on the lentils.",
+   "bg": {
+    "q": "Нашето жу е телешко или гъбено, според ястието. Кое е към лещата белуга?",
+    "a": "Гъбено жу",
+    "wrong": [
+     "Телешко жу",
+     "И двете, смесени",
+     "Нито едното: маслен сос"
+    ],
+    "why": "Менюто казва кое: към лещата е гъбено жу."
+   }
+  },
+  {
+   "id": "salad-fruit",
+   "level": 2,
+   "q": "What is the seasonal fruit in the leafy salad right now?",
+   "a": "Pear",
+   "wrong": [
+    "Pumpkin",
+    "Quince",
+    "Green apple"
+   ],
+   "why": "The fruit changes with the season. Now it is pear.",
+   "bg": {
+    "q": "Кой е сезонният плод в листната салата в момента?",
+    "a": "Круша",
+    "wrong": [
+     "Тиква",
+     "Дюля",
+     "Зелена ябълка"
+    ],
+    "why": "Плодът се сменя със сезона. Сега е круша."
+   }
+  },
+  {
+   "id": "tarama-bread",
+   "level": 3,
+   "q": "Why does the tarama keep its gluten when it is served without the bread?",
+   "a": "There is bread in the tarama itself",
+   "wrong": [
+    "The cod roe has gluten",
+    "It is thickened with flour",
+    "The lemon juice has gluten"
+   ],
+   "why": "The bread on the side can go; the bread in the mix cannot.",
+   "bg": {
+    "q": "Защо тарамата има глутен и когато се сервира без хляба?",
+    "a": "В самата тарама има хляб",
+    "wrong": [
+     "Хайверът от треска има глутен",
+     "Сгъстена е с брашно",
+     "Лимоновият сок има глутен"
+    ],
+    "why": "Хлябът отстрани може да се махне; хлябът в сместа – не."
+   }
+  },
+  {
+   "id": "dip-bread-inside",
+   "level": 3,
+   "q": "Which of our dips has bread in the mix itself?",
+   "a": "Tarama",
+   "wrong": [
+    "Quince dip",
+    "Muhammara",
+    "None of them"
+   ],
+   "why": "The other dips only come with bread on the side.",
+   "bg": {
+    "q": "В коя от нашите разядки има хляб в самата смес?",
+    "a": "Тарама",
+    "wrong": [
+     "Дюлева",
+     "Мухамара",
+     "В никоя"
+    ],
+    "why": "Другите разядки само се сервират с хляб отделно."
+   }
+  },
+  {
+   "id": "bites-first",
+   "level": 3,
+   "q": "The tasting menu opens with three bites. Which one comes first?",
+   "a": "A skewer of fermented vegetables with tomato powder",
+   "wrong": [
+    "A damga with krokmach and mushroom duxelles",
+    "A croquette of duck confit and béchamel",
+    "A blini with caviar and sour cream"
+   ],
+   "why": "Then the damga, then the croquette. On the menu: глад, копнеж, уют.",
+   "bg": {
+    "q": "Дегустационното меню започва с три хапки. Коя е първата?",
+    "a": "Шишче от ферментирали зеленчуци с доматена пудра",
+    "wrong": [
+     "Дамга с крокмач и гъбен дюксел",
+     "Крокет от патешко конфи и бешамел",
+     "Блин с хайвер и заквасена сметана"
+    ],
+    "why": "После идва дамгата, накрая крокетът. В менюто: глад, копнеж, уют."
+   }
+  },
+  {
+   "id": "bites-second",
+   "level": 3,
+   "q": "The second bite on the tasting menu, “копнеж”, is…",
+   "a": "A damga with krokmach and mushroom duxelles, dusted with cep",
+   "wrong": [
+    "A skewer of fermented vegetables with tomato powder",
+    "A croquette of duck confit and béchamel",
+    "A gyoza with beef and shrimp"
+   ],
+   "why": "Глад is the skewer, копнеж the damga, уют the croquette.",
+   "bg": {
+    "q": "Втората хапка в дегустационното меню, „копнеж“, е…",
+    "a": "Дамга с крокмач и гъбен дюксел, поръсена с манатарка",
+    "wrong": [
+     "Шишче от ферментирали зеленчуци с доматена пудра",
+     "Крокет от патешко конфи и бешамел",
+     "Гьоза с телешко и скариди"
+    ],
+    "why": "Глад е шишчето, копнеж – дамгата, уют – крокетът."
+   }
+  },
+  {
+   "id": "bites-third",
+   "level": 3,
+   "q": "The third bite on the tasting menu, “уют”, is…",
+   "a": "A croquette of duck confit and béchamel",
+   "wrong": [
+    "A damga with krokmach and mushroom duxelles",
+    "A skewer of fermented vegetables with tomato powder",
+    "A small bowl of kazandibi"
+   ],
+   "why": "It has béchamel and a crumb coating: milk, gluten.",
+   "bg": {
+    "q": "Третата хапка в дегустационното меню, „уют“, е…",
+    "a": "Крокет от патешко конфи и бешамел",
+    "wrong": [
+     "Дамга с крокмач и гъбен дюксел",
+     "Шишче от ферментирали зеленчуци с доматена пудра",
+     "Малка купичка казандиби"
+    ],
+    "why": "В него има бешамел и панировка: мляко и глутен."
+   }
+  },
+  {
+   "id": "goatling-vegan",
+   "level": 3,
+   "q": "For a vegan guest, which part of the Boer goatling is a dish of its own?",
+   "a": "The pumpkin terrine with the pumpkin sauce",
+   "wrong": [
+    "The goat cheese with the pumpkin sauce",
+    "The kid, without the cheese",
+    "None: it cannot be made vegan"
+   ],
+   "why": "The garnish on its own. In a vegan tasting it stands in for a main.",
+   "bg": {
+    "q": "За веган гост коя част от ярето боер е самостоятелно ястие?",
+    "a": "Теринът от тиква с тиквения сос",
+    "wrong": [
+     "Козето сирене с тиквения сос",
+     "Ярето, без сиренето",
+     "Никоя: не може да стане веган"
+    ],
+    "why": "Само гарнитурата. Във веган дегустация замества основно."
+   }
+  },
+  {
+   "id": "cheese-with",
+   "level": 1,
+   "q": "What does our cheese board come with?",
+   "a": "Marmalade",
+   "wrong": [
+    "Honey",
+    "Grapes",
+    "Walnuts"
+   ],
+   "why": "As the menu says: served with marmalade.",
+   "bg": {
+    "q": "С какво се сервира нашата дъска със сирена?",
+    "a": "Мармалад",
+    "wrong": [
+     "Мед",
+     "Грозде",
+     "Орехи"
+    ],
+    "why": "Както пише в менюто: сервира се с мармалад."
+   }
+  },
+  {
+   "id": "caviar-grams",
+   "level": 2,
+   "q": "How much caviar is in one caviar serving?",
+   "a": "30 grams",
+   "wrong": [
+    "15 grams",
+    "20 grams",
+    "50 grams"
+   ],
+   "why": "Bulgarian sturgeon caviar, 30 g, with blini, chives, sour cream and egg.",
+   "bg": {
+    "q": "Колко хайвер има в една порция хайвер от есетра?",
+    "a": "30 грама",
+    "wrong": [
+     "15 грама",
+     "20 грама",
+     "50 грама"
+    ],
+    "why": "Български хайвер от есетра, 30 г, с блини, див лук, заквасена сметана и яйце."
+   }
+  },
+  {
+   "id": "main-swap-rule",
+   "level": 3,
+   "q": "A guest on the tasting menu cannot have the main course. What may replace it?",
+   "a": "Another main course",
+   "wrong": [
+    "A dip with bread",
+    "The cheese board",
+    "A second dessert"
+   ],
+   "why": "A course is only replaced by one of its kind. A dip or the cheese board never replaces a main.",
+   "bg": {
+    "q": "Гост с дегустационно меню не може да яде основното. С какво може да се замени?",
+    "a": "С друго основно ястие",
+    "wrong": [
+     "С разядка с хляб",
+     "С дъската със сирена",
+     "С втори десерт"
+    ],
+    "why": "Ястие се заменя само с ястие от същия вид. Разядка или дъската със сирена никога не заменят основно."
+   }
+  },
+  {
+   "id": "lactose-butter",
+   "level": 2,
+   "q": "A guest avoids lactose but says butter is fine. What do you look for on a dish?",
+   "a": "Whether its only dairy is butter",
+   "wrong": [
+    "Whether it has any gluten",
+    "Whether it is served cold",
+    "Nothing: all dairy is the same"
+   ],
+   "why": "Some guests who avoid lactose eat butter. For a milk allergy it is different: no dairy at all.",
+   "bg": {
+    "q": "Гост избягва лактоза, но казва, че маслото не му пречи. Какво гледаш за ястието?",
+    "a": "Дали единственото млечно в него е масло",
+    "wrong": [
+     "Дали има глутен",
+     "Дали се сервира студено",
+     "Нищо: всички млечни са еднакви"
+    ],
+    "why": "Някои гости, които избягват лактоза, ядат масло. При алергия към мляко е различно: никакви млечни."
+   }
+  }
+ ]
 }

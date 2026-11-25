@@ -930,3 +930,20 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .fd-row.none { opacity: .7; }
 .fd-row b { font-size: 1rem; }
 .fd-more { color: var(--low); }
+
+/* how hard a quiz question is, and what it is worth */
+.qp-kick { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.qp-level { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); letter-spacing: 0; text-transform: none; font: 500 .78rem/1.4 var(--sans); color: var(--muted); }
+.qp-level b { font-weight: 800; color: var(--ink); }
+.qp-level.l2 { border-color: var(--apron-line); } .qp-level.l2 b { color: var(--apron-text); }
+.qp-level.l3 { border-color: var(--todo); } .qp-level.l3 b { color: var(--todo); }
+
+/* the tasting tab */
+.tb-head { margin: 14px 0 4px; }
+.tb-head h2 { margin: 0 0 4px; font: 800 1.1rem/1.25 var(--sans); }
+
+/* demo answers waiting to come over */
+.to-demo { display: grid; gap: 10px; border-color: var(--apron-line); background: var(--apron-soft); }
+.to-demo h2 { margin: 0; font: 800 1.05rem/1.25 var(--sans); }
+.fd-paste summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
+.fd-paste { display: grid; gap: 8px; }

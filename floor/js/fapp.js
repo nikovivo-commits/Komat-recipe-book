@@ -235,6 +235,7 @@
       pr.wines.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
       Object.assign(note, { pairs: pr.wines.map((x) => x.id), pairWhy: why, bg: Object.assign({}, note.bg, { pairWhy: whyBg }) });
     });
+    (house.quiz || []).forEach((q, i) => { const doc = Object.assign({ topic: 'food', house: true }, q); delete doc.id; docs['quizq/house-' + (q.id || i)] = doc; });
     /* what was confirmed in an earlier version of the demo is kept: the answers move onto the fresh sample dishes */
     (K.demoAnswers ? K.demoAnswers() : []).forEach((n) => {
       const i = (house.menu || []).findIndex((m) => (n.menuBg && m.menuBg === n.menuBg) || (n.en && m.en === n.en));
@@ -270,7 +271,7 @@
     K.demo = !!window.KOMAT_DEMO;
     /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
     const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
-    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v7' : 'komat.floor.db.v1');
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v8' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
     K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };

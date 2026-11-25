@@ -31,6 +31,12 @@
         h('span', { class: 'to-txt' }, h('b', null, 'A stock count is running'), h('span', { class: 'muted' }, done + ' of ' + all.length + ' counted. Tap to count.')), K.icon('next')));
     }
 
+    /* answers given in the demo on this device, waiting to be brought into the real book */
+    const waiting = K.canEdit() && K.demoPending && !ui.demoLater ? K.demoPending() : 0;
+    if (waiting) w.append(h('section', { class: 'to-card to-demo' },
+      h('span', { class: 'to-txt' }, h('h2', null, 'You confirmed ' + waiting + ' dishes in the demo'), h('span', { class: 'muted' }, 'Their allergens and food preferences can come into the real book now. You check the list first.')),
+      h('div', { class: 'btns' }, h('button', { type: 'button', class: 'btn primary', onclick: () => { ui.sheet = { type: 'fromdemo' }; K.render(); } }, 'Bring them over'),
+        h('button', { type: 'button', class: 'btn', onclick: () => { ui.demoLater = true; K.render(); } }, 'Not now'))));
     const weekly = K.canEdit() ? K.countDue() : null;
     if (weekly && !weekly.never) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => K.go('count') }, K.icon('clipboard'),
       h('span', { class: 'to-txt' }, h('b', null, 'Time for the weekly count'), h('span', { class: 'muted' }, 'The last one was ' + weekly.days + ' days ago. It shows what went missing.')), K.icon('next')));
@@ -65,8 +71,8 @@
         : h('p', { class: 'to-fine' }, K.icon('check'), open.length === 1 ? 'One bottle is open, and it is fine.' : open.length + ' bottles are open, all fine.')));
 
     const t = K.tasting();
-    if (t.courses.length) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => { ui.foodTab = 'dishes'; K.go('food'); } }, K.icon('list'),
-      h('span', { class: 'to-txt' }, h('b', null, t.name), h('span', { class: 'muted' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : ''))), K.icon('next')));
+    if (t.courses.length) w.append(h('button', { type: 'button', class: 'to-card to-link', onclick: () => { ui.foodTab = 'tasting'; K.go('food'); } }, K.icon('list'),
+      h('span', { class: 'to-txt' }, h('b', null, t.name), h('span', { class: 'muted' }, t.courses.length + ' courses' + (t.price ? ' · ' + K.price(t.price) : '')), h('span', { class: 'muted' }, 'Build it for a guest with allergies')), K.icon('next')));
 
     w.append(h('section', { class: 'to-card to-quiz' },
       h('span', { class: 'to-txt' }, h('h2', null, 'The quiz'), h('span', { class: 'muted' }, 'Ten questions, twenty seconds each')),

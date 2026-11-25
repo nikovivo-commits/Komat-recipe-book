@@ -103,7 +103,10 @@
       K.canEdit() ? link('rota', 'The floor team', 'The people on the schedule', open('team')) : null,
       K.canEdit() && !ex ? link('sparkle', 'Load the example wines', 'Six Bulgarian wines and notes, to see how it works', () => { ui.sheet = null; K.loadExamples(); K.render(); }) : null,
       K.canEdit() && ex ? link('trash', 'Remove the examples', 'The example wines, dish notes and questions', () => { ui.sheet = null; K.removeExamples(); K.render(); }) : null,
-      !K.demo && K.canEdit() && K.demoAnswers().length ? link('check', 'Bring over what I confirmed in the demo', K.demoAnswers().length + ' dishes: allergens, who can eat them, bread', open('fromdemo')) : null,
+      !K.demo && K.canEdit() ? link('check', 'Bring over what I confirmed in the demo', K.demoAnswers().length ? K.demoAnswers().length + ' dishes: allergens, who can eat them, bread' : 'Allergens and food preferences set in the demo', open('fromdemo')) : null,
+      K.demo && K.demoAnswers().length ? link('copy', 'Copy what I confirmed here', 'To bring it into the real book from another phone or computer', () => {
+        navigator.clipboard.writeText(JSON.stringify({ komatDemo: K.demoAnswers() })).then(() => K.toast('Copied. In the real book: Settings → Bring over what I confirmed in the demo → paste.'), () => K.toast('This device would not copy.', { tone: 'bad' }));
+      }) : null,
       K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', loadHouse) : null,
       K.canEdit() ? link('download', 'Prices and stock from Hype', 'Read a file exported from the till: bottles in stock and prices', open('hype')) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
@@ -134,6 +137,19 @@
         Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
         if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
       });
+      /* the quiz questions that come with the menu (what the house knows about its own dishes): added, and kept up to
+         date while they are as the list wrote them. One a manager has rewritten is left alone. */
+      let asked = 0;
+      (j.quiz || []).forEach((q, i) => {
+        const id = 'house-' + (q.id || i), cur = D.quizq.find((x) => x.id === id);
+        if (cur && !cur.house) return;
+        const doc = Object.assign({ topic: 'food', house: true, at: Date.now() }, q);
+        delete doc.id;
+        if (cur && JSON.stringify(Object.assign({}, cur, { id: undefined, at: 0 })) === JSON.stringify(Object.assign({}, doc, { at: 0 }))) return;
+        D.quizq = D.quizq.filter((x) => x.id !== id).concat([Object.assign({ id: id }, doc)]);
+        K.db.doc('quizq/' + id).set(doc).catch(K.writeFailed);
+        asked++;
+      });
       /* dishes already loaded from this menu get its corrected ingredient explanations */
       let fixed = 0;
       (j.menu || []).forEach((e) => Object.keys(D.notes).forEach((id) => {
@@ -142,7 +158,8 @@
       }));
       const fresh = (o) => { const c = Object.assign({}, o); delete c.was; return c; };
       return Promise.all(add.map((p) => K.db.doc(p).set(fresh(docs[p]))).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
-        K.toast([noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        K.toast([asked ? asked + ' quiz questions added' : '', noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
+        houseNow = j;
         if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
         else ui.sheet = null;
         K.render();
@@ -182,9 +199,14 @@
     return { id: best, score: score };
   }
   /* every line with its best kitchen dish; when two lines want the same dish, the better fit keeps it */
+  /* the lines the tasting menu is made of (set while a list with a tasting menu is being loaded) */
+  let houseNow = null;
+  const tastingKeys = () => { const t = houseNow && houseNow.tasting; return t ? t.courses.map((c) => c.key).concat(t.extra ? [t.extra.key] : []) : []; };
   function matchMenu(menu) {
     /* a course that only the tasting menu has is the floor's own unless the kitchen book has it */
-    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' ? '__own' : ''), score: m.score }; });
+    /* so is a course of the tasting menu that the kitchen book has under no name the list knows: without it the menu could not be set */
+    const need = tastingKeys();
+    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' || need.includes(e.en) ? '__own' : ''), score: m.score, need: need.includes(e.en) }; });
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
@@ -211,9 +233,17 @@
     return Object.keys(best).map((k) => best[k]);
   };
   /* the allergens a demo dish ended with, once confirmed: found in its ingredients and menu line, plus what was ticked, minus what was unticked */
-  const demoSet = (n) => (n.checked ? Object.keys(K.allergenWhere({ id: 'demo', name: n.name, en: n.en, ings: n.ings || [], parts: [], r: null, n: n })) : null);
+  const demoSet = (n) => {
+    if (!n.checked) return null;
+    const m = Object.assign({}, n);
+    if (n.notAl === undefined) m.notAl = Object.keys(K.menuAllergens({ n: n }));
+    return Object.keys(K.allergenWhere({ id: 'demo', name: n.name, en: n.en, ings: n.ings || [], parts: [], r: null, n: m }));
+  };
+  /* how many demo answers on this device have not been brought over yet */
+  const movedAt = () => { try { return +JSON.parse(localStorage.getItem('komat.fohDemoMoved') || '0') || 0; } catch (e) { return 0; } };
+  K.demoPending = () => (K.demo ? 0 : K.demoAnswers().filter((n) => (n.updated || 0) > movedAt()).length);
   K.SHEETS.fromdemo = function (S) {
-    if (!S.items) S.items = K.demoAnswers().map((n) => ({ n: n, set: demoSet(n), d: K.dishes(true).find((x) => (n.menuBg && x.n.menuBg === n.menuBg) || (n.en && x.en === n.en) || x.name === n.name) || null }))
+    if (!S.items) S.items = (S.pasted || K.demoAnswers()).map((n) => ({ n: n, set: demoSet(n), d: K.dishes(true).find((x) => (n.menuBg && x.n.menuBg === n.menuBg) || (n.en && x.en === n.en) || x.name === n.name) || null }))
       .sort((a, b) => (a.d ? 0 : 1) - (b.d ? 0 : 1) || String(a.n.name).localeCompare(String(b.n.name)));
     const hardOf = (d) => { const w = K.allergenWhere(d); return Object.keys(w).filter((k) => w[k].some((x) => x !== 'ticked by hand' && !K.fromMenu(x))); };
     const can = S.items.filter((x) => x.d), lost = S.items.filter((x) => !x.d);
@@ -227,6 +257,7 @@
         if (x.set) { if (K.canCheck(d)) K.confirmAllergens(d, x.set.filter((k) => !hard.includes(k))); else noRight++; }
         done++;
       });
+      try { localStorage.setItem('komat.fohDemoMoved', JSON.stringify(Math.max.apply(null, S.items.map((x) => x.n.updated || 0).concat([Date.now()])))); } catch (e) { /* nothing kept: the card shows again */ }
       ui.sheet = null; K.render();
       K.toast(done + ' dishes brought over from the demo' + (noRight ? ' · ' + noRight + ' still need a chef or the owner to confirm' : ''));
     };
@@ -243,7 +274,17 @@
       h('p', { class: 'hint' }, 'What was confirmed in the demo on this device, matched to the dishes in the book by their line on the menu. Check it, then bring it over. An allergen the kitchen’s own recipe shows cannot be removed here.'),
       can.length ? h('ul', { class: 'fd-list' }, can.map(row)) : h('p', { class: 'muted' }, 'None of the demo’s dishes are in the book yet. Load the house menu first.'),
       lost.length ? [h('p', { class: 'hint' }, 'Not in the book yet (load the house menu first):'), h('ul', { class: 'fd-list' }, lost.map(row))] : null,
-      h('button', { class: 'btn primary wide', type: 'button', disabled: !can.length, onclick: apply }, K.icon('check'), 'Bring over ' + can.length + ' dishes')), { wide: true });
+      h('button', { class: 'btn primary wide', type: 'button', disabled: !can.length, onclick: apply }, K.icon('check'), 'Bring over ' + can.length + ' dishes'),
+      /* the demo was used on another phone or computer: its answers come over as copied text */
+      h('details', { class: 'fd-paste' }, h('summary', null, 'The demo was on another phone or computer'),
+        h('p', { class: 'hint' }, 'There, open the demo → Settings → Copy what I confirmed here. Then paste it below.'),
+        h('textarea', { class: 'input', id: 'fd-paste', rows: '3', placeholder: 'Paste here', oninput: (e) => { S.text = e.target.value; } }),
+        h('button', { class: 'btn', type: 'button', onclick: () => {
+          let l = null;
+          try { l = JSON.parse(S.text || '').komatDemo; } catch (e) { l = null; }
+          if (!Array.isArray(l) || !l.length) { K.toast('That is not what the demo copies. Copy it again there and paste all of it.', { tone: 'bad' }); return; }
+          S.pasted = l; S.items = null; K.render();
+        } }, 'Use what I pasted'))), { wide: true });
   };
   K.SHEETS.menuimport = function (S) {
     const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
@@ -283,12 +324,13 @@
         ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
         if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
       });
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
+      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : S.house && S.house.tasting ? ' · the tasting menu is NOT set: one of its dishes was skipped' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),
+      S.items.some((x) => x.need && !x.to) ? h('p', { class: 'banner' }, h('b', null, 'The tasting menu needs every one of its dishes. '), 'A line marked “tasting menu” is set to be skipped: choose its kitchen dish, or add it as the floor’s own.') : null,
       h('div', { class: 'mi-list' }, S.items.map((x, i) => h('div', { class: 'mi-row' + (x.to ? '' : ' none') },
-        h('div', { class: 'mi-name' }, h('b', null, x.e.menuName), h('span', { class: 'ing-en' }, x.e.en || '')),
+        h('div', { class: 'mi-name' }, h('b', null, x.e.menuName), h('span', { class: 'ing-en' }, x.e.en || ''), x.need ? h('span', { class: 'pill' }, 'tasting menu') : null),
         K.select(opts, x.to, (v) => { x.to = v; K.render(); }, { class: 'input small', id: 'mi-' + i, 'aria-label': 'Kitchen dish for ' + x.e.menuName })))),
       h('button', { class: 'btn primary wide', type: 'button', disabled: !n, onclick: save }, 'Save ' + n + ' dishes')), { wide: true });
   };

@@ -24,13 +24,24 @@
         n ? h('p', { class: 'hero-sub' }, n + (n === 1 ? ' dish' : ' dishes') + ' · ' + K.ingredients().length + ' ingredients') : null)));
     const w = h('div', { class: 'wrap' });
     body.append(w);
-    const allergy = ui.foodTab === 'allergy';
+    const allergy = ui.foodTab === 'allergy' || ui.foodTab === 'tasting';
     /* the allergy view is the whole menu at a glance: no search box to cover the boxes */
     if (!allergy) w.append(K.searchBox('fq', ui.q, ui.foodTab === 'ings' ? 'Search an ingredient, in Bulgarian or English' : 'Search a dish, ingredient or allergen', (v) => { ui.q = v; results(); }));
     w.append(h('div', { class: 'chips filters' },
-      K.seg([['dishes', 'Dishes'], ['allergy', 'Allergies'], ['ings', 'Ingredients']], ui.foodTab, (v) => { ui.foodTab = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
+      K.seg([['dishes', 'Dishes'], ['allergy', 'Allergies'], ['tasting', 'Tasting'], ['ings', 'Ingredients']], ui.foodTab, (v) => { ui.foodTab = v; K.render(); }, { 'aria-label': 'Show', class: 'seg small-seg' }),
       K.canEdit() && !allergy ? h('button', { type: 'button', class: 'chip', onclick: () => { ui.sheet = { type: 'adddish' }; K.render(); } }, K.icon('plus'), 'Add') : null));
-    if (allergy) { w.append(checkNudge()); w.append(allergyPicker()); }
+    if (ui.foodTab === 'allergy') { w.append(checkNudge()); w.append(allergyPicker()); }
+    if (ui.foodTab === 'tasting') {
+      /* the tasting menu, and the same menu for a guest: tick what they cannot eat and every course answers */
+      const t = K.tasting();
+      if (!t.courses.length) w.append(h('div', { class: 'empty' }, h('strong', null, 'The tasting menu is not set up yet'),
+        K.canEdit() ? 'Load it with the house menu (Settings → Load the house menu and drinks), or pick its courses yourself.' : 'The floor manager sets it up.',
+        K.canEdit() ? h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } }, K.icon('list'), 'Set up the tasting menu')) : null));
+      else {
+        w.append(h('div', { class: 'tb-head' }, h('h2', null, 'For a guest with an allergy or a diet'), h('p', { class: 'hint' }, 'Tick what the guest cannot eat. Each course then shows if it is fine, fine with a change, or what to serve in its place, with a note to copy for the kitchen.')));
+        w.append(allergyPicker());
+      }
+    }
     if (ui.foodTab === 'dishes' && D.loaded && !ui.q && !ui.sect) w.append(tastingCard());
     if (ui.foodTab === 'dishes' && D.loaded && all.length) {
       const secs = Array.from(new Set(all.map((d) => d.section))).sort(secOrder);
@@ -52,6 +63,7 @@
     box.textContent = '';
     if (!D.loaded) { box.append(K.loadingBox('Loading the menu')); return; }
     if (ui.foodTab === 'ings') { box.append(ingList()); return; }
+    if (ui.foodTab === 'tasting') { if (K.tasting().courses.length) box.append(alSel().length ? tastingFor(alSel()) : tastingCard(true)); return; }
     if (ui.foodTab === 'allergy') { box.append(allergyResults()); return; }
     const all = K.dishes(K.canEdit()).filter((d) => (!ui.sect || d.section === ui.sect) && K.matches(dishHay(d), ui.q));
     if (!all.length) {
@@ -198,7 +210,7 @@
     const w = wn.id ? K.wine(wn.id) : null, txt = [K.icon('glass'), h('span', null, label ? h('b', null, label + ': ') : null, wn.text)];
     return w ? h('button', { type: 'button', class: 'ts-wine', onclick: () => K.go('winepage', { id: w.id }) }, txt) : h('p', { class: 'ts-wine' }, txt);
   }
-  function tastingCard() {
+  function tastingCard(plain) {
     const t = K.tasting();
     if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
       K.icon('list'), h('span', null, h('b', null, 'Set up the tasting menu'), h('span', null, 'Pick its courses from the dishes, in order.')), K.icon('next')) : null;
@@ -211,7 +223,7 @@
       h('ol', { class: 'ts-list' }, t.courses.map((d, i) => h('li', null, h('button', { type: 'button', onclick: () => K.go('dish', { id: d.id }) },
         h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null)),
         t.wines[d.id] ? wineLine('', t.wines[d.id]) : null))),
-      h('button', { type: 'button', class: 'btn ts-build', onclick: () => { ui.foodTab = 'allergy'; K.render(); window.scrollTo(0, 0); } }, K.icon('shield'), 'Build it for a guest with allergies'),
+      plain ? null : h('button', { type: 'button', class: 'btn ts-build', onclick: () => { ui.foodTab = 'tasting'; K.render(); window.scrollTo(0, 0); } }, K.icon('shield'), 'Build it for a guest with allergies'),
       t.extra ? h('button', { type: 'button', class: 'ts-extra', onclick: () => K.go('dish', { id: t.extra.dish.id }) }, h('span', null, h('b', null, 'Can be added: ' + K.dn(t.extra.dish)), t.extra.price ? ' · ' + K.price(t.extra.price) : ''), K.icon('next')) : null);
   }
   /* what kind of course a dish is, for swapping: 'main', 'starter', 'sweet', or 'mezze' (dips and the bread, to share).
@@ -226,6 +238,7 @@
   };
   /* which stand-in comes first: one that is fine as it is, then one that is fine with a change, then one still to confirm */
   const RANK = { ok: 0, mod: 1, ask: 2 };
+  K.courseKind = courseKind;
   const NO_SWAP = { main: 'No other main course is safe: ask the kitchen to adapt it', starter: 'No other starter is safe: ask the kitchen to adapt it', sweet: 'No other dessert is safe: ask the kitchen to adapt it', mezze: 'Nothing to serve in its place: ask the kitchen to adapt it' };
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {
