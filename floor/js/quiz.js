@@ -1,6 +1,7 @@
-/* The quiz: ten questions on the wines, the food or both, made from what is in the bibles (grapes, regions,
-   labels, prices, pairings, translations, allergens, the unusual ingredients) plus the floor manager's own
-   questions and some general service knowledge. Quick answers score more; the board shows who knows best. */
+/* The quiz: ten questions on the wines and drinks, the food or both, made from what is in the bibles (grapes,
+   regions, labels, prices, pairings, the whiskies and other spirits, translations, allergens, the unusual
+   ingredients) plus the floor manager's own questions and some general service knowledge. Quick answers score
+   more; the board shows who knows best. */
 (function () {
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
@@ -42,6 +43,28 @@
       ['How many tasting-pairing pours does one bottle give?', 'Nine', ['Five', 'Seven', 'Twelve'], 'A bottle is 750 ml and a pairing pour is about 80 ml.'],
       ['From which side do we pour a guest’s wine?', 'From their right', ['From their left', 'From behind', 'From across the table'], 'Drinks are served from the right, where the glasses stand.'],
     ],
+    /* whisky first, then the other spirits */
+    drinks: [
+      ['What makes a whisky a single malt?', 'It comes from one distillery and is made only from malted barley', ['It is aged in a single barrel', 'It is distilled only once', 'It is made from a single harvest'], 'Single means one distillery, malt means malted barley. A single barrel whisky is a different thing.'],
+      ['What is bourbon mostly made from?', 'Corn (at least 51%)', ['Barley', 'Rye', 'Potatoes'], 'Bourbon is American whiskey made from at least 51% corn and aged in new charred oak barrels.'],
+      ['Where does the smoky taste of an Islay whisky come from?', 'Peat smoke used to dry the malted barley', ['Charred barrels', 'Smoked water', 'A long time in the cask'], 'Peat is burnt to dry the barley and its smoke stays in the whisky. Lagavulin and Laphroaig are the classic examples.'],
+      ['How long must Scotch whisky age before it can be called Scotch?', 'At least three years', ['At least one year', 'At least five years', 'At least ten years'], 'Three years in oak casks, in Scotland.'],
+      ['A whisky bottle says “12 years”. What does the number mean?', 'The youngest whisky in the bottle is 12 years old', ['It is the average age of the whiskies in it', 'The oldest whisky in the bottle is 12 years old', 'It was bottled 12 years ago'], 'The age on the label is always that of the youngest whisky in the bottle.'],
+      ['A guest orders a whisky “neat”. How do you serve it?', 'On its own: no ice, no water', ['Over ice', 'With soda water', 'Chilled, in a shot glass'], 'Neat means nothing added. You can offer a little water on the side.'],
+      ['What does “on the rocks” mean?', 'Served over ice', ['Served warm', 'Served with soda water', 'Served without ice'], 'The rocks are the ice cubes.'],
+      ['Why do some guests add a few drops of water to their whisky?', 'It opens up the aromas and softens the alcohol', ['It makes the whisky sweeter', 'It makes the whisky stronger', 'It keeps the whisky cold'], 'A little water lowers the strength and lets more of the aromas come out.'],
+      ['Which of these is a whisky region of Scotland?', 'Speyside', ['Cognac', 'Kentucky', 'Jerez'], 'The whisky regions of Scotland are Speyside, the Highlands, the Lowlands, Islay and Campbeltown.'],
+      ['Tennessee whiskey has one step that bourbon does not. Which?', 'It is filtered through maple charcoal before ageing', ['It is distilled three times', 'It is aged in sherry casks', 'It is made from barley only'], 'The spirit drips slowly through sugar maple charcoal before it goes into the barrel. Gentleman Jack is filtered this way twice.'],
+      ['Which countries usually write “whiskey”, with an e?', 'Ireland and the USA', ['Scotland and Japan', 'Scotland and Canada', 'Japan and Taiwan'], 'Scotland, Japan and Canada write whisky; Ireland and the USA mostly write whiskey.'],
+      ['What is cognac made from?', 'Grapes: it is a brandy from the Cognac region of France', ['Barley', 'Sugar cane', 'Apples'], 'Cognac is white wine distilled twice and aged in oak.'],
+      ['What does XO on a cognac mean?', 'Extra old: aged at least ten years', ['Extra oak: aged in new barrels', 'A blend of exactly ten cognacs', 'Bottled at cask strength'], 'VS is aged at least two years, VSOP at least four, XO at least ten.'],
+      ['What gives gin its main flavour?', 'Juniper berries', ['Aniseed', 'Hops', 'Vanilla'], 'Without juniper it is not gin; the other botanicals vary from one gin to the next.'],
+      ['What is tequila made from?', 'Blue agave', ['Sugar cane', 'Corn', 'Cactus fruit'], 'Tequila is made in Mexico from the blue agave plant, which is not a cactus.'],
+      ['What is rum made from?', 'Sugar cane: its juice or molasses', ['Wine grapes', 'Barley', 'Agave'], 'Most rum is made from molasses, what is left when sugar is made from the cane.'],
+      ['Troyan is the Bulgarian town best known for which rakia?', 'Plum', ['Grape', 'Apricot', 'Quince'], 'Troyan plum rakia has been made there for centuries.'],
+      ['Why do ouzo, mastika and Pernod turn cloudy when water is added?', 'The anise oils come out of the alcohol', ['The sugar crystallises', 'The alcohol evaporates', 'The water is too cold'], 'Anise oils dissolve in alcohol but not in water, so the drink turns milky.'],
+      ['What is vermouth?', 'A fortified wine flavoured with herbs', ['A spirit distilled from grain', 'A fruit brandy', 'A bitter orange liqueur'], 'Vermouth is wine with added spirit, herbs and spices; wormwood gives it its name.'],
+    ],
     food: [
       ['How many allergens must a menu in the EU declare?', '14', ['8', '10', '20'], 'The EU 14: gluten, crustaceans, eggs, fish, peanuts, soy, milk, nuts, celery, mustard, sesame, sulphites, lupin and molluscs.'],
       ['Which of these is one of the 14 allergens?', 'Lupin', ['Garlic', 'Tomato', 'Cinnamon'], 'Lupin flour turns up in some breads and pastries.'],
@@ -63,9 +86,11 @@
     if (wrong.length < 3) return null;
     return { topic: topic, q: q, a: a, opts: shuffle([a].concat(wrong)), why: why || '', img: img || '' };
   }
+  /* The wines only: the whiskies, the other spirits, the beers and the rest have questions of their own
+     (drinkQs), so a wine question never offers a whisky as an answer. */
   function wineQs() {
-    const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly), titles = wines.map(K.wineTitle);
-    const isBg = (w) => !K.isDrink(w) && K.origin && K.origin(w) && K.origin(w).bg, isFo = (w) => !K.isDrink(w) && K.origin && K.origin(w) && !K.origin(w).bg;
+    const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly && !K.isDrink(w)), titles = wines.map(K.wineTitle);
+    const isBg = (w) => K.origin && K.origin(w) && K.origin(w).bg, isFo = (w) => K.origin && K.origin(w) && !K.origin(w).bg;
     const home = wines.filter(isBg).map(K.wineTitle), foreign = wines.filter(isFo).map(K.wineTitle);
     /* the dishes and the house's wines for each, worked out once (not once per wine and dish) */
     const dishes = K.dishes(), poured = new Map(dishes.map((d) => [d, K.housePairs ? K.housePairs(d) : null]));
@@ -79,11 +104,11 @@
       if (w.grapes) out.push(mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES), w.story && short(K.T(w.story), 140)));
       if (w.region) out.push(mk('wine', 'Where does ' + t + ' come from?', w.region, wines.map((x) => x.region).concat(REGIONS), w.region + (w.country ? ', ' + w.country : '') + '.'));
       if (w.label) out.push(mk('wine', 'Whose label is this?', t, titles, w.say, K.media(w.label)));
-      if (w.byGlass && w.glassPrice) out.push(mk('wine', 'How much is ' + (K.isDrink(w) ? (w.measure ? w.measure + ' of ' : '') : 'a glass of ') + w.name + '?', K.price(w.glassPrice), wines.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat([+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)))), 'By the glass, ' + K.glassMl(w) + ' ml.'));
+      if (w.byGlass && w.glassPrice) out.push(mk('wine', 'How much is a glass of ' + w.name + '?', K.price(w.glassPrice), wines.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat([+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)))), 'By the glass, ' + K.glassMl(w) + ' ml.'));
       if (w.bottlePrice) out.push(mk('wine', 'How much is a bottle of ' + w.name + '?', K.price(w.bottlePrice), wines.filter((x) => x.bottlePrice).map((x) => K.price(x.bottlePrice)).concat([+w.bottlePrice + 4, +w.bottlePrice - 4, +w.bottlePrice + 8].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
       if (w.serve) out.push(mk('wine', 'At what temperature do we serve ' + w.name + '?', w.serve, wines.map((x) => x.serve).concat(TEMPS), w.glass ? 'In a ' + w.glass.toLowerCase() + '.' : ''));
       if (w.nose) out.push(mk('wine', 'Which wine smells of ' + short(K.T(w.nose), 70).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.palate));
-      const o = !K.isDrink(w) && K.origin ? K.origin(w) : null;
+      const o = K.origin ? K.origin(w) : null;
       if (o && !o.bg && w.country) out.push(mk('wine', 'Which country is ' + t + ' from?', w.country, wines.map((x) => x.country).concat(['Portugal', 'Argentina', 'Chile', 'Bulgaria']), o.where + '.'));
       if (o && foreign.length >= 3 && home.length >= 3) out.push(o.bg ? mk('wine', 'Which of these wines is Bulgarian?', t, foreign, 'From ' + o.where + '.') : mk('wine', 'Which of these wines is not Bulgarian?', t, home, 'From ' + o.where + '.'));
       if (w.appellation) out.push(mk('wine', 'Which appellation is ' + t + '?', w.appellation, wines.map((x) => x.appellation).concat(['Bordeaux AOC', 'Barolo DOCG', 'Rioja DOCa', 'Chablis AOC', 'Prosecco DOC']), w.region));
@@ -117,7 +142,86 @@
   const tells = (a, b) => { const x = stems(b); return stems(a).some((w) => x.includes(w)); };
   /* how hard a kind of question is: 3 for what takes knowing the whole plate or judging a guest's case, 2 for what
      takes understanding a dish, 1 for what is learnt by heart. Points and time follow (see FACTOR, TIME). */
-  const LEVEL = { guest: 3, swap: 3, plan: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2 };
+  const LEVEL = { guest: 3, swap: 3, plan: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2, dwhich: 2, dwhat: 2 };
+  /* ---------- the drinks that are not wine ----------
+     Whisky first, then the other spirits: where a bottle is from, what it is, which one fits a description, how
+     big its measure is and what it costs. The wrong answers are always drinks of the same sort, never wines.
+     [how the drinks list names the sort, one, many, the answer to “what kind of drink is it”] */
+  const FAMILY = [
+    [/whisk|bourbon/i, 'whisky', 'whiskies', 'Whisky'], [/rakia/i, 'rakia', 'rakias', 'Rakia'], [/vodka/i, 'vodka', 'vodkas', 'Vodka'], [/\brum\b/i, 'rum', 'rums', 'Rum'],
+    [/\bgin\b/i, 'gin', 'gins', 'Gin'], [/tequila/i, 'tequila', 'tequilas', 'Tequila'], [/brandy|cognac/i, 'brandy', 'brandies', 'Brandy or cognac'],
+  ];
+  const BRITAIN = ['Scotland', 'England', 'Wales', 'United Kingdom'];
+  /* two names for one place, so never the right and a wrong answer together (Scotland is in the United Kingdom) */
+  const sameLand = (a, b) => a === b || (BRITAIN.includes(a) && BRITAIN.includes(b));
+  /* rakia is a fruit brandy: neither is offered as a wrong answer for the other */
+  const akin = (a, b) => (a === 'rakia' && b === 'brandy') || (a === 'brandy' && b === 'rakia');
+  /* a description without its article and full stop, to see whether one says the same as another */
+  const gist = (w) => lc(w.say).replace(/^(an?|the)\s+/, '').replace(/[.!]+$/, '').trim();
+  /* a place inside another: a Speyside malt is a Highland malt too, so it is no wrong answer for “a Highland malt” */
+  const INSIDE = [['speyside', 'highland']];
+  const fits = (x, w) => { const a = gist(x), b = gist(w); return !a || !b || a.includes(b) || b.includes(a) || INSIDE.some((p) => a.includes(p[0]) && b.includes(p[1])); };
+  const lowFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+  const the = (c) => (/^(USA|United Kingdom|Netherlands)$/.test(c) ? 'the ' + c : c);
+  function drinkQs() {
+    const out = [], on = D.wines.filter((w) => !w.off && !w.stockOnly && K.isDrink(w));
+    const strong = on.filter((w) => w.colour === 'spirit' || w.colour === 'liqueur'), lands = (l) => l.map((x) => x.country).filter(Boolean);
+    const famOf = (w) => FAMILY.find((f) => f[0].test(w.style || '')) || null;
+    const add = (kind, w, q) => { if (q) { const f = famOf(w); q.kind = kind; q.level = LEVEL[kind] || 1; q.drink = true; q.whisky = !!(f && f[1] === 'whisky'); out.push(q); } };
+    const price = (w, pool) => {
+      if (!w.glassPrice) return;
+      const near = [+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)));
+      add('dprice', w, mk('wine', 'How much is ' + (w.measure ? w.measure + ' of ' : '') + w.name + '?', K.price(w.glassPrice), pool.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat(near), w.say));
+    };
+    /* which country: the wrong answers from the same sort of drink first, from the whole list when those are too few */
+    const from = (w, list) => {
+      const t = K.wineTitle(w);
+      if (!w.country || tells(t, w.country)) return;
+      const own = lands(list).filter((c) => !sameLand(c, w.country)), few = own.filter((c, i) => own.indexOf(c) === i).length < 3;
+      add('dfrom', w, mk('wine', 'Which country is ' + t + ' from?', w.country, (few ? own.concat(lands(strong)) : own).filter((c) => !sameLand(c, w.country)), w.say));
+    };
+    FAMILY.forEach((f) => {
+      const list = strong.filter((w) => famOf(w) === f);
+      if (!list.length) return;
+      list.forEach((w) => {
+        const t = K.wineTitle(w);
+        from(w, list);
+        if (w.country && !tells(t, w.country)) add('dwhich', w, mk('wine', 'Which of these ' + f[2] + ' is from ' + the(w.country) + '?', t, list.filter((x) => x.country && !sameLand(x.country, w.country)).map(K.wineTitle), w.say));
+        /* the wrong answers are drinks whose own description says something else */
+        if (w.say && !tells(w.say, t)) add('dwhat', w, mk('wine', 'Which ' + f[1] + ' is this: ' + lowFirst(String(K.T(w.say)).trim().replace(/[.!]+$/, '')) + '?', t, list.filter((x) => x !== w && !fits(x, w)).map(K.wineTitle), w.country ? 'From ' + the(w.country) + '.' : ''));
+        if (!tells(t, f[1] + ' ' + f[3] + ' ' + (w.style || ''))) add('dkind', w, mk('wine', 'What kind of drink is ' + t + '?', f[3], FAMILY.filter((x) => x !== f && !akin(x[1], f[1])).map((x) => x[3]), w.say));
+        price(w, list);
+      });
+      /* the measure, when the whole sort is poured the same */
+      const sizes = list.map((w) => w.measure).filter((m, i, l) => m && l.indexOf(m) === i);
+      if (sizes.length === 1) add('dmeasure', list[0], mk('wine', 'How many ml do we pour for one ' + f[1] + '?', sizes[0], ['20 ml', '25 ml', '30 ml', '40 ml', '50 ml', '100 ml'], 'On the drinks list: ' + f[3] + ', ' + sizes[0] + '.'));
+    });
+    /* liqueurs, digestifs, anise and the rest of the strong ones: a description names its country, so the wrong
+       answers come from other countries */
+    const rest = strong.filter((w) => !famOf(w));
+    rest.forEach((w) => {
+      const t = K.wineTitle(w);
+      from(w, rest);
+      if (w.say && w.country && !tells(w.say, t)) add('dwhat', w, mk('wine', 'Which drink is this: ' + lowFirst(String(K.T(w.say)).trim().replace(/[.!]+$/, '')) + '?', t, rest.filter((x) => x !== w && x.country && !sameLand(x.country, w.country) && !fits(x, w)).map(K.wineTitle), 'From ' + the(w.country) + '.'));
+      price(w, rest);
+    });
+    /* beer, soft and hot drinks: what they cost */
+    const light = on.filter((w) => w.colour !== 'spirit' && w.colour !== 'liqueur');
+    light.forEach((w) => price(w, light));
+    return out;
+  }
+  /* one question of each kind in turn, so a round is not three prices */
+  function byKind(qs, n) {
+    const by = {}, out = [];
+    qs.forEach((q) => { (by[q.kind] = by[q.kind] || []).push(q); });
+    Object.keys(by).forEach((k) => { by[k] = shuffle(by[k]); });
+    let kinds = shuffle(Object.keys(by));
+    while (out.length < n && kinds.length) {
+      kinds.forEach((k) => { const q = by[k].shift(); if (q && out.length < n && !out.some((o) => o.q === q.q)) out.push(q); });
+      kinds = kinds.filter((k) => by[k].length);
+    }
+    return out;
+  }
   const DIETQ = {
     vegan: ['A guest is vegan. Which of these can they eat as it comes?', 'A guest is vegan. Which of these do you not offer?', 'A vegan guest orders ', 'A vegan guest takes the tasting menu. '],
     veg: ['A guest is vegetarian. Which of these can they eat as it comes?', 'A guest is vegetarian. Which of these do you not offer?', 'A vegetarian guest orders ', 'A vegetarian guest takes the tasting menu. '],
@@ -298,6 +402,8 @@
   }
   /* every food question the book can make right now, with its kind: for looking over the quiz, and for the tests */
   K.quizFood = foodQs;
+  K.quizWine = wineQs;
+  K.quizDrinks = drinkQs;
   /* a food round: the situations first, one of each kind in turn, then what is known by heart */
   function pickMixed(qs, n) {
     const out = [], pool = { 1: {}, 2: {}, 3: {} };
@@ -326,6 +432,8 @@
   const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, 25, 30], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
   const secsOf = (q) => TIME[(q && q.level) || 1], worth = (q) => Math.round(150 * FACTOR[(q && q.level) || 1]);
   function bankQs(topic) {
+    /* the drinks are part of the wine round: their questions count for it, and say “Drinks” above the question */
+    if (topic === 'drinks') return BANK.drinks.map((b) => { const q = mk('wine', b[0], b[1], b[2], b[3]); if (q) { q.drink = true; q.whisky = /whisk|bourbon|scotch/i.test(b[0]); } return q; }).filter(Boolean);
     return BANK[topic].map((b) => mk(topic, b[0], b[1], b[2], b[3])).filter(Boolean)
       .concat(D.quizq.filter((q) => (q.topic || 'food') === topic && topic !== 'food').map((q) => mk(topic, q.q, q.a, q.wrong || [], q.why, q.photo ? K.media(q.photo) : '')).filter(Boolean));
   }
@@ -333,8 +441,17 @@
   function round(topic) {
     /* if making the questions from the book fails, the round still starts, from the general questions */
     const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
-    const own = topic === 'wine' ? pickN(safe(wineQs), 7) : topic === 'food' ? pickMixed(safe(foodQs), 7) : pickN(safe(wineQs), 4).concat(pickMixed(safe(foodQs), 4));
-    const gen = topic === 'all' ? bankQs('wine').concat(bankQs('food')) : bankQs(topic);
+    let own;
+    if (topic === 'food') own = pickMixed(safe(foodQs), 7);
+    else {
+      /* wine and drinks: of the seven questions from the book, two are about the drinks, one of them a whisky
+         (one of the four in a round of everything) */
+      const dq = safe(drinkQs), wh = dq.filter((q) => q.whisky), rest = dq.filter((q) => !q.whisky);
+      const d = topic === 'wine' ? byKind(wh, 1).concat(byKind(rest, 1)) : byKind(wh.length && Math.random() < 0.6 ? wh : dq, 1);
+      own = pickN(safe(wineQs), (topic === 'wine' ? 7 : 4) - d.length).concat(d);
+      if (topic === 'all') own = own.concat(pickMixed(safe(foodQs), 4));
+    }
+    const gen = topic === 'food' ? bankQs('food') : bankQs('wine').concat(bankQs('drinks'), topic === 'all' ? bankQs('food') : []);
     const seen = {}, out = [];
     own.concat(pickN(gen, ROUND)).forEach((q) => { if (out.length < ROUND && !seen[q.q]) { seen[q.q] = 1; out.push(q); } });
     return shuffle(out);
@@ -346,7 +463,7 @@
   /* A tap made before the screen it lands on was drawn is not meant for it: a second tap on Play or on Next
      question, or a tap made while the phone was still busy, arrives when an answer has just appeared under the
      finger. So a question takes answers only from taps made a moment after it was drawn. */
-  const OPEN_AFTER = 400;
+  const OPEN_AFTER = 700;
   let openAt = 0, starting = false;
   const drawn = () => { openAt = performance.now() + OPEN_AFTER; };
   const early = (e) => {
@@ -417,7 +534,7 @@
     K.render(true);
     drawn();
   }
-  K.quitQuiz = function () { stopClock(); ui.quiz = null; };
+  K.quitQuiz = function () { stopClock(); ui.quiz = null; openAt = 0; };
 
   /* ---------- the board ---------- */
   function since(period) {
@@ -435,7 +552,7 @@
     });
     return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total);
   }
-  const TOPICS = [['wine', 'Wine', 'glass', 'Grapes, regions, labels, prices and pairings'], ['food', 'Food', 'plate', 'Translations, allergens and the unusual ingredients'], ['all', 'Everything', 'trophy', 'Both, mixed']];
+  const TOPICS = [['wine', 'Wine & drinks', 'glass', 'Wines, pairings and prices; whiskies and other spirits'], ['food', 'Food', 'plate', 'Translations, allergens and the unusual ingredients'], ['all', 'Everything', 'trophy', 'Both, mixed']];
 
   K.V.quiz = function () {
     const Q = ui.quiz;
@@ -452,7 +569,7 @@
     w.append(h('section', { class: 'group lb' },
       h('div', { class: 'lb-head' }, h('h2', { class: 'group-title' }, 'Leaderboard'),
         K.seg([['week', 'This week'], ['month', 'Month'], ['all', 'All time']], per, (v) => { ui.board = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Period' })),
-      K.seg([['all', 'Everything'], ['wine', 'Wine'], ['food', 'Food']], top, (v) => { ui.boardTopic = v; K.render(); }, { class: 'seg small-seg lb-topic', 'aria-label': 'Topic' }),
+      K.seg([['all', 'Everything'], ['wine', 'Wine & drinks'], ['food', 'Food']], top, (v) => { ui.boardTopic = v; K.render(); }, { class: 'seg small-seg lb-topic', 'aria-label': 'Topic' }),
       rows.length ? h('ol', { class: 'lb-list' }, rows.map((r, i) => h('li', { class: 'lb-row' + (r.uid === ((K.me && K.me.id) || 'this-phone') ? ' me' : '') },
         h('span', { class: 'lb-pos' + (i < 3 ? ' m' + (i + 1) : '') }, String(i + 1)),
         h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone'), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
@@ -461,7 +578,7 @@
       w.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Your own questions', h('span', { class: 'n' }, String(D.quizq.length))),
         h('p', { class: 'hint' }, 'Most questions are made from the wine and food bibles by themselves. Add your own for anything else: house rules, the producers, the team’s favourite facts.'),
         D.quizq.length ? h('div', { class: 'ing-list' }, D.quizq.map((q) => h('button', { type: 'button', class: 'ing-row', onclick: () => { ui.sheet = { type: 'qedit', id: q.id }; K.render(); } },
-          h('span', { class: 'ing-name' }, h('b', null, q.q)), h('span', { class: 'ing-what' }, q.a), h('span', { class: 'ing-in' }, q.topic === 'wine' ? 'Wine' : 'Food')))) : null,
+          h('span', { class: 'ing-name' }, h('b', null, q.q)), h('span', { class: 'ing-what' }, q.a), h('span', { class: 'ing-in' }, q.topic === 'wine' ? 'Wine & drinks' : 'Food')))) : null,
         h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'qedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a question'))));
     }
     return { body: body };
@@ -488,7 +605,7 @@
         h('span', { class: 'qp-score mono' }, Q.score + ' pts'),
         h('span', { class: 'qp-sec mono', id: 'qz-sec' }, done ? '' : String(Math.ceil(left)))),
       h('div', { class: 'qp-timer' }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
-      h('p', { class: 'kicker qp-kick' }, h('span', null, q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
@@ -501,7 +618,7 @@
         q.why ? h('p', { class: 'muted' }, q.why) : null,
         h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? 'See your score' : 'Next question')) : null);
     return {
-      top: K.subbar('Stop', () => { K.quitQuiz(); K.render(true); }, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine' : Q.topic === 'food' ? 'Food' : 'Everything')),
+      top: K.subbar('Stop', () => { K.quitQuiz(); K.render(true); }, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
       body: body, tabs: false, solid: true,
     };
   }
@@ -522,7 +639,7 @@
       ui.sheet = null; K.render();
     };
     return K.sheet(q ? 'Edit the question' : 'A question of your own', h('form', { class: 'stack', onsubmit: save },
-      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'About'), K.seg([['wine', 'Wine'], ['food', 'Food']], f.topic, (v) => { f.topic = v; K.render(); })),
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'About'), K.seg([['wine', 'Wine & drinks'], ['food', 'Food']], f.topic, (v) => { f.topic = v; K.render(); })),
       K.field('Question', inp('q', 'Which producer makes our house Mavrud?')),
       K.field('Right answer', inp('a')),
       K.field('Wrong answers', h('div', { class: 'stack tight' }, inp('w1', 'Wrong answer 1'), inp('w2', 'Wrong answer 2'), inp('w3', 'Wrong answer 3'))),
