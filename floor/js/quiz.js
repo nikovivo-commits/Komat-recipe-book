@@ -177,7 +177,7 @@
         const pl = t.plans[k], set = cs.filter((c) => pl[c.id] !== undefined), named = set.filter((c) => pl[c.id] && K.dish(pl[c.id]));
         if (!PLANQ[k] || named.length < 2) return;
         const dn = (c) => K.dish(pl[c.id]).name;
-        const all = K.T(PLANQ[k][2]) + set.map((c) => (pl[c.id] ? dn(c) : K.T('the kitchen’s own course')) + K.T(' instead of ') + c.name).join(' · ');
+        const all = K.T(PLANQ[k][2]) + set.filter((c) => !pl[c.id] || K.dish(pl[c.id])).map((c) => (pl[c.id] ? dn(c) : K.T('the kitchen’s own course')) + K.T(' instead of ') + c.name).join(' · ');
         named.forEach((c) => add('plan', mk('food', PLANQ[k][0] + c.name + '?', dn(c), off.filter((d) => d.id !== pl[c.id]).map((d) => d.name), all)));
         set.filter((c) => !pl[c.id]).forEach((c) => add('plan', mk('food', PLANQ[k][1], c.name, cs.filter((x) => x.id !== c.id).map((x) => x.name), all)));
       });
@@ -328,7 +328,9 @@
   }
   /* a round: mostly questions about our own wines and dishes, topped up from the general ones */
   function round(topic) {
-    const own = topic === 'wine' ? pickN(wineQs(), 7) : topic === 'food' ? pickMixed(foodQs(), 7) : pickN(wineQs(), 4).concat(pickMixed(foodQs(), 4));
+    /* if making the questions from the book fails, the round still starts, from the general questions */
+    const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
+    const own = topic === 'wine' ? pickN(safe(wineQs), 7) : topic === 'food' ? pickMixed(safe(foodQs), 7) : pickN(safe(wineQs), 4).concat(pickMixed(safe(foodQs), 4));
     const gen = topic === 'all' ? bankQs('wine').concat(bankQs('food')) : bankQs(topic);
     const seen = {}, out = [];
     own.concat(pickN(gen, ROUND)).forEach((q) => { if (out.length < ROUND && !seen[q.q]) { seen[q.q] = 1; out.push(q); } });

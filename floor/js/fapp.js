@@ -88,11 +88,27 @@
     const a = document.activeElement, tg = a && a.tagName;
     return Date.now() - lastTouch < 1500 || ((tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') && !a.readOnly);
   }
+  /* in the middle of something that a redraw or a reload would spoil: a quiz round, an open sheet, a count, typing */
+  K.inTheMiddle = function () {
+    const a = document.activeElement, tg = a && a.tagName;
+    return !!((ui.quiz && ui.quiz.stage === 'play') || ui.sheet || ui.view === 'count' || ((tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') && !a.readOnly));
+  };
+  /* many records written in one go (the house menu): the screen is drawn once at the end, not once per record */
+  K.hold = 0;
+  K.release = function () { if (!K.hold) return; K.hold = 0; if (K.held) { K.held = false; K.refresh(); } };
   K.refresh = function (now) {
+    if (K.hold) { K.held = true; return; }
     if (now) { clearTimeout(bgT); bgT = null; render(); return; }
-    /* the quiz clock redraws on its own; live data waits until nobody is typing */
-    if (userBusy() && bgTries < 30) { bgTries++; clearTimeout(bgT); bgT = setTimeout(() => K.refresh(), 900); return; }
-    bgTries = 0; clearTimeout(bgT); bgT = null; render();
+    /* Live data. Records that arrive together (a save echoed back, the house menu brought up to date) draw the
+       screen once, not once each. It waits while somebody is tapping or typing. A quiz round in play shows none of
+       it and draws itself, so it is left alone: the next question or the score picks up what arrived. */
+    clearTimeout(bgT);
+    bgT = setTimeout(function go() {
+      bgT = null;
+      if (ui.quiz && ui.quiz.stage === 'play') { bgTries = 0; return; }
+      if (userBusy() && bgTries < 30) { bgTries++; bgT = setTimeout(go, 900); return; }
+      bgTries = 0; render();
+    }, 80);
   };
   function render(toTop) {
     const ae = document.activeElement, fid = ae && ae.id;
@@ -258,9 +274,10 @@
   function syncWhenReady() {
     let tries = 0;
     const t = setInterval(() => {
-      tries++;
-      if (tries > 40) { clearInterval(t); return; }
-      if (K.mode !== 'firebase' || ui.auth || !K.me || !D.loaded || !D.winesLoaded || !D.settingsLoaded || !D.recipes.length) return;
+      const ready = K.mode === 'firebase' && !ui.auth && K.me && D.loaded && D.winesLoaded && D.settingsLoaded && D.recipes.length;
+      if (!ready) { if (++tries > 40) clearInterval(t); return; }
+      /* it waits for a quiet moment: never during a quiz round, with a sheet open, in a count or while typing */
+      if (K.inTheMiddle()) return;
       clearInterval(t);
       if (K.houseSync) K.houseSync();
     }, 1500);

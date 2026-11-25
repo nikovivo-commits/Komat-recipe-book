@@ -57,23 +57,30 @@
   /* ---------- the food bible ---------- */
   /* every dish the floor talks about: the kitchen's dishes on the menu, anything the floor has notes for, and
      dishes the floor added by hand (bread, the amuse-bouche). Hidden ones only show for managers. */
-  K.dishes = function (withHidden) {
+  /* Worked out once and kept until the kitchen's recipes or the floor's notes change (both are replaced, never
+     edited in place): the quiz and the allergy pages ask for the dishes thousands of times. */
+  let dishMemo = null;
+  const allDishes = () => {
+    if (dishMemo && dishMemo.r === D.recipes && dishMemo.n === D.notes && dishMemo.len === D.recipes.length) return dishMemo;
     const out = [], seen = {};
     D.recipes.forEach((r) => {
       const n = D.notes[r.id];
       if (!(n || (r.type === 'dish' && r.onMenu))) return;
-      if (n && n.hide && !withHidden) return;
       seen[r.id] = 1;
       out.push(dishOf(r, n || {}));
     });
     Object.keys(D.notes).forEach((id) => {
       const n = D.notes[id];
-      if (seen[id] || (n.recipe && K.find(n.recipe)) || (n.hide && !withHidden)) return;
+      if (seen[id] || (n.recipe && K.find(n.recipe))) return;
       if (!n.name) return;
       out.push(dishOf(null, Object.assign({ id: id }, n)));
     });
-    return out.sort((a, b) => ((a.order || 999) - (b.order || 999)) || a.name.localeCompare(b.name));
+    out.sort((a, b) => ((a.order || 999) - (b.order || 999)) || a.name.localeCompare(b.name));
+    const byId = {}; out.forEach((d) => { if (!byId[d.id]) byId[d.id] = d; });
+    dishMemo = { r: D.recipes, n: D.notes, len: D.recipes.length, all: out, shown: out.filter((d) => !d.hide), byId: byId };
+    return dishMemo;
   };
+  K.dishes = function (withHidden) { const m = allDishes(); return (withHidden ? m.all : m.shown).slice(); };
   function dishOf(r, n) {
     /* the floor can show a kitchen dish under the name printed on the menu */
     const kname = (r && r.name) || '', name = (r && n.menuName) || kname || n.name || 'Dish';
@@ -91,7 +98,7 @@
     };
   }
   const uniq = (l) => { const s = {}, o = []; l.forEach((x) => { const k = K.normName(x); if (k && !s[k]) { s[k] = 1; o.push(x); } }); return o; };
-  K.dish = (id) => K.dishes(true).find((d) => d.id === id) || null;
+  K.dish = (id) => allDishes().byId[id] || null;
   K.dishAllergens = function (d) {
     const found = K.detectAllergens ? K.detectAllergens([d.ings.map((n) => ({ n: n }))]) : {};
     /* the same list the allergy check works from: the ingredients, the dish's name, the line on the menu, and what was ticked by hand */
@@ -146,7 +153,16 @@
     return out;
   };
   /* where each allergen in a dish comes from: {key: ['Hollandaise: butter', ...]} */
+  /* kept per dish: a dish is a new object whenever the book changes, so what was found for it never goes stale */
+  const whereMemo = new WeakMap();
   K.allergenWhere = function (d) {
+    const kept = d && typeof d === 'object' ? whereMemo.get(d) : null;
+    if (kept) return kept;
+    const found = allergenScan(d);
+    if (d && typeof d === 'object') whereMemo.set(d, found);
+    return found;
+  };
+  function allergenScan(d) {
     const out = {}, add = (k, s) => { (out[k] = out[k] || []); if (!out[k].includes(s)) out[k].push(s); };
     const scan = (part, list) => (list || []).forEach((i) => { const n = (i && i.n) || i; K.allergensIn(n).forEach((k) => add(k, (part ? part + ': ' : '') + String(n).split(/[(]/)[0].trim())); });
     if (d.r) {
@@ -164,7 +180,7 @@
     Object.keys(menu).forEach((k) => { if (!off.includes(k)) menu[k].forEach((s) => add(k, s)); });
     ((d.r && d.r.allergens) || []).concat(d.n.allergens || []).forEach((k) => { if (!out[k]) add(k, 'ticked by hand'); });
     return out;
-  };
+  }
   /* for a guest with these allergies: 'no' (it has one of them), 'ok' (none, and the head chef checked the
      dish's allergens) or 'ask' (none found, but nobody has checked yet: the kitchen confirms) */
   K.allergyVerdict = function (d, sel) {
