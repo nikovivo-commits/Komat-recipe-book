@@ -210,6 +210,8 @@
     const w = wn.id ? K.wine(wn.id) : null, txt = [K.icon('glass'), h('span', null, label ? h('b', null, label + ': ') : null, wn.text)];
     return w ? h('button', { type: 'button', class: 'ts-wine', onclick: () => K.go('winepage', { id: w.id }) }, txt) : h('p', { class: 'ts-wine' }, txt);
   }
+  /* a course's line as the tasting menu prints it: its own where the menu has one, else the dish's line */
+  const courseLine = (t, d) => { const own = t.lines[d.id]; return own ? (K.flang === 'bg' ? own.bg || own.en : own.en) : (K.flang === 'bg' ? d.n.menuBg : d.n.menuEn || d.n.menuBg) || ''; };
   function tastingCard(plain) {
     const t = K.tasting();
     if (!t.courses.length) return K.canEdit() ? h('button', { type: 'button', class: 'al-nudge plain', onclick: () => { ui.sheet = { type: 'tasting' }; K.render(); } },
@@ -221,7 +223,9 @@
       t.pairing ? h('p', { class: 'ts-pour' }, K.icon('glass'), h('span', null, h('b', null, 'Pairing pour: about ' + K.PAIR_ML + ' ml of each wine. '), 'A bottle gives ' + Math.floor(750 / K.PAIR_ML) + ' pours. A normal glass is ' + K.GLASS_ML + ' ml.')) : null,
       t.welcome ? wineLine('To start', t.welcome) : null,
       h('ol', { class: 'ts-list' }, t.courses.map((d, i) => h('li', null, h('button', { type: 'button', onclick: () => K.go('dish', { id: d.id }) },
-        h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null)),
+        h('span', { class: 'ts-n mono' }, String(i + 1)), h('span', { class: 'ts-name' }, h('b', null, d.name), d.en && d.en !== d.name ? h('span', { class: 'card-en' }, d.en) : null,
+          /* its line, as the menu prints it */
+          courseLine(t, d) ? h('span', { class: 'ts-line' }, courseLine(t, d)) : null)),
         t.wines[d.id] ? wineLine('', t.wines[d.id]) : null))),
       plain ? null : h('button', { type: 'button', class: 'btn ts-build', onclick: () => { ui.foodTab = 'tasting'; K.render(); window.scrollTo(0, 0); } }, K.icon('shield'), 'Build it for a guest with allergies'),
       t.extra ? h('button', { type: 'button', class: 'ts-extra', onclick: () => K.go('dish', { id: t.extra.dish.id }) }, h('span', null, h('b', null, 'Can be added: ' + K.dn(t.extra.dish)), t.extra.price ? ' · ' + K.price(t.extra.price) : ''), K.icon('next')) : null);

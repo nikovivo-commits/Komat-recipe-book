@@ -107,7 +107,7 @@
       K.demo && K.demoAnswers().length ? link('copy', 'Copy what I confirmed here', 'To bring it into the real book from another phone or computer', () => {
         navigator.clipboard.writeText(JSON.stringify({ komatDemo: K.demoAnswers() })).then(() => K.toast('Copied. In the real book: Settings → Bring over what I confirmed in the demo → paste.'), () => K.toast('This device would not copy.', { tone: 'bad' }));
       }) : null,
-      K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', loadHouse) : null,
+      K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', () => loadHouse(false)) : null,
       K.canEdit() ? link('download', 'Prices and stock from Hype', 'Read a file exported from the till: bottles in stock and prices', open('hype')) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
       K.canEdit() ? link('download', 'Backup', 'Save everything in the floor book to a file', exportFile) : null,
@@ -118,8 +118,8 @@
   /* a file prepared for the floor book: {docs: {"wines/id": {...}}}; it only adds and replaces */
   /* the restaurant's own menu and wine list, kept with the app (floor/data/house.json): wines that are not in yet
      are added, and the menu opens for checking against the kitchen's dishes */
-  function loadHouse() {
-    K.toast('Loading the menu and wine list…');
+  function loadHouse(quiet) {
+    if (!quiet) K.toast('Loading the menu and wine list…');
     fetch('floor/data/house.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(r))).then((j) => {
       const docs = j.docs || {}, add = Object.keys(docs).filter((p) => p.startsWith('wines/') && !K.wine(p.slice(6)));
       /* bottles already in the book keep everything; one that has no picture yet gets the one that comes with the list */
@@ -160,12 +160,27 @@
       return Promise.all(add.map((p) => K.db.doc(p).set(fresh(docs[p]))).concat(pics.map((x) => K.saveWine(Object.assign({}, x[0], { label: x[1], focus: x[2] }))))).then(() => {
         K.toast([asked ? asked + ' quiz questions added' : '', noted ? noted + ' wines: notes added' : '', fixed ? fixed + ' dishes: ingredient notes updated' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean).join(' · ') || 'The wines and drinks were already in');
         houseNow = j;
-        if (Array.isArray(j.menu) && j.menu.length) ui.sheet = { type: 'menuimport', extra: 0, items: matchMenu(j.menu), house: j };
-        else ui.sheet = null;
+        const first = [asked ? asked + ' quiz questions added' : '', noted ? noted + ' wines: notes added' : '', add.length ? add.length + ' wines and drinks added' : '', pics.length ? pics.length + ' label pictures added' : ''].filter(Boolean);
+        if (!(Array.isArray(j.menu) && j.menu.length)) { if (!quiet) { ui.sheet = null; K.render(); } return; }
+        /* every line that has its dish is written straight away: nothing waits for a second step */
+        const items = matchMenu(j.menu), r = applyMenu(j, items);
+        if (j.v) K.saveSetting('house', { v: j.v });
+        K.toast((quiet ? 'The house menu was brought up to date: ' : '') + [menuSummary(j, r)].concat(first).join(' · '));
+        /* opened by hand: the lines show, to point one at another dish or to add one that was left out */
+        if (!quiet) ui.sheet = { type: 'menuimport', extra: 0, items: items, house: j, done: true };
         K.render();
       });
-    }).catch((e) => (e && e.code ? K.writeFailed(e) : K.toast('The menu file could not be loaded. Check the connection and try again.', { tone: 'bad' })));
+    }).catch((e) => (quiet ? null : e && e.code ? K.writeFailed(e) : K.toast('The menu file could not be loaded. Check the connection and try again.', { tone: 'bad' })));
   }
+  /* The house menu, wine list, pairings, tasting menu and quiz questions come with the app (floor/data/house.json).
+     When the app carries a newer one than the book has, whoever runs the floor book gets it brought in on opening:
+     no button to find. Only the real, shared book does this; what was changed by hand is kept, as when loading by hand. */
+  const HOUSE_V = 2026112501;
+  K.houseSync = function (force) {
+    if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
+    loadHouse(true);
+    return true;
+  };
   function importFile() {
     K.pickFile('.json,application/json', false, (files) => {
       files[0].text().then((t) => {
@@ -206,7 +221,13 @@
     /* a course that only the tasting menu has is the floor's own unless the kitchen book has it */
     /* so is a course of the tasting menu that the kitchen book has under no name the list knows: without it the menu could not be set */
     const need = tastingKeys();
-    const items = menu.map((e) => { const m = matchDish(e); return { e: e, to: m.id || (e.only === 'tasting' || need.includes(e.en) ? '__own' : ''), score: m.score, need: need.includes(e.en) }; });
+    const items = menu.map((e) => {
+      /* in the book already, from an earlier load: the same dish again (a kitchen recipe, or the floor's own) */
+      const known = Object.keys(D.notes).find((id) => e.menuBg && D.notes[id].menuBg === e.menuBg), kn = known ? D.notes[known] : null;
+      if (kn) return { e: e, to: kn.recipe && D.recipes.some((r) => r.id === kn.recipe) ? kn.recipe : known === ownId(e) ? '__own' : '', score: 200, need: need.includes(e.en) };
+      const m = matchDish(e);
+      return { e: e, to: m.id || (e.only === 'tasting' || need.includes(e.en) ? '__own' : ''), score: m.score, need: need.includes(e.en) };
+    });
     items.forEach((x) => { if (x.to && items.some((y) => y !== x && y.to === x.to && y.score > x.score)) x.to = ''; });
     return items;
   }
@@ -286,47 +307,76 @@
           S.pasted = l; S.items = null; K.render();
         } }, 'Use what I pasted'))), { wide: true });
   };
+  /* ---------- writing the house menu into the book ----------
+     `items` says, for each line of the menu, which dish it is: a kitchen recipe's id, '__own' (the floor's own
+     dish), or '' (leave it out). Then the tasting menu and the house pairings are set.
+     What somebody answered about a dish stays (ANSWERS). A text the house wrote before and nobody changed takes
+     the house's new wording; one changed by hand is kept: each note remembers what the house last wrote (`house`). */
+  const TEXTS = ['pitch', 'facts', 'story', 'niche', 'canHow'];
+  const same = (x, y) => JSON.stringify(x === undefined ? null : x) === JSON.stringify(y === undefined ? null : y);
+  function mergeEntry(cur, e) {
+    const out = {}, snap = Object.assign({}, cur.house);
+    Object.keys(e).forEach((k) => {
+      if (ANSWERS.includes(k)) { if (cur[k] === undefined) out[k] = e[k]; return; }
+      if (k === 'bg') {
+        const bg = Object.assign({}, cur.bg);
+        Object.keys(e.bg).forEach((bk) => { const was = snap['bg_' + bk]; if (bg[bk] === undefined || was === undefined || same(bg[bk], was)) bg[bk] = e.bg[bk]; snap['bg_' + bk] = e.bg[bk]; });
+        out.bg = bg;
+        return;
+      }
+      if (TEXTS.includes(k)) { const was = snap[k]; if (cur[k] === undefined || cur[k] === '' || was === undefined || same(cur[k], was)) out[k] = e[k]; snap[k] = e[k]; return; }
+      out[k] = e[k];
+    });
+    out.house = snap;
+    return out;
+  }
+  const ownId = (e) => 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-'));
+  function applyMenu(house, items) {
+    const used = {};
+    let n = 0;
+    items.forEach((x) => {
+      if (!x.to) return;
+      const e = Object.assign({}, x.e); delete e.match;
+      if (x.to === '__own') { const id = ownId(e); e.name = e.menuName; delete e.menuName; K.saveNote(id, mergeEntry(D.notes[id] || {}, e)); n++; return; }
+      if (used[x.to]) return;
+      used[x.to] = 1;
+      K.saveNote(x.to, Object.assign({ recipe: x.to }, mergeEntry(D.notes[x.to] || {}, e))); n++;
+    });
+    /* the tasting menu that comes with the list: its courses, wines and prices, once every course is in the book */
+    const t = house ? K.tastingFrom(house, (e) => { const d = K.dishes(true).find((x) => x.n.menuBg === e.menuBg); return d ? d.id : ''; }) : null;
+    if (t && !same(Object.assign({}, D.tasting, { updated: 0 }), Object.assign({}, t, { updated: 0 }))) K.saveSetting('tasting', t);
+    /* the house pairings that come with the list: written onto every dish that has none of its own */
+    let paired = 0;
+    (house && house.pairings || []).forEach((pr) => {
+      const e = (house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
+      if (!d) return;
+      const ok = pr.wines.filter((x) => K.wine(x.id)), why = {}, whyBg = {};
+      ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
+      /* a dish paired on an earlier load keeps its wines when a manager changed them; one still paired exactly as
+         the list paired it before takes the list's new choice. The reasons it keeps word for word get their Bulgarian. */
+      const was = ((house.pairingsWas || {})[pr.dish] || []).join('|'), now = (d.n.pairs || []).join('|');
+      if (now && now === ok.map((x) => x.id).join('|')) return;
+      if (now && !(was && now === was)) {
+        const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
+        let add = 0;
+        pr.wines.forEach((x) => { if (x.whyBg && have[x.id] === x.why && !bgWhy[x.id]) { bgWhy[x.id] = x.whyBg; add++; } });
+        if (add) K.saveNote(d.id, { bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) });
+        return;
+      }
+      if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
+    });
+    return { n: n, t: t, paired: paired, left: items.filter((x) => !x.to).length };
+  }
+  const menuSummary = (house, r) => r.n + ' dishes filled in' + (r.t ? ' · tasting menu set' : house && house.tasting ? ' · the tasting menu is NOT set: one of its dishes was skipped' : '') + (r.paired ? ' · wines paired with ' + r.paired + ' dishes' : '');
   K.SHEETS.menuimport = function (S) {
     const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
     const n = S.items.filter((x) => x.to).length;
     const save = () => {
-      const used = {};
-      S.items.forEach((x, i) => {
-        if (!x.to) return;
-        const e = Object.assign({}, x.e); delete e.match;
-        /* what somebody has already answered about the dish (who can eat it, the bread, what it can be made into) stays */
-        const cur = D.notes[x.to === '__own' ? 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-')) : x.to] || {};
-        ANSWERS.forEach((k) => { if (cur[k] !== undefined) delete e[k]; });
-        if (x.to === '__own') { const id = 'own-' + K.safeId(K.normName(e.en || e.menuName).replace(/ /g, '-')); e.name = e.menuName; delete e.menuName; K.saveNote(id, e); return; }
-        if (used[x.to]) return;
-        used[x.to] = 1;
-        K.saveNote(x.to, Object.assign({ recipe: x.to }, e));
-      });
-      /* the tasting menu that comes with the list: its courses, wines and prices, once every course is in the book */
-      const t = S.house ? K.tastingFrom(S.house, (e) => { const d = K.dishes(true).find((x) => x.n.menuBg === e.menuBg); return d ? d.id : ''; }) : null;
-      if (t) K.saveSetting('tasting', t);
-      /* the house pairings that come with the list: written onto every dish that has none of its own */
-      let paired = 0;
-      (S.house && S.house.pairings || []).forEach((pr) => {
-        const e = (S.house.menu || []).find((m) => m.en === pr.dish), d = e ? K.dishes(true).find((x) => x.n.menuBg === e.menuBg) : null;
-        if (!d) return;
-        /* a dish paired on an earlier load keeps its wines when a manager changed them; one still paired exactly as
-           the list paired it before takes the list's new choice. The reasons it keeps word for word get their Bulgarian. */
-        const was = ((S.house.pairingsWas || {})[pr.dish] || []).join('|');
-        if ((d.n.pairs || []).length && !(was && (d.n.pairs || []).join('|') === was)) {
-          const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
-          let add = 0;
-          pr.wines.forEach((x) => { if (x.whyBg && have[x.id] === x.why && !bgWhy[x.id]) { bgWhy[x.id] = x.whyBg; add++; } });
-          if (add) K.saveNote(d.id, { bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) });
-          return;
-        }
-        const ok = pr.wines.filter((x) => K.wine(x.id)), why = {}, whyBg = {};
-        ok.forEach((x) => { if (x.why) why[x.id] = x.why; if (x.whyBg) whyBg[x.id] = x.whyBg; });
-        if (ok.length) { K.saveNote(d.id, { pairs: ok.map((x) => x.id), pairWhy: why, bg: Object.assign({}, d.n.bg, { pairWhy: whyBg }) }); paired++; }
-      });
-      ui.sheet = null; K.render(); K.toast(n + ' dishes filled in' + (t ? ' · tasting menu set' : S.house && S.house.tasting ? ' · the tasting menu is NOT set: one of its dishes was skipped' : '') + (paired ? ' · wines paired with ' + paired + ' dishes' : ''));
+      const r = applyMenu(S.house, S.items);
+      ui.sheet = null; K.render(); K.toast(menuSummary(S.house, r));
     };
     return K.sheet('Check the menu', h('div', { class: 'stack' },
+      S.done ? h('p', { class: 'banner' }, h('b', null, 'The menu is in. '), 'Below is each line and its dish, in case one points at the wrong dish or was left out. Change it and save; otherwise just close this.') : null,
       h('p', { class: 'hint' }, 'Each line of the menu, and the kitchen dish it will be written onto. Correct any that are wrong, then save. Nothing in the kitchen book changes.' + (S.extra ? ' ' + S.extra + ' other records (wines) are already in.' : '')),
       S.items.some((x) => x.need && !x.to) ? h('p', { class: 'banner' }, h('b', null, 'The tasting menu needs every one of its dishes. '), 'A line marked “tasting menu” is set to be skipped: choose its kitchen dish, or add it as the floor’s own.') : null,
       h('div', { class: 'mi-list' }, S.items.map((x, i) => h('div', { class: 'mi-row' + (x.to ? '' : ' none') },

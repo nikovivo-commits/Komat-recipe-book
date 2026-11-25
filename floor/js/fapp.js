@@ -254,7 +254,19 @@
     if (wines[5]) docs['cellarmoves/demo-open-2'] = { w: wines[5], n: 0, at: now - day, by: 'demo', name: 'Demo', why: 'open' };
   }
 
+  /* once the book is all there, whoever runs it gets the newer house menu brought in (see K.houseSync) */
+  function syncWhenReady() {
+    let tries = 0;
+    const t = setInterval(() => {
+      tries++;
+      if (tries > 40) { clearInterval(t); return; }
+      if (K.mode !== 'firebase' || ui.auth || !K.me || !D.loaded || !D.winesLoaded || !D.settingsLoaded || !D.recipes.length) return;
+      clearInterval(t);
+      if (K.houseSync) K.houseSync();
+    }, 1500);
+  }
   async function boot() {
+    syncWhenReady();
     render();
     if (K.Fire) {
       K.mode = 'firebase';
@@ -271,7 +283,7 @@
     K.demo = !!window.KOMAT_DEMO;
     /* the demo is built from the house menu and drinks list that come with the app, plus made-up stock */
     const house = K.demo ? await fetch('floor/data/house.json').then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
-    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v8' : 'komat.floor.db.v1');
+    K.db = new K.LocalDB(house ? (docs) => demoSeed(docs, house) : seed, K.demo ? 'komat.floor.demo.v9' : 'komat.floor.db.v1');
     await K.LocalAssets.init();
     K.assets = K.LocalAssets;
     K.me = { id: '', admin: true, canWrite: true, name: K.demo ? 'Demo' : K.store.get('fohName', '') };
