@@ -1,5 +1,5 @@
 {
- "v": 2026112601,
+ "v": 2026112602,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -855,7 +855,30 @@
      "гранита": "Гранита: едър, кристален лед, който се стърже, вместо да се разбива."
     }
    },
-   "course": "dessert"
+   "course": "dessert",
+   "diet": "vegan"
+  },
+  {
+   "menuName": "Сорбе от орех",
+   "en": "Walnut sorbet",
+   "section": "Tasting menu",
+   "order": 108,
+   "only": "tasting",
+   "menuBg": "карамелизиран орех",
+   "menuEn": "caramelised walnut",
+   "ings": [
+    "орех",
+    "карамелизиран орех"
+   ],
+   "pitch": "A walnut sorbet with caramelised walnut: the dessert that ends the vegan tasting menu.",
+   "facts": "Only on the vegan tasting menu, in place of the kazandibi.\nIt has walnuts: not for a guest with a nut allergy.",
+   "niche": [],
+   "diet": "vegan",
+   "course": "dessert",
+   "bg": {
+    "pitch": "Сорбе от орех с карамелизиран орех: десертът, с който завършва веган дегустационното меню.",
+    "facts": "Само във веган дегустационното меню, вместо загори тенджера.\nИма орехи: не е за гост с алергия към ядки."
+   }
   }
  ],
  "docs": {
@@ -5668,6 +5691,10 @@
     {
      "course": "Wagyu beef",
      "dish": "Beluga lentils"
+    },
+    {
+     "course": "Kazandibi",
+     "dish": "Walnut sorbet"
     }
    ]
   }
