@@ -941,3 +941,9 @@ body.scrolled .top { border-bottom-color: var(--line); }
 /* the tasting tab */
 .tb-head { margin: 14px 0 4px; }
 .tb-head h2 { margin: 0 0 4px; font: 800 1.1rem/1.25 var(--sans); }
+
+/* demo answers waiting to come over */
+.to-demo { display: grid; gap: 10px; border-color: var(--apron-line); background: var(--apron-soft); }
+.to-demo h2 { margin: 0; font: 800 1.05rem/1.25 var(--sans); }
+.fd-paste summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--apron-text); cursor: pointer; }
+.fd-paste { display: grid; gap: 8px; }

@@ -103,7 +103,10 @@
       K.canEdit() ? link('rota', 'The floor team', 'The people on the schedule', open('team')) : null,
       K.canEdit() && !ex ? link('sparkle', 'Load the example wines', 'Six Bulgarian wines and notes, to see how it works', () => { ui.sheet = null; K.loadExamples(); K.render(); }) : null,
       K.canEdit() && ex ? link('trash', 'Remove the examples', 'The example wines, dish notes and questions', () => { ui.sheet = null; K.removeExamples(); K.render(); }) : null,
-      !K.demo && K.canEdit() && K.demoAnswers().length ? link('check', 'Bring over what I confirmed in the demo', K.demoAnswers().length + ' dishes: allergens, who can eat them, bread', open('fromdemo')) : null,
+      !K.demo && K.canEdit() ? link('check', 'Bring over what I confirmed in the demo', K.demoAnswers().length ? K.demoAnswers().length + ' dishes: allergens, who can eat them, bread' : 'Allergens and food preferences set in the demo', open('fromdemo')) : null,
+      K.demo && K.demoAnswers().length ? link('copy', 'Copy what I confirmed here', 'To bring it into the real book from another phone or computer', () => {
+        navigator.clipboard.writeText(JSON.stringify({ komatDemo: K.demoAnswers() })).then(() => K.toast('Copied. In the real book: Settings → Bring over what I confirmed in the demo → paste.'), () => K.toast('This device would not copy.', { tone: 'bad' }));
+      }) : null,
       K.canEdit() ? link('list', 'Load the house menu and drinks', 'The printed menu, wine list and drinks, already typed in. What you have changed is kept.', loadHouse) : null,
       K.canEdit() ? link('download', 'Prices and stock from Hype', 'Read a file exported from the till: bottles in stock and prices', open('hype')) : null,
       K.canEdit() ? link('upload', 'Add from a file', 'Wines, notes or a week prepared as a file', importFile) : null,
@@ -230,9 +233,17 @@
     return Object.keys(best).map((k) => best[k]);
   };
   /* the allergens a demo dish ended with, once confirmed: found in its ingredients and menu line, plus what was ticked, minus what was unticked */
-  const demoSet = (n) => (n.checked ? Object.keys(K.allergenWhere({ id: 'demo', name: n.name, en: n.en, ings: n.ings || [], parts: [], r: null, n: n })) : null);
+  const demoSet = (n) => {
+    if (!n.checked) return null;
+    const m = Object.assign({}, n);
+    if (n.notAl === undefined) m.notAl = Object.keys(K.menuAllergens({ n: n }));
+    return Object.keys(K.allergenWhere({ id: 'demo', name: n.name, en: n.en, ings: n.ings || [], parts: [], r: null, n: m }));
+  };
+  /* how many demo answers on this device have not been brought over yet */
+  const movedAt = () => { try { return +JSON.parse(localStorage.getItem('komat.fohDemoMoved') || '0') || 0; } catch (e) { return 0; } };
+  K.demoPending = () => (K.demo ? 0 : K.demoAnswers().filter((n) => (n.updated || 0) > movedAt()).length);
   K.SHEETS.fromdemo = function (S) {
-    if (!S.items) S.items = K.demoAnswers().map((n) => ({ n: n, set: demoSet(n), d: K.dishes(true).find((x) => (n.menuBg && x.n.menuBg === n.menuBg) || (n.en && x.en === n.en) || x.name === n.name) || null }))
+    if (!S.items) S.items = (S.pasted || K.demoAnswers()).map((n) => ({ n: n, set: demoSet(n), d: K.dishes(true).find((x) => (n.menuBg && x.n.menuBg === n.menuBg) || (n.en && x.en === n.en) || x.name === n.name) || null }))
       .sort((a, b) => (a.d ? 0 : 1) - (b.d ? 0 : 1) || String(a.n.name).localeCompare(String(b.n.name)));
     const hardOf = (d) => { const w = K.allergenWhere(d); return Object.keys(w).filter((k) => w[k].some((x) => x !== 'ticked by hand' && !K.fromMenu(x))); };
     const can = S.items.filter((x) => x.d), lost = S.items.filter((x) => !x.d);
@@ -246,6 +257,7 @@
         if (x.set) { if (K.canCheck(d)) K.confirmAllergens(d, x.set.filter((k) => !hard.includes(k))); else noRight++; }
         done++;
       });
+      try { localStorage.setItem('komat.fohDemoMoved', JSON.stringify(Math.max.apply(null, S.items.map((x) => x.n.updated || 0).concat([Date.now()])))); } catch (e) { /* nothing kept: the card shows again */ }
       ui.sheet = null; K.render();
       K.toast(done + ' dishes brought over from the demo' + (noRight ? ' · ' + noRight + ' still need a chef or the owner to confirm' : ''));
     };
@@ -262,7 +274,17 @@
       h('p', { class: 'hint' }, 'What was confirmed in the demo on this device, matched to the dishes in the book by their line on the menu. Check it, then bring it over. An allergen the kitchen’s own recipe shows cannot be removed here.'),
       can.length ? h('ul', { class: 'fd-list' }, can.map(row)) : h('p', { class: 'muted' }, 'None of the demo’s dishes are in the book yet. Load the house menu first.'),
       lost.length ? [h('p', { class: 'hint' }, 'Not in the book yet (load the house menu first):'), h('ul', { class: 'fd-list' }, lost.map(row))] : null,
-      h('button', { class: 'btn primary wide', type: 'button', disabled: !can.length, onclick: apply }, K.icon('check'), 'Bring over ' + can.length + ' dishes')), { wide: true });
+      h('button', { class: 'btn primary wide', type: 'button', disabled: !can.length, onclick: apply }, K.icon('check'), 'Bring over ' + can.length + ' dishes'),
+      /* the demo was used on another phone or computer: its answers come over as copied text */
+      h('details', { class: 'fd-paste' }, h('summary', null, 'The demo was on another phone or computer'),
+        h('p', { class: 'hint' }, 'There, open the demo → Settings → Copy what I confirmed here. Then paste it below.'),
+        h('textarea', { class: 'input', id: 'fd-paste', rows: '3', placeholder: 'Paste here', oninput: (e) => { S.text = e.target.value; } }),
+        h('button', { class: 'btn', type: 'button', onclick: () => {
+          let l = null;
+          try { l = JSON.parse(S.text || '').komatDemo; } catch (e) { l = null; }
+          if (!Array.isArray(l) || !l.length) { K.toast('That is not what the demo copies. Copy it again there and paste all of it.', { tone: 'bad' }); return; }
+          S.pasted = l; S.items = null; K.render();
+        } }, 'Use what I pasted'))), { wide: true });
   };
   K.SHEETS.menuimport = function (S) {
     const opts = [['', 'Skip this line'], ['__own', 'Not in the kitchen book: add as the floor’s own']].concat(D.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)).map((r) => [r.id, r.name + (r.onMenu ? '' : ' (off the menu)')]));
