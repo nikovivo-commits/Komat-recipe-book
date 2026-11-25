@@ -1,5 +1,5 @@
 {
- "v": 2026112501,
+ "v": 2026112502,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -2566,7 +2566,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "12–14 °C",
    "order": 44,
    "par": 2,
    "label": "",
@@ -2578,7 +2578,8 @@
    "body": "light",
    "made": "Aged four months in French oak barrels.",
    "was": {
-    "say": "Gamza from Bononia, North-western Bulgaria. A light, fresh red from the Danube, known as Kadarka in Hungary: red berries, soft tannins."
+    "say": "Gamza from Bononia, North-western Bulgaria. A light, fresh red from the Danube, known as Kadarka in Hungary: red berries, soft tannins.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Гъмза е традиционното червено на Северозападна България. Леко и сочно: череша, малина и малко подправки, с меки танини. За гости, които искат червено, което не е тежко.",
@@ -2603,7 +2604,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 45,
    "par": 2,
    "label": "",
@@ -2611,7 +2612,8 @@
    "glassCl": "",
    "updated": 0,
    "was": {
-    "say": "Merlot from Tipchenitsa, North-western Bulgaria. Round and soft: plum, cherry and a touch of chocolate."
+    "say": "Merlot from Tipchenitsa, North-western Bulgaria. Round and soft: plum, cherry and a touch of chocolate.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Мерло от малка бутикова винарна край Враца, в Северозападна България. Черна череша и слива; меко и заоблено.",
@@ -2827,7 +2829,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 51,
    "par": 2,
    "label": "https://seewines.com/media/cache/resolve/product_view_default/images/cb-terreprinciere-pinot-noir-png_1f695505602d8fe0fb12e664191dabec.png",
@@ -2844,7 +2846,8 @@
    "body": "medium",
    "made": "Hand-picked organic grapes, wild-yeast fermentation, then about 18 months in Burgundy oak barrels and ceramic amphorae.",
    "was": {
-    "say": "Pinot Noir from Clos Bibliothèque, Black Sea region. Light in colour, silky, with red cherry, raspberry and an earthy note."
+    "say": "Pinot Noir from Clos Bibliothèque, Black Sea region. Light in colour, silky, with red cherry, raspberry and an earthy note.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Пино ноар в бургундски стил от съвсем малко биологично имение край Варна, върху варовик, пълен с морски вкаменелости. Череша, малина и сладки подправки; елегантно, с жива свежест.",
@@ -2869,7 +2872,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 52,
    "par": 2,
    "label": "https://seewines.com/media/cache/resolve/product_view_default/images/cabernet-franc-png_88a159b0b271f6b26629b0a039883525.png",
@@ -2886,7 +2889,8 @@
    "body": "medium",
    "made": "Hand-picked and hand-sorted, fermented in stainless steel, then 10 months in new and second-use French oak barrels.",
    "was": {
-    "say": "Cabernet Franc from Downtown Urban Winery, East Thracian Valley. Medium-bodied, with red fruit, herbs and a fresh, leafy lift."
+    "say": "Cabernet Franc from Downtown Urban Winery, East Thracian Valley. Medium-bodied, with red fruit, herbs and a fresh, leafy lift.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Каберне фран, правено в малки партиди, брано и сортирано на ръка, десет месеца във френски дъб. Къпина, череша и печена червена чушка, със сладки подправки и черен шоколад.",
@@ -3201,7 +3205,7 @@
    "facts": "Morgon is one of the ten crus of Beaujolais; our list files it under Burgundy.",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "12–14 °C",
    "order": 61,
    "par": 2,
    "label": "https://vintageroots.co.uk/wp-content/uploads/2026/04/EFH17-AOP-Morgon-Chateau-de-la-Chaize.png",
@@ -3219,7 +3223,8 @@
    "made": "Aged entirely in large wooden vats (foudres).",
    "appellation": "Morgon AOC",
    "was": {
-    "say": "Gamay from Château de La Chaize, Beaujolais. Light and juicy: red cherry, strawberry, very little tannin. Good slightly cool."
+    "say": "Gamay from Château de La Chaize, Beaujolais. Light and juicy: red cherry, strawberry, very little tannin. Good slightly cool.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Morgon е едно от най-добрите села на Божоле; шатото прави вино от 1676 г. и вече е биологично. Гаме: зрели червени плодове и подправки, свежо, с меки танини. Хубаво е леко охладено.",
@@ -3245,7 +3250,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 62,
    "par": 2,
    "label": "https://seewines.com/media/cache/resolve/product_view_default/images/products/saint-emilion-grand-cru.png",
@@ -3261,7 +3266,8 @@
    "was": {
     "say": "A Saint-Émilion Grand Cru from the right bank of Bordeaux, where Merlot leads: plum, soft tannins, a little oak.",
     "grapes": "Merlot",
-    "story": "Round and soft: plum, cherry and a touch of chocolate."
+    "story": "Round and soft: plum, cherry and a touch of chocolate.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Saint-Émilion Grand Cru от съвсем малко лозе със стари лози: предимно Мерло с Каберне фран, отлежало в дъб. Слива и меки танини: Бордо, което лесно се харесва.",
@@ -3283,7 +3289,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "12–14 °C",
    "order": 63,
    "par": 2,
    "label": "",
@@ -3295,7 +3301,8 @@
    "body": "light",
    "appellation": "Bourgogne AOC",
    "was": {
-    "say": "Pinot Noir from Domaine d’Ardhuy, Burgundy. Light in colour, silky, with red cherry, raspberry and an earthy note."
+    "say": "Pinot Noir from Domaine d’Ardhuy, Burgundy. Light in colour, silky, with red cherry, raspberry and an earthy note.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Червено бургундско: Пино ноар от семейно имение, основано през 1927 г. Леко и меко на вкус, с дребни червени и черни плодове и малко подправки.",
@@ -3477,7 +3484,7 @@
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 68,
    "par": 2,
    "label": "https://www.sid-shop.com/media/catalog/product/cache/fce77f7d610ca0d861273f51628c17e8/v/o/volpaia-chianti-classico-docg-bottle.png",
@@ -3495,7 +3502,8 @@
    "made": "Aged 24 months in Slavonian and French oak casks, then at least 3 months in bottle.",
    "appellation": "Chianti Classico DOCG Riserva",
    "was": {
-    "say": "Sangiovese from Castello di Volpaia, Tuscany. Sour cherry, herbs and leather, with bright acidity."
+    "say": "Sangiovese from Castello di Volpaia, Tuscany. Sour cherry, herbs and leather, with bright acidity.",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Chianti Classico Riserva от биологични лозя, сред най-високите в Кианти, две години в дъб. Санджовезе: цветя, тъмни плодове и землиста нотка, с фини танини.",
@@ -3520,7 +3528,7 @@
    "facts": "Marqués de Murrieta is one of the oldest wineries in Rioja.",
    "glassPrice": "",
    "byGlass": false,
-   "serve": "16–18 °C",
+   "serve": "14–16 °C",
    "order": 69,
    "par": 2,
    "label": "https://www.sid-shop.com/media/catalog/product/cache/fce77f7d610ca0d861273f51628c17e8/m/a/marques20de20murrieta20reserva2c20marques20de20murrieta200.75.jpg",
@@ -3539,7 +3547,8 @@
    "appellation": "Rioja DOCa",
    "was": {
     "say": "Tempranillo from Marqués de Murrieta, Rioja. Red and dark fruit with vanilla and leather from long oak ageing.",
-    "grapes": "Tempranillo"
+    "grapes": "Tempranillo",
+    "serve": "16–18 °C"
    },
    "bg": {
     "say": "Rioja Reserva от една от най-старите винарни в Риоха, основана през 1852 г. Предимно Темпранило, почти две години в американски дъб: слива, череша и кедър; свежо, елегантно и кадифено.",
