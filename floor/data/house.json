@@ -1,5 +1,5 @@
 {
- "v": 2026112602,
+ "v": 2026112603,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -696,21 +696,25 @@
      "what": "Sourdough bread: raised with a natural starter instead of yeast."
     }
    ],
-   "facts": "",
+   "facts": "For a vegan guest, or one who cannot have milk, the bread comes with olive oil in place of the butter.",
    "bg": {
     "pitch": "Нашият хляб с квас с масло – за начало на дегустационното меню.",
-    "canHow": "без маслото",
+    "facts": "За веган гост или гост, който не може да яде мляко, хлябът идва със зехтин вместо маслото.",
+    "canHow": "със зехтин вместо маслото",
     "niche": {
      "хляб с квас": "Хляб с квас: втасва с естествен квас вместо с мая."
     }
    },
    "course": "mezze",
    "canDiet": "vegan",
-   "canHow": "without the butter",
+   "canHow": "with olive oil instead of the butter",
    "canAl": [
     "milk"
    ],
-   "diet": "veg"
+   "diet": "veg",
+   "was": {
+    "canHow": "without the butter"
+   }
   },
   {
    "menuName": "Хапки",
