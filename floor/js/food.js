@@ -226,6 +226,7 @@
   };
   /* which stand-in comes first: one that is fine as it is, then one that is fine with a change, then one still to confirm */
   const RANK = { ok: 0, mod: 1, ask: 2 };
+  K.courseKind = courseKind;
   const NO_SWAP = { main: 'No other main course is safe: ask the kitchen to adapt it', starter: 'No other starter is safe: ask the kitchen to adapt it', sweet: 'No other dessert is safe: ask the kitchen to adapt it', mezze: 'Nothing to serve in its place: ask the kitchen to adapt it' };
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {

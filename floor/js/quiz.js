@@ -91,42 +91,164 @@
     });
     return out.filter(Boolean);
   }
+  /* ---------- food ----------
+     First what a waitress has to decide at the table: who can eat what, what to write on the order, where an
+     allergen comes from, what stands in for a course of the tasting menu. Then what she has to know by heart.
+     Every question carries its kind, and a round draws from different kinds, so it is not ten of one sort.
+     A question whose wording gives its answer away (“which dish has pacha?” — “cold pork pacha”) is left out. */
+  const lc = (s) => String(s || '').toLowerCase();
+  const cap = (s) => { s = String(s || '').trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
+  const one = (l) => l[Math.floor(Math.random() * l.length)];
+  /* an explanation without the word it explains in front (“Krokmach: a fermented…” would name the answer) */
+  const bare = (what) => { const t = K.T(what), i = t.indexOf(': '); return cap(i > 0 && i <= 40 ? t.slice(i + 2) : t); };
+  const LAT = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: '', ю: 'yu', я: 'ya' };
+  const latin = (s) => lc(s).split('').map((c) => (LAT[c] != null ? LAT[c] : c)).join('');
+  const stems = (s) => (lc(s) + ' ' + latin(s)).split(/[^a-zа-я]+/).filter((w) => w.length >= 4).map((w) => w.slice(0, 4));
+  /* does one text give the other away: they share the start of a word, in either alphabet */
+  const tells = (a, b) => { const x = stems(b); return stems(a).some((w) => x.includes(w)); };
+  const DIETQ = {
+    vegan: ['A guest is vegan. Which of these can they eat as it comes?', 'A guest is vegan. Which of these do you not offer?', 'A vegan guest orders ', 'A vegan guest takes the tasting menu. '],
+    veg: ['A guest is vegetarian. Which of these can they eat as it comes?', 'A guest is vegetarian. Which of these do you not offer?', 'A vegetarian guest orders ', 'A vegetarian guest takes the tasting menu. '],
+    pesc: ['A guest is pescatarian. Which of these can they eat as it comes?', 'A guest is pescatarian. Which of these do you not offer?', 'A pescatarian guest orders ', 'A pescatarian guest takes the tasting menu. '],
+  };
   function foodQs() {
     const out = [], dishes = K.dishes(), ens = dishes.map((d) => d.en).filter(Boolean), names = dishes.map((d) => d.name);
-    const allAl = (K.ALLERGENS || []).map((a) => a[0]);
-    const whats = [];
-    dishes.forEach((d) => (d.n.niche || []).forEach((x) => { if (x.what) whats.push(short(K.T(x.what), 80)); }));
-    Object.keys(D.gloss).forEach((id) => { if (D.gloss[id].what) whats.push(short(K.T(D.gloss[id].what), 80)); });
+    const add = (kind, q) => { if (q) { q.kind = kind; out.push(q); } };
+    const allAl = (K.ALLERGENS || []).map((a) => a[0]), keys = allAl.concat(['lactose', 'vegan', 'veg', 'pesc']);
+    const menu = dishes.filter((d) => d.onMenu && d.n.only !== 'tasting');
     /* everything a dish is known to have, in one text: its menu line, its ingredients, what guests ask about */
     const textOf = (y) => [y.n.menuBg, y.n.menuEn, y.ings.join(' | '), (y.n.niche || []).map((z) => z.n).join(' | ')].join(' | ').toLowerCase();
     const has = (y, name) => { const n = String(name || '').split(/[,(]/)[0].trim().toLowerCase(); return !!n && textOf(y).includes(n); };
+    /* where an allergen sits in a dish, as a guest would be told: the ingredient, not the app's wording */
+    const sources = (d, k) => (K.allergenWhere(d)[k] || []).filter((s) => s !== 'ticked by hand' && s !== 'its name')
+      .map((s) => (K.fromMenu(s) ? s.replace(/^the menu line \(|\)$/g, '') : s.split(': ').pop()).split('(')[0].trim()).filter((s, i, l) => s && l.findIndex((x) => lc(x) === lc(s)) === i);
+    const whyNo = (x, k) => { const hit = x.v.hits[0] || {}, src = sources(x.d, k === 'lactose' ? 'milk' : k); return hit.txt ? x.d.name + K.T(hit.txt) + '.' : x.d.name + ': ' + lc(K.T(K.alName(k))) + (src.length ? K.T(' in ' + src.slice(0, 2).join(', ')) : '') + '.'; };
+
+    /* 1. a guest with an allergy or a diet: what can they eat, what do you not offer. Only settled answers are
+          used: a dish still waiting to be confirmed is neither a right nor a wrong one. */
+    keys.forEach((k) => {
+      const v = menu.map((d) => ({ d: d, v: K.allergyVerdict(d, [k]) })), yes = v.filter((x) => x.v.state === 'ok'), no = v.filter((x) => x.v.state === 'no');
+      const q = K.DIET[k] ? DIETQ[k] : k === 'lactose' ? ['A guest avoids lactose but eats butter. Which of these can they eat as it comes?', 'A guest avoids lactose but eats butter. Which of these do you not offer?']
+        : ['A guest is allergic to ' + lc(K.AL[k]) + '. Which of these can they eat as it comes?', 'A guest is allergic to ' + lc(K.AL[k]) + '. Which of these do you not offer?'];
+      if (yes.length && no.length >= 3) add('guest', mk('food', q[0], one(yes).d.name, no.map((x) => x.d.name), 'It is confirmed without it; the other three have it.'));
+      if (no.length && yes.length >= 3) { const x = one(no); add('guest', mk('food', q[1], x.d.name, yes.map((y) => y.d.name), whyNo(x, k))); }
+      /* 2. fine with a change: what do you write on the order */
+      v.filter((x) => x.v.state === 'mod' && x.v.notes.length).forEach((x) => add('change', mk('food',
+        K.DIET[k] ? DIETQ[k][2] + x.d.name + '. What do you do?' : 'A guest cannot eat ' + lc(K.alName(k)) + ' and orders ' + x.d.name + '. What do you do?',
+        x.v.notes.map(K.T).join(' · '), ['Serve it as it comes', 'Say we cannot make it for them', 'Ask the kitchen to leave out the sauce', 'Offer a half portion'].map(K.T), 'Write the change on the order, so the kitchen sees it.')));
+    });
+    /* the bread comes off, the gluten stays: the dish itself has it */
+    menu.forEach((d) => {
+      if (d.n.bread && K.allergenWhere(d).gluten && !(d.n.breadAl || []).includes('gluten')) add('change', mk('food', 'A guest cannot eat gluten. Can they have ' + d.name + ' without the bread?',
+        'No: the gluten is in the dish itself', ['Yes: only the bread has gluten', 'Yes, with brioche instead of the bread', 'Yes, as a half portion'], K.T(K.AL.gluten) + ': ' + sources(d, 'gluten').slice(0, 3).join(', ') + '.'));
+    });
+
+    /* 3. where is the allergen: which ingredient carries it */
+    menu.forEach((d) => {
+      const items = (d.ings.length ? d.ings : String(d.n.menuBg || '').split(/,\s*/)).map((x) => String(x).split('(')[0].trim()).filter((x) => x && x.length <= 36);
+      Object.keys(K.allergenWhere(d)).forEach((k) => {
+        const src = sources(d, k);
+        if (!src.length || src[0].length > 40) return;
+        add('where', mk('food', 'Where is the ' + lc(K.AL[k]) + ' in ' + d.name + '?', src[0], items.filter((i) => !K.allergensIn(i).includes(k) && !src.some((s) => lc(s) === lc(i))), K.T(K.AL[k]) + ': ' + src.slice(0, 3).join(', ') + '.'));
+      });
+    });
+
+    /* 4. the tasting menu: its order, what is on it, and what stands in for a course a guest cannot have */
+    const t = K.tasting(), cs = t.courses;
+    if (cs.length >= 4) {
+      const onIt = cs.map((c) => c.id).concat(t.extra ? [t.extra.dish.id] : []), off = menu.filter((d) => !onIt.includes(d.id)), order = K.T('The order: ') + cs.map((c) => c.name).join(' → ');
+      for (let i = 0; i < cs.length - 1; i++) add('tasting', mk('food', 'On the tasting menu, what comes after ' + cs[i].name + '?', cs[i + 1].name, cs.filter((c, j) => j !== i && j !== i + 1).map((c) => c.name), order));
+      for (let i = 0; i < 3 && off.length; i++) add('tasting', mk('food', 'Which of these is not on the tasting menu?', one(off).name, cs.map((c) => c.name), order));
+      add('tasting', mk('food', 'How many courses does the tasting menu have?', String(cs.length), [cs.length - 2, cs.length - 1, cs.length + 1, cs.length + 2].map(String), order));
+      if (+t.price) add('tasting', mk('food', 'How much is the tasting menu for one guest?', K.price(t.price), [-15, -10, 10, 15].map((x) => K.price(String(+t.price + x))), t.pairing ? K.T('The wine pairing: ') + K.price(t.pairing) : ''));
+      if (t.extra) add('tasting', mk('food', 'What can a table add to the tasting menu?', t.extra.dish.name, off.map((d) => d.name), t.extra.price ? K.price(t.extra.price) : ''));
+      if (K.courseKind) keys.forEach((k) => cs.forEach((c) => {
+        if (K.allergyVerdict(c, [k]).state !== 'no') return;
+        const pool = off.map((d) => ({ d: d, v: K.allergyVerdict(d, [k]) })), kind = K.courseKind(c);
+        const right = pool.filter((x) => K.courseKind(x.d) === kind && (x.v.state === 'ok' || x.v.state === 'mod'));
+        /* wrong: a dish of another kind (a dip for a main), or one of the right kind the guest cannot have either */
+        const wrong = pool.filter((x) => K.courseKind(x.d) !== kind || x.v.state === 'no');
+        if (right.length) add('swap', mk('food', (K.DIET[k] ? DIETQ[k][3] : 'A guest on the tasting menu cannot eat ' + lc(K.alName(k)) + '. ') + 'What can take the place of ' + c.name + '?', one(right).d.name, wrong.map((x) => x.d.name),
+          'A course is only replaced by one of its kind: a main by a main, a starter by a starter, a dessert by a dessert. A dip never replaces a plated course.'));
+      }));
+    }
+
+    /* 5. what the kitchen can make of a dish on request */
+    const cans = menu.filter((d) => d.n.canDiet && d.n.canHow);
+    cans.forEach((d) => add('canbe', mk('food', 'How do we make ' + d.name + ' ' + lc(K.DIET[d.n.canDiet]) + '?', cap(K.T(d.n.canHow)),
+      cans.filter((x) => x !== d).map((x) => cap(K.T(x.n.canHow))).concat(['Without the dressing', 'With oil instead of butter', 'With the sauce on the side', 'We cannot'].map(K.T)), (d.n.canAl || []).length ? K.T('Then it has no ' + d.n.canAl.map((k) => K.AL[k].toLowerCase()).join(', ') + '.') : '')));
+    [['vegan', 'Which of these can be made vegan on request?'], ['veg', 'Which of these can be made vegetarian on request?']].forEach((x) => {
+      const rank = (l) => K.DIETS.indexOf(l), yes = menu.filter((d) => d.n.canDiet && rank(d.n.canDiet) >= rank(x[0]) && !(d.n.diet && rank(d.n.diet) >= rank(x[0]))), no = menu.filter((d) => K.allergyVerdict(d, [x[0]]).state === 'no');
+      if (yes.length && no.length >= 3) { const d = one(yes); add('canbe', mk('food', x[1], d.name, no.map((y) => y.name), K.T(K.canText(d.n)))); }
+    });
+
+    /* 6. the bread on the side */
+    const bready = (d) => /хляб|bread|бриош|brioche|блини|blini|галета/.test(textOf(d));
+    const withBread = menu.filter((d) => d.n.bread), noBread = menu.filter((d) => !d.n.bread && !bready(d));
+    if (withBread.length && noBread.length >= 3) add('bread', mk('food', 'Which of these comes with bread on the side?', one(withBread).name, noBread.map((d) => d.name), 'A guest who cannot eat gluten gets it without the bread, where the dish itself has none.'));
+
+    /* 7. a dish from its line on the menu, when the line does not name it */
     dishes.forEach((d) => {
-      if (d.en && d.en !== d.name) out.push(mk('food', 'How do you say ' + d.name + ' in English?', d.en, ens.concat(['Chef’s special', 'Garden salad', 'Slow-cooked beef']), d.n.pitch && short(d.n.pitch, 140)));
+      const line = K.flang === 'bg' ? d.n.menuBg : d.n.menuEn || d.n.menuBg;
+      if (line && line.split(',').length >= 3 && !tells(line, d.name + ' ' + (d.en || ''))) add('menuline', mk('food', 'The menu says: “' + line + '”. Which dish is it?', d.name, names, d.en));
+    });
+
+    /* 8. the ingredients guests ask about: what one is, and which one a description means */
+    const niche = [];
+    dishes.forEach((d) => (d.n.niche || []).forEach((x) => { if (x.what && !niche.some((y) => y.n === x.n)) niche.push({ n: x.n, what: x.what, d: d }); }));
+    Object.keys(D.gloss).forEach((id) => { const g = D.gloss[id]; if (g.name && g.what && !niche.some((y) => y.n === g.name)) niche.push({ n: g.name, what: g.what, d: null }); });
+    const bares = niche.map((x) => short(bare(x.what), 80));
+    niche.forEach((x) => {
+      const where = x.d ? 'In ' + x.d.name + '.' : '';
+      add('whatis', mk('food', 'What is ' + x.n + '?', short(bare(x.what), 80), bares, where));
+      if (!tells(bare(x.what), x.n + ' ' + (K.en(x.n) || ''))) add('whatisrev', mk('food', 'Which ingredient is this: “' + short(bare(x.what), 120) + '”?', x.n, niche.map((y) => y.n), where));
+    });
+
+    /* 9. by heart: which dish an ingredient is in (when the name does not say so), the English names that are not
+          the same word, an allergen, an odd one out, prices, pictures */
+    dishes.forEach((d) => {
+      (d.n.niche || []).forEach((x) => {
+        if (!tells(x.n + ' ' + (K.en(x.n) || ''), d.name + ' ' + (d.en || ''))) add('has', mk('food', 'Which dish has ' + x.n + '?', d.name, dishes.filter((y) => y === d || !has(y, x.n)).map((y) => y.name), x.what ? bare(x.what) : ''));
+      });
+      if (d.en && d.en !== d.name && !tells(d.name, d.en)) add('translate', mk('food', 'How do you say ' + d.name + ' in English?', d.en, ens.concat(['Chef’s special', 'Garden salad', 'Slow-cooked beef']), d.n.pitch && short(K.T(d.n.pitch), 140)));
       const al = K.dishAllergens(d).keys;
       if (al.length) {
-        const a = al[Math.floor(Math.random() * al.length)];
-        out.push(mk('food', 'Which allergen is in ' + d.name + '?', K.AL[a], allAl.filter((k) => !al.includes(k) && !K.menuAllergens(d)[k]).map((k) => K.AL[k]), d.name + ' has: ' + al.map((k) => K.AL[k]).join(', ') + '.'));
+        const a = one(al);
+        add('allergen', mk('food', 'Which allergen is in ' + d.name + '?', K.AL[a], allAl.filter((k) => !al.includes(k) && !K.menuAllergens(d)[k]).map((k) => K.AL[k]), d.name + ' has: ' + al.map((k) => K.AL[k]).join(', ') + '.'));
       }
       const others = [];
       dishes.forEach((x) => { if (x !== d) x.ings.forEach((i) => { if (!d.ings.some((j) => K.ingKey(j) === K.ingKey(i)) && !has(d, i)) others.push(i); }); });
       const mine = d.ings.filter((i) => i.length < 40);
-      if (others.length && mine.length >= 3) {
-        const a = others[Math.floor(Math.random() * others.length)];
-        const q = mk('food', 'Which of these is NOT in ' + d.name + '?', a, mine, 'In it: ' + mine.slice(0, 8).join(', ') + (mine.length > 8 ? '…' : '') + '.');
-        if (q) out.push(q);
+      if (others.length && mine.length >= 3) add('oddone', mk('food', 'Which of these is NOT in ' + d.name + '?', one(others), mine, 'In it: ' + mine.slice(0, 8).join(', ') + (mine.length > 8 ? '…' : '') + '.'));
+      if (d.price) add('price', mk('food', 'How much is ' + d.name + '?', K.price(d.price), dishes.filter((x) => x.price).map((x) => K.price(x.price)).concat([+d.price + 2, +d.price - 2, +d.price + 4].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
+      if (d.photo || K.dishArt(d)) add('photo', mk('food', 'Which dish is this?', d.name, names, d.en, d.photo ? K.media(d.photo) : K.dishArt(d)));
+    });
+    return out;
+  }
+  /* every food question the book can make right now, with its kind: for looking over the quiz, and for the tests */
+  K.quizFood = foodQs;
+  /* a food round: the situations first, one of each kind in turn, then what is known by heart */
+  const DEEP = ['guest', 'change', 'where', 'swap', 'tasting', 'canbe', 'bread', 'menuline', 'whatisrev'];
+  function pickMixed(qs, n) {
+    const by = {}, out = [];
+    qs.forEach((q) => { (by[q.kind] = by[q.kind] || []).push(q); });
+    Object.keys(by).forEach((k) => { by[k] = shuffle(by[k]); });
+    const take = (kinds, max) => {
+      let left = true;
+      while (out.length < max && left) {
+        left = false;
+        shuffle(kinds.slice()).forEach((k) => {
+          if (out.length >= max || !by[k].length) return;
+          const q = by[k].shift();
+          left = true;
+          if (!out.some((o) => o.q === q.q)) out.push(q);
+        });
       }
-      (d.n.niche || []).forEach((x) => {
-        out.push(mk('food', 'Which dish has ' + x.n + '?', d.name, dishes.filter((y) => y === d || !has(y, x.n)).map((y) => y.name), x.what));
-        if (x.what) out.push(mk('food', 'What is ' + x.n + '?', short(K.T(x.what), 80), whats, 'In ' + d.name + '.'));
-      });
-      if (d.price) out.push(mk('food', 'How much is ' + d.name + '?', K.price(d.price), dishes.filter((x) => x.price).map((x) => K.price(x.price)).concat([+d.price + 2, +d.price - 2, +d.price + 4].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
-      if (d.photo || K.dishArt(d)) out.push(mk('food', 'Which dish is this?', d.name, names, d.en, d.photo ? K.media(d.photo) : K.dishArt(d)));
-    });
-    Object.keys(D.gloss).forEach((id) => {
-      const g = D.gloss[id];
-      if (g.name && g.what) out.push(mk('food', 'What is ' + g.name + '?', short(K.T(g.what), 80), whats, g.en ? 'In English: ' + g.en + '.' : ''));
-    });
-    return out.filter(Boolean);
+    };
+    take(DEEP.filter((k) => by[k]), n - 2);
+    take(Object.keys(by).filter((k) => !DEEP.includes(k)), n);
+    take(DEEP.filter((k) => by[k]), n);
+    return out;
   }
   function bankQs(topic) {
     return BANK[topic].map((b) => mk(topic, b[0], b[1], b[2], b[3])).filter(Boolean)
@@ -134,10 +256,10 @@
   }
   /* a round: mostly questions about our own wines and dishes, topped up from the general ones */
   function round(topic) {
-    const own = topic === 'wine' ? wineQs() : topic === 'food' ? foodQs() : wineQs().concat(foodQs());
+    const own = topic === 'wine' ? pickN(wineQs(), 7) : topic === 'food' ? pickMixed(foodQs(), 7) : pickN(wineQs(), 4).concat(pickMixed(foodQs(), 4));
     const gen = topic === 'all' ? bankQs('wine').concat(bankQs('food')) : bankQs(topic);
     const seen = {}, out = [];
-    pickN(own, 7).concat(pickN(gen, ROUND)).forEach((q) => { if (out.length < ROUND && !seen[q.q]) { seen[q.q] = 1; out.push(q); } });
+    own.concat(pickN(gen, ROUND)).forEach((q) => { if (out.length < ROUND && !seen[q.q]) { seen[q.q] = 1; out.push(q); } });
     return shuffle(out);
   }
 
