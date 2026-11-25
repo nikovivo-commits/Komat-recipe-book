@@ -244,6 +244,7 @@
      From its place on the menu; a course only the tasting menu has says it itself (`course`), or its name does. */
   const courseKind = (d) => {
     const s = String(d.n.course || d.section || '').toLowerCase(), nm = String(d.en || d.name || '').toLowerCase() + ' ' + String(d.name || '').toLowerCase();
+    if (/bites|хапк/.test(s)) return 'bites';
     if (/main|основн/.test(s)) return 'main';
     if (/dessert|finish|sweet|pastry|десерт|край/.test(s)) return 'sweet';
     if (/mezze|dip|мезе|разядк/.test(s)) return 'mezze';
@@ -253,7 +254,10 @@
   /* which stand-in comes first: one that is fine as it is, then one that is fine with a change, then one still to confirm */
   const RANK = { ok: 0, mod: 1, ask: 2 };
   K.courseKind = courseKind;
-  const NO_SWAP = { main: 'No other main course is safe: ask the kitchen to adapt it', starter: 'No other starter is safe: ask the kitchen to adapt it', sweet: 'No other dessert is safe: ask the kitchen to adapt it', mezze: 'Nothing to serve in its place: ask the kitchen to adapt it' };
+  /* may a dish of this kind take the place of a course of that kind: its own kind, and for the bites a dip or a starter too */
+  const standsIn = (course, dish) => course === dish || (course === 'bites' && (dish === 'mezze' || dish === 'starter'));
+  K.standsIn = standsIn;
+  const NO_SWAP = { bites: 'No other starter is safe: ask the kitchen to adapt it', main: 'No other main course is safe: ask the kitchen to adapt it', starter: 'No other starter is safe: ask the kitchen to adapt it', sweet: 'No other dessert is safe: ask the kitchen to adapt it', mezze: 'Nothing to serve in its place: ask the kitchen to adapt it' };
   /* for a guest with allergies: each course as it is, or what to serve in its place */
   function tastingFor(sel) {
     const t = K.tasting();
@@ -264,16 +268,30 @@
     const pool = K.dishes().filter((d) => d.onMenu && d.n.only !== 'tasting' && !inMenu.includes(d.id) && d.id !== extraId).map((d) => ({ d: d, v: K.allergyVerdict(d, sel) })).filter((x) => x.v.state !== 'no');
     /* the menu as this guest gets it: each course as it is, changed, or replaced by the dish chosen for it */
     const used = {};
+    /* the house's own plan for a diet (which dish stands in for which course), when the guest's diet has one and nothing else is ticked against it */
+    const diet = ['vegan', 'veg', 'pesc'].find((k) => sel.includes(k) && t.plans[k]), house = diet ? t.plans[diet] : null;
+    /* the dishes the house's plan names are kept for their own course: an earlier course does not take them */
+    /* a course the house replaces for this diet is not served to this guest, even while nobody has said yet who can eat it */
+    const verdict = (d) => { const v = K.allergyVerdict(d, sel); return house && house[d.id] !== undefined && v.state === 'ask' ? { state: 'no', hits: [{ k: diet, where: [], txt: ': the house serves another course' }], notes: [] } : v; };
+    if (house) t.courses.forEach((d) => { const id = house[d.id]; if (id && verdict(d).state === 'no' && pool.some((x) => x.d.id === id)) used[id] = 0; });
+    const reserved = house ? Object.keys(house).map((c) => house[c]).filter(Boolean) : [];
     const plan = t.courses.map((d) => {
-      const v = K.allergyVerdict(d, sel);
+      const v = verdict(d);
       /* swaps: the same section first, confirmed dishes before unconfirmed ones */
       /* only a dish of the same kind stands in: a main for a main, a starter for a starter, a dessert for a dessert.
          A dip is a plate to share, so it replaces the bread course at most, never a plated one. */
-      const swaps = v.state !== 'no' ? [] : pool.filter((x) => courseKind(x.d) === courseKind(d)).sort((a, b) => (b.d.section === d.section) - (a.d.section === d.section) || RANK[a.v.state] - RANK[b.v.state]).slice(0, 4);
-      /* unless one was tapped, the first dish no earlier course already took: a guest should not get the same plate twice */
-      const chosen = swaps.find((x) => x.d.id === pick[d.id]) || swaps.find((x) => !used[x.d.id]) || swaps[0] || null;
+      const kind = courseKind(d), dip = (x) => (kind === 'bites' && courseKind(x.d) !== 'mezze' ? 1 : 0);
+      let swaps = v.state !== 'no' ? [] : pool.filter((x) => standsIn(kind, courseKind(x.d))).sort((a, b) => dip(a) - dip(b) || (b.d.section === d.section) - (a.d.section === d.section) || RANK[a.v.state] - RANK[b.v.state]).slice(0, 4);
+      /* what the house has decided for this diet: the dish it names comes first; a course it leaves to the kitchen offers none */
+      const set = v.state === 'no' && house ? house[d.id] : undefined, mine = set ? pool.find((x) => x.d.id === set) : null;
+      const invent = set === '';
+      if (invent) swaps = [];
+      if (mine) swaps = [mine].concat(swaps.filter((x) => x !== mine)).slice(0, 4);
+      /* unless one was tapped: the house's dish, else the first no earlier course already took. A guest does not get
+         the same plate twice, so when every stand-in is taken the course is left to the kitchen. */
+      const chosen = swaps.find((x) => x.d.id === pick[d.id]) || (mine && !used[mine.d.id] ? mine : null) || swaps.find((x) => !used[x.d.id] && (!reserved.includes(x.d.id) || x === mine)) || null;
       if (chosen) used[chosen.d.id] = 1;
-      return { d: d, v: v, swaps: swaps, chosen: chosen };
+      return { d: d, v: v, swaps: swaps, chosen: chosen, invent: invent || (v.state === 'no' && !chosen && swaps.length > 0), mine: mine };
     });
     const rows = plan.map((c, i) => {
       const d = c.d, v = c.v;
@@ -284,27 +302,29 @@
           v.state === 'mod' ? h('span', { class: 'alr-fix' }, v.notes.join(' · ')) : v.hits.length ? h('span', { class: 'alr-why' }, v.hits.map((hh) => h('span', null, h('b', null, K.alName(hh.k)), whereText(hh, 2)))) : v.state === 'ask' ? h('span', { class: 'muted tf-ask' }, 'Not confirmed yet: ask the kitchen') : null,
           c.swaps.length ? h('div', { class: 'tf-swap', role: 'group', 'aria-label': 'Serve instead of ' + d.name }, h('span', { class: 'label' }, 'Serve instead'),
             c.swaps.map((x) => h('button', { type: 'button', class: 'tf-chip' + (x.v.state === 'ask' ? ' ask' : ''), 'aria-pressed': c.chosen === x ? 'true' : 'false', onclick: () => { pick[d.id] = x.d.id; K.render(); } }, K.dn(x.d), x.v.state === 'ask' ? ' ?' : '')))
-            : v.state === 'no' ? h('span', { class: 'muted tf-ask' }, NO_SWAP[courseKind(d)]) : null),
+            : v.state === 'no' ? h('span', { class: 'muted tf-ask' }, c.invent ? 'The kitchen makes a course of its own for this guest here' : NO_SWAP[courseKind(d)]) : null,
+          c.swaps.length && c.invent ? h('span', { class: 'muted tf-ask' }, 'Every dish that could stand in is already on this guest’s menu: the kitchen makes a course of its own here, or tap one above.') : null,
+          c.mine && c.chosen === c.mine ? h('span', { class: 'tf-house' }, 'The house’s choice for this diet') : null),
         h('span', { class: 'alr-mark', 'aria-hidden': 'true' }, K.icon(v.state === 'ok' ? 'check' : v.state === 'mod' ? 'edit' : v.state === 'no' ? 'close' : 'alert')));
     });
     const asIs = plan.filter((c) => c.v.state !== 'no').length;
     /* the note for the kitchen: who it is for and every course, with what changes */
     /* the note for the kitchen, in the language on screen: Bulgarian names for a Bulgarian kitchen */
-    const nm = (d) => (K.bgMode() ? d.name : K.dn(d)), up = (v) => K.T(v.notes.join(' · ')).toUpperCase();
+    const nm = (d) => (K.bgMode() ? d.name : K.dn(d)), up = (v) => K.T(v.notes.join(' · ')).toUpperCase(), low = (v) => K.T(v.notes.join(' · ')).toLowerCase();
     const kitchenLine = (c, i) => (i + 1) + '. ' + (c.v.state === 'no'
-      ? (c.chosen ? nm(c.chosen.d) + K.T(' (instead of ') + nm(c.d) + ')' + (c.chosen.v.state === 'ask' ? K.T(' - CONFIRM') : c.chosen.v.state === 'mod' ? ' - ' + up(c.chosen.v) : '') : nm(c.d) + K.T(' - CANNOT, kitchen to adapt'))
+      ? (c.chosen ? nm(c.chosen.d) + K.T(' (instead of ') + nm(c.d) + ')' + (c.chosen.v.state === 'ask' ? K.T(' - CONFIRM') : c.chosen.v.state === 'mod' ? ' - ' + up(c.chosen.v) : '') : c.invent ? K.T('A COURSE OF THE KITCHEN’S OWN') + K.T(' (instead of ') + nm(c.d) + ')' : nm(c.d) + K.T(' - CANNOT, kitchen to adapt'))
       : nm(c.d) + (c.v.state === 'mod' ? ' - ' + up(c.v) : c.v.state === 'ask' ? K.T(' - CONFIRM') : ''));
     const text = K.T(t.name + ' for a guest: ') + sel.map((k) => K.T(K.alName(k))).join(', ') + '\n' + plan.map((c, i) => kitchenLine(c, i)).join('\n');
     const changed = plan.filter((c) => c.v.state !== 'ok').length;
     return h('section', { class: 'group tf' }, h('h2', { class: 'group-title' }, t.name + ' for this guest', h('span', { class: 'n' }, asIs + ' of ' + t.courses.length + ' as they are')),
       h('p', { class: 'hint' }, 'Tap a dish under “Serve instead” to choose the swap. “?” means its allergens are not confirmed yet. The kitchen has the last word.'),
-      h('p', { class: 'hint' }, 'A course is only replaced by one of its kind: a main by a main, a starter by a starter, a dessert by a dessert. A dip never replaces a plated course.'),
+      h('p', { class: 'hint' }, 'A course is only replaced by one of its kind: a main by a main, a starter by a starter, a dessert by a dessert. A dip can stand in for the bread or the bites, never for a plated course.'),
       h('ol', { class: 'tf-list' }, rows),
       h('div', { class: 'tf-out' },
         h('span', { class: 'label' }, 'For the kitchen'),
         h('ol', { class: 'tf-final' }, plan.map((c) => h('li', { class: c.v.state === 'ok' ? '' : 'chg' },
-          c.v.state === 'no' ? (c.chosen ? [h('b', null, K.dn(c.chosen.d)), h('small', null, ' instead of ' + K.dn(c.d) + (c.chosen.v.state === 'ask' ? ' · confirm' : c.chosen.v.state === 'mod' ? ' · ' + c.chosen.v.notes.join(' · ').toLowerCase() : ''))] : [h('b', null, K.dn(c.d)), h('small', null, ' cannot have it · kitchen to adapt')])
-            : [h('b', null, K.dn(c.d)), c.v.state === 'mod' ? h('small', null, ' ' + c.v.notes.join(' · ').toLowerCase()) : c.v.state === 'ask' ? h('small', null, ' confirm') : null]))),
+          c.v.state === 'no' ? (c.chosen ? [h('b', null, K.dn(c.chosen.d)), h('small', null, ' instead of ' + K.dn(c.d) + (c.chosen.v.state === 'ask' ? ' · confirm' : c.chosen.v.state === 'mod' ? ' · ' + low(c.chosen.v) : ''))] : c.invent ? [h('b', null, 'A course of the kitchen’s own'), h('small', null, ' instead of ' + K.dn(c.d))] : [h('b', null, K.dn(c.d)), h('small', null, ' cannot have it · kitchen to adapt')])
+            : [h('b', null, K.dn(c.d)), c.v.state === 'mod' ? h('small', null, ' ' + low(c.v)) : c.v.state === 'ask' ? h('small', null, ' confirm') : null]))),
         h('button', { type: 'button', class: 'btn primary wide', onclick: () => navigator.clipboard.writeText(text).then(() => K.toast('Copied: paste it to the kitchen'), () => K.toast('This device would not copy.')) }, K.icon('copy'), changed ? 'Copy this menu for the kitchen' : 'Copy for the kitchen')));
   }
   K.SHEETS.tasting = function (S) {

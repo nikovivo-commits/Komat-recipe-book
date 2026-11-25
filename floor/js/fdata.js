@@ -115,7 +115,7 @@
     const t = D.tasting || {};
     return { name: t.name || 'Tasting menu', price: t.price || '', note: t.note || '', courses: (t.courses || []).map(K.dish).filter(Boolean),
       /* the wine pairing: its price, the glass poured to start, a wine per course ({id, text}: the list's bottle and the line as printed) */
-      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {}, lines: t.lines || {},
+      pairing: t.pairing || '', pairingName: t.pairingName || 'Wine pairing', welcome: t.welcome || null, wines: t.wines || {}, lines: t.lines || {}, plans: t.plans || {},
       /* what can be added to it, like the caviar */
       extra: t.extra && K.dish(t.extra.dish) ? { dish: K.dish(t.extra.dish), price: t.extra.price || '' } : null };
   };
@@ -131,8 +131,11 @@
     /* a course the tasting menu prints with a line of its own (the tartare comes without its bread), or with none */
     const lines = {};
     t.courses.forEach((c, i) => { if (c.line !== undefined) lines[ids[i]] = { en: c.line, bg: c.lineBg || '' }; });
+    /* the house's plan for a diet: {vegan: {course id: the dish that stands in, or '' where the kitchen makes its own}} */
+    const plans = {};
+    Object.keys(t.plans || {}).forEach((k) => { plans[k] = {}; t.plans[k].forEach((x) => { const c = by[x.course] ? find(by[x.course]) : '', dsh = x.dish && by[x.dish] ? find(by[x.dish]) : ''; if (c && (dsh || !x.dish)) plans[k][c] = dsh; }); });
     const extra = t.extra && by[t.extra.key] ? find(by[t.extra.key]) : '';
-    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, lines: lines, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
+    return { name: t.name, price: t.price, pairing: t.pairing, pairingName: t.pairingName, note: t.note, bg: t.bg || null, welcome: t.welcome || null, courses: ids, wines: wines, lines: lines, plans: plans, extra: extra ? { dish: extra, price: t.extra.price || '' } : null };
   };
   /* the allergens the printed menu line points to: {key: ['the menu line (горчица)']} */
   K.fromMenu = (src) => String(src).indexOf('the menu line') === 0;
