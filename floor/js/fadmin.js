@@ -139,7 +139,12 @@
         /* a line still exactly as the list first wrote it takes the list's new wording; one changed by hand is kept */
         const hb = docs[p].bg || {}, wb = w.bg || {}, miss = Object.keys(hb).filter((k) => hb[k] && !wb[k]);
         if (miss.length) { patch.bg = Object.assign({}, wb); miss.forEach((k) => { patch.bg[k] = hb[k]; }); }
-        Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
+        /* (the list may name several earlier wordings; the Bulgarian of a replaced line is replaced with it) */
+        Object.keys(docs[p].was || {}).forEach((k) => {
+          if (!docs[p][k] || w[k] === docs[p][k] || ![].concat(docs[p].was[k]).includes(w[k])) return;
+          patch[k] = docs[p][k];
+          if (hb[k]) { patch.bg = Object.assign({}, patch.bg || wb); patch.bg[k] = hb[k]; }
+        });
         if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
       });
       /* the quiz questions that come with the menu (what the house knows about its own dishes): added, and kept up to
@@ -190,7 +195,7 @@
   /* the same record, whatever order its fields come in */
   const sorted = (o) => (Array.isArray(o) ? o.map(sorted) : o && typeof o === 'object' ? Object.keys(o).sort().reduce((a, k) => { if (o[k] !== undefined) a[k] = sorted(o[k]); return a; }, {}) : o);
   const sameRec = (a, b) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
-  const HOUSE_V = 2026112603;
+  const HOUSE_V = 2026112701;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);
@@ -389,7 +394,14 @@
       /* a dish paired on an earlier load keeps its wines when a manager changed them; one still paired exactly as
          the list paired it before takes the list's new choice. The reasons it keeps word for word get their Bulgarian. */
       const was = ((house.pairingsWas || {})[pr.dish] || []).join('|'), now = (d.n.pairs || []).join('|');
-      if (now && now === ok.map((x) => x.id).join('|')) return;
+      if (now && now === ok.map((x) => x.id).join('|')) {
+        /* the same wines: a reason still worded as the list worded it before takes the list's new wording */
+        const have = Object.assign({}, d.n.pairWhy), bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
+        let fixed = 0;
+        ok.forEach((x) => { if (x.why && have[x.id] !== x.why && [].concat(x.whyWas || []).includes(have[x.id])) { have[x.id] = x.why; if (x.whyBg) bgWhy[x.id] = x.whyBg; fixed++; } });
+        if (fixed) { K.saveNote(d.id, { pairWhy: have, bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) }); paired++; }
+        return;
+      }
       if (now && !(was && now === was)) {
         const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
         let add = 0;
