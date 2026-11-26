@@ -6,12 +6,31 @@
 
   /* ---------- joining (the kitchen's own database) ---------- */
   function go(screen) { ui.auth = screen; ui.authErr = ''; ui.authNote = ''; K.render(true); }
-  function run(fn, after) {
+  const ERR = (e) => K.Fire.authErr(e).replace('kitchen code', 'floor code').replace('the head chef', 'the floor manager');
+  /* `enter`: the step signs this phone in. Once the name and code (or the password) are accepted, the screen waits
+     for the book to open instead of going back to an idle form, which looked as if nothing had happened. A second
+     press while the first is still at work does nothing: it used to be turned away by the database as a change to
+     a member who had just joined, and showed "the code is not right" although the first press had worked. */
+  let waitT = null;
+  function run(fn, after, enter) {
+    if (ui.authBusy) return;
+    const from = ui.auth;
     ui.authBusy = true; ui.authErr = ''; ui.authNote = ''; K.render();
-    fn().then(() => { ui.authBusy = false; if (after) after(); K.render(); },
-      (e) => { ui.authBusy = false; ui.authErr = K.Fire.authErr(e).replace('kitchen code', 'floor code').replace('the head chef', 'the floor manager'); K.render(); });
+    fn().then(() => {
+      ui.authBusy = false;
+      if (after) after();
+      if (enter && ui.auth === from) {
+        ui.auth = 'wait';
+        clearTimeout(waitT);
+        waitT = setTimeout(() => { if (ui.auth === 'wait') { ui.auth = from; ui.authNote = 'This is taking a while. Check the connection and try again.'; K.render(); } }, 15000);
+      }
+      K.render();
+    }, (e) => { ui.authBusy = false; ui.authErr = ERR(e); K.render(); });
   }
-  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; } }, attrs));
+  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; }, onchange: (e) => { lg()[key] = e.target.value; } }, attrs));
+  /* what is in the boxes when the form is sent: a password manager can fill a box without the page hearing of it,
+     and the form would then send an empty or half-typed password and call the right one wrong */
+  const pull = (e) => { e.target.querySelectorAll('input[id^="lg-"]').forEach((el) => { lg()[el.id.slice(3)] = el.value; }); };
   const linkBtn = (label, onclick) => h('button', { type: 'button', class: 'linkish', onclick: onclick }, label);
   const msg = () => [ui.authErr ? h('p', { class: 'banner bad', role: 'alert' }, ui.authErr) : null, ui.authNote ? h('p', { class: 'banner', role: 'status' }, ui.authNote) : null];
   const submit = (label, busy) => h('button', { class: 'btn primary wide', type: 'submit', disabled: !!ui.authBusy }, ui.authBusy ? busy : label);
@@ -19,9 +38,10 @@
     const v = lg(), u = K.Fire.auth.currentUser, signedIn = u && !u.isAnonymous;
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const name = v.name.trim(), code = v.code.trim();
       if (!name || !code) { ui.authErr = 'Write your name and the floor code.'; K.render(); return; }
-      run(() => K.Fire.join(name, code));
+      run(() => K.Fire.join(name, code), null, true);
     } },
       h('h2', { class: 'login-title' }, 'Join the floor'),
       h('p', { class: 'muted' }, signedIn ? 'Signed in as ' + u.email + ', but not part of the team yet. Join with the floor code.' : 'Your name and the floor code from the floor manager. You only do this once on this phone.'),
@@ -36,8 +56,9 @@
     const v = lg();
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       if (!v.email.trim() || !v.pw) { ui.authErr = 'Write your email and password.'; K.render(); return; }
-      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; });
+      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; }, true);
     } },
       h('h2', { class: 'login-title' }, 'Sign in'),
       h('p', { class: 'muted' }, 'The same account as in the kitchen book.'),
@@ -77,6 +98,7 @@
     const inp = h('input', { class: 'input big', id: 'nm', value: K.myName(), maxlength: 40, placeholder: 'First name', autocomplete: 'given-name' });
     return K.sheet('What is your name?', h('form', { class: 'stack', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const v = inp.value.trim();
       if (!v) return;
       K.store.set('fohName', v); K.me.name = v;

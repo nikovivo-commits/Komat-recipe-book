@@ -6,12 +6,31 @@
   const lg = () => (ui.lg = ui.lg || { name: '', code: '', email: '', pw: '' });
 
   function go(screen) { ui.auth = screen; ui.authWant = screen; ui.authErr = ''; ui.authNote = ''; K.render(true); }
-  function run(fn, after) {
+  const ERR = (e) => K.Fire.authErr(e);
+  /* `enter`: the step signs this phone in. Once the name and code (or the password) are accepted, the screen waits
+     for the book to open instead of going back to an idle form, which looked as if nothing had happened. A second
+     press while the first is still at work does nothing: it used to be turned away by the database as a change to
+     a member who had just joined, and showed "the code is not right" although the first press had worked. */
+  let waitT = null;
+  function run(fn, after, enter) {
+    if (ui.authBusy) return;
+    const from = ui.auth;
     ui.authBusy = true; ui.authErr = ''; ui.authNote = ''; K.render();
-    fn().then(() => { ui.authBusy = false; if (after) after(); K.render(); },
-      (e) => { ui.authBusy = false; ui.authErr = K.Fire.authErr(e); K.render(); });
+    fn().then(() => {
+      ui.authBusy = false;
+      if (after) after();
+      if (enter && ui.auth === from) {
+        ui.auth = 'wait';
+        clearTimeout(waitT);
+        waitT = setTimeout(() => { if (ui.auth === 'wait') { ui.auth = from; ui.authNote = 'This is taking a while. Check the connection and try again.'; K.render(); } }, 15000);
+      }
+      K.render();
+    }, (e) => { ui.authBusy = false; ui.authErr = ERR(e); K.render(); });
   }
-  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; } }, attrs));
+  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; }, onchange: (e) => { lg()[key] = e.target.value; } }, attrs));
+  /* what is in the boxes when the form is sent: a password manager can fill a box without the page hearing of it,
+     and the form would then send an empty or half-typed password and call the right one wrong */
+  const pull = (e) => { e.target.querySelectorAll('input[id^="lg-"]').forEach((el) => { lg()[el.id.slice(3)] = el.value; }); };
   const linkBtn = (label, onclick) => h('button', { type: 'button', class: 'linkish', onclick: onclick }, label);
   const msg = () => [
     ui.authErr ? h('p', { class: 'banner bad', role: 'alert' }, ui.authErr) : null,
@@ -23,9 +42,10 @@
     const v = lg(), u = K.Fire.auth.currentUser, signedIn = u && !u.isAnonymous;
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const name = v.name.trim(), code = v.code.trim();
       if (!name || !code) { ui.authErr = 'Write your name and the kitchen code.'; K.render(); return; }
-      run(() => K.Fire.join(name, code));
+      run(() => K.Fire.join(name, code), null, true);
     } },
       h('h2', { class: 'login-title' }, 'Join the kitchen'),
       h('p', { class: 'muted' }, signedIn ? 'Signed in as ' + u.email + ', but not part of this kitchen yet. Join with the kitchen code.' : 'Your name and the kitchen code from the head chef. You only do this once on this phone.'),
@@ -40,8 +60,9 @@
     const v = lg();
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       if (!v.email.trim() || !v.pw) { ui.authErr = 'Write your email and password.'; K.render(); return; }
-      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; });
+      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; }, true);
     } },
       h('h2', { class: 'login-title' }, 'Chef sign-in'),
       K.field('Email', input('email', { type: 'email', autocomplete: 'username', autocapitalize: 'off', spellcheck: false, enterkeyhint: 'next' })),
@@ -60,11 +81,12 @@
     const v = lg();
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const name = v.name.trim(), email = v.email.trim(), code = v.code.trim();
       if (!name || !email || !v.pw || !code) { ui.authErr = 'Fill in all four.'; K.render(); return; }
       if (v.pw.length < 6) { ui.authErr = 'Use a password of at least 6 characters.'; K.render(); return; }
       if (code.length < 6) { ui.authErr = 'Make the kitchen code at least 6 characters.'; K.render(); return; }
-      run(() => K.Fire.setup(name, email, v.pw, code), () => { lg().pw = ''; K.toast('The kitchen is ready'); });
+      run(() => K.Fire.setup(name, email, v.pw, code), () => { lg().pw = ''; K.toast('The kitchen is ready'); }, true);
     } },
       h('h2', { class: 'login-title' }, 'Set up the kitchen'),
       h('p', { class: 'muted' }, 'Do this once. Your account becomes the head chef’s. Cooks join with the kitchen code you choose here.'),
