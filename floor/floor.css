@@ -153,7 +153,7 @@ a.btn { text-decoration: none; }
 .lb-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 .lb-topic { margin-top: 8px; }
 .lb-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
-.lb-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); }
+.lb-row { display: grid; grid-template-columns: 34px 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); }
 .lb-row.me { border-color: var(--apron); box-shadow: 0 0 0 1px var(--apron); }
 .lb-pos { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); font: 800 1rem/1 var(--sans); }
 .lb-pos.m1 { background: #E8C547; color: #3D2C00; } .lb-pos.m2 { background: #C9CDD2; color: #222; } .lb-pos.m3 { background: #CF9466; color: #2B1505; }
@@ -1008,3 +1008,20 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .quiz-sound .ico { width: 15px; height: 15px; }
 .quiz-sound[aria-pressed="false"] { opacity: .6; text-decoration: line-through; }
 @media (prefers-reduced-motion: reduce) { .qp-opt.right, .qp-opt.wrong, .qp-bonus, .qp-streak.hot { animation: none; } }
+
+/* the ranks of the week: a badge beside each name */
+.rank-badge { width: 40px; height: 40px; object-fit: contain; display: block; }
+.rank-badge.big { width: 76px; height: 76px; }
+.lb-row { gap: 10px; }
+.lb-ranks { display: flex; align-items: center; gap: 4px; width: 100%; margin: 0 0 10px; padding: 8px 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: inherit; }
+.lb-ranks .rank-badge { width: 30px; height: 30px; }
+.lb-ranks > span { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: .88rem; }
+.lb-ranks .ico { width: 16px; height: 16px; }
+.ranks { display: grid; gap: 10px; }
+.rank-row { display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: center; padding: 8px 10px; border-radius: var(--r); border: 1px solid var(--line); }
+.rank-row.me { border-color: var(--apron); box-shadow: 0 0 0 1px var(--apron); }
+.rank-row > div, .qd-rank > div { display: grid; gap: 1px; }
+.rank-row b, .qd-rank b { font-size: 1.05rem; }
+.rank-row .muted, .qd-rank .muted { font-size: .85rem; }
+.rank-you { justify-self: start; margin-top: 3px; padding: 1px 8px; border-radius: 999px; background: var(--apron); color: #fff; font-size: .7rem; font-weight: 800; }
+.qd-rank { display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: center; }
