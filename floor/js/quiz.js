@@ -586,8 +586,15 @@
   const hash = (t) => { let a = 5381; for (let i = 0; i < t.length; i++) a = ((a * 33) ^ t.charCodeAt(i)) >>> 0; return a.toString(36); };
   const keyOf = (q) => q.id || 'q' + hash(q.q + '|' + q.a);
   const seenNow = () => { if (!seenList) { const l = K.store.get('fohQuizSeen', []); seenList = Array.isArray(l) ? l : []; } return seenList; };
-  /* the ones not asked lately; all of them again once nearly every one has been asked */
-  const fresh = (qs) => { const s = new Set(seenNow()), f = qs.filter((q) => !s.has(keyOf(q))); return f.length >= Math.min(qs.length, 12) ? f : qs; };
+  /* the ones not asked lately; once nearly every one has been asked, the ones asked longest ago come back first */
+  const fresh = (qs) => {
+    const when = new Map();
+    seenNow().forEach((k, i) => when.set(k, i));
+    const f = qs.filter((q) => !when.has(keyOf(q)));
+    if (f.length >= Math.min(qs.length, 12)) return f;
+    const old = qs.filter((q) => when.has(keyOf(q))).sort((x, y) => when.get(keyOf(x)) - when.get(keyOf(y)));
+    return f.concat(old.slice(0, Math.max(12, Math.ceil(qs.length / 4)) - f.length));
+  };
   const remember = (qs) => { seenList = seenNow().concat(qs.map(keyOf)).slice(-SEEN_MAX); K.store.set('fohQuizSeen', seenList); };
 
   /* a round of ten: six from our own wines, drinks and dishes, four of general knowledge */
