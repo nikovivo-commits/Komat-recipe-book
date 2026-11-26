@@ -217,7 +217,7 @@
   /* the same record, whatever order its fields come in */
   const sorted = (o) => (Array.isArray(o) ? o.map(sorted) : o && typeof o === 'object' ? Object.keys(o).sort().reduce((a, k) => { if (o[k] !== undefined) a[k] = sorted(o[k]); return a; }, {}) : o);
   const sameRec = (a, b) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
-  const HOUSE_V = 2026112701;
+  const HOUSE_V = 2026112702;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);

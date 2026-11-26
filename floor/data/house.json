@@ -1,5 +1,5 @@
 {
- "v": 2026112701,
+ "v": 2026112702,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -818,9 +818,10 @@
      "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
-   "facts": "",
+   "facts": "The garum is made from chicken, not fish: the dish has no fish.",
    "bg": {
     "pitch": "Телешко уагиу със смръчкула и кейл, опушен жълтък с пилешки гарум и телешко жу.",
+    "facts": "Гарумът е от пилешко, не от риба: в ястието няма риба.",
     "niche": {
      "уагиу": "Уагиу: телешко от японска порода, известно с фината си мраморна шарка от мазнина, която го прави много крехко и богато на вкус.",
      "смръчкула": "Смръчкула: дива пролетна гъба с шапка като пчелна пита и дълбок, землист вкус.",
@@ -872,16 +873,17 @@
    "menuEn": "caramelised walnut",
    "ings": [
     "орех",
-    "карамелизиран орех"
+    "карамелизиран орех",
+    "орехов тахан"
    ],
    "pitch": "A walnut sorbet with caramelised walnut: the dessert that ends the vegan tasting menu.",
-   "facts": "Only on the vegan tasting menu, in place of the kazandibi.\nIt has walnuts: not for a guest with a nut allergy.",
+   "facts": "Only on the vegan tasting menu, in place of the kazandibi.\nIt has walnuts: not for a guest with a nut allergy.\nThe tahini in it is made from walnuts: it has no sesame.",
    "niche": [],
    "diet": "vegan",
    "course": "dessert",
    "bg": {
     "pitch": "Сорбе от орех с карамелизиран орех: десертът, с който завършва веган дегустационното меню.",
-    "facts": "Само във веган дегустационното меню, вместо загори тенджера.\nИма орехи: не е за гост с алергия към ядки."
+    "facts": "Само във веган дегустационното меню, вместо загори тенджера.\nИма орехи: не е за гост с алергия към ядки.\nТаханът в него е от орехи: няма сусам."
    }
   }
  ],
