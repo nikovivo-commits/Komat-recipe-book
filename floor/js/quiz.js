@@ -838,6 +838,20 @@
     return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total)[0] || null;
   }
   K.quizChampion = champion;
+  /* The ranks of the week: the best round a person has played this week decides the badge beside their name. Each
+     Monday everybody starts again as an apprentice. [points for the best round, name] */
+  /* (a round of ten right answers with a full streak is about 2,800 points; four right is about 800) */
+  const RANKS = [[0, 'Apprentice'], [800, 'Wine steward'], [1400, 'Sommelier'], [2000, 'Head sommelier'], [2500, 'Master sommelier']];
+  const rankOf = (best) => { let n = 0; RANKS.forEach((r, i) => { if (best >= r[0]) n = i; }); return n; };
+  const badge = (n, cls) => h('img', { class: 'rank-badge ' + (cls || ''), src: 'floor/assets/rank-' + (n + 1) + '.webp', alt: RANKS[n][1], title: RANKS[n][1], width: 96, height: 96, loading: 'lazy' });
+  K.quizRank = rankOf;
+  K.SHEETS.ranks = function () {
+    const mine = board('week', 'all').find((r) => r.uid === ((K.me && K.me.id) || 'this-phone')), me = mine ? rankOf(mine.best) : -1;
+    return K.sheet('The ranks of the week', h('div', { class: 'ranks' },
+      h('p', { class: 'muted' }, 'Your best round this week decides your badge. Everybody starts again on Monday.'),
+      RANKS.map((r, i) => h('div', { class: 'rank-row' + (i === me ? ' me' : '') }, badge(i, 'big'),
+        h('div', null, h('b', null, r[1]), h('span', { class: 'muted' }, i === 0 ? 'Play a round' : 'A round of ' + r[0] + ' points or more'), i === me ? h('span', { class: 'rank-you' }, 'You, this week') : null))).reverse()));
+  };
   const TOPICS = [['wine', 'Wine & drinks', 'glass', 'Wines, pairings and prices; whiskies and other spirits'], ['food', 'Food', 'plate', 'Translations, allergens and the unusual ingredients'], ['all', 'Everything', 'trophy', 'Both, mixed']];
 
   K.V.quiz = function () {
@@ -858,11 +872,13 @@
     const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top), champ = champion();
     w.append(h('section', { class: 'group lb' },
       champ ? h('p', { class: 'lb-champ' }, K.icon('sparkle'), h('span', null, 'Last week’s champion: ', h('b', null, champ.name || 'Someone'), ' · ' + champ.best + ' points')) : null,
+      h('button', { type: 'button', class: 'lb-ranks', onclick: () => { ui.sheet = { type: 'ranks' }; K.render(); } }, RANKS.map((r, i) => badge(i)), h('span', null, 'The ranks of the week', K.icon('next'))),
       h('div', { class: 'lb-head' }, h('h2', { class: 'group-title' }, 'Leaderboard'),
         K.seg([['week', 'This week'], ['month', 'Month'], ['all', 'All time']], per, (v) => { ui.board = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Period' })),
       K.seg([['all', 'Everything'], ['wine', 'Wine & drinks'], ['food', 'Food']], top, (v) => { ui.boardTopic = v; K.render(); }, { class: 'seg small-seg lb-topic', 'aria-label': 'Topic' }),
       rows.length ? h('ol', { class: 'lb-list' }, rows.map((r, i) => h('li', { class: 'lb-row' + (r.uid === ((K.me && K.me.id) || 'this-phone') ? ' me' : '') },
         h('span', { class: 'lb-pos' + (i < 3 ? ' m' + (i + 1) : '') }, String(i + 1)),
+        badge(rankOf(r.best)),
         h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone', champ && champ.uid === r.uid ? h('span', { class: 'lb-crown', title: 'Last week’s champion' }, K.icon('sparkle'), 'Champion') : null), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
         h('span', { class: 'lb-best mono' }, String(r.best))))) : h('p', { class: 'muted lb-none' }, 'Nobody has played ' + (per === 'week' ? 'this week' : per === 'month' ? 'this month' : 'yet') + '. Be the first.')));
     if (K.canEdit()) {
@@ -880,6 +896,8 @@
     return h('section', { class: 'quiz-done' },
       h('p', { class: 'kicker' }, 'Round finished'),
       h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), (Q.best || 0) >= 3 ? h('span', { class: 'qd-tips' }, 'best streak: ' + Q.best + ' in a row') : null, Object.keys(Q.used || {}).length ? h('span', { class: 'qd-tips' }, Object.keys(Q.used).length === 1 ? 'with 1 joker' : 'with ' + Object.keys(Q.used).length + ' jokers') : null),
+      pos ? h('div', { class: 'qd-rank' }, badge(rankOf(rows[pos - 1].best), 'big'), h('div', null, h('b', null, RANKS[rankOf(rows[pos - 1].best)][1]), h('span', { class: 'muted' }, 'Your rank this week'),
+        rankOf(rows[pos - 1].best) < RANKS.length - 1 ? h('span', { class: 'muted' }, 'A round of ' + RANKS[rankOf(rows[pos - 1].best) + 1][0] + ' points makes you ' + RANKS[rankOf(rows[pos - 1].best) + 1][1]) : null)) : null,
       pos ? h('p', null, pos === 1 ? 'You are top of the board this week.' : 'Number ' + pos + ' on this week’s board.') : null,
       missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
         h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
