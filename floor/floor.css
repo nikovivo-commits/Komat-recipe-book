@@ -990,3 +990,21 @@ body.scrolled .top { border-bottom-color: var(--line); }
 
 /* the house's own choice for a diet, on the tasting menu built for a guest */
 .tf-house { font: 700 .76rem/1.3 var(--sans); color: var(--apron-text); }
+
+/* the quiz's little show: streaks, the champion, the sound switch */
+.qp-streak { display: inline-flex; align-items: center; gap: 2px; margin-left: 8px; padding: 1px 7px 1px 4px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: .85rem; }
+.qp-streak .ico { width: 14px; height: 14px; }
+.qp-streak.hot { background: var(--urgent-soft); color: var(--urgent); animation: pop .35s ease-out; }
+.qp-bonus { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0 0; font-weight: 800; color: var(--urgent); animation: pop .4s ease-out; }
+.qp-bonus .ico { width: 18px; height: 18px; }
+.qp-opt.right { animation: pop .35s ease-out; }
+.qp-opt.wrong { animation: shake .3s ease-in-out; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.lb-champ { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 10px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.lb-champ .ico { width: 20px; height: 20px; color: var(--apron); flex: none; }
+.lb-crown { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding: 1px 8px 1px 5px; border-radius: 999px; background: var(--apron); color: #fff; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
+.lb-crown .ico { width: 12px; height: 12px; }
+.quiz-sound { display: flex; align-items: center; gap: 6px; margin: 0 auto 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: .82rem; }
+.quiz-sound .ico { width: 15px; height: 15px; }
+.quiz-sound[aria-pressed="false"] { opacity: .6; text-decoration: line-through; }
+@media (prefers-reduced-motion: reduce) { .qp-opt.right, .qp-opt.wrong, .qp-bonus, .qp-streak.hot { animation: none; } }

@@ -624,6 +624,40 @@
   K.quizRound = round;
 
   /* ---------- playing ---------- */
+  /* ---------- a little show ----------
+     Short sounds made on the spot (no sound files): a rising pair for a right answer, more notes as a streak grows,
+     a low note for a wrong one, a blip for a joker, a small fanfare for a good round. Off with one tap on the quiz
+     page, and the phone's silent switch is respected by the phone itself. */
+  let ac = null;
+  K.quizSound = () => K.store.get('fohQuizSound', true) !== false;
+  function sfx(name) {
+    if (!K.quizSound()) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ac = ac || new AC();
+      if (ac.state === 'suspended') ac.resume();
+      const now = ac.currentTime;
+      const note = (f, at, len, type, vol) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type || 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, now + at); g.gain.exponentialRampToValueAtTime(vol || 0.16, now + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, now + at + len);
+        o.connect(g); g.connect(ac.destination); o.start(now + at); o.stop(now + at + len + 0.02);
+      };
+      const TUNES = {
+        right: [[660, 0, 0.14], [880, 0.1, 0.22]],
+        streak: [[660, 0, 0.12], [880, 0.09, 0.12], [1109, 0.18, 0.14], [1319, 0.27, 0.28]],
+        wrong: [[220, 0, 0.22, 'triangle', 0.2], [165, 0.14, 0.32, 'triangle', 0.2]],
+        joker: [[523, 0, 0.09], [784, 0.07, 0.14]],
+        start: [[392, 0, 0.1], [523, 0.09, 0.1], [659, 0.18, 0.18]],
+        good: [[523, 0, 0.14], [659, 0.12, 0.14], [784, 0.24, 0.14], [1047, 0.36, 0.4]],
+        done: [[440, 0, 0.16], [523, 0.14, 0.3]],
+      };
+      (TUNES[name] || []).forEach((n) => note(n[0], n[1], n[2], n[3], n[4]));
+    } catch (e) { /* no sound on this phone */ }
+  }
+  /* three right in a row and every right answer after it earns a bonus: 20, 40, 60… up to 100 */
+  const streakBonus = (n) => (n >= 3 ? Math.min(100, 20 * (n - 2)) : 0);
   let tick = null;
   function stopClock() { clearInterval(tick); tick = null; }
   /* A tap made before the screen it lands on was drawn is not meant for it: a second tap on Play or on Next
@@ -643,6 +677,7 @@
     /* making the round takes a moment on a phone: the button shows at once that it was pressed, the round is made
        in the next frame */
     starting = true;
+    sfx('start');
     const btn = e && e.currentTarget;
     if (btn && btn.classList) { btn.classList.add('busy'); btn.setAttribute('aria-busy', 'true'); }
     let went = false;
@@ -679,9 +714,12 @@
     if (i >= 0 && early(e)) return;
     stopClock();
     const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
-    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) : 0;
+    Q.streak = ok ? (Q.streak || 0) + 1 : 0;
+    Q.best = Math.max(Q.best || 0, Q.streak);
+    Q.bonus = ok ? streakBonus(Q.streak) : 0;
+    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) + Q.bonus : 0;
     Q.picked = i; Q.pts = pts;
-    if (ok) { Q.right++; Q.score += pts; K.vibrate(15); } else K.vibrate([30, 40, 30]);
+    if (ok) { Q.right++; Q.score += pts; K.vibrate(15); sfx(Q.bonus ? 'streak' : 'right'); } else { K.vibrate([30, 40, 30]); sfx('wrong'); }
     Q.log.push({ q: q.q, a: q.a, ok: ok });
     K.render();
   }
@@ -730,6 +768,7 @@
     if (kind === 'friend') Q.friend = friendSays(Q, q);
     if (kind === 'room') Q.room = roomSays(Q, q);
     K.vibrate(10);
+    sfx('joker');
     K.render();
   }
   function next() {
@@ -748,6 +787,7 @@
     D.scores = D.scores.concat([Object.assign({ id: id }, doc)]);
     K.db.doc('quizscores/' + id).set(doc).catch(K.writeFailed);
     if (K.celebrate && Q.right >= Q.qs.length * 0.8) K.celebrate('');
+    sfx(Q.right >= Q.qs.length * 0.8 ? 'good' : 'done');
     K.render(true);
     drawn();
     stepBack();
@@ -787,6 +827,17 @@
     });
     return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total);
   }
+  /* last week's champion: the best round of the week that ended on Sunday (all topics). Wears the title all this week. */
+  function champion() {
+    const to = since('week'), from = to - 7 * 86400000, m = {};
+    D.scores.forEach((s) => {
+      if (s.at < from || s.at >= to) return;
+      const e = m[s.uid] || (m[s.uid] = { uid: s.uid, name: s.name, best: 0, total: 0 });
+      e.name = s.name || e.name; e.best = Math.max(e.best, s.score); e.total += s.score;
+    });
+    return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total)[0] || null;
+  }
+  K.quizChampion = champion;
   const TOPICS = [['wine', 'Wine & drinks', 'glass', 'Wines, pairings and prices; whiskies and other spirits'], ['food', 'Food', 'plate', 'Translations, allergens and the unusual ingredients'], ['all', 'Everything', 'trophy', 'Both, mixed']];
 
   K.V.quiz = function () {
@@ -800,17 +851,19 @@
     body.append(w);
     /* the quiz's own badge (an image made for it) */
     w.append(h('img', { class: 'quiz-logo', src: 'floor/assets/quiz-logo.webp', alt: 'Who wants to be a sommelier?', width: 190, height: 190 }));
+    w.append(h('button', { type: 'button', class: 'quiz-sound', 'aria-pressed': K.quizSound() ? 'true' : 'false', onclick: () => { K.store.set('fohQuizSound', !K.quizSound()); if (K.quizSound()) sfx('joker'); K.render(); } }, K.icon('bell'), K.quizSound() ? 'Sound on' : 'Sound off'));
     if (Q && Q.stage === 'done') w.append(doneCard(Q));
     w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: (e) => start(t[0], e) },
       K.icon(t[2]), h('b', null, t[1]), h('span', null, t[3]), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))))));
-    const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top);
+    const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top), champ = champion();
     w.append(h('section', { class: 'group lb' },
+      champ ? h('p', { class: 'lb-champ' }, K.icon('sparkle'), h('span', null, 'Last week’s champion: ', h('b', null, champ.name || 'Someone'), ' · ' + champ.best + ' points')) : null,
       h('div', { class: 'lb-head' }, h('h2', { class: 'group-title' }, 'Leaderboard'),
         K.seg([['week', 'This week'], ['month', 'Month'], ['all', 'All time']], per, (v) => { ui.board = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Period' })),
       K.seg([['all', 'Everything'], ['wine', 'Wine & drinks'], ['food', 'Food']], top, (v) => { ui.boardTopic = v; K.render(); }, { class: 'seg small-seg lb-topic', 'aria-label': 'Topic' }),
       rows.length ? h('ol', { class: 'lb-list' }, rows.map((r, i) => h('li', { class: 'lb-row' + (r.uid === ((K.me && K.me.id) || 'this-phone') ? ' me' : '') },
         h('span', { class: 'lb-pos' + (i < 3 ? ' m' + (i + 1) : '') }, String(i + 1)),
-        h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone'), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
+        h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone', champ && champ.uid === r.uid ? h('span', { class: 'lb-crown', title: 'Last week’s champion' }, K.icon('sparkle'), 'Champion') : null), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
         h('span', { class: 'lb-best mono' }, String(r.best))))) : h('p', { class: 'muted lb-none' }, 'Nobody has played ' + (per === 'week' ? 'this week' : per === 'month' ? 'this month' : 'yet') + '. Be the first.')));
     if (K.canEdit()) {
       w.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Your own questions', h('span', { class: 'n' }, String(D.quizq.length))),
@@ -826,7 +879,7 @@
     const missed = Q.log.filter((x) => !x.ok);
     return h('section', { class: 'quiz-done' },
       h('p', { class: 'kicker' }, 'Round finished'),
-      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), Object.keys(Q.used || {}).length ? h('span', { class: 'qd-tips' }, Object.keys(Q.used).length === 1 ? 'with 1 joker' : 'with ' + Object.keys(Q.used).length + ' jokers') : null),
+      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), (Q.best || 0) >= 3 ? h('span', { class: 'qd-tips' }, 'best streak: ' + Q.best + ' in a row') : null, Object.keys(Q.used || {}).length ? h('span', { class: 'qd-tips' }, Object.keys(Q.used).length === 1 ? 'with 1 joker' : 'with ' + Object.keys(Q.used).length + ' jokers') : null),
       pos ? h('p', null, pos === 1 ? 'You are top of the board this week.' : 'Number ' + pos + ' on this week’s board.') : null,
       missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
         h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
@@ -841,7 +894,7 @@
     const body = h('div', { class: 'wrap quiz-play' },
       h('div', { class: 'qp-top' },
         h('span', { class: 'mono' }, (Q.i + 1) + ' / ' + Q.qs.length),
-        h('span', { class: 'qp-score mono' }, Q.score + ' pts'),
+        h('span', { class: 'qp-score mono' }, Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
         h('span', { class: 'qp-sec mono' + (Q.frozen != null && !done ? ' frozen' : ''), id: 'qz-sec' }, done ? '' : Q.frozen != null ? [K.icon('pause'), String(Math.ceil(left))] : String(Math.ceil(left)))),
       h('div', { class: 'qp-timer' + (Q.frozen != null && !done ? ' frozen' : '') }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
       h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
@@ -854,6 +907,7 @@
         return h('button', { type: 'button', class: 'qp-opt' + cls + (vote != null ? ' voted' : ''), disabled: done || out, style: vote != null ? { '--vote': vote + '%' } : null, onclick: (e) => answer(i, e) },
           h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o), vote != null ? h('span', { class: 'qp-vote mono' }, vote + '%') : null);
       })),
+      done && Q.pts && Q.bonus ? h('p', { class: 'qp-bonus' }, K.icon('flame'), Q.streak + ' in a row: +' + Q.bonus + ' bonus') : null,
       !done && Q.friend ? h('div', { class: 'qp-friend' }, K.icon('chef'), h('div', null, h('b', null, 'Your friend says'),
         Q.friend.hint ? h('p', null, '“' + Q.friend.hint + '”') : h('p', null, 'I would go with ' + 'ABCD'[Q.friend.pick] + ', but I am not completely sure.'))) : null,
       !done ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
