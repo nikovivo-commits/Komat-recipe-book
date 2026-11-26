@@ -677,16 +677,26 @@
     if (i >= 0 && early(e)) return;
     stopClock();
     const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
-    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) : 0;
+    /* a question answered with a tip is worth half */
+    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1] * (Q.gone ? 0.5 : 1)) : 0;
     Q.picked = i; Q.pts = pts;
     if (ok) { Q.right++; Q.score += pts; K.vibrate(15); } else K.vibrate([30, 40, 30]);
     Q.log.push({ q: q.q, a: q.a, ok: ok });
     K.render();
   }
+  /* A tip, for whoever is new and stuck: two of the wrong answers go away, and the question is then worth half
+     its points, so the board stays fair to those who answer without one. As often as wanted, once a question. */
+  function tip(e) {
+    const Q = ui.quiz, q = Q && Q.qs[Q.i];
+    if (!q || Q.picked != null || Q.gone || early(e)) return;
+    Q.gone = shuffle(q.opts.map((o, i) => i).filter((i) => q.opts[i] !== q.a)).slice(0, 2);
+    Q.tips = (Q.tips || 0) + 1;
+    K.render();
+  }
   function next() {
     const Q = ui.quiz;
     if (Q.i + 1 >= Q.qs.length) { finish(); return; }
-    Q.i++; Q.picked = null; Q.t0 = Date.now();
+    Q.i++; Q.picked = null; Q.gone = null; Q.t0 = Date.now();
     K.render(true);
     drawn();
     clock();
@@ -775,7 +785,7 @@
     const missed = Q.log.filter((x) => !x.ok);
     return h('section', { class: 'quiz-done' },
       h('p', { class: 'kicker' }, 'Round finished'),
-      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right')),
+      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), Q.tips ? h('span', { class: 'qd-tips' }, Q.tips === 1 ? 'with 1 tip' : 'with ' + Q.tips + ' tips') : null),
       pos ? h('p', null, pos === 1 ? 'You are top of the board this week.' : 'Number ' + pos + ' on this week’s board.') : null,
       missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
         h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
@@ -796,11 +806,14 @@
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
-        const cls = !done ? '' : o === q.a ? ' right' : i === Q.picked ? ' wrong' : ' dim';
-        return h('button', { type: 'button', class: 'qp-opt' + cls, disabled: done, onclick: (e) => answer(i, e) }, h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o));
+        const out = !!Q.gone && Q.gone.includes(i);
+        const cls = !done ? (out ? ' gone' : '') : o === q.a ? ' right' : i === Q.picked ? ' wrong' : ' dim';
+        return h('button', { type: 'button', class: 'qp-opt' + cls, disabled: done || out, onclick: (e) => answer(i, e) }, h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o));
       })),
+      !done && !Q.gone ? h('button', { type: 'button', class: 'qp-tip', onclick: tip }, K.icon('sparkle'), h('b', null, 'Ask for a tip'), h('span', null, 'Two wrong answers go · half the points')) : null,
+      !done && Q.gone ? h('p', { class: 'qp-tipped' }, 'Two wrong answers are gone. This question is worth half.') : null,
       done ? h('div', { class: 'qp-after ' + (Q.pts ? 'ok' : 'no') },
-        h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite'),
+        h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite', Q.pts && Q.gone ? h('span', { class: 'qp-half' }, 'with a tip') : null),
         Q.pts ? null : h('p', null, 'The answer: ', h('b', null, q.a)),
         q.why ? h('p', { class: 'muted' }, q.why) : null,
         h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? 'See your score' : 'Next question')) : null);
