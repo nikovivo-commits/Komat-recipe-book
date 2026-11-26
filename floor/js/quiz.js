@@ -5,7 +5,8 @@
 (function () {
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
-  const SECONDS = 20, ROUND = 10;
+  /* ninety seconds a question: time to read it and think, for staff who are new to the list */
+  const SECONDS = 90, ROUND = 10;
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
   const pickN = (a, n) => shuffle(a).slice(0, n);
   const lines = (t) => String(t || '').split(/\n+/).map((x) => x.replace(/^[-•·*]\s*/, '').trim()).filter(Boolean);
@@ -540,7 +541,7 @@
     return out;
   }
   /* what a level is worth, and how long it gets: a hard question pays double and has ten seconds more */
-  const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, 25, 30], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
+  const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, SECONDS, SECONDS], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
   const secsOf = (q) => TIME[(q && q.level) || 1], worth = (q) => Math.round(150 * FACTOR[(q && q.level) || 1]);
   function bankQs(topic) {
     /* the drinks are part of the wine round: their questions count for it, and say “Drinks” above the question */
@@ -794,7 +795,7 @@
     if (Q && Q.stage === 'play') return playView(Q);
     const body = h('div', { class: 'page' });
     const mine = D.scores.filter((s) => s.uid === ((K.me && K.me.id) || 'this-phone') && s.at >= since('week'));
-    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions and four jokers. A harder question gives more time and up to double the points; a quick answer scores more.', null, '', 'quiz-head'));
+    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions, four jokers, 90 seconds each. A harder question gives up to double the points; a quick answer scores more.', null, '', 'quiz-head'));
     const w = h('div', { class: 'wrap' });
     body.append(w);
     /* the quiz's own badge (an image made for it) */
