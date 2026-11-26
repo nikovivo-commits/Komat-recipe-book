@@ -570,10 +570,11 @@
   function bookQs(side) {
     const b = K.quizBook(), out = [];
     if (!b) return out;
-    b.q.forEach((x, i) => {
+    /* a question is remembered by its own words, so the memory of what was asked survives new questions being added */
+    b.q.forEach((x) => {
       const subject = b.subjects[x[6]], of = SIDE[subject];
       if (!of || (side === 'food') !== (of === 'food')) return;
-      out.push({ topic: side, q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3] || '', img: '', level: x[4] || 1, kind: subject, drink: of === 'drinks', id: 'b' + i });
+      out.push({ topic: side, q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3] || '', img: '', level: x[4] || 1, kind: subject, drink: of === 'drinks', id: 'b' + hash(x[0] + '|' + x[1]) });
     });
     return out;
   }
