@@ -86,44 +86,144 @@
     if (wrong.length < 3) return null;
     return { topic: topic, q: q, a: a, opts: shuffle([a].concat(wrong)), why: why || '', img: img || '' };
   }
+  /* ---------- answers that would also be true ----------
+     A wrong answer must be plainly wrong. A region inside the right one or around it, a blend that shares a
+     grape with the right one, a temperature that touches the right one, a wine the house would also pour with
+     the dish: none of these is offered as a wrong answer. */
+  const flat = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  /* where a region lies: [country, the areas it belongs to]. Two regions that share an area are never the right
+     and a wrong answer together. Bulgaria's traditional regions and its two PGIs overlap: the Thracian Lowlands
+     PGI takes in the Struma valley, the Rose valley and the southern coast, the Danubian Plain PGI the northern
+     coast; Sakar and the eastern part lie inside the Thracian valley, the north-west inside the Danubian plain. */
+  const GEO = {
+    'Thracian Valley': ['Bulgaria', 'thrace'], 'East Thracian Valley': ['Bulgaria', 'thrace'], 'Eastern Thracian Valley': ['Bulgaria', 'thrace'], Sakar: ['Bulgaria', 'thrace'],
+    'Thracian Lowlands': ['Bulgaria', 'thrace', 'struma', 'rose', 'sea-south'], 'Struma Valley': ['Bulgaria', 'struma'], 'Rose Valley': ['Bulgaria', 'rose'],
+    'Black Sea region': ['Bulgaria', 'sea-north', 'sea-south'], 'Black Sea coast': ['Bulgaria', 'sea-north', 'sea-south'],
+    'Danubian Plain': ['Bulgaria', 'danube', 'sea-north'], 'Danube Plain': ['Bulgaria', 'danube', 'sea-north'], 'North-western Bulgaria': ['Bulgaria', 'danube'],
+    Burgundy: ['France', 'burgundy'], Chablis: ['France', 'burgundy'], Beaujolais: ['France', 'burgundy'], Champagne: ['France', 'champagne'], 'Loire Valley': ['France', 'loire'],
+    'Rhône Valley': ['France', 'rhone'], Languedoc: ['France', 'languedoc'], 'Côtes du Roussillon': ['France', 'languedoc'], 'Côtes de Provence': ['France', 'provence'],
+    Bordeaux: ['France', 'bordeaux'], 'Saint-Émilion, Bordeaux': ['France', 'bordeaux'],
+    Piedmont: ['Italy', 'piedmont'], Barolo: ['Italy', 'piedmont'], Tuscany: ['Italy', 'tuscany'], 'Collio DOC': ['Italy', 'friuli'], Valdobbiadene: ['Italy', 'veneto'],
+    Puglia: ['Italy', 'puglia'], Sardinia: ['Italy', 'sardinia'], Sicily: ['Italy', 'sicily'],
+    Rioja: ['Spain', 'rioja'], 'Penedès': ['Spain', 'catalonia'], 'Rías Baixas': ['Spain', 'galicia'], Jerez: ['Spain', 'andalusia'],
+    Mosel: ['Germany', 'mosel'], 'Mosel Valley': ['Germany', 'mosel'], Krems: ['Austria', 'lower-austria'], Epanomi: ['Greece', 'macedonia'],
+  };
+  /* the words that name a place or a wine, without the ones every name has */
+  const PLAIN = /^(valley|plain|region|coast|hills|lowlands|north|south|east|west|northern|southern|eastern|western|upper|lower|central|cotes|coteaux|saint|terre|rive|superiore|classico|riserva|grand|premier|blanc|rouge|rosso|bianco|wine|vino)$/;
+  const nameWords = (s) => flat(s).split(/[^a-zа-я]+/).filter((w) => w.length >= 4 && !PLAIN.test(w)).map((w) => w.slice(0, 5));
+  const sharesWord = (a, b) => { const x = nameWords(b); return nameWords(a).some((w) => x.includes(w)); };
+  const placeOf = (name, land) => { const g = GEO[name]; return g ? { land: g[0], areas: g.slice(1), known: true } : { land: land || '', areas: [], known: false }; };
+  /* may region x stand as a wrong answer beside region a? Not when they share a word or an area. A region the
+     table does not know could lie inside another of its own country, so beside it only a foreign one is safe. */
+  const apart = (a, aLand, x, xLand) => {
+    if (!x || x === a || sharesWord(a, x)) return false;
+    const p = placeOf(a, aLand), q = placeOf(x, xLand);
+    if (p.areas.some((t) => q.areas.includes(t))) return false;
+    return (p.known && q.known) || (!!p.land && !!q.land && p.land !== q.land);
+  };
+  /* one grape under two names counts as one */
+  const SAME_GRAPE = { garnacha: 'grenache', 'grenache noir': 'grenache', 'grenache gris': 'grenache', 'grenache blanc': 'grenache', rolle: 'vermentino', shiraz: 'syrah', 'pinot gris': 'pinot grigio',
+    zinfandel: 'primitivo', 'shiroka melnik': 'melnik', 'shiroka melnishka loza': 'melnik', viura: 'macabeo', mazuelo: 'carignan', carinena: 'carignan', 'pinot meunier': 'meunier',
+    'muscat of alexandria': 'zibibbo', monastrell: 'mourvedre', mataro: 'mourvedre', 'tinta de toro': 'tempranillo', 'tinto fino': 'tempranillo', kadarka: 'gamza', 'red misket': 'misket cherven',
+    'muscat blanc': 'tamyanka', muscat: 'tamyanka', 'sauvignon': 'sauvignon blanc', 'cabernet': 'cabernet sauvignon' };
+  const grapesOf = (s) => flat(s).split(/,|\s+and\s+|&|\/|\+/).map((g) => g.replace(/\d+\s*%/g, '').trim()).filter(Boolean).map((g) => SAME_GRAPE[g] || g);
+  const sharesGrape = (a, b) => { const x = grapesOf(b); return grapesOf(a).some((g) => x.includes(g)); };
+  /* two temperature ranges that overlap or touch (8–10 and 10–12) are both right at one point */
+  const span = (s) => { const m = String(s || '').match(/(\d+(?:[.,]\d+)?)\D+(\d+(?:[.,]\d+)?)/); return m ? [parseFloat(m[1].replace(',', '.')), parseFloat(m[2].replace(',', '.'))] : null; };
+  const tempsApart = (a, b) => { const x = span(a), y = span(b); return !x || !y ? String(a) !== String(b) : x[1] < y[0] || y[1] < x[0]; };
+
   /* The wines only: the whiskies, the other spirits, the beers and the rest have questions of their own
      (drinkQs), so a wine question never offers a whisky as an answer. */
+  /* how hard a kind of wine question is; the kinds a waiter needs most come up more often (WEIGHT) */
+  const WLEVEL = { 'w-pair': 2, 'w-dish': 2, 'w-nose': 2, 'w-palate': 2, 'w-say': 2, 'w-made': 3, 'w-app': 2, 'w-typical': 2, 'w-typical-of': 2, 'w-fromregion': 2, 'w-madefrom': 2 };
+  const WEIGHT = { 'w-pair': 3, 'w-dish': 3, 'w-nose': 2, 'w-palate': 2, 'w-say': 2, 'w-grape': 2 };
+  /* two tasting notes that share two or more of their words (“blackberry, pepper, violet”) are too alike to be
+     the right and a wrong answer */
+  const alike = (a, b, n) => { const x = nameWords(b); return nameWords(a).filter((w) => x.includes(w)).length >= (n || 2); };
+  /* a note that only says how a wine feels (“juicy and smooth, with a fresh finish”) fits too many wines to ask about */
+  const VAGUE = /^(body|bodie|finis|fresh|refre|long|lengt|smoot|juicy|firm|round|soft|light|mediu|full|acidi|tanni|balan|elega|silky|rich|crisp|clean|lively|ripe|fine|well|good|with|pleas|struc|textu|mouth|palat|taste|flavo|notes|hint|touch|very|quite|some)$/;
+  const telling = (t) => nameWords(t).filter((w) => !VAGUE.test(w)).length >= 2;
   function wineQs() {
-    const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly && !K.isDrink(w)), titles = wines.map(K.wineTitle);
+    const out = [], wines = D.wines.filter((w) => !w.off && !w.stockOnly && !K.isDrink(w));
+    const add = (kind, q) => { if (q) { q.kind = kind; q.level = WLEVEL[kind] || 1; out.push(q); } };
+    const title = K.wineTitle, lowFirst1 = (t) => t.charAt(0).toLowerCase() + t.slice(1);
     const isBg = (w) => K.origin && K.origin(w) && K.origin(w).bg, isFo = (w) => K.origin && K.origin(w) && !K.origin(w).bg;
-    const home = wines.filter(isBg).map(K.wineTitle), foreign = wines.filter(isFo).map(K.wineTitle);
+    const home = wines.filter(isBg).map(title), foreign = wines.filter(isFo).map(title);
     /* the dishes and the house's wines for each, worked out once (not once per wine and dish) */
     const dishes = K.dishes(), poured = new Map(dishes.map((d) => [d, K.housePairs ? K.housePairs(d) : null]));
     const goes = (d, w) => (poured.get(d) ? poured.get(d).includes(w) : (d.n.pairs || []).includes(w.id) || w.pairs.includes(d.id));
-    /* what a grape usually smells of: one question per grape, from the wines that have no notes of their own */
+    /* a wine the app itself would suggest with a dish (its style suits that kind of dish) is not a wrong answer */
+    const styleOf = new Map(wines.map((w) => [w, K.wineStyle ? K.wineStyle(w) : ''])), kindOf = new Map(dishes.map((d) => [d, (K.dishKind && K.dishKind(d)) || null]));
+    const suits = (d, w) => goes(d, w) || !!(kindOf.get(d) && styleOf.get(w) && kindOf.get(d)[2].includes(styleOf.get(w)));
+    const lands = wines.map((x) => x.country).filter(Boolean).concat(['Bulgaria']);
+    const cut = (t, n) => short(K.T(t), n).replace(/\.$/, '');
+    const noseOf = (x) => cut(x.nose, 70).toLowerCase(), palateOf = (x) => cut(x.palate, 90).toLowerCase(), madeOf = (x) => cut(x.made, 90).toLowerCase(), head = (x) => flat(x.made).slice(0, 40);
+    const only = (l, f, w) => l.filter((x) => f(x) === f(w)).length === 1;
+    /* wines of other grapes whose own note reads differently */
+    /* (a sparkling, rosé, sweet or orange wine is only set against wines of another kind: two sparkling wines
+       both have “lively bubbles”) */
+    const broad = (w) => w.colour === 'red' || w.colour === 'white';
+    const others = (w, k) => wines.filter((x) => x !== w && x[k] && !sharesGrape(w.grapes, x.grapes) && !alike(w[k], x[k]) && (broad(w) || x.colour !== w.colour)).map(title);
+    const APPS = [['Bordeaux AOC', 'Bordeaux'], ['Barolo DOCG', 'Piedmont'], ['Rioja DOCa', 'Rioja'], ['Chablis AOC', 'Chablis'], ['Prosecco DOC', 'Valdobbiadene']];
+    const KINDS = { red: ['red'], white: ['white'], rose: ['rose'], orange: ['orange'], sparkling: ['sparkling', 'white', 'rose'], sweet: ['sweet', 'white', 'red', 'orange'] };
+    const glass = wines.filter((x) => x.byGlass && x.glassPrice), bottle = wines.filter((x) => !x.byGlass);
+    /* what a grape usually smells of, and which grape a smell belongs to: from the wines that have no notes of
+       their own. Two grapes whose usual smells read alike are never offered against each other. */
     const seen = {}, typical = [];
     wines.forEach((w) => { const n = K.wineNotes ? K.wineNotes(w) : null; if (n && n.typical && n.grape && !seen[n.grape]) { seen[n.grape] = 1; typical.push(n); } });
-    typical.forEach((n) => out.push(mk('wine', 'What does ' + n.grape + ' usually smell of?', n.nose, typical.map((x) => x.nose), K.T(n.palate) + '.')));
+    typical.forEach((n) => {
+      const far = typical.filter((x) => x !== n && !alike(n.nose, x.nose, 1));
+      add('w-typical', mk('wine', 'What does ' + n.grape + ' usually smell of?', n.nose, far.map((x) => x.nose), K.T(n.palate) + '.'));
+      add('w-typical-of', mk('wine', 'Which grape usually smells of ' + lowFirst1(K.T(n.nose)).replace(/\.$/, '') + '?', n.grape, far.map((x) => x.grape), K.T(n.palate) + '.'));
+    });
     wines.forEach((w) => {
-      const t = K.wineTitle(w);
-      if (w.grapes) out.push(mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES), w.story && short(K.T(w.story), 140)));
-      if (w.region) out.push(mk('wine', 'Where does ' + t + ' come from?', w.region, wines.map((x) => x.region).concat(REGIONS), w.region + (w.country ? ', ' + w.country : '') + '.'));
-      if (w.label) out.push(mk('wine', 'Whose label is this?', t, titles, w.say, K.media(w.label)));
-      if (w.byGlass && w.glassPrice) out.push(mk('wine', 'How much is a glass of ' + w.name + '?', K.price(w.glassPrice), wines.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat([+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)))), 'By the glass, ' + K.glassMl(w) + ' ml.'));
-      if (w.bottlePrice) out.push(mk('wine', 'How much is a bottle of ' + w.name + '?', K.price(w.bottlePrice), wines.filter((x) => x.bottlePrice).map((x) => K.price(x.bottlePrice)).concat([+w.bottlePrice + 4, +w.bottlePrice - 4, +w.bottlePrice + 8].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
-      if (w.serve) out.push(mk('wine', 'At what temperature do we serve ' + w.name + '?', w.serve, wines.map((x) => x.serve).concat(TEMPS), w.glass ? 'In a ' + w.glass.toLowerCase() + '.' : ''));
-      if (w.nose) out.push(mk('wine', 'Which wine smells of ' + short(K.T(w.nose), 70).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.palate));
-      const o = K.origin ? K.origin(w) : null;
-      if (o && !o.bg && w.country) out.push(mk('wine', 'Which country is ' + t + ' from?', w.country, wines.map((x) => x.country).concat(['Portugal', 'Argentina', 'Chile', 'Bulgaria']), o.where + '.'));
-      if (o && foreign.length >= 3 && home.length >= 3) out.push(o.bg ? mk('wine', 'Which of these wines is Bulgarian?', t, foreign, 'From ' + o.where + '.') : mk('wine', 'Which of these wines is not Bulgarian?', t, home, 'From ' + o.where + '.'));
-      if (w.appellation) out.push(mk('wine', 'Which appellation is ' + t + '?', w.appellation, wines.map((x) => x.appellation).concat(['Bordeaux AOC', 'Barolo DOCG', 'Rioja DOCa', 'Chablis AOC', 'Prosecco DOC']), w.region));
-      if (w.made) out.push(mk('wine', 'Which wine is made like this: ' + short(K.T(w.made), 90).replace(/\.$/, '').toLowerCase() + '?', t, titles, w.say));
+      const t = title(w), o = K.origin ? K.origin(w) : null;
+      /* a name two wines share (“Chardonnay”) is asked about with its producer */
+      const nm = only(wines, (x) => x.name, w) ? w.name : t;
+      /* no wrong answer shares a grape with the right one (Mavrud beside “Mavrud, Rubin”) */
+      if (w.grapes) add('w-grape', mk('wine', 'Which grape is ' + t + ' made from?', w.grapes, wines.map((x) => x.grapes).concat(GRAPES).filter((g) => !sharesGrape(w.grapes, g)), w.story && short(K.T(w.story), 140)));
+      /* the same the other way round, for a wine of one grape whose name does not say it */
+      if (w.grapes && grapesOf(w.grapes).length === 1 && !tells(t, w.grapes)) add('w-madefrom', mk('wine', 'Which of these wines is made from ' + w.grapes + '?', t, wines.filter((x) => x.grapes && !sharesGrape(w.grapes, x.grapes)).map(title), w.say));
+      /* no wrong answer lies inside the right region or around it, and none is a country */
+      if (w.region) add('w-region', mk('wine', 'Where does ' + t + ' come from?', w.region, wines.filter((x) => apart(w.region, w.country, x.region, x.country)).map((x) => x.region).concat(REGIONS.filter((r) => apart(w.region, w.country, r, ''))).filter((r) => !lands.includes(r)), w.region + (w.country ? ', ' + w.country : '') + '.'));
+      if (w.region && !tells(t, w.region)) add('w-fromregion', mk('wine', 'Which of these wines comes from: ' + w.region + '?', t, wines.filter((x) => apart(w.region, w.country, x.region, x.country)).map(title), w.region + (w.country ? ', ' + w.country : '') + '.'));
+      if (w.label) add('w-label', mk('wine', 'Whose label is this?', t, wines.map(title), w.say, K.media(w.label)));
+      if (w.byGlass && w.glassPrice) add('w-price', mk('wine', 'How much is a glass of ' + nm + '?', K.price(w.glassPrice), wines.filter((x) => x.glassPrice).map((x) => K.price(x.glassPrice)).concat([+w.glassPrice + 1, +w.glassPrice + 2, +w.glassPrice - 1, +w.glassPrice + 3].filter((x) => x > 0).map((x) => K.price(String(x)))), 'By the glass, ' + K.glassMl(w) + ' ml.'));
+      if (w.bottlePrice) add('w-price', mk('wine', 'How much is a bottle of ' + nm + '?', K.price(w.bottlePrice), wines.filter((x) => x.bottlePrice).map((x) => K.price(x.bottlePrice)).concat([+w.bottlePrice + 4, +w.bottlePrice - 4, +w.bottlePrice + 8].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
+      /* which wines we pour by the glass */
+      if (glass.includes(w)) add('w-glass', mk('wine', 'Which of these wines do we pour by the glass?', t, bottle.map(title), 'By the glass, ' + K.glassMl(w) + ' ml.'));
+      if (w.serve) add('w-temp', mk('wine', 'At what temperature do we serve ' + nm + '?', w.serve, wines.map((x) => x.serve).concat(TEMPS).filter((x) => tempsApart(w.serve, x)), w.glass ? 'In a ' + w.glass.toLowerCase() + '.' : ''));
+      /* what kind of wine it is, when its name does not say; a sparkling wine is white or rosé too, a sweet one
+         has a colour too, so those are not offered against each other */
+      if (KINDS[w.colour] && !/ros[eé]|brut|blanc|rouge|red|white|sparkling|prosecco|cava|champagne|cr[eé]mant|ice|sweet|dos[eé]|nectar|n[eé]ctar/i.test(t)) add('w-kind', mk('wine', 'What kind of wine is ' + t + '?', K.COL[w.colour], Object.keys(KINDS).filter((k) => !KINDS[w.colour].includes(k) && !KINDS[k].includes(w.colour)).map((k) => K.COL[k]), w.say));
+      /* who makes it, when one wine only has that name and the name does not say */
+      if (w.producer && only(wines, (x) => x.name, w) && !tells(w.name, w.producer)) add('w-maker', mk('wine', 'Who makes ' + w.name + '?', w.producer, wines.map((x) => x.producer), w.say));
+      /* how it smells, how it tastes, how we describe it: the wrong answers are wines of other grapes whose own
+         notes read differently */
+      if (w.nose && only(wines.filter((x) => x.nose), noseOf, w)) add('w-nose', mk('wine', 'Which wine smells of ' + noseOf(w) + '?', t, others(w, 'nose'), w.palate));
+      if (w.palate && telling(w.palate) && only(wines.filter((x) => x.palate), palateOf, w)) add('w-palate', mk('wine', 'Which wine tastes like this: ' + palateOf(w) + '?', t, others(w, 'palate'), w.nose));
+      if (w.say && !tells(w.say, t)) add('w-say', mk('wine', 'Which wine is this: “' + cut(w.say, 130) + '”?', t, others(w, 'say'), w.region + (w.country ? ', ' + w.country : '') + '.'));
+      if (o && !o.bg && w.country) {
+        add('w-country', mk('wine', 'Which country is ' + t + ' from?', w.country, wines.map((x) => x.country).concat(['Portugal', 'Argentina', 'Chile', 'Bulgaria']), o.where + '.'));
+        if (!tells(t, w.country)) add('w-fromcountry', mk('wine', 'Which of these wines is from ' + w.country + '?', t, wines.filter((x) => x.country && x.country !== w.country).map(title), o.where + '.'));
+      }
+      if (o && foreign.length >= 3 && home.length >= 3) add('w-bulgarian', o.bg ? mk('wine', 'Which of these wines is Bulgarian?', t, foreign, 'From ' + o.where + '.') : mk('wine', 'Which of these wines is not Bulgarian?', t, home, 'From ' + o.where + '.'));
+      /* an appellation of the same region (Chablis beside Bourgogne, Sicilia beside Terre Siciliane) is no wrong answer */
+      if (w.appellation) add('w-app', mk('wine', 'Which appellation is ' + t + '?', w.appellation, wines.filter((x) => x.appellation && apart(w.region, w.country, x.region, x.country)).map((x) => x.appellation)
+        .concat(APPS.filter((x) => apart(w.region, w.country, x[1], '')).map((x) => x[0])).filter((x) => !sharesWord(w.appellation, x)), w.region));
+      /* the wrong answers are wines whose own making is written down and starts differently */
+      if (w.made && only(wines.filter((x) => x.made), madeOf, w)) add('w-made', mk('wine', 'Which wine is made like this: ' + madeOf(w) + '?', t, wines.filter((x) => x !== w && x.made && head(x) !== head(w)).map(title), w.say));
       dishes.forEach((d) => {
         if (goes(d, w)) {
           const why = (d.n.pairWhy || {})[w.id] || d.n.pairText || w.say;
-          /* the other right answers are left out of the wrong ones: a dish has several wines, a wine several dishes */
-          const others = poured.get(d) ? poured.get(d).filter((x) => x !== w).map(K.wineTitle) : [];
-          out.push(mk('wine', 'Which wine do we pour with ' + K.dn(d) + '?', t, titles.filter((x) => !others.includes(x)), why));
-          out.push(mk('wine', 'Which dish do we pour ' + t + ' with?', K.dn(d), dishes.filter((x) => x === d || !poured.get(x) || !poured.get(x).includes(w)).map((x) => K.dn(x)), why));
+          /* the other right answers are left out of the wrong ones: a dish has several wines, a wine several dishes;
+             and so are the wines whose style suits the dish, which the dish's page offers too */
+          add('w-pair', mk('wine', 'Which wine do we pour with ' + K.dn(d) + '?', t, wines.filter((x) => !suits(d, x)).map(title), why));
+          add('w-dish', mk('wine', 'Which dish do we pour ' + t + ' with?', K.dn(d), dishes.filter((x) => !suits(x, w)).map((x) => K.dn(x)), why));
         }
       });
     });
-    return out.filter(Boolean);
+    return out;
   }
   /* ---------- food ----------
      First what a waitress has to decide at the table: who can eat what, what to write on the order, where an
@@ -140,6 +240,11 @@
   const stems = (s) => (lc(s) + ' ' + latin(s)).split(/[^a-zа-я]+/).filter((w) => w.length >= 4).map((w) => w.slice(0, 4));
   /* does one text give the other away: they share the start of a word, in either alphabet */
   const tells = (a, b) => { const x = stems(b); return stems(a).some((w) => x.includes(w)); };
+  /* two names for nearly the same thing (“jus” and “mushroom jus”, “ponzu” and “sesame ponzu”): never the right
+     and a wrong answer together, since the wrong one would be half true */
+  const FILLER = /^(and|with|the|sauce|from|сос|със|без|или)$/;
+  const bits = (s) => lc(s).split(/[^a-zа-я]+/).filter((w) => w.length >= 3 && !FILLER.test(w)).map((w) => (w.length >= 5 ? w.slice(0, 5) : w));
+  const near = (a, b) => { const x = bits(b); return bits(a).some((w) => x.includes(w)); };
   /* how hard a kind of question is: 3 for what takes knowing the whole plate or judging a guest's case, 2 for what
      takes understanding a dish, 1 for what is learnt by heart. Points and time follow (see FACTOR, TIME). */
   const LEVEL = { guest: 3, swap: 3, plan: 3, missing: 3, exact: 3, shared: 3, allergenset: 3, change: 2, where: 2, canbe: 2, whatisrev: 2, oddone: 2, allthree: 2, sauce: 2, tasting: 2, house: 2, dwhich: 2, dwhat: 2 };
@@ -211,11 +316,13 @@
     return out;
   }
   /* one question of each kind in turn, so a round is not three prices */
-  function byKind(qs, n) {
+  function byKind(qs, n, weight) {
     const by = {}, out = [];
     qs.forEach((q) => { (by[q.kind] = by[q.kind] || []).push(q); });
     Object.keys(by).forEach((k) => { by[k] = shuffle(by[k]); });
-    let kinds = shuffle(Object.keys(by));
+    /* a random order in which a kind of weight 3 comes early three times as often */
+    const order = (l) => l.map((k) => [k, Math.pow(Math.random(), 1 / ((weight && weight[k]) || 1))]).sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+    let kinds = order(Object.keys(by));
     while (out.length < n && kinds.length) {
       kinds.forEach((k) => { const q = by[k].shift(); if (q && out.length < n && !out.some((o) => o.q === q.q)) out.push(q); });
       kinds = kinds.filter((k) => by[k].length);
@@ -265,7 +372,7 @@
       Object.keys(K.allergenWhere(d)).forEach((k) => {
         const src = sources(d, k);
         if (!src.length || src[0].length > 40) return;
-        add('where', mk('food', 'Where is the ' + lc(K.AL[k]) + ' in ' + d.name + '?', src[0], items.filter((i) => !K.allergensIn(i).includes(k) && !src.some((s) => lc(s) === lc(i))), K.T(K.AL[k]) + ': ' + src.slice(0, 3).join(', ') + '.'));
+        add('where', mk('food', 'Where is the ' + lc(K.AL[k]) + ' in ' + d.name + '?', src[0], items.filter((i) => !K.allergensIn(i).includes(k) && !src.some((s) => lc(s) === lc(i) || near(s, i))), K.T(K.AL[k]) + ': ' + src.slice(0, 3).join(', ') + '.'));
       });
     });
 
@@ -328,25 +435,27 @@
       const nm = x.d.name + ' ' + (x.d.en || ''), foreign = parts.filter((i) => !onPlate(x.d, i));
       /* one part left out */
       const hide = one(x.p.filter((i) => !tells(i, nm)).concat(x.p.slice(0, 0)));
-      if (hide) add('missing', mk('food', 'On the menu ' + x.d.name + ' is: ' + x.p.filter((i) => i !== hide).join(', ') + ', and one more thing. What is it?', hide, foreign, full(x)));
+      /* a part of another plate that is close to one of this plate's own is not used as a wrong answer */
+      const far = foreign.filter((f) => !x.p.some((i) => near(i, f)));
+      if (hide) add('missing', mk('food', 'On the menu ' + x.d.name + ' is: ' + x.p.filter((i) => i !== hide).join(', ') + ', and one more thing. What is it?', hide, far, full(x)));
       /* the whole line, against three with one part swapped for something from another plate */
-      if (foreign.length >= 3) add('exact', mk('food', 'Which line is ' + x.d.name + ', exactly as on the menu?', x.p.join(', '),
-        shuffle(foreign).slice(0, 3).map((f, i) => { const p = x.p.slice(); p[(i + Math.floor(Math.random() * p.length)) % p.length] = f; return p.join(', '); }), ''));
-      /* three of its parts, without its name */
+      if (far.length >= 3) add('exact', mk('food', 'Which line is ' + x.d.name + ', exactly as on the menu?', x.p.join(', '),
+        shuffle(far).slice(0, 3).map((f, i) => { const p = x.p.slice(); p[(i + Math.floor(Math.random() * p.length)) % p.length] = f; return p.join(', '); }), ''));
+      /* three of its parts, without its name; a dish that has all three too is not a wrong answer */
       const three = shuffle(x.p.filter((i) => !tells(i, nm))).slice(0, 3);
-      if (three.length === 3) add('allthree', mk('food', 'Which dish has ' + three[0] + ', ' + three[1] + ' and ' + three[2] + '?', x.d.name, names, full(x)));
+      if (three.length === 3) add('allthree', mk('food', 'Which dish has ' + three[0] + ', ' + three[1] + ' and ' + three[2] + '?', x.d.name, dishes.filter((y) => y === x.d || !three.every((i) => onPlate(y, i))).map((y) => y.name), full(x)));
     });
     /* a part two dishes share */
     const sharedSeen = {};
     shuffle(plates).forEach((a, i, l) => l.slice(i + 1).forEach((b) => {
       const both = a.p.filter((x) => b.p.some((y) => lc(y) === lc(x)));
       if (!both.length || (sharedSeen[lc(both[0])] = (sharedSeen[lc(both[0])] || 0) + 1) > 2) return;
-      add('shared', mk('food', 'Which of these is in both ' + a.d.name + ' and ' + b.d.name + '?', both[0], a.p.concat(b.p).filter((x) => !both.some((y) => lc(y) === lc(x))), ''));
+      add('shared', mk('food', 'Which of these is in both ' + a.d.name + ' and ' + b.d.name + '?', both[0], a.p.concat(b.p).filter((x) => !both.some((y) => lc(y) === lc(x) || near(y, x))), ''));
     }));
     /* the sauce */
     const SAUCE = /сос|(^|\s)жу($|\s)|винегрет|дресинг|холандез|бьор блан|понзу|sauce|\bjus\b|vinaigrette|dressing|hollandaise|beurre blanc|ponzu/i;
     const sauces = parts.filter((i) => SAUCE.test(i));
-    plates.forEach((x) => { const s = x.p.filter((i) => SAUCE.test(i)); if (s.length === 1) add('sauce', mk('food', 'Which sauce comes with ' + x.d.name + '?', s[0], sauces.filter((i) => !onPlate(x.d, i)), full(x))); });
+    plates.forEach((x) => { const s = x.p.filter((i) => SAUCE.test(i)); if (s.length === 1) add('sauce', mk('food', 'Which sauce comes with ' + x.d.name + '?', s[0], sauces.filter((i) => !onPlate(x.d, i) && !near(s[0], i)), full(x))); });
     /* all of a dish's allergens at once: only for dishes whose allergens are confirmed */
     dishes.filter((d) => d.onMenu && K.dishChecked(d)).forEach((d) => {
       const al = K.dishAllergens(d).keys, rest = allAl.filter((k) => !al.includes(k)), nm = (l) => K.orderAl(l).map((k) => K.T(K.AL[k])).join(', ');
@@ -381,9 +490,11 @@
 
     /* 9. by heart: which dish an ingredient is in (when the name does not say so), the English names that are not
           the same word, an allergen, an odd one out, prices, pictures */
+    /* a dish that has something close to the ingredient (mushroom jus, asked about jus) counts as having it */
+    const holds = (y, name) => y.ings.concat(String(y.n.menuBg || '').split(/,\s*/), String(y.n.menuEn || '').split(/,\s*/), (y.n.niche || []).map((z) => z.n)).some((i) => i && near(i, name));
     dishes.forEach((d) => {
       (d.n.niche || []).forEach((x) => {
-        if (!tells(x.n + ' ' + (K.en(x.n) || ''), d.name + ' ' + (d.en || ''))) add('has', mk('food', 'Which dish has ' + x.n + '?', d.name, dishes.filter((y) => y === d || !has(y, x.n)).map((y) => y.name), x.what ? bare(x.what) : ''));
+        if (!tells(x.n + ' ' + (K.en(x.n) || ''), d.name + ' ' + (d.en || ''))) add('has', mk('food', 'Which dish has ' + x.n + '?', d.name, dishes.filter((y) => y === d || (!has(y, x.n) && !holds(y, x.n))).map((y) => y.name), x.what ? bare(x.what) : ''));
       });
       if (d.en && d.en !== d.name && !tells(d.name, d.en)) add('translate', mk('food', 'How do you say ' + d.name + ' in English?', d.en, ens.concat(['Chef’s special', 'Garden salad', 'Slow-cooked beef']), d.n.pitch && short(K.T(d.n.pitch), 140)));
       const al = K.dishAllergens(d).keys;
@@ -392,7 +503,7 @@
         add('allergen', mk('food', 'Which allergen is in ' + d.name + '?', K.AL[a], allAl.filter((k) => !al.includes(k) && !K.menuAllergens(d)[k]).map((k) => K.AL[k]), d.name + ' has: ' + al.map((k) => K.AL[k]).join(', ') + '.'));
       }
       const others = [];
-      dishes.forEach((x) => { if (x !== d) x.ings.forEach((i) => { if (!d.ings.some((j) => K.ingKey(j) === K.ingKey(i)) && !has(d, i)) others.push(i); }); });
+      dishes.forEach((x) => { if (x !== d) x.ings.forEach((i) => { if (!d.ings.some((j) => K.ingKey(j) === K.ingKey(i)) && !has(d, i) && !holds(d, i)) others.push(i); }); });
       const mine = d.ings.filter((i) => i.length < 40);
       if (others.length && mine.length >= 3) add('oddone', mk('food', 'Which of these is NOT in ' + d.name + '?', one(others), mine, 'In it: ' + mine.slice(0, 8).join(', ') + (mine.length > 8 ? '…' : '') + '.'));
       if (d.price) add('price', mk('food', 'How much is ' + d.name + '?', K.price(d.price), dishes.filter((x) => x.price).map((x) => K.price(x.price)).concat([+d.price + 2, +d.price - 2, +d.price + 4].filter((x) => x > 0).map((x) => K.price(String(x)))), ''));
@@ -437,25 +548,71 @@
     return BANK[topic].map((b) => mk(topic, b[0], b[1], b[2], b[3])).filter(Boolean)
       .concat(D.quizq.filter((q) => (q.topic || 'food') === topic && topic !== 'food').map((q) => mk(topic, q.q, q.a, q.wrong || [], q.why, q.photo ? K.media(q.photo) : '')).filter(Boolean));
   }
-  /* a round: mostly questions about our own wines and dishes, topped up from the general ones */
+  /* ---------- the big book of general questions ----------
+     Well over a thousand questions of general knowledge (grapes and how they taste, Bulgarian wine, regions,
+     winemaking, tasting and service, spirits, the bar, cooking, ingredients, allergens and table service, food
+     culture), in a file of its own for each language: floor/data/quiz-en.json and quiz-bg.json, fetched when the
+     quiz page is first opened and kept for offline use. A question there is
+     [question, answer, [three wrong answers], why, level, kind, subject]; both files hold the same questions
+     in the same order. Until the file has arrived (or if it cannot), the short lists in BANK stand in. */
+  const SIDE = { grapes: 'wine', bulgaria: 'wine', regions: 'wine', winemaking: 'wine', service: 'wine', spirits: 'drinks', bar: 'drinks', cooking: 'food', ingredients: 'food', allergens: 'food', cuisines: 'food' };
+  let book = null, bookLang = '', loading = false;
+  function loadBook() {
+    if (loading || (book && bookLang === K.flang) || typeof fetch !== 'function') return;
+    loading = true;
+    const lang = K.flang;
+    fetch('floor/data/quiz-' + (lang === 'bg' ? 'bg' : 'en') + '.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('no quiz book'))))
+      .then((j) => { if (j && Array.isArray(j.q) && Array.isArray(j.subjects)) { book = j; bookLang = lang; } loading = false; }, () => { loading = false; });
+  }
+  K.quizBook = () => (book && bookLang === K.flang ? book : null);
+  K.loadQuizBook = loadBook;
+  /* the general questions of one side of the quiz: 'wine' (wine and drinks) or 'food' */
+  function bookQs(side) {
+    const b = K.quizBook(), out = [];
+    if (!b) return out;
+    b.q.forEach((x, i) => {
+      const subject = b.subjects[x[6]], of = SIDE[subject];
+      if (!of || (side === 'food') !== (of === 'food')) return;
+      out.push({ topic: side, q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3] || '', img: '', level: x[4] || 1, kind: subject, drink: of === 'drinks', id: 'b' + i });
+    });
+    return out;
+  }
+  /* the short lists and the manager's own questions, as one more subject beside the book's */
+  const basics = (side) => (side === 'food' ? bankQs('food') : bankQs('wine').concat(bankQs('drinks'))).map((q) => { q.kind = 'basics'; return q; });
+
+  /* what this phone asked lately, so that a round brings questions not seen for a long while */
+  const SEEN_MAX = 1500;
+  let seenList = null;
+  const hash = (t) => { let a = 5381; for (let i = 0; i < t.length; i++) a = ((a * 33) ^ t.charCodeAt(i)) >>> 0; return a.toString(36); };
+  const keyOf = (q) => q.id || 'q' + hash(q.q + '|' + q.a);
+  const seenNow = () => { if (!seenList) { const l = K.store.get('fohQuizSeen', []); seenList = Array.isArray(l) ? l : []; } return seenList; };
+  /* the ones not asked lately; all of them again once nearly every one has been asked */
+  const fresh = (qs) => { const s = new Set(seenNow()), f = qs.filter((q) => !s.has(keyOf(q))); return f.length >= Math.min(qs.length, 12) ? f : qs; };
+  const remember = (qs) => { seenList = seenNow().concat(qs.map(keyOf)).slice(-SEEN_MAX); K.store.set('fohQuizSeen', seenList); };
+
+  /* a round of ten: six from our own wines, drinks and dishes, four of general knowledge */
   function round(topic) {
     /* if making the questions from the book fails, the round still starts, from the general questions */
     const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
-    let own;
-    if (topic === 'food') own = pickMixed(safe(foodQs), 7);
+    const general = (side) => fresh(bookQs(side).concat(basics(side)));
+    let own, gen;
+    if (topic === 'food') { own = pickMixed(fresh(safe(foodQs)), 6); gen = byKind(general('food'), ROUND); }
     else {
-      /* wine and drinks: of the seven questions from the book, two are about the drinks, one of them a whisky
+      /* wine and drinks: of the six questions from the book, two are about the drinks, one of them a whisky
          (one of the four in a round of everything) */
-      const dq = safe(drinkQs), wh = dq.filter((q) => q.whisky), rest = dq.filter((q) => !q.whisky);
+      const dq = fresh(safe(drinkQs)), wh = dq.filter((q) => q.whisky), rest = dq.filter((q) => !q.whisky);
       const d = topic === 'wine' ? byKind(wh, 1).concat(byKind(rest, 1)) : byKind(wh.length && Math.random() < 0.6 ? wh : dq, 1);
-      own = pickN(safe(wineQs), (topic === 'wine' ? 7 : 4) - d.length).concat(d);
-      if (topic === 'all') own = own.concat(pickMixed(safe(foodQs), 4));
+      own = byKind(fresh(safe(wineQs)), (topic === 'wine' ? 6 : 4) - d.length, WEIGHT).concat(d);
+      if (topic === 'all') own = own.concat(pickMixed(fresh(safe(foodQs)), 3));
+      /* a subject at a time, so the general questions of a round are not four of one sort */
+      gen = byKind(general('wine').concat(topic === 'all' ? general('food') : []), ROUND);
     }
-    const gen = topic === 'food' ? bankQs('food') : bankQs('wine').concat(bankQs('drinks'), topic === 'all' ? bankQs('food') : []);
-    const seen = {}, out = [];
-    own.concat(pickN(gen, ROUND)).forEach((q) => { if (out.length < ROUND && !seen[q.q]) { seen[q.q] = 1; out.push(q); } });
+    const had = {}, out = [];
+    own.concat(gen).forEach((q) => { if (out.length < ROUND && !had[q.q]) { had[q.q] = 1; out.push(q); } });
+    remember(out);
     return shuffle(out);
   }
+  K.quizRound = round;
 
   /* ---------- playing ---------- */
   let tick = null;
@@ -577,6 +734,7 @@
 
   K.V.quiz = function () {
     const Q = ui.quiz;
+    loadBook();
     if (Q && Q.stage === 'play') return playView(Q);
     const body = h('div', { class: 'page' });
     const mine = D.scores.filter((s) => s.uid === ((K.me && K.me.id) || 'this-phone') && s.at >= since('week'));
