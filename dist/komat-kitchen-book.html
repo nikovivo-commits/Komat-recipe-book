@@ -475,6 +475,8 @@ body.toasting .timers { transform: translateY(-76px); }
 .toast { pointer-events: none; }
 .toast-act { pointer-events: auto; }
 body:not(.has-tabs) .toast { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+/* hidden means gone: without this the layout rule above kept a message on screen for good */
+.toast[hidden] { display: none; }
 .toast:not([hidden]) { animation: toastin .24s cubic-bezier(.2, 1.2, .4, 1); }
 @keyframes toastin { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 .toast.bad { background: var(--urgent); color: var(--urgent-ink); }
@@ -3747,6 +3749,8 @@ window.KOMAT_PART_ART = [
 
   /* ---------- DOM ---------- */
   /* h('button', {class:'btn', onclick: fn}, 'Label', child, [more]) */
+  /* attributes a person reads or hears: translated where the app has a second language (K.tr) */
+  const TEXT_ATTR = { 'aria-label': 1, placeholder: 1, title: 1, alt: 1 };
   K.h = function h(tag, attrs) {
     const el = document.createElement(tag);
     if (attrs) {
@@ -3759,7 +3763,7 @@ window.KOMAT_PART_ART = [
         else if (k === 'value') el.value = v;
         else if (k === 'checked') el.checked = !!v;
         else if (k === 'selected') el.selected = !!v;
-        else el.setAttribute(k, v === true ? '' : v);
+        else el.setAttribute(k, v === true ? '' : K.tr && TEXT_ATTR[k] ? K.tr(String(v)) : v);
       }
     }
     append(el, Array.prototype.slice.call(arguments, 2));
@@ -3769,7 +3773,7 @@ window.KOMAT_PART_ART = [
     for (const c of kids) {
       if (c == null || c === false) continue;
       if (Array.isArray(c)) append(el, c);
-      else el.append(c.nodeType ? c : document.createTextNode(String(c)));
+      else el.append(c.nodeType ? c : document.createTextNode(K.tr ? K.tr(String(c)) : String(c)));
     }
   }
   const h = K.h;
@@ -3797,8 +3801,8 @@ window.KOMAT_PART_ART = [
   K.todayIdx = () => (K.kitchenNow().getDay() + 6) % 7;
   /* minutes since midnight */
   K.kitchenMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
-  K.hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString('en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
+  K.hm = (t) => new Date(t).toLocaleTimeString(K.locale || 'en-GB', { hour: '2-digit', minute: '2-digit' });
+  K.prettyDate = (ds, opts) => K.parseYmd(ds).toLocaleDateString(K.locale || 'en-GB', opts || { weekday: 'long', day: 'numeric', month: 'long' });
   K.DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   /* food-safety day-dot label colours, Monday first */
   K.DAY_DOTS = ['#2F6FD0', '#E8C02E', '#D23B2F', '#7A4B2A', '#2E9150', '#EE8A22', '#1B1B1B'];
@@ -3857,8 +3861,10 @@ window.KOMAT_PART_ART = [
     box.hidden = false;
     document.body.classList.add('toasting');
     clearTimeout(toastT);
-    /* short, so it never sits over what you are doing */
-    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, opts.undo ? 3000 : 2000);
+    /* short, so it never sits over what you are doing: two seconds for a few words, more for a long message
+       so it can be read, never more than five */
+    const ms = Math.min(5000, Math.max(opts.undo ? 3000 : 2000, 1200 + String(box.textContent || '').length * 40));
+    toastT = setTimeout(() => { box.hidden = true; document.body.classList.remove('toasting'); }, ms);
   };
 
   /* ---------- icons (24px, stroke) ---------- */
@@ -3910,6 +3916,8 @@ window.KOMAT_PART_ART = [
     download: '<path d="M12 4v12M7 11l5 5 5-5M4 17v3h16v-3"/>',
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
   };
+  /* other apps on the site (the floor book) add their own icons here */
+  K.ICONS = P;
   K.icon = function (name, cls) {
     const span = h('span', { class: 'ico' + (cls ? ' ' + cls : ''), 'aria-hidden': 'true' });
     span.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (P[name] || '') + '</svg>';
@@ -4025,7 +4033,7 @@ window.KOMAT_PART_ART = [
   fish:['fish','salmon','tuna','cod!','sea bass','seabass','bass!','trout','anchov','sardin','mackerel','halibut','turbot','bream','hake','pike!','carp!','sole!','plaice','monkfish','snapper','mullet','bonito','katsuobushi','dashi','caviar','roe!','ikura','tobiko','katsuobushi','кацубуши','гарум','worcestershire','colatura','garum','риба','рибен','рибн','сьомга','пъстърв','лаврак','ципура','аншоа','сардин','скумри','тон!','риба тон','треска','калкан','шаран','щука','хайвер','хек','барбун','паламуд','чернокоп'],
   peanuts:['peanut','groundnut','satay','фъстък','фъстъц'],
   soy:['soy','soya','tofu','edamame','miso','tamari','tempeh','natto','teriyaki','hoisin','соя','соев','тофу','мисо','понзу','ponzu','кикоман','kikkoman'],
-  milk:['milk','cream','butter','ghee','cheese','parmesan','parmigiano','pecorino','grana','mascarpone','ricotta','mozzarella','burrata','stracciatella','feta','gorgonzola','brie','camembert','cheddar','comté','comte','gruyère','gruyere','emmental','halloumi','labneh','yogurt','yoghurt','kefir','crème','creme','fraiche','fraîche','whey','casein','lactose','buttermilk','quark','skyr','béchamel','bechamel','ice cream','gelato','мляко','млечн','сметан','сирене','кашкавал','краве масло','масло','извара','йогурт','кефир','пармезан','моцарела','рикота','маскарпоне','суроватка','каймак','бешамел','сладолед','сирен','катък','катик','katyk','крокмач','геран','тейзе','дулсе де лече','dulce de leche','бял шоколад','white chocolate'],
+  milk:['ayran','айрян','milk','cream','butter','ghee','cheese','parmesan','parmigiano','pecorino','grana','mascarpone','ricotta','mozzarella','burrata','stracciatella','feta','gorgonzola','brie','camembert','cheddar','comté','comte','gruyère','gruyere','emmental','halloumi','labneh','yogurt','yoghurt','kefir','crème','creme','fraiche','fraîche','whey','casein','lactose','buttermilk','quark','skyr','béchamel','bechamel','ice cream','gelato','мляко','млечн','сметан','сирене','кашкавал','краве масло','масло','извара','йогурт','кефир','пармезан','моцарела','рикота','маскарпоне','суроватка','каймак','бешамел','сладолед','сирен','катък','катик','katyk','крокмач','геран','тейзе','дулсе де лече','dulce de leche','бял шоколад','white chocolate'],
   nuts:['almond','hazelnut','walnut','cashew','pecan','pistachio','macadamia','brazil nut','pine nut','praline','marzipan','frangipane','gianduja','nutella','orgeat','бадем','лешни','орех','орехи','кашу','пекан','шам фъстък','шамфъстък','макадами','пралин','марципан'],
   celery:['celery','celeriac','целин'],
   mustard:['mustard','dijon','дижон','горчиц'],
@@ -4035,9 +4043,9 @@ window.KOMAT_PART_ART = [
   molluscs:['mussel','oyster','clam','scallop','squid','octopus','cuttlefish','calamari','snail','escargot','whelk','cockle','abalone','миди','мида','стрид','калмар','октопод','сепия','охлюв','морски дар']
 };
   /* phrases removed before matching: they contain an allergen word but are not that allergen */
-  const NOT = ['шам фъстък','шамфъстък','сирене кашу','алтернативно мляко','eggplant','coconut milk','coconut cream','oat milk','rice milk','almond milk','soy milk','soya milk','cocoa butter','shea butter','butternut','butter bean','butterhead','nutmeg','cream of tartar','buckwheat','rice flour','corn flour','cornflour','maize flour','potato flour','potato starch','tapioca flour','chickpea flour','gram flour','gluten-free','gluten free','maltodextrin','rice noodle','glass noodle','rice paper','ракия','plant-based','vegan','sweet potato','water chestnut','pepper','peppercorn','fish-free','kokosovo','кокосово мляко','овесено мляко','бадемово мляко','оризово мляко','оризово брашно','царевично брашно','нишесте','зехтин','олио','растително масло','слънчогледово масло','маслинено масло','кокосово масло','какаово масло','сусамово масло','масло от','тиквено масло','елда','индийско орехче','индийско орехово','джинджифилова бира','ginger beer','кисело мляко кашу','масло от рапица','олио'];
+  const NOT = ['шам фъстък','шамфъстък','сирене кашу','сирене от кашу','кашу сирене','cashew cheese','fish egg','fish eggs','алтернативно мляко','eggplant','coconut milk','coconut cream','oat milk','rice milk','almond milk','soy milk','soya milk','cocoa butter','shea butter','butternut','butter bean','butterhead','nutmeg','cream of tartar','buckwheat','rice flour','corn flour','cornflour','maize flour','potato flour','potato starch','tapioca flour','chickpea flour','gram flour','gluten-free','gluten free','maltodextrin','rice noodle','glass noodle','rice paper','ракия','plant-based','vegan','sweet potato','water chestnut','pepper','peppercorn','fish-free','kokosovo','кокосово мляко','овесено мляко','бадемово мляко','оризово мляко','оризово брашно','царевично брашно','нишесте','зехтин','олио','растително масло','слънчогледово масло','маслинено масло','кокосово масло','какаово масло','сусамово масло','масло от','тиквено масло','елда','индийско орехче','индийско орехово','джинджифилова бира','ginger beer','кисело мляко кашу','масло от рапица','олио'];
   /* phrases that imply a second allergen (soy sauce has wheat, pesto has nuts and cheese) */
-  const ALSO = {'шам фъстък':['nuts'],'шамфъстък':['nuts'],'сирене кашу':['nuts'],'soy sauce':['gluten'],'соев сос':['gluten'],'pesto':['nuts','milk'],'песто':['nuts','milk'],'almond milk':['nuts'],'бадемово мляко':['nuts'],'almond flour':['nuts'],'peanut butter':['peanuts'],'soy milk':['soy'],'mayonnaise':['eggs','mustard'],'холандез':['eggs','milk'],'бешамел':['gluten','milk'],'мляко кашу':['nuts'],'aioli':['eggs'],'caesar':['eggs','fish','milk'],'worcestershire':['fish'],'hollandaise':['eggs','milk'],'béarnaise':['eggs','milk'],'bearnaise':['eggs','milk'],'praline':['nuts'],'nougat':['nuts','eggs'],'brioche':['eggs','milk'],'croissant':['milk'],'custard':['eggs','milk'],'ice cream':['milk','eggs']};
+  const ALSO = {'шам фъстък':['nuts'],'шамфъстък':['nuts'],'сирене кашу':['nuts'],'сирене от кашу':['nuts'],'кашу сирене':['nuts'],'cashew cheese':['nuts'],'fish egg':['fish'],'soy sauce':['gluten'],'соев сос':['gluten'],'pesto':['nuts','milk'],'песто':['nuts','milk'],'almond milk':['nuts'],'бадемово мляко':['nuts'],'almond flour':['nuts'],'peanut butter':['peanuts'],'soy milk':['soy'],'mayonnaise':['eggs','mustard'],'холандез':['eggs','milk'],'бешамел':['gluten','milk'],'мляко кашу':['nuts'],'aioli':['eggs'],'caesar':['eggs','fish','milk'],'worcestershire':['fish'],'hollandaise':['eggs','milk'],'béarnaise':['eggs','milk'],'bearnaise':['eggs','milk'],'praline':['nuts'],'nougat':['nuts','eggs'],'brioche':['eggs','milk'],'croissant':['milk'],'custard':['eggs','milk'],'ice cream':['milk','eggs']};
   /* sauces whose name contains an allergen word but whose recipe is separate */
   const SKIP = ['редукция холандез', 'hollandaise reduction'];
 
@@ -4115,21 +4123,23 @@ window.KOMAT_PART_ART = [
   }
   const err = (code, message) => ({ code: code, message: message || code });
 
-  function LocalDB(seed) {
+  /* key: where this browser keeps the copy (the floor book keeps its own) */
+  function LocalDB(seed, key) {
+    this.key = key || DB_KEY;
     this.subs = new Set();
     this.docs = this.load();
     if (!this.docs) { this.docs = {}; if (seed) seed(this.docs); this.save(); }
     window.addEventListener('storage', (e) => {
-      if (e.key !== DB_KEY) return;
+      if (e.key !== this.key) return;
       this.docs = this.load() || {};
       this.subs.forEach((s) => this.deliver(s));
     });
   }
   LocalDB.prototype.load = function () {
-    try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    try { const raw = localStorage.getItem(this.key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   };
   LocalDB.prototype.save = function () {
-    try { localStorage.setItem(DB_KEY, JSON.stringify(this.docs)); this.full = false; }
+    try { localStorage.setItem(this.key, JSON.stringify(this.docs)); this.full = false; }
     catch (e) { if (!this.full) { this.full = true; K.toast('This device is out of storage space. Export a backup in Settings, then clear old photos.', { tone: 'bad' }); } }
   };
   LocalDB.prototype.write = function (path, data) {
@@ -9672,6 +9682,8 @@ window.KOMAT_PART_ART = [
   const WHY = { asked: 'you asked this day off', fixed: 'your usual day off', kept: 'a day you keep off', ifpossible: 'a day off if possible', extra: 'a day more than your usual week', backup: 'not your usual station' };
   K.unfairWeek = function (wk, rows, st) {
     const plan = K.rotaPlan ? K.rotaPlan() : { people: {} }, out = {};
+    /* a week the head chef marked calm: nobody gets a sad face (or the extra points) that week */
+    if ((plan.calmWeeks || []).includes(wk)) return out;
     const works = (c) => { c = String(c || '').trim(); return !!c && !/^(0|X)$/i.test(c); };
     Object.keys(rows || {}).forEach((id) => {
       const s = plan.people[id] || {}, row = rows[id] || [], sts = (st || {})[id] || [], marks = {};

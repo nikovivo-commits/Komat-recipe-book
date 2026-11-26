@@ -136,6 +136,8 @@
   const WHY = { asked: 'you asked this day off', fixed: 'your usual day off', kept: 'a day you keep off', ifpossible: 'a day off if possible', extra: 'a day more than your usual week', backup: 'not your usual station' };
   K.unfairWeek = function (wk, rows, st) {
     const plan = K.rotaPlan ? K.rotaPlan() : { people: {} }, out = {};
+    /* a week the head chef marked calm: nobody gets a sad face (or the extra points) that week */
+    if ((plan.calmWeeks || []).includes(wk)) return out;
     const works = (c) => { c = String(c || '').trim(); return !!c && !/^(0|X)$/i.test(c); };
     Object.keys(rows || {}).forEach((id) => {
       const s = plan.people[id] || {}, row = rows[id] || [], sts = (st || {})[id] || [], marks = {};
