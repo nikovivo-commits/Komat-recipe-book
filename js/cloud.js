@@ -345,8 +345,14 @@
     S.busy = true;
     try {
       const u = auth.currentUser || (await F.signInAnonymously(auth)).user;
-      await F.setDoc(F.doc(fs, 'members/' + u.uid), { name: name, role: S.JOIN_ROLE, code: code, at: Date.now() })
-        .catch((e) => Promise.reject(e && e.code === 'permission-denied' ? fail('bad_code') : e));
+      const ref = F.doc(fs, 'members/' + u.uid);
+      await F.setDoc(ref, { name: name, role: S.JOIN_ROLE, code: code, at: Date.now() }).catch(async (e) => {
+        if (!e || e.code !== 'permission-denied') throw e;
+        /* turned away: either the code is wrong, or this phone is on the team already (joining twice is a change
+           to its record, which is not allowed). The server says which. */
+        const have = await F.getDocFromServer(ref).catch(() => null);
+        if (!have || !have.exists()) throw fail('bad_code');
+      });
     } finally { S.busy = false; }
   };
   S.signIn = function (email, pw) { return F.signInWithEmailAndPassword(auth, email, pw); };
