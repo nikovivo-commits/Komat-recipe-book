@@ -183,6 +183,15 @@ a.btn { text-decoration: none; }
 .qp-opt.wrong { border-color: var(--urgent); background: var(--urgent-soft); }
 .qp-opt.wrong .qp-l { background: var(--urgent); color: var(--urgent-ink); }
 .qp-opt.dim { opacity: .55; }
+/* a tip took this answer away */
+.qp-opt.gone { opacity: .28; border-style: dashed; }
+.qp-opt.gone > span:last-child { text-decoration: line-through; }
+.qp-tip { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; width: 100%; min-height: 48px; margin-top: 4px; padding: 8px 14px; border-radius: var(--r); border: 1.5px dashed var(--line); background: transparent; color: inherit; touch-action: manipulation; }
+.qp-tip .ico { width: 18px; height: 18px; color: var(--apron); }
+.qp-tip > span { color: var(--muted); font-size: .85rem; }
+.qp-tipped { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: .85rem; }
+.qp-half { margin-left: 8px; font-weight: 600; font-size: .85rem; color: var(--muted); }
+.qd-tips { color: var(--muted); font-size: .9rem; }
 .qp-after { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
 .qp-after.ok > b { color: var(--ready); } .qp-after.no > b { color: var(--urgent); }
 
