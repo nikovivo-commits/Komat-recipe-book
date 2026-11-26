@@ -125,7 +125,7 @@
   const SAME_GRAPE = { garnacha: 'grenache', 'grenache noir': 'grenache', 'grenache gris': 'grenache', 'grenache blanc': 'grenache', rolle: 'vermentino', shiraz: 'syrah', 'pinot gris': 'pinot grigio',
     zinfandel: 'primitivo', 'shiroka melnik': 'melnik', 'shiroka melnishka loza': 'melnik', viura: 'macabeo', mazuelo: 'carignan', carinena: 'carignan', 'pinot meunier': 'meunier',
     'muscat of alexandria': 'zibibbo', monastrell: 'mourvedre', mataro: 'mourvedre', 'tinta de toro': 'tempranillo', 'tinto fino': 'tempranillo', kadarka: 'gamza', 'red misket': 'misket cherven',
-    'muscat blanc': 'tamyanka', muscat: 'tamyanka', 'sauvignon': 'sauvignon blanc', 'cabernet': 'cabernet sauvignon' };
+    'muscat blanc': 'tamyanka', 'white mavrud': 'mavrud', 'mavrud blanc': 'mavrud', muscat: 'tamyanka', 'sauvignon': 'sauvignon blanc', 'cabernet': 'cabernet sauvignon' };
   const grapesOf = (s) => flat(s).split(/,|\s+and\s+|&|\/|\+/).map((g) => g.replace(/\d+\s*%/g, '').trim()).filter(Boolean).map((g) => SAME_GRAPE[g] || g);
   const sharesGrape = (a, b) => { const x = grapesOf(b); return grapesOf(a).some((g) => x.includes(g)); };
   /* two temperature ranges that overlap or touch (8–10 and 10–12) are both right at one point */
