@@ -8736,7 +8736,7 @@ window.KOMAT_PART_ART = [
     });
 
     /* pins: the head chef says who works where on a day; it beats a day off */
-    const pin = {}, extraDays = {}, brPin = {}, shiftPin = {}, fixPin = {};
+    const pin = {}, extraDays = {}, brPin = {}, shiftPin = {}, fixPin = {}, codePin = {};
     (input.pins || []).forEach((p) => {
       const d = dates.indexOf(p.date), s = setup[p.person];
       /* someone on a fixed week: that one day's shift written in instead of their usual one (float = the night's filler) */
@@ -8746,6 +8746,7 @@ window.KOMAT_PART_ART = [
       hardOff[p.person][d] = 0; wish[p.person][d] = 0;
       if (p.extra) extraDays[p.person] = (extraDays[p.person] || 0) + 1;
       if (p.br) brPin[d] = p.person; /* and they do that day's weekend breakfast */
+      if (p.code) (codePin[p.person] = codePin[p.person] || [])[d] = String(p.code); /* the shift written as given, e.g. BR+P on a weekday */
       if (p.shift === 'late' || p.shift === 'full') (shiftPin[p.person] = shiftPin[p.person] || [])[d] = p.shift; /* a second shift or a full day */
     });
     const pinned = (id, d) => !!(pin[id] && pin[id][d]);
@@ -9103,9 +9104,9 @@ window.KOMAT_PART_ART = [
         const s = S(id);
         if (!best.st.work[id][d]) { rows[id][d] = '0'; return; }
         if (best.st.special[id][d]) { rows[id][d] = s.special.code; stOf[id][d] = 'prep'; return; }
-        if (day.on[id]) { rows[id][d] = lateOf(id, d) ? lateCode : s.code || '2'; stOf[id][d] = day.on[id]; return; }
+        if (day.on[id]) { rows[id][d] = (codePin[id] || [])[d] || (lateOf(id, d) ? lateCode : s.code || '2'); stOf[id][d] = day.on[id]; return; }
         /* on top of the station's main cook: the filler, helping wherever it is needed */
-        rows[id][d] = lateOf(id, d) ? lateCode : s.code || '2'; stOf[id][d] = day.extras[id] || 'float';
+        rows[id][d] = (codePin[id] || [])[d] || (lateOf(id, d) ? lateCode : s.code || '2'); stOf[id][d] = day.extras[id] || 'float';
       });
       if (PER) {
         const lm = lunchMiss(d, day.on, day.extras, best.st.work, best.st.special), short = lm.filter((x) => x === 'cook').length;
