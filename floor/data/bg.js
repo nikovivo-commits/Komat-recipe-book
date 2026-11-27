@@ -2264,4 +2264,6 @@ window.KOMAT_BG = {"s":{"Dishes":"Ястия",
 ["{0} of {1} right",
 "{0} от {1} верни"],
 ["{0} weeks won",
-"{0} спечелени седмици"]]};
+"{0} спечелени седмици"],
+["Everybody around one phone, four jokers. The computer is at level {0} of 5.",
+"Всички около един телефон, с четири жокера. Компютърът е на ниво {0} от 5."]]};

@@ -694,7 +694,7 @@
   };
   /* The team against the computer: everybody around one phone, answering together. The computer answers every
      question too, and is right more or less often by its level (1 to 5, kept on this phone): it goes up a level
-     each time the team beats it and down one each time it wins. No jokers: the team is the joker. Team rounds
+     each time the team beats it and down one each time it wins. The team has the four jokers too, at the same price. Team rounds
      do not count for the leaderboard. */
   const cpuLevel = () => Math.max(0, Math.min(4, +K.store.get('fohQuizCpu', 1) || 0));
   K.quizCpu = cpuLevel;
@@ -801,7 +801,7 @@
   K.quizRoom = (q) => roomSays({}, q);
   function joker(kind, e) {
     const Q = ui.quiz, q = Q && Q.qs[Q.i];
-    if (!q || Q.team || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
+    if (!q || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
     Q.used = Object.assign({}, Q.used, { [kind]: Q.i + 1 });
     if (kind === 'half') { Q.gone = shuffle(q.opts.map((o, i) => i).filter((i) => q.opts[i] !== q.a)).slice(0, 2); if (Q.room) Q.room = roomSays(Q, q); }
     if (kind === 'clock') Q.frozen = Math.max(0, secsOf(q) - (Date.now() - Q.t0) / 1000);
@@ -935,7 +935,7 @@
     w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: (e) => start(t[0], e) },
       K.icon(t[2]), h('b', null, t[1]), h('span', null, t[3]), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))))));
     w.append(h('button', { type: 'button', class: 'qt qt-team', onclick: (e) => start('all', e, true) },
-      K.icon('chef'), h('b', null, 'Team vs the computer'), h('span', null, 'Everybody around one phone, no jokers. The computer is at level ' + (cpuLevel() + 1) + ' of 5.'), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))));
+      K.icon('chef'), h('b', null, 'Team vs the computer'), h('span', null, 'Everybody around one phone, four jokers. The computer is at level ' + (cpuLevel() + 1) + ' of 5.'), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))));
     const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top), champ = champion(), won = trophies();
     w.append(h('section', { class: 'group lb' },
       champ ? h('p', { class: 'lb-champ' }, K.icon('sparkle'), h('span', null, 'Last week’s champion: ', h('b', null, champ.name || 'Someone'), ' · ' + champ.best + ' points')) : null,
@@ -1006,7 +1006,7 @@
       done && Q.pts && Q.bonus ? h('p', { class: 'qp-bonus' }, K.icon('flame'), Q.streak + ' in a row: +' + Q.bonus + ' bonus') : null,
       !done && Q.friend ? h('div', { class: 'qp-friend' }, K.icon('chef'), h('div', null, h('b', null, 'Your friend says'),
         Q.friend.hint ? h('p', null, '“' + Q.friend.hint + '”') : h('p', null, 'I would go with ' + 'ABCD'[Q.friend.pick] + ', but I am not completely sure.'))) : null,
-      !done && !Q.team ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
+      !done ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
         h('b', null, j[1]), h('span', null, used[j[0]] ? 'Played' : j[2])))) : null,
       done ? h('div', { class: 'qp-after ' + (Q.pts ? 'ok' : 'no') },
         h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite'),
