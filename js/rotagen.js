@@ -169,7 +169,7 @@
             else { extras[id] = 'float'; c += W.extra; }
           });
           auto.forEach((id) => { if (work[id][d] && lrnOf(id, d)) { const x = S(id).learn[0]; extras[id] = 'learn-' + x; if (!teach(x)) c += W.noTeacher; } });
-          if (PER) c += lunchMiss(d, on, extras, work, special).length * W.lunchHole + (Object.keys(extras).length ? 0 : W.noFiller);
+          if (PER) c += lunchMiss(d, on, extras, work, special).length * W.lunchHole + (Object.keys(extras).length ? 0 : W.noFiller * (busy.includes(d) ? 6 : 1)) /* a filler matters most on the busy nights */;
           /* lead: someone who always takes their own station when they work (the sous chef on Pass) */
           here.forEach((id) => { const s0 = S(id); if (s0.lead && (s0.stations || [])[0] && on[id] !== s0.stations[0]) c += W.lead; });
           if (PER || PREV) { if (PREV) Object.keys(on).concat(Object.keys(extras)).forEach((id) => { const ps = ((PREV.st || {})[id] || [])[d]; if (ps && ps !== (on[id] || extras[id])) c += W.moveSt; }); }
