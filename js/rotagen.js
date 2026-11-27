@@ -20,7 +20,8 @@
      events    [{ date, cooks, when, before, title }] an event that needs at least that many cooks working that day
                (when: 'day' counts lunch, 'night' counts the night, otherwise the whole day), and before: cooks the day before
      pins      [{ person, date, st, extra, br }] the head chef's word: this person works that day at that station
-               (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one; br: true has them do that day's breakfast
+               (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one; br: true has them do that day's breakfast;
+               shift: 'late' | 'full' fixes a second shift (from 15:00) or a full day
    A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can.
 
    Lunch and night (plan.periods): a full shift (P) counts for lunch and night, a late shift (plan.lateCode, '2',
@@ -72,7 +73,7 @@
     });
 
     /* pins: the head chef says who works where on a day; it beats a day off */
-    const pin = {}, extraDays = {}, brPin = {};
+    const pin = {}, extraDays = {}, brPin = {}, shiftPin = {};
     (input.pins || []).forEach((p) => {
       const d = dates.indexOf(p.date), s = setup[p.person];
       if (d < 0 || !s || s.mode !== 'auto') return;
@@ -80,6 +81,7 @@
       hardOff[p.person][d] = 0; wish[p.person][d] = 0;
       if (p.extra) extraDays[p.person] = (extraDays[p.person] || 0) + 1;
       if (p.br) brPin[d] = p.person; /* and they do that day's weekend breakfast */
+      if (p.shift === 'late' || p.shift === 'full') (shiftPin[p.person] = shiftPin[p.person] || [])[d] = p.shift; /* a second shift or a full day */
     });
     const pinned = (id, d) => !!(pin[id] && pin[id][d]);
     const lrnN = (id) => ((S(id) || {}).learn || []).length ? +(S(id).learnDays || 0) : 0;
@@ -99,6 +101,8 @@
     let LATE = {};
     const lateOf = (id, d) => !!(LATE[id] && LATE[id][d]);
     const lessonDay = (id, d) => ((S(id) || {}).lessons || []).includes(d);
+    const shiftOf = (id, d) => (shiftPin[id] || [])[d] || '';
+    const forceLate = (id, d) => lessonDay(id, d) || shiftOf(id, d) === 'late';
     /* lunch: which stations nobody covers, given who is where at night */
     function lunchMiss(d, on, extras, work, special) {
       const need = {};
@@ -310,7 +314,7 @@
         loose.slice(sn, sn + Math.min(lrnN(id), Math.max(0, loose.length - sn))).forEach((d) => { lrn[id][d] = 1; });
         late[id] = [0, 0, 0, 0, 0, 0, 0];
       });
-      auto.forEach((id) => { if (!optsOf(id) && lateOK(id)) for (let d = 0; d < 7; d++) if (lessonDay(id, d) && work[id][d]) { special[id][d] = 0; late[id][d] = 1; } });
+      auto.forEach((id) => { if (!optsOf(id) && lateOK(id)) for (let d = 0; d < 7; d++) if (work[id][d] && (forceLate(id, d) || shiftOf(id, d) === 'full')) { special[id][d] = 0; late[id][d] = forceLate(id, d) ? 1 : 0; } });
       return { work: work, special: special };
     }
     function evalAll(st) {
@@ -402,7 +406,7 @@
           undo = () => { w[x] = 1; w[y] = 0; sp[x] = wasSp; sp[y] = 0; L[x] = wasL; L[y] = 0; LT[x] = wasLt; LT[y] = 0; };
         }
         /* a lesson day they come in on is always a late shift */
-        if (!os && lateOK(id)) touched.forEach((d) => { if (w[d] && !sp[d] && lessonDay(id, d)) LT[d] = 1; });
+        if (!os && lateOK(id)) touched.forEach((d) => { if (w[d] && !sp[d]) { if (forceLate(id, d)) LT[d] = 1; else if (shiftOf(id, d) === 'full') LT[d] = 0; } });
         const nd = touched.map((d) => solveDay(d, st.work, st.special)), np = personCost(id, st.work, st.special);
         const delta = touched.reduce((a, d, k) => a + nd[k].cost - ev.days[d].cost, 0) + np - ev.pc[id];
         const temp = 300 * (1 - it / ITER) + 1;
