@@ -21,7 +21,8 @@
                (when: 'day' counts lunch, 'night' counts the night, otherwise the whole day), and before: cooks the day before
      pins      [{ person, date, st, extra, br }] the head chef's word: this person works that day at that station
                (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one; br: true has them do that day's breakfast;
-               shift: 'late' | 'full' fixes a second shift (from 15:00) or a full day
+               shift: 'late' | 'full' fixes a second shift (from 15:00) or a full day;
+               for someone on a fixed week, code: 'P' (and st) writes that day's shift in instead of their usual one
    A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can.
 
    Lunch and night (plan.periods): a full shift (P) counts for lunch and night, a late shift (plan.lateCode, '2',
@@ -73,9 +74,11 @@
     });
 
     /* pins: the head chef says who works where on a day; it beats a day off */
-    const pin = {}, extraDays = {}, brPin = {}, shiftPin = {};
+    const pin = {}, extraDays = {}, brPin = {}, shiftPin = {}, fixPin = {};
     (input.pins || []).forEach((p) => {
       const d = dates.indexOf(p.date), s = setup[p.person];
+      /* someone on a fixed week: that one day's shift written in instead of their usual one (float = the night's filler) */
+      if (d >= 0 && s && s.mode === 'fixed' && p.code) { (fixPin[p.person] = fixPin[p.person] || [])[d] = { code: String(p.code), st: p.st || '' }; return; }
       if (d < 0 || !s || s.mode !== 'auto') return;
       (pin[p.person] = pin[p.person] || [])[d] = p.st || (s.stations || [])[0] || 'float';
       hardOff[p.person][d] = 0; wish[p.person][d] = 0;
@@ -164,6 +167,7 @@
           const on = {}, extras = {};
           pl.forEach((s, k) => { if (pick[k]) on[pick[k]] = s; });
           pins.forEach((id) => { if (STS.includes(pin[id][d])) on[id] = pin[id][d]; else extras[id] = pin[id][d]; });
+          Object.keys(fixPin).forEach((id) => { const f = fixPin[id][d]; if (f && f.st === 'float' && !OFF.test(f.code)) extras[id] = 'float'; });
           const mentorOnHot = Object.keys(on).some((id) => on[id] === 'hot' && S(id).mentor);
           /* a teacher on a station: someone whose main station it is (or a mentor on Hot) */
           const teach = (x) => Object.keys(on).some((id) => on[id] === x && ((S(id).stations || [])[0] === x || (x === 'hot' && S(id).mentor)));
@@ -428,7 +432,7 @@
     order.forEach((id) => {
       const s = S(id);
       rows[id] = ['', '', '', '', '', '', '']; stOf[id] = ['', '', '', '', '', '', ''];
-      if (s.mode === 'fixed') for (let d = 0; d < 7; d++) { const c = hardOff[id][d] ? '0' : String((s.pattern || [])[d] || ''); rows[id][d] = c; stOf[id][d] = c && !OFF.test(c) ? s.patternSt || '' : ''; }
+      if (s.mode === 'fixed') for (let d = 0; d < 7; d++) { const f = (fixPin[id] || [])[d]; const c = hardOff[id][d] ? '0' : f ? f.code : String((s.pattern || [])[d] || ''); rows[id][d] = c; stOf[id][d] = c && !OFF.test(c) ? (f ? f.st : s.patternSt || '') : ''; }
       if (s.mode === 'hand') for (let d = 0; d < 7; d++) rows[id][d] = String((keep[id] || [])[d] || '');
     });
     for (let d = 0; d < 7; d++) {
