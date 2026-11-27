@@ -59,7 +59,8 @@
     w.append(K.seg([['week', 'Week'], ['day', 'Day'], ['mine', 'Mine']], view, (v) => { ui.schedView = v; K.store.set('fohSchedView', v); K.render(); }, { class: 'seg sv-seg', 'aria-label': 'Show' }));
     if (!D.staff.people.length) {
       w.append(h('section', { class: 'sv-card' }, h('p', null, K.canEdit() ? 'First add the floor team: the people on the schedule.' : 'The floor manager has not set up the schedule yet.'),
-        K.canEdit() ? h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.sheet = { type: 'team' }; K.render(); } }, K.icon('plus'), 'The floor team')) : null));
+        K.canEdit() ? h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { ui.sheet = { type: 'team' }; K.render(); } }, K.icon('plus'), 'The floor team'),
+          h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'pasteweek', wk: wk }; K.render(); } }, K.icon('list'), 'Paste a week')) : null));
       return { body: body };
     }
     if (!src) {
@@ -79,6 +80,7 @@
       w.append(h('div', { class: 'btns sv-acts' },
         h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'team' }; K.render(); } }, K.icon('edit'), 'The floor team'),
         h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'codes' }; K.render(); } }, 'Shift codes'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'pasteweek', wk: wk }; K.render(); } }, K.icon('list'), 'Paste a week'),
         src ? h('button', { class: 'btn small', type: 'button', onclick: () => { ui.sheet = { type: 'weeknote', wk: wk }; K.render(); } }, K.icon('note'), 'Note for the team') : null));
     }
     return { body: body };
@@ -86,7 +88,7 @@
 
   function cell(code, onTap, cls) {
     const k = kindOf(code);
-    return h(onTap ? 'button' : 'span', { type: onTap ? 'button' : null, class: 'fs-cell k-' + k + (cls ? ' ' + cls : ''), title: code ? labelOf(code) : '', onclick: onTap || null }, code || (onTap ? '+' : ''));
+    return h(onTap ? 'button' : 'span', { type: onTap ? 'button' : null, class: 'fs-cell k-' + k + (String(code || '').length > 3 ? ' long' : '') + (cls ? ' ' + cls : ''), title: code ? labelOf(code) : '', onclick: onTap || null }, code || (onTap ? '+' : ''));
   }
   function weekView(src, at, mon, isNow, ti, me, wk) {
     const edit = K.canEdit();
@@ -184,6 +186,42 @@
         h('input', { class: 'input', id: 'tm-new', placeholder: 'Name', maxlength: 40, 'aria-label': 'New person' }),
         K.select(K.ROLES_FOH, S.role || 'waiter', (v) => { S.role = v; }, { class: 'input small', 'aria-label': 'Role' }),
         h('button', { class: 'btn primary', type: 'submit' }, K.icon('plus'), 'Add'))));
+  };
+  /* A whole week at once, from the sheet the schedule is made in: one line a person, the name and then the seven
+     days from Monday, with a tab, a semicolon or an upright line between them (copying the rows out of a
+     spreadsheet gives tabs). New names join the floor team; the people already there who are not in the text
+     keep what they have. A day left empty stays empty. */
+  K.parseWeek = function (text) {
+    return String(text || '').split(/\n+/).map((l) => l.split(/\t|;|\|/).map((c) => c.trim())).filter((c) => c[0] && c.length > 1)
+      .map((c) => ({ name: c[0].slice(0, 40), days: EMPTY().map((x, i) => String(c[i + 1] || '').slice(0, 16)) }));
+  };
+  K.SHEETS.pasteweek = function (S) {
+    const mon = K.parseYmd(S.wk), rows = K.parseWeek(S.t);
+    const save = (e) => {
+      e.preventDefault();
+      if (!rows.length) { K.toast('Nothing to read: one line a person, the name, then the seven days.', { tone: 'bad' }); return; }
+      let ppl = D.staff.people.slice();
+      const ids = rows.map((r) => {
+        const n = K.normName(r.name), ex = ppl.find((p) => K.normName(p.name) === n);
+        if (ex) return ex.id;
+        let id = n.replace(/ /g, '-') || K.uid();
+        if (ppl.some((p) => p.id === id)) id += '-' + K.uid().slice(-3);
+        ppl = ppl.concat([{ id: id, name: r.name, role: 'waiter' }]);
+        return id;
+      });
+      if (ppl.length !== D.staff.people.length) K.saveSetting('staff', { people: ppl });
+      const old = D.weeks[S.wk], doc = old ? K.clone(old) : { week: S.wk, people: [], rows: {}, note: '' };
+      doc.people = doc.people || []; doc.rows = doc.rows || {};
+      ids.forEach((id, i) => { if (!doc.people.includes(id)) doc.people.push(id); doc.rows[id] = rows[i].days; });
+      doc.updated = Date.now();
+      K.saveWeek(S.wk, doc);
+      ui.sheet = null; K.render(); K.toast('The week is on the schedule');
+    };
+    return K.sheet('Paste a week · ' + range(mon), h('form', { class: 'stack', onsubmit: save },
+      h('p', { class: 'hint' }, 'One line a person: the name, then Monday to Sunday, with a semicolon or a tab between them. Rows copied from a spreadsheet work as they are.'),
+      h('textarea', { class: 'input mono', id: 'pw-t', rows: '9', value: S.t || '', placeholder: 'Maria; E; E; X; D; E; X; L', oninput: (e) => { S.t = e.target.value; K.render(); } }),
+      rows.length ? h('div', { class: 'pw-prev' }, h('table', null, h('tbody', null, rows.map((r) => h('tr', null, h('th', null, r.name), r.days.map((d) => h('td', null, cell(d, null)))))))) : null,
+      h('button', { class: 'btn primary', type: 'submit', disabled: !rows.length }, rows.length ? 'Put ' + rows.length + ' people on this week' : 'Put on this week')));
   };
   K.SHEETS.codes = function (S) {
     if (S.t == null) S.t = codes().map((c) => c.c + ' = ' + c.l).join('\n');
