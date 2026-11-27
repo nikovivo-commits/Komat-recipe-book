@@ -8681,8 +8681,8 @@ window.KOMAT_PART_ART = [
      keep      { id: [7 codes] } the rows of people filled in by hand (the week as it stands)
      events    [{ date, cooks, when, before, title }] an event that needs at least that many cooks working that day
                (when: 'day' counts lunch, 'night' counts the night, otherwise the whole day), and before: cooks the day before
-     pins      [{ person, date, st, extra }] the head chef's word: this person works that day at that station
-               (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one
+     pins      [{ person, date, st, extra, br }] the head chef's word: this person works that day at that station
+               (even on a day they are usually off); extra: true adds it on top of their days instead of swapping one; br: true has them do that day's breakfast
    A person filled in by hand can have cover: ['pass'], a station they take only when nobody else can.
 
    Lunch and night (plan.periods): a full shift (P) counts for lunch and night, a late shift (plan.lateCode, '2',
@@ -8734,13 +8734,14 @@ window.KOMAT_PART_ART = [
     });
 
     /* pins: the head chef says who works where on a day; it beats a day off */
-    const pin = {}, extraDays = {};
+    const pin = {}, extraDays = {}, brPin = {};
     (input.pins || []).forEach((p) => {
       const d = dates.indexOf(p.date), s = setup[p.person];
       if (d < 0 || !s || s.mode !== 'auto') return;
       (pin[p.person] = pin[p.person] || [])[d] = p.st || (s.stations || [])[0] || 'float';
       hardOff[p.person][d] = 0; wish[p.person][d] = 0;
       if (p.extra) extraDays[p.person] = (extraDays[p.person] || 0) + 1;
+      if (p.br) brPin[d] = p.person; /* and they do that day's weekend breakfast */
     });
     const pinned = (id, d) => !!(pin[id] && pin[id][d]);
     const lrnN = (id) => ((S(id) || {}).learn || []).length ? +(S(id).learnDays || 0) : 0;
@@ -8870,6 +8871,7 @@ window.KOMAT_PART_ART = [
         let bestR = Infinity;
         /* brOn: the weekend days someone would rather do the breakfast; on the other day they come after the rest */
         auto.forEach((id) => { const on0 = S(id).brOn, r = (S(id).br || 0) && (S(id).br + (Array.isArray(on0) && on0.length && !on0.includes(d) ? 1.5 : 0)); if (r && work[id][d] && !special[id][d] && !lateOf(id, d) && r < bestR) { bestR = r; br = id; } });
+        if (brPin[d] && work[brPin[d]] && work[brPin[d]][d] && !lateOf(brPin[d], d)) { br = brPin[d]; bestR = 1; }
         if (br) brCost = (bestR - 1) * W.brRank;
         else {
           order.forEach((id) => {
