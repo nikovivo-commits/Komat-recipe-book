@@ -611,6 +611,19 @@
     return Math.max(rankOf(now), rankOf(last) - 1, 0);
   }
   K.quizMyRank = myRank;
+  /* The house joke: who breaks the glasses? The wrong answers are three names from the team (those on the schedule,
+     the members and whoever is on the board); the right one is nobody. Asked only when there are three names. */
+  function glassQ() {
+    const names = [];
+    const add = (n) => { n = String(n || "").trim(); if (n && n !== "Me" && n !== "Someone" && !names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n); };
+    ((D.staff && D.staff.people) || []).forEach((p) => add(p.name));
+    Object.keys(D.members || {}).forEach((id) => { const m = D.members[id] || {}; if (["viewer", "waiter", "manager"].includes(m.role)) add(m.name || (D.names || {})[id]); });
+    D.scores.forEach((x) => add(x.name));
+    const q = mk("wine", "Who breaks the glasses more often?", "Nobody", names, "Officially, nobody. The glasses jump by themselves.");
+    if (q) { q.fun = true; q.level = 1; q.kind = "fun"; q.id = "fun-glass"; }
+    return q;
+  }
+  K.quizGlass = glassQ;
   function round(topic, rank) {
     /* if making the questions from the book fails, the round still starts, from the general questions */
     const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
@@ -639,7 +652,10 @@
     [1, 2, 3].forEach((l) => { out = out.concat(cand.filter((q) => (q.level || 1) === l).slice(0, mix[l - 1])); });
     /* a level that ran short is made up from the others */
     out = out.concat(cand.filter((q) => !out.includes(q)).slice(0, ROUND - out.length)).slice(0, ROUND);
-    remember(out);
+    /* the house joke, about one round in four: it takes the place of an easy question */
+    const joke = Math.random() < 0.25 ? glassQ() : null;
+    if (joke) { const at = out.findIndex((q) => (q.level || 1) === 1); out[at < 0 ? 0 : at] = joke; }
+    remember(out.filter((q) => !q.fun));
     /* the ladder: easy, then medium, then hard (in no fixed order within a level) */
     return shuffle(out).sort((x, y) => (x.level || 1) - (y.level || 1));
   }
@@ -993,7 +1009,7 @@
         h('span', { class: 'qp-score mono' }, Q.team ? [h('span', { class: 'qp-us' }, 'Team ' + Q.score), h('span', { class: 'qp-cpu' }, 'Computer ' + Q.cpu.score)] : Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
         h('span', { class: 'qp-sec mono' + (Q.frozen != null && !done ? ' frozen' : ''), id: 'qz-sec' }, done ? '' : Q.frozen != null ? [K.icon('pause'), String(Math.ceil(left))] : String(Math.ceil(left)))),
       h('div', { class: 'qp-timer' + (Q.frozen != null && !done ? ' frozen' : '') }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
-      h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) / 2) + ' points' : 'up to ' + worth(q) + ' points'))),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.fun ? 'Team' : q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) / 2) + ' points' : 'up to ' + worth(q) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
