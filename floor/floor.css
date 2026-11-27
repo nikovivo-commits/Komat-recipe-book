@@ -1053,3 +1053,12 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .qp-event { margin-top: 0; padding: 16px 16px; gap: 8px; }
 .qp-event h1 { font-size: 1.6rem; }
 .qp-q.ev-q { font-size: 1.25rem; margin: 14px 0 0; }
+
+/* paste a week: what was read, before it is saved */
+.pw-prev { overflow-x: auto; }
+.pw-prev table { border-collapse: collapse; font-size: .85rem; }
+.pw-prev th { text-align: left; padding: 3px 8px 3px 0; white-space: nowrap; font-weight: 700; }
+.pw-prev td { padding: 2px; }
+.pw-prev .fs-cell { min-width: 34px; font-size: .75rem; }
+/* a long code of the house's own (зак+пент, 2(кух)) goes on two lines, smaller */
+.fs-cell.long { font-size: .6rem; line-height: 1.1; letter-spacing: -.02em; white-space: normal; word-break: break-all; text-align: center; padding: 0 2px; }
