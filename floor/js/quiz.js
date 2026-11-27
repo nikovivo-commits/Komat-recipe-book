@@ -614,11 +614,17 @@
   /* The house joke: who breaks the glasses? The wrong answers are three names from the team (those on the schedule,
      the members and whoever is on the board); the right one is nobody. Asked only when there are three names. */
   function glassQ() {
+    return mkGlass(teamNames());
+  }
+  function teamNames() {
     const names = [];
     const add = (n) => { n = String(n || "").trim(); if (n && n !== "Me" && n !== "Someone" && !names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n); };
     ((D.staff && D.staff.people) || []).forEach((p) => add(p.name));
     Object.keys(D.members || {}).forEach((id) => { const m = D.members[id] || {}; if (["viewer", "waiter", "manager"].includes(m.role)) add(m.name || (D.names || {})[id]); });
     D.scores.forEach((x) => add(x.name));
+    return names;
+  }
+  function mkGlass(names) {
     const q = mk("wine", "Who breaks the glasses more often?", "Nobody", names, "Officially, nobody. The glasses jump by themselves.");
     if (q) { q.fun = true; q.level = 1; q.kind = "fun"; q.id = "fun-glass"; }
     return q;
@@ -882,8 +888,17 @@
     const pool = about.filter((x) => !seen.includes(x[0])), x = one(pool.length ? pool : about);
     K.store.set('fohQuizHyg', (Array.isArray(seen) ? seen : []).concat([x[0]]).slice(-10));
     Q.had = (Q.had || []).concat([e[0]]);
+    /* a broken glass: the manager can name the colleague who always breaks them (kept with the restaurant's own
+       settings, not in the code); then the question is who did it, and that colleague is always the answer */
+    const who = culprit();
+    if (e[0] === "glass" && who) {
+      const others = shuffle(teamNames().filter((n) => n.toLowerCase() !== who.toLowerCase())).concat(["Nobody", "The guest at table 7", "The wind"]).slice(0, 3);
+      return { key: e[0], title: e[1], text: "And everybody looks the same way.", effect: e[3], good: false, x: e[4], q: "Who broke the glass?", a: who, opts: shuffle([who].concat(others)), why: "As always.", picked: null, ok: null };
+    }
     return { key: e[0], title: e[1], text: e[2], effect: e[3], good: !(e[4].pts < 0), x: e[4], q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3], picked: null, ok: null };
   }
+  const culprit = () => String(((D.quizSet || {}).glass) || "").trim();
+  K.quizCulprit = culprit;
   K.quizEvents = EVENTS;
   function eventAnswer(i, e) {
     const Q = ui.quiz, ev = Q && Q.event;
@@ -1056,7 +1071,11 @@
         h('p', { class: 'hint' }, 'Most questions are made from the wine and food bibles by themselves. Add your own for anything else: house rules, the producers, the team’s favourite facts.'),
         D.quizq.length ? h('div', { class: 'ing-list' }, D.quizq.map((q) => h('button', { type: 'button', class: 'ing-row', onclick: () => { ui.sheet = { type: 'qedit', id: q.id }; K.render(); } },
           h('span', { class: 'ing-name' }, h('b', null, q.q)), h('span', { class: 'ing-what' }, q.a), h('span', { class: 'ing-in' }, q.topic === 'wine' ? 'Wine & drinks' : 'Food')))) : null,
-        h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'qedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a question'))));
+        h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'qedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a question')),
+        h('form', { class: 'stack glass-who', onsubmit: (e) => { e.preventDefault(); const v = String(e.currentTarget.elements.who.value || '').trim().slice(0, 40); K.saveSetting('quiz', Object.assign({}, D.quizSet, { glass: v })); K.toast('Saved'); } },
+          K.field('Who always breaks the glasses?', h('input', { class: 'input', name: 'who', value: culprit(), maxlength: 40, autocomplete: 'off', placeholder: 'A first name (leave empty for nobody)' })),
+          h('p', { class: 'hint' }, 'When a glass breaks in the quiz, the question is who did it, and this name is always the right answer. Only managers see this box.'),
+          h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'submit' }, 'Save')))));
     }
     return { body: body };
   };
