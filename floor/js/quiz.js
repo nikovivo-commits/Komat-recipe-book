@@ -599,27 +599,49 @@
   };
   const remember = (qs) => { seenList = seenNow().concat(qs.map(keyOf)).slice(-SEEN_MAX); K.store.set('fohQuizSeen', seenList); };
 
-  /* a round of ten: six from our own wines, drinks and dishes, four of general knowledge */
-  function round(topic) {
+  /* A round of ten, about six from our own wines, drinks and dishes and four of general knowledge.
+     How hard it is follows the badge of whoever plays: [easy, medium, hard] questions for each rank, apprentice
+     first. The round climbs like a ladder: the easy ones first, the hard ones last. */
+  const MIX = [[5, 4, 1], [4, 4, 2], [3, 4, 3], [2, 4, 4], [1, 4, 5]];
+  /* the rank that sets the questions: this week's badge, or one below last week's (so Monday is not a holiday) */
+  function myRank() {
+    const me = (K.me && K.me.id) || 'this-phone', mon = since('week');
+    let now = 0, last = 0;
+    D.scores.forEach((x) => { if (x.uid !== me || x.team) return; if (x.at >= mon) now = Math.max(now, x.score); else if (x.at >= mon - 7 * 86400000) last = Math.max(last, x.score); });
+    return Math.max(rankOf(now), rankOf(last) - 1, 0);
+  }
+  K.quizMyRank = myRank;
+  function round(topic, rank) {
     /* if making the questions from the book fails, the round still starts, from the general questions */
     const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
     const general = (side) => fresh(bookQs(side).concat(basics(side)));
+    const mix = MIX[Math.max(0, Math.min(MIX.length - 1, rank == null ? myRank() : rank))];
+    /* twice as many as needed are drawn, so there are enough of each level to choose from */
     let own, gen;
-    if (topic === 'food') { own = pickMixed(fresh(safe(foodQs)), 6); gen = byKind(general('food'), ROUND); }
+    if (topic === 'food') { own = pickMixed(fresh(safe(foodQs)), 14); gen = byKind(general('food'), 60); }
     else {
-      /* wine and drinks: of the six questions from the book, two are about the drinks, one of them a whisky
-         (one of the four in a round of everything) */
+      /* wine and drinks: of the questions from the book, two are about the drinks, one of them a whisky
+         (one in a round of everything) */
       const dq = fresh(safe(drinkQs)), wh = dq.filter((q) => q.whisky), rest = dq.filter((q) => !q.whisky);
       const d = topic === 'wine' ? byKind(wh, 1).concat(byKind(rest, 1)) : byKind(wh.length && Math.random() < 0.6 ? wh : dq, 1);
-      own = byKind(fresh(safe(wineQs)), (topic === 'wine' ? 6 : 4) - d.length, WEIGHT).concat(d);
-      if (topic === 'all') own = own.concat(pickMixed(fresh(safe(foodQs)), 3));
+      own = d.concat(byKind(fresh(safe(wineQs)), topic === 'wine' ? 20 : 12, WEIGHT));
+      if (topic === 'all') own = own.concat(pickMixed(fresh(safe(foodQs)), 8));
       /* a subject at a time, so the general questions of a round are not four of one sort */
-      gen = byKind(general('wine').concat(topic === 'all' ? general('food') : []), ROUND);
+      gen = byKind(general('wine').concat(topic === 'all' ? general('food') : []), 60);
     }
-    const had = {}, out = [];
-    own.concat(gen).forEach((q) => { if (out.length < ROUND && !had[q.q]) { had[q.q] = 1; out.push(q); } });
+    if (topic === 'all') own = shuffle(own);
+    /* three of our own, then two general, and so on; no question twice */
+    const had = {}, cand = [];
+    let a = 0, b = 0;
+    const put = (q) => { if (q && !had[q.q]) { had[q.q] = 1; cand.push(q); } };
+    while (a < own.length || b < gen.length) { for (let n = 0; n < 3; n++) put(own[a++]); for (let n = 0; n < 2; n++) put(gen[b++]); }
+    let out = [];
+    [1, 2, 3].forEach((l) => { out = out.concat(cand.filter((q) => (q.level || 1) === l).slice(0, mix[l - 1])); });
+    /* a level that ran short is made up from the others */
+    out = out.concat(cand.filter((q) => !out.includes(q)).slice(0, ROUND - out.length)).slice(0, ROUND);
     remember(out);
-    return shuffle(out);
+    /* the ladder: easy, then medium, then hard (in no fixed order within a level) */
+    return shuffle(out).sort((x, y) => (x.level || 1) - (y.level || 1));
   }
   K.quizRound = round;
 
@@ -670,10 +692,24 @@
     const now = performance.now(), at = e && e.timeStamp > 0 && e.timeStamp <= now ? e.timeStamp : now;
     return at < openAt;
   };
-  function start(topic, e) {
+  /* The team against the computer: everybody around one phone, answering together. The computer answers every
+     question too, and is right more or less often by its level (1 to 5, kept on this phone): it goes up a level
+     each time the team beats it and down one each time it wins. No jokers: the team is the joker. Team rounds
+     do not count for the leaderboard. */
+  const cpuLevel = () => Math.max(0, Math.min(4, +K.store.get('fohQuizCpu', 1) || 0));
+  K.quizCpu = cpuLevel;
+  function cpuAnswers(Q, q) {
+    const c = Q.cpu, right = q.opts.indexOf(q.a), wrong = q.opts.map((o, i) => i).filter((i) => i !== right);
+    const ok = Math.random() < [0.5, 0.6, 0.7, 0.8, 0.9][c.level] - 0.1 * ((q.level || 1) - 1);
+    c.streak = ok ? c.streak + 1 : 0;
+    const pts = ok ? Math.round((100 + 50 * (0.3 + Math.random() * 0.6)) * FACTOR[q.level || 1]) + streakBonus(c.streak) : 0;
+    if (ok) { c.right++; c.score += pts; }
+    Q.cpuPick = ok ? right : one(wrong); Q.cpuPts = pts;
+  }
+  function start(topic, e, team) {
     if (starting || early(e)) return;
     if (!K.canWrite()) { K.toast('View only: ask the floor manager to make you a waiter to play.'); return; }
-    if (K.mode === 'local' && !K.myName()) { ui.sheet = { type: 'name', then: () => start(topic) }; K.render(); return; }
+    if (K.mode === 'local' && !K.myName()) { ui.sheet = { type: 'name', then: () => start(topic, null, team) }; K.render(); return; }
     /* making the round takes a moment on a phone: the button shows at once that it was pressed, the round is made
        in the next frame */
     starting = true;
@@ -684,7 +720,8 @@
     const go = () => {
       if (went) return;
       went = true; starting = false;
-      ui.quiz = { stage: 'play', topic: topic, qs: round(topic), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      ui.quiz = { stage: 'play', topic: topic, qs: round(topic, team ? cpuLevel() : null), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      if (team) { ui.quiz.team = true; ui.quiz.cpu = { level: cpuLevel(), score: 0, right: 0, streak: 0 }; }
       /* the round gets a step of its own in the phone's history, so the back button ends the round and shows
          the quiz page, as Stop does, and does not leave the quiz with the round still running */
       try { if (!(history.state && history.state.quiz)) history.pushState({ k: 1, quiz: 1 }, '', location.pathname + location.search + location.hash); } catch (e) { /* file:// */ }
@@ -708,6 +745,8 @@
       if (left <= 0) answer(-1);
     }, 200);
   }
+  /* a question answered with a joker pays half */
+  const helped = (Q) => Object.keys(Q.used || {}).some((k) => Q.used[k] === Q.i + 1);
   function answer(i, e) {
     const Q = ui.quiz, q = Q.qs[Q.i];
     if (Q.picked != null) return;
@@ -717,14 +756,15 @@
     Q.streak = ok ? (Q.streak || 0) + 1 : 0;
     Q.best = Math.max(Q.best || 0, Q.streak);
     Q.bonus = ok ? streakBonus(Q.streak) : 0;
-    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) + Q.bonus : 0;
+    const pts = ok ? Math.round((Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) + Q.bonus) * (helped(Q) ? 0.5 : 1)) : 0;
+    if (Q.team) cpuAnswers(Q, q);
     Q.picked = i; Q.pts = pts;
     if (ok) { Q.right++; Q.score += pts; K.vibrate(15); sfx(Q.bonus ? 'streak' : 'right'); } else { K.vibrate([30, 40, 30]); sfx('wrong'); }
     Q.log.push({ q: q.q, a: q.a, ok: ok });
     K.render();
   }
-  /* Jokers, for whoever is new and stuck. Each can be played once in a round, on any question, and costs nothing:
-     everybody has the same four, so the board stays fair.
+  /* Jokers, for whoever is new and stuck. Each can be played once in a round, on any question; a question
+     answered with a joker pays half its points.
      - 50:50 takes away two of the wrong answers.
      - Stop the clock freezes the time of this question, with the time bonus as it stood.
      - Ask a friend: a colleague reads out what the book says about the question (the line shown after it), with
@@ -761,7 +801,7 @@
   K.quizRoom = (q) => roomSays({}, q);
   function joker(kind, e) {
     const Q = ui.quiz, q = Q && Q.qs[Q.i];
-    if (!q || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
+    if (!q || Q.team || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
     Q.used = Object.assign({}, Q.used, { [kind]: Q.i + 1 });
     if (kind === 'half') { Q.gone = shuffle(q.opts.map((o, i) => i).filter((i) => q.opts[i] !== q.a)).slice(0, 2); if (Q.room) Q.room = roomSays(Q, q); }
     if (kind === 'clock') Q.frozen = Math.max(0, secsOf(q) - (Date.now() - Q.t0) / 1000);
@@ -783,6 +823,15 @@
     const Q = ui.quiz;
     Q.stage = 'done';
     stopClock();
+    if (Q.team) {
+      /* a team round: no score for the board; the computer moves a level */
+      Q.won = Q.score > Q.cpu.score ? 1 : Q.score < Q.cpu.score ? -1 : 0;
+      K.store.set('fohQuizCpu', Math.max(0, Math.min(4, Q.cpu.level + Q.won)));
+      if (K.celebrate && Q.won > 0) K.celebrate('');
+      sfx(Q.won > 0 ? 'good' : 'done');
+      K.render(true); drawn(); stepBack();
+      return;
+    }
     const id = K.uid(), doc = { uid: (K.me && K.me.id) || 'this-phone', name: K.myName() || 'Me', score: Q.score, right: Q.right, of: Q.qs.length, topic: Q.topic, at: Date.now() };
     D.scores = D.scores.concat([Object.assign({ id: id }, doc)]);
     K.db.doc('quizscores/' + id).set(doc).catch(K.writeFailed);
@@ -849,6 +898,7 @@
     const mine = board('week', 'all').find((r) => r.uid === ((K.me && K.me.id) || 'this-phone')), me = mine ? rankOf(mine.best) : -1;
     return K.sheet('The ranks of the week', h('div', { class: 'ranks' },
       h('p', { class: 'muted' }, 'Your best round this week decides your badge. Everybody starts again on Monday.'),
+      h('p', { class: 'muted' }, 'The higher your badge, the harder your questions.'),
       RANKS.map((r, i) => h('div', { class: 'rank-row' + (i === me ? ' me' : '') }, badge(i, 'big'),
         h('div', null, h('b', null, r[1]), h('span', { class: 'muted' }, i === 0 ? 'Play a round' : 'A round of ' + r[0] + ' points or more'), i === me ? h('span', { class: 'rank-you' }, 'You, this week') : null))).reverse()));
   };
@@ -860,7 +910,7 @@
     if (Q && Q.stage === 'play') return playView(Q);
     const body = h('div', { class: 'page' });
     const mine = D.scores.filter((s) => s.uid === ((K.me && K.me.id) || 'this-phone') && s.at >= since('week'));
-    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions, four jokers, 90 seconds each. A harder question gives up to double the points; a quick answer scores more.', null, '', 'quiz-head'));
+    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions, from easy to hard, 90 seconds each. A harder question gives up to double the points; a joker halves them.', null, '', 'quiz-head'));
     const w = h('div', { class: 'wrap' });
     body.append(w);
     /* the quiz's own badge (an image made for it) */
@@ -869,6 +919,8 @@
     if (Q && Q.stage === 'done') w.append(doneCard(Q));
     w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: (e) => start(t[0], e) },
       K.icon(t[2]), h('b', null, t[1]), h('span', null, t[3]), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))))));
+    w.append(h('button', { type: 'button', class: 'qt qt-team', onclick: (e) => start('all', e, true) },
+      K.icon('chef'), h('b', null, 'Team vs the computer'), h('span', null, 'Everybody around one phone, no jokers. The computer is at level ' + (cpuLevel() + 1) + ' of 5.'), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))));
     const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top), champ = champion();
     w.append(h('section', { class: 'group lb' },
       champ ? h('p', { class: 'lb-champ' }, K.icon('sparkle'), h('span', null, 'Last week’s champion: ', h('b', null, champ.name || 'Someone'), ' · ' + champ.best + ' points')) : null,
@@ -893,6 +945,17 @@
   function doneCard(Q) {
     const rows = board('week', 'all'), pos = rows.findIndex((r) => r.uid === ((K.me && K.me.id) || 'this-phone')) + 1;
     const missed = Q.log.filter((x) => !x.ok);
+    if (Q.team) return h('section', { class: 'quiz-done team ' + (Q.won > 0 ? 'won' : Q.won < 0 ? 'lost' : 'draw') },
+      h('p', { class: 'kicker' }, 'Team vs the computer'),
+      h('h2', { class: 'qd-verdict' }, Q.won > 0 ? 'The team wins' : Q.won < 0 ? 'The computer wins' : 'A draw'),
+      h('div', { class: 'qd-vs' },
+        h('div', null, h('span', { class: 'muted' }, 'Team'), h('b', { class: 'mono' }, String(Q.score)), h('span', { class: 'muted' }, Q.right + ' of ' + Q.qs.length + ' right')),
+        h('div', null, h('span', { class: 'muted' }, 'Computer'), h('b', { class: 'mono' }, String(Q.cpu.score)), h('span', { class: 'muted' }, Q.cpu.right + ' of ' + Q.qs.length + ' right'))),
+      h('p', null, Q.won > 0 ? (Q.cpu.level < 4 ? 'Next time the computer plays at level ' + (Q.cpu.level + 2) + ' of 5.' : 'The computer was at its best. Nothing left to prove.') : Q.won < 0 ? (Q.cpu.level > 0 ? 'Next time the computer plays at level ' + Q.cpu.level + ' of 5.' : 'The computer stays at level 1 of 5.') : 'The computer stays at level ' + (Q.cpu.level + 1) + ' of 5.'),
+      missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
+        h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
+      h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: (e) => start('all', e, true) }, 'Play again'),
+        h('button', { class: 'btn', type: 'button', onclick: () => { ui.quiz = null; K.render(); } }, 'Close')));
     return h('section', { class: 'quiz-done' },
       h('p', { class: 'kicker' }, 'Round finished'),
       h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), (Q.best || 0) >= 3 ? h('span', { class: 'qd-tips' }, 'best streak: ' + Q.best + ' in a row') : null, Object.keys(Q.used || {}).length ? h('span', { class: 'qd-tips' }, Object.keys(Q.used).length === 1 ? 'with 1 joker' : 'with ' + Object.keys(Q.used).length + ' jokers') : null),
@@ -912,10 +975,10 @@
     const body = h('div', { class: 'wrap quiz-play' },
       h('div', { class: 'qp-top' },
         h('span', { class: 'mono' }, (Q.i + 1) + ' / ' + Q.qs.length),
-        h('span', { class: 'qp-score mono' }, Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
+        h('span', { class: 'qp-score mono' }, Q.team ? [h('span', { class: 'qp-us' }, 'Team ' + Q.score), h('span', { class: 'qp-cpu' }, 'Computer ' + Q.cpu.score)] : Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
         h('span', { class: 'qp-sec mono' + (Q.frozen != null && !done ? ' frozen' : ''), id: 'qz-sec' }, done ? '' : Q.frozen != null ? [K.icon('pause'), String(Math.ceil(left))] : String(Math.ceil(left)))),
       h('div', { class: 'qp-timer' + (Q.frozen != null && !done ? ' frozen' : '') }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
-      h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) / 2) + ' points' : 'up to ' + worth(q) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
@@ -928,15 +991,16 @@
       done && Q.pts && Q.bonus ? h('p', { class: 'qp-bonus' }, K.icon('flame'), Q.streak + ' in a row: +' + Q.bonus + ' bonus') : null,
       !done && Q.friend ? h('div', { class: 'qp-friend' }, K.icon('chef'), h('div', null, h('b', null, 'Your friend says'),
         Q.friend.hint ? h('p', null, '“' + Q.friend.hint + '”') : h('p', null, 'I would go with ' + 'ABCD'[Q.friend.pick] + ', but I am not completely sure.'))) : null,
-      !done ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
+      !done && !Q.team ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
         h('b', null, j[1]), h('span', null, used[j[0]] ? 'Played' : j[2])))) : null,
       done ? h('div', { class: 'qp-after ' + (Q.pts ? 'ok' : 'no') },
         h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite'),
         Q.pts ? null : h('p', null, 'The answer: ', h('b', null, q.a)),
         q.why ? h('p', { class: 'muted' }, q.why) : null,
-        h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? 'See your score' : 'Next question')) : null);
+        Q.team ? h('p', { class: 'qp-cpusaid ' + (Q.cpuPts ? 'ok' : 'no') }, K.icon('gear'), Q.cpuPts ? 'The computer said ' + 'ABCD'[Q.cpuPick] + ': right, +' + Q.cpuPts : 'The computer said ' + 'ABCD'[Q.cpuPick] + ': wrong') : null,
+        h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? (Q.team ? 'See who won' : 'See your score') : 'Next question')) : null);
     return {
-      top: K.subbar('Stop', stopRound, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
+      top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
       body: body, tabs: false, solid: true,
     };
   }
