@@ -828,51 +828,90 @@
     K.render();
   }
   /* ---------- things that happen on the floor ----------
-     Between two questions, now and then (about one time in six, twice a round at most), something happens in the
-     restaurant: a glass breaks and costs points, a table tips well, the next question pays double. Small sums
-     beside a round of two thousand and more, so the board is still won by knowing the answers.
+     Rarely (about one round in three, once a round at most), between two questions, something happens in the
+     restaurant: a glass breaks, a table tips well, happy hour. It comes with a question that has nothing to do
+     with the menu: hygiene, safety, how things are handled. Answered right, a mishap costs nothing and a stroke
+     of luck is yours; answered wrong, the mishap is paid in points and the luck passes.
      [key, title, what happened, the effect in words, what it does] */
   const EVENTS = [
-    ['glass', 'A glass breaks', 'Nobody did it, of course. The house still takes it out of your points.', '−50 points', { pts: -50 }],
-    ['spill', 'Red wine on the white tablecloth', 'It happens. A fresh cloth, and a few points gone.', '−40 points', { pts: -40 }],
+    ['glass', 'A glass breaks', 'Nobody did it, of course.', '−50 points', { pts: -50 }],
+    ['spill', 'Red wine on the white tablecloth', 'It happens. A fresh cloth is on its way.', '−40 points', { pts: -40 }],
     ['table', 'The dessert went to the wrong table', 'They ate it. The right table is still waiting.', '−30 points', { pts: -30 }],
     ['tip', 'A big tip', 'Table 7 loved the service and said so with the bill.', '+80 points', { pts: 80 }],
     ['meal', 'Staff meal', 'The kitchen sends something warm for the team.', '+60 points', { pts: 60 }],
     ['happy', 'Happy hour', 'For one question only, the house is generous.', 'The next question pays double', { mult: 2 }],
-    ['rush', 'Full house', 'Every table at once. No time to think.', '30 seconds for the next question, which pays one and a half times', { mult: 1.5, secs: 30 }],
     ['regular', 'A regular remembers you', 'They put in a good word with the floor manager.', 'One joker comes back', { joker: 1 }],
     ['crash', 'The computer freezes', 'It restarts, and forgets some of what it had.', 'The computer loses 100 points', { cpu: -100 }],
   ];
+  /* the questions of the events: [question, answer, [three wrong answers], why, 'glass' for the ones about glass] */
+  const HYGIENE = [
+    ["A glass breaks over the ice well. What happens to the ice?", "All of it is thrown away and the well is cleaned", ["You pick out the pieces you can see", "It is rinsed with water and used", "The top layer is scooped off"], "Glass cannot be seen in ice. One splinter in a drink is one too many.", "glass"],
+    ["How do you pick up broken glass from the floor?", "With a brush and a dustpan", ["With bare hands, carefully", "With a napkin from a table", "With the polishing cloth"], "Never by hand: a cut in service means blood, a plaster and a colleague short.", "glass"],
+    ["A wine glass has a small crack in the rim. What do you do with it?", "Throw it away", ["Use it for water only", "Turn the crack away from the guest", "Keep it for the staff"], "A cracked glass can break in the hand or at the lips. It leaves service at once.", "glass"],
+    ["How long do you wash your hands with soap?", "At least 20 seconds", ["About 5 seconds", "A quick rinse is enough", "Only until they are wet"], "Twenty seconds with soap, between the fingers and under the nails, then a clean towel.", ""],
+    ["Your hands are visibly dirty. What cleans them?", "Soap and water", ["Sanitiser gel alone", "Wiping them on the apron", "A dry napkin"], "Sanitiser does not work through dirt or grease. Wash first.", ""],
+    ["You touched your hair or your face during service. What next?", "Wash your hands", ["Wipe them on the apron", "Nothing, it was only a moment", "Dry them on the table linen"], "Hair, nose and mouth carry bacteria that end up on glasses and plates.", ""],
+    ["How do you carry a wine glass to the table?", "By the stem", ["By the rim", "With the fingers inside the bowl", "With the palm around the bowl"], "The guest drinks from the rim, and fingerprints on the bowl show against the light.", ""],
+    ["What do you take ice for a drink with?", "An ice scoop or tongs", ["The glass itself", "Your hand", "A coffee cup"], "A glass used as a scoop can chip into the ice, and hands do not belong in it.", ""],
+    ["A fork falls on the floor at a guest’s table. What do you do?", "Bring a clean one and take the fallen one away", ["Wipe it with a napkin and put it back", "Rinse it at the bar and return it", "Leave it: the guest has a spoon"], "The clean one comes first, so the guest is never left waiting without cutlery.", ""],
+    ["By which part do you hold clean cutlery?", "The handle", ["The tines and the blade", "The bowl of the spoon", "Any part: it is clean anyway"], "The part that goes into the mouth is never touched.", ""],
+    ["A plate arrives at the pass with a chipped rim. What do you do?", "Take it out of service", ["Turn the chip away from the guest", "Use it for bread", "Cover the chip with the garnish"], "A chip holds bacteria and can cut a lip. Tell the kitchen so the dish is replated.", ""],
+    ["You cut your finger during service. What goes on the cut?", "A waterproof plaster, and a glove over it", ["Nothing: it dries faster in the air", "A paper napkin", "A piece of the polishing cloth"], "Kitchens use blue plasters because a blue one is seen at once if it falls off.", ""],
+    ["You wake up with vomiting and diarrhoea. What about your shift?", "You tell the manager and stay away from food", ["You come in and work carefully", "You work at the bar only", "You come in and wear gloves"], "A stomach bug passes to guests through hands and plates. Staying away is the rule everywhere.", ""],
+    ["Bacteria in food grow fastest at roughly…", "5 to 60 °C", ["−18 to 0 °C", "75 to 100 °C", "Only above 100 °C"], "This is the danger zone: cold food stays cold, hot food stays hot, nothing waits in between.", ""],
+    ["On which shelf of the fridge is raw meat kept?", "The lowest, below ready-to-eat food", ["The top one", "Next to the desserts", "In the door"], "On the lowest shelf its juices cannot drip onto food that will not be cooked again.", ""],
+    ["A guest says they are allergic to nuts. What is the first thing you do?", "Tell the kitchen before the order goes in", ["Say that most dishes should be fine", "Suggest they pick the nuts off", "Wait to see what they order"], "Never guess with an allergy. The kitchen decides what is safe, and it has to know first.", ""],
+    ["Something is spilled on the floor between the tables. What do you do?", "Stay by it or mark it, and clean it at once", ["Leave it until the end of service", "Cover it with a napkin", "Ask the guests to walk around it"], "A wet floor is how colleagues with full trays and guests in heels fall.", ""],
+    ["What must never be thrown on burning oil?", "Water", ["A fire blanket", "A metal lid", "A dry baking tray"], "Water turns to steam in an instant and throws the burning oil out of the pan.", ""],
+    ["Which number do you call in an emergency in Bulgaria?", "112", ["911", "999", "118"], "112 works in the whole European Union, free of charge and from a locked phone.", ""],
+    ["Which cloth do you polish glasses with?", "A clean, dry cloth kept only for glasses", ["The cloth used for the tables", "Your apron", "A paper napkin"], "A cloth that has wiped a table leaves grease and smell on a glass.", ""],
+  ];
+  K.quizHygiene = HYGIENE;
   const boostOf = (Q) => (Q.boost && Q.boost.i === Q.i ? Q.boost : null);
   const secsNow = (Q) => { const b = boostOf(Q); return (b && b.secs) || secsOf(Q.qs[Q.i]); };
   const multNow = (Q) => { const b = boostOf(Q); return (b && b.mult) || 1; };
   function happens(Q) {
     const used = Object.keys(Q.used || {});
-    const can = EVENTS.filter((e) => !(Q.had || []).includes(e[0]) && (e[4].joker ? used.length : true) && (e[4].cpu ? Q.team && Q.cpu.score >= 100 : true) && (e[4].pts < 0 ? Q.score + e[4].pts >= 0 : true));
+    const can = EVENTS.filter((e) => (e[4].joker ? used.length : true) && (e[4].cpu ? Q.team && Q.cpu.score >= 100 : true) && (e[4].pts < 0 ? Q.score + e[4].pts >= 0 : true));
     /* (K.quizEventOnly, a list of keys, is for the tests) */
     const pick = K.quizEventOnly ? can.filter((e) => K.quizEventOnly.includes(e[0])) : can;
     if (!pick.length) return null;
-    const e = one(pick), x = e[4];
+    const e = one(pick);
+    /* a broken glass asks about glass; each phone remembers the last few it was asked */
+    const seen = K.store.get('fohQuizHyg', []), about = HYGIENE.filter((x) => (e[0] === 'glass') === (x[4] === 'glass'));
+    const pool = about.filter((x) => !seen.includes(x[0])), x = one(pool.length ? pool : about);
+    K.store.set('fohQuizHyg', (Array.isArray(seen) ? seen : []).concat([x[0]]).slice(-10));
     Q.had = (Q.had || []).concat([e[0]]);
-    if (x.pts) Q.score += x.pts;
-    if (x.cpu) Q.cpu.score += x.cpu;
-    if (x.mult || x.secs) Q.boost = { i: Q.i + 1, mult: x.mult || 1, secs: x.secs || 0 };
-    if (x.joker) { const k = one(used), u = Object.assign({}, Q.used); delete u[k]; Q.used = u; }
-    return { key: e[0], title: e[1], text: e[2], effect: e[3], good: !(x.pts < 0) };
+    return { key: e[0], title: e[1], text: e[2], effect: e[3], good: !(e[4].pts < 0), x: e[4], q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3], picked: null, ok: null };
   }
   K.quizEvents = EVENTS;
+  function eventAnswer(i, e) {
+    const Q = ui.quiz, ev = Q && Q.event;
+    if (!ev || ev.picked != null || early(e)) return;
+    ev.picked = i; ev.ok = ev.opts[i] === ev.a;
+    const x = ev.x, used = Object.keys(Q.used || {});
+    /* a mishap is paid only on a wrong answer; luck is earned only by a right one */
+    if (x.pts < 0 ? !ev.ok : ev.ok) {
+      if (x.pts) Q.score = Math.max(0, Q.score + x.pts);
+      if (x.cpu) Q.cpu.score = Math.max(0, Q.cpu.score + x.cpu);
+      if (x.mult || x.secs) Q.boost = { i: Q.i + 1, mult: x.mult || 1, secs: x.secs || 0 };
+      if (x.joker && used.length) { const k = one(used), u = Object.assign({}, Q.used); delete u[k]; Q.used = u; }
+    }
+    K.vibrate(ev.ok ? 15 : [30, 40, 30]); sfx(ev.ok ? 'right' : 'wrong');
+    K.render();
+  }
   function carryOn(e) {
     const Q = ui.quiz;
-    if (!Q || !Q.event || early(e)) return;
+    if (!Q || !Q.event || Q.event.picked == null || early(e)) return;
     Q.event = null;
     advance();
   }
   function next() {
     const Q = ui.quiz;
     if (Q.i + 1 >= Q.qs.length) { finish(); return; }
-    if ((Q.had || []).length < 2 && Math.random() < (K.quizEventOdds == null ? 0.17 : K.quizEventOdds)) {
+    if (!(Q.had || []).length && Math.random() < (K.quizEventOdds == null ? 0.04 : K.quizEventOdds)) {
       const ev = happens(Q);
-      if (ev) { Q.event = ev; K.vibrate(ev.good ? 15 : [30, 40, 30]); sfx(ev.good ? 'streak' : 'wrong'); K.render(true); drawn(); return; }
+      if (ev) { Q.event = ev; K.vibrate(10); sfx('joker'); K.render(true); drawn(); return; }
     }
     advance();
   }
@@ -1049,17 +1088,28 @@
   function playView(Q) {
     const q = Q.qs[Q.i], done = Q.picked != null;
     if (!q) { ui.quiz = null; return K.V.quiz(); }
-    if (Q.event) return {
-      top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : 'Quiz'),
-      body: h('div', { class: 'wrap quiz-play' }, h('section', { class: 'qp-event ' + (Q.event.good ? 'good' : 'bad') + ' ev-' + Q.event.key },
-        h('p', { class: 'kicker' }, 'Meanwhile, on the floor'),
-        h('h1', null, Q.event.title),
-        h('p', null, Q.event.text),
-        h('p', { class: 'qp-effect' }, Q.event.effect),
-        h('p', { class: 'muted mono' }, Q.team ? 'Team ' + Q.score : Q.score + ' pts'),
-        h('button', { class: 'btn primary wide', type: 'button', onclick: carryOn }, 'Carry on'))),
-      tabs: false, solid: true,
-    };
+    if (Q.event) {
+      const ev = Q.event, ans = ev.picked != null, bad = !ev.good;
+      return {
+        top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : 'Quiz'),
+        body: h('div', { class: 'wrap quiz-play' }, h('section', { class: 'qp-event ' + (ev.good ? 'good' : 'bad') + ' ev-' + ev.key },
+          h('p', { class: 'kicker' }, 'Meanwhile, on the floor'),
+          h('h1', null, ev.title),
+          h('p', null, ev.text),
+          h('p', { class: 'qp-effect' }, ev.effect),
+          ans ? null : h('p', { class: 'muted' }, bad ? 'Answer right and you pay nothing.' : 'Answer right and it is yours.')),
+          h('h2', { class: 'qp-q ev-q' }, ev.q),
+          h('div', { class: 'qp-opts' }, ev.opts.map((o, i) => h('button', { type: 'button', class: 'qp-opt' + (!ans ? '' : o === ev.a ? ' right' : i === ev.picked ? ' wrong' : ' dim'), disabled: ans, onclick: (e) => eventAnswer(i, e) },
+            h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o)))),
+          ans ? h('div', { class: 'qp-after ' + (ev.ok ? 'ok' : 'no') },
+            h('b', null, ev.ok ? (bad ? 'Well handled. Nothing to pay.' : 'Right. It is yours.') : (bad ? 'Not quite. You pay.' : 'Not quite. Not this time.')),
+            ev.ok ? null : h('p', null, 'The answer: ', h('b', null, ev.a)),
+            h('p', { class: 'muted' }, ev.why),
+            h('p', { class: 'muted mono' }, Q.team ? 'Team ' + Q.score : Q.score + ' pts'),
+            h('button', { class: 'btn primary wide', type: 'button', onclick: carryOn }, 'Carry on')) : null),
+        tabs: false, solid: true,
+      };
+    }
     const secs = secsNow(Q), left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
     const used = Q.used || {};
     const body = h('div', { class: 'wrap quiz-play' },

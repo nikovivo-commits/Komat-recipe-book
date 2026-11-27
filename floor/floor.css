@@ -1050,3 +1050,6 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .qp-event.good { border-color: var(--ready); } .qp-event.good .qp-effect { color: var(--ready); }
 @keyframes ev-in { from { transform: scale(.92) rotate(-1.5deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .qp-event { animation: none; } }
+.qp-event { margin-top: 0; padding: 16px 16px; gap: 8px; }
+.qp-event h1 { font-size: 1.6rem; }
+.qp-q.ev-q { font-size: 1.25rem; margin: 14px 0 0; }
