@@ -1,5 +1,5 @@
 {
- "v": 2026112603,
+ "v": 2026112702,
  "menu": [
   {
    "menuName": "Дюлева",
@@ -818,9 +818,10 @@
      "what": "Jus: a concentrated sauce. In our kitchen it is either beef or mushroom, depending on the dish: with the lentils it is mushroom. For a guest who does not eat beef, check with the kitchen which one is on the plate."
     }
    ],
-   "facts": "",
+   "facts": "The garum is made from chicken, not fish: the dish has no fish.",
    "bg": {
     "pitch": "Телешко уагиу със смръчкула и кейл, опушен жълтък с пилешки гарум и телешко жу.",
+    "facts": "Гарумът е от пилешко, не от риба: в ястието няма риба.",
     "niche": {
      "уагиу": "Уагиу: телешко от японска порода, известно с фината си мраморна шарка от мазнина, която го прави много крехко и богато на вкус.",
      "смръчкула": "Смръчкула: дива пролетна гъба с шапка като пчелна пита и дълбок, землист вкус.",
@@ -872,16 +873,17 @@
    "menuEn": "caramelised walnut",
    "ings": [
     "орех",
-    "карамелизиран орех"
+    "карамелизиран орех",
+    "орехов тахан"
    ],
    "pitch": "A walnut sorbet with caramelised walnut: the dessert that ends the vegan tasting menu.",
-   "facts": "Only on the vegan tasting menu, in place of the kazandibi.\nIt has walnuts: not for a guest with a nut allergy.",
+   "facts": "Only on the vegan tasting menu, in place of the kazandibi.\nIt has walnuts: not for a guest with a nut allergy.\nThe tahini in it is made from walnuts: it has no sesame.",
    "niche": [],
    "diet": "vegan",
    "course": "dessert",
    "bg": {
     "pitch": "Сорбе от орех с карамелизиран орех: десертът, с който завършва веган дегустационното меню.",
-    "facts": "Само във веган дегустационното меню, вместо загори тенджера.\nИма орехи: не е за гост с алергия към ядки."
+    "facts": "Само във веган дегустационното меню, вместо загори тенджера.\nИма орехи: не е за гост с алергия към ядки.\nТаханът в него е от орехи: няма сусам."
    }
   }
  ],
@@ -1547,10 +1549,10 @@
    "country": "Bulgaria",
    "vintage": "2025",
    "bottlePrice": "51",
-   "grapes": "Mavrud",
-   "style": "white from a red grape",
-   "say": "A white wine made from Mavrud, Bulgaria’s famous red grape: the juice is pressed off the skins before it takes colour. Something most guests have never tried.",
-   "story": "Mavrud is Bulgaria’s oldest native red grape. Here the juice is pressed straight off the skins, before it takes any colour, so the wine stays white: a “blanc de noirs”.",
+   "grapes": "White Mavrud",
+   "style": "a rare white strain of Mavrud",
+   "say": "A white wine from a very rare white strain of Mavrud, Bulgaria’s famous red grape. It is not a red grape pressed white: the grapes themselves are white. Something most guests have never tried.",
+   "story": "Mavrud is Bulgaria’s oldest native red grape. A very rare strain of it has white berries, and this wine is made from those: a true white Mavrud, not a “blanc de noirs”.",
    "facts": "",
    "glassPrice": "",
    "byGlass": false,
@@ -1562,12 +1564,24 @@
    "glassCl": "",
    "updated": 0,
    "was": {
-    "say": "A white wine made from the red Mavrud grape: the juice is pressed off the skins before it takes colour.",
-    "story": "Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins."
+    "say": [
+     "A white wine made from the red Mavrud grape: the juice is pressed off the skins before it takes colour.",
+     "A white wine made from Mavrud, Bulgaria’s famous red grape: the juice is pressed off the skins before it takes colour. Something most guests have never tried."
+    ],
+    "story": [
+     "Bulgaria’s oldest native red grape: dark fruit, spice and firm tannins.",
+     "Mavrud is Bulgaria’s oldest native red grape. Here the juice is pressed straight off the skins, before it takes any colour, so the wine stays white: a “blanc de noirs”."
+    ],
+    "grapes": [
+     "Mavrud"
+    ],
+    "style": [
+     "white from a red grape"
+    ]
    },
    "bg": {
-    "say": "Бяло вино от Мавруд, прочутия български червен сорт: сокът се отделя от ципите, преди да поеме цвят. Нещо, което повечето гости не са опитвали досега.",
-    "story": "Мавруд е най-старият местен червен сорт в България. Тук сокът се отделя от ципите веднага, преди да поеме какъвто и да е цвят, и виното остава бяло: „blanc de noirs“."
+    "say": "Бяло вино от много рядка бяла разновидност на Мавруд, прочутия български червен сорт. Не е червено грозде, пресовано на бяло: самите зърна са бели. Нещо, което повечето гости не са опитвали досега.",
+    "story": "Мавруд е най-старият местен червен сорт в България. Една много рядка негова разновидност е с бели зърна и това вино е от нея: истински бял Мавруд, а не „blanc de noirs“."
    }
   },
   "wines/daros-chardonnay-2023": {
@@ -5764,8 +5778,11 @@
     },
     {
      "id": "deuce-mavrud-blanc-2025",
-     "why": "A white from the red Mavrud grape: more body than most whites, for the walnut and the pepper.",
-     "whyBg": "Бяло от червения сорт Мавруд – с повече тяло от повечето бели, за ореха и чушката."
+     "why": "A rare white Mavrud: more body than most whites, for the walnut and the pepper.",
+     "whyBg": "Рядък бял Мавруд – с повече тяло от повечето бели, за ореха и чушката.",
+     "whyWas": [
+      "A white from the red Mavrud grape: more body than most whites, for the walnut and the pepper."
+     ]
     },
     {
      "id": "schiopetto-pinot-grigio-2023",
@@ -6024,8 +6041,11 @@
     },
     {
      "id": "deuce-mavrud-blanc-2025",
-     "why": "A white from the red Mavrud grape: something to talk about with the tartare.",
-     "whyBg": "Бяло от червения сорт Мавруд: повод за разговор към тартара."
+     "why": "A rare white Mavrud: something to talk about with the tartare.",
+     "whyBg": "Рядък бял Мавруд: повод за разговор към тартара.",
+     "whyWas": [
+      "A white from the red Mavrud grape: something to talk about with the tartare."
+     ]
     },
     {
      "id": "clos-bibliotheque-pinot-noir-2022",

@@ -592,6 +592,7 @@
     if (name === 'staff') D.staff = data;
     if (name === 'codes') D.codes = data;
     if (name === 'tasting') D.tasting = data;
+    if (name === 'quiz') D.quizSet = data;
     K.refresh(true);
     return K.db.doc('fohsettings/' + name).set(data).catch(K.writeFailed);
   };
@@ -635,6 +636,7 @@
       D.staff = m.staff && Array.isArray(m.staff.people) ? m.staff : { people: [] };
       D.codes = m.codes && Array.isArray(m.codes.codes) ? m.codes : null;
       D.tasting = m.tasting || null;
+      D.quizSet = m.quiz || {};
       D.houseV = (m.house && +m.house.v) || 0; D.settingsLoaded = true;
       D.take = m.stocktake || null;
       D.hypeUrl = (m.hype && m.hype.url) || '';

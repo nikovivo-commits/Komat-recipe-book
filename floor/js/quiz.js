@@ -5,7 +5,8 @@
 (function () {
   'use strict';
   const K = window.K, h = K.h, D = K.D, ui = K.ui;
-  const SECONDS = 20, ROUND = 10;
+  /* ninety seconds a question: time to read it and think, for staff who are new to the list */
+  const SECONDS = 90, ROUND = 10;
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
   const pickN = (a, n) => shuffle(a).slice(0, n);
   const lines = (t) => String(t || '').split(/\n+/).map((x) => x.replace(/^[-•·*]\s*/, '').trim()).filter(Boolean);
@@ -125,7 +126,7 @@
   const SAME_GRAPE = { garnacha: 'grenache', 'grenache noir': 'grenache', 'grenache gris': 'grenache', 'grenache blanc': 'grenache', rolle: 'vermentino', shiraz: 'syrah', 'pinot gris': 'pinot grigio',
     zinfandel: 'primitivo', 'shiroka melnik': 'melnik', 'shiroka melnishka loza': 'melnik', viura: 'macabeo', mazuelo: 'carignan', carinena: 'carignan', 'pinot meunier': 'meunier',
     'muscat of alexandria': 'zibibbo', monastrell: 'mourvedre', mataro: 'mourvedre', 'tinta de toro': 'tempranillo', 'tinto fino': 'tempranillo', kadarka: 'gamza', 'red misket': 'misket cherven',
-    'muscat blanc': 'tamyanka', muscat: 'tamyanka', 'sauvignon': 'sauvignon blanc', 'cabernet': 'cabernet sauvignon' };
+    'muscat blanc': 'tamyanka', 'white mavrud': 'mavrud', 'mavrud blanc': 'mavrud', muscat: 'tamyanka', 'sauvignon': 'sauvignon blanc', 'cabernet': 'cabernet sauvignon' };
   const grapesOf = (s) => flat(s).split(/,|\s+and\s+|&|\/|\+/).map((g) => g.replace(/\d+\s*%/g, '').trim()).filter(Boolean).map((g) => SAME_GRAPE[g] || g);
   const sharesGrape = (a, b) => { const x = grapesOf(b); return grapesOf(a).some((g) => x.includes(g)); };
   /* two temperature ranges that overlap or touch (8–10 and 10–12) are both right at one point */
@@ -540,7 +541,7 @@
     return out;
   }
   /* what a level is worth, and how long it gets: a hard question pays double and has ten seconds more */
-  const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, 25, 30], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
+  const FACTOR = [1, 1, 1.5, 2], TIME = [SECONDS, SECONDS, SECONDS, SECONDS], LEVELS = ['', 'Easy', 'Medium', 'Hard'];
   const secsOf = (q) => TIME[(q && q.level) || 1], worth = (q) => Math.round(150 * FACTOR[(q && q.level) || 1]);
   function bankQs(topic) {
     /* the drinks are part of the wine round: their questions count for it, and say “Drinks” above the question */
@@ -598,31 +599,109 @@
   };
   const remember = (qs) => { seenList = seenNow().concat(qs.map(keyOf)).slice(-SEEN_MAX); K.store.set('fohQuizSeen', seenList); };
 
-  /* a round of ten: six from our own wines, drinks and dishes, four of general knowledge */
-  function round(topic) {
+  /* A round of ten, about six from our own wines, drinks and dishes and four of general knowledge.
+     How hard it is follows the badge of whoever plays: [easy, medium, hard] questions for each rank, apprentice
+     first. The round climbs like a ladder: the easy ones first, the hard ones last. */
+  const MIX = [[5, 4, 1], [4, 4, 2], [3, 4, 3], [2, 4, 4], [1, 4, 5]];
+  /* the rank that sets the questions: this week's badge, or one below last week's (so Monday is not a holiday) */
+  function myRank() {
+    const me = (K.me && K.me.id) || 'this-phone', mon = since('week');
+    let now = 0, last = 0;
+    D.scores.forEach((x) => { if (x.uid !== me || x.team) return; if (x.at >= mon) now = Math.max(now, x.score); else if (x.at >= mon - 7 * 86400000) last = Math.max(last, x.score); });
+    return Math.max(rankOf(now), rankOf(last) - 1, 0);
+  }
+  K.quizMyRank = myRank;
+  /* The house joke: who breaks the glasses? The wrong answers are three names from the team (those on the schedule,
+     the members and whoever is on the board); the right one is nobody. Asked only when there are three names. */
+  function glassQ() {
+    return mkGlass(teamNames());
+  }
+  function teamNames() {
+    const names = [];
+    const add = (n) => { n = String(n || "").trim(); if (n && n !== "Me" && n !== "Someone" && !names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n); };
+    ((D.staff && D.staff.people) || []).forEach((p) => add(p.name));
+    Object.keys(D.members || {}).forEach((id) => { const m = D.members[id] || {}; if (["viewer", "waiter", "manager"].includes(m.role)) add(m.name || (D.names || {})[id]); });
+    D.scores.forEach((x) => add(x.name));
+    return names;
+  }
+  function mkGlass(names) {
+    const q = mk("wine", "Who breaks the glasses more often?", "Nobody", names, "Officially, nobody. The glasses jump by themselves.");
+    if (q) { q.fun = true; q.level = 1; q.kind = "fun"; q.id = "fun-glass"; }
+    return q;
+  }
+  K.quizGlass = glassQ;
+  function round(topic, rank) {
     /* if making the questions from the book fails, the round still starts, from the general questions */
     const safe = (make) => { try { return make(); } catch (e) { if (window.console) console.error('quiz questions', e); return []; } };
     const general = (side) => fresh(bookQs(side).concat(basics(side)));
+    const mix = MIX[Math.max(0, Math.min(MIX.length - 1, rank == null ? myRank() : rank))];
+    /* twice as many as needed are drawn, so there are enough of each level to choose from */
     let own, gen;
-    if (topic === 'food') { own = pickMixed(fresh(safe(foodQs)), 6); gen = byKind(general('food'), ROUND); }
+    if (topic === 'food') { own = pickMixed(fresh(safe(foodQs)), 14); gen = byKind(general('food'), 60); }
     else {
-      /* wine and drinks: of the six questions from the book, two are about the drinks, one of them a whisky
-         (one of the four in a round of everything) */
+      /* wine and drinks: of the questions from the book, two are about the drinks, one of them a whisky
+         (one in a round of everything) */
       const dq = fresh(safe(drinkQs)), wh = dq.filter((q) => q.whisky), rest = dq.filter((q) => !q.whisky);
       const d = topic === 'wine' ? byKind(wh, 1).concat(byKind(rest, 1)) : byKind(wh.length && Math.random() < 0.6 ? wh : dq, 1);
-      own = byKind(fresh(safe(wineQs)), (topic === 'wine' ? 6 : 4) - d.length, WEIGHT).concat(d);
-      if (topic === 'all') own = own.concat(pickMixed(fresh(safe(foodQs)), 3));
+      own = d.concat(byKind(fresh(safe(wineQs)), topic === 'wine' ? 20 : 12, WEIGHT));
+      if (topic === 'all') own = own.concat(pickMixed(fresh(safe(foodQs)), 8));
       /* a subject at a time, so the general questions of a round are not four of one sort */
-      gen = byKind(general('wine').concat(topic === 'all' ? general('food') : []), ROUND);
+      gen = byKind(general('wine').concat(topic === 'all' ? general('food') : []), 60);
     }
-    const had = {}, out = [];
-    own.concat(gen).forEach((q) => { if (out.length < ROUND && !had[q.q]) { had[q.q] = 1; out.push(q); } });
-    remember(out);
-    return shuffle(out);
+    if (topic === 'all') own = shuffle(own);
+    /* three of our own, then two general, and so on; no question twice */
+    const had = {}, cand = [];
+    let a = 0, b = 0;
+    const put = (q) => { if (q && !had[q.q]) { had[q.q] = 1; cand.push(q); } };
+    while (a < own.length || b < gen.length) { for (let n = 0; n < 3; n++) put(own[a++]); for (let n = 0; n < 2; n++) put(gen[b++]); }
+    let out = [];
+    [1, 2, 3].forEach((l) => { out = out.concat(cand.filter((q) => (q.level || 1) === l).slice(0, mix[l - 1])); });
+    /* a level that ran short is made up from the others */
+    out = out.concat(cand.filter((q) => !out.includes(q)).slice(0, ROUND - out.length)).slice(0, ROUND);
+    /* the house joke, about one round in four: it takes the place of an easy question */
+    const joke = Math.random() < 0.25 ? glassQ() : null;
+    if (joke) { const at = out.findIndex((q) => (q.level || 1) === 1); out[at < 0 ? 0 : at] = joke; }
+    remember(out.filter((q) => !q.fun));
+    /* the ladder: easy, then medium, then hard (in no fixed order within a level) */
+    return shuffle(out).sort((x, y) => (x.level || 1) - (y.level || 1));
   }
   K.quizRound = round;
 
   /* ---------- playing ---------- */
+  /* ---------- a little show ----------
+     Short sounds made on the spot (no sound files): a rising pair for a right answer, more notes as a streak grows,
+     a low note for a wrong one, a blip for a joker, a small fanfare for a good round. Off with one tap on the quiz
+     page, and the phone's silent switch is respected by the phone itself. */
+  let ac = null;
+  K.quizSound = () => K.store.get('fohQuizSound', true) !== false;
+  function sfx(name) {
+    if (!K.quizSound()) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ac = ac || new AC();
+      if (ac.state === 'suspended') ac.resume();
+      const now = ac.currentTime;
+      const note = (f, at, len, type, vol) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type || 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, now + at); g.gain.exponentialRampToValueAtTime(vol || 0.16, now + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, now + at + len);
+        o.connect(g); g.connect(ac.destination); o.start(now + at); o.stop(now + at + len + 0.02);
+      };
+      const TUNES = {
+        right: [[660, 0, 0.14], [880, 0.1, 0.22]],
+        streak: [[660, 0, 0.12], [880, 0.09, 0.12], [1109, 0.18, 0.14], [1319, 0.27, 0.28]],
+        wrong: [[220, 0, 0.22, 'triangle', 0.2], [165, 0.14, 0.32, 'triangle', 0.2]],
+        joker: [[523, 0, 0.09], [784, 0.07, 0.14]],
+        start: [[392, 0, 0.1], [523, 0.09, 0.1], [659, 0.18, 0.18]],
+        good: [[523, 0, 0.14], [659, 0.12, 0.14], [784, 0.24, 0.14], [1047, 0.36, 0.4]],
+        done: [[440, 0, 0.16], [523, 0.14, 0.3]],
+      };
+      (TUNES[name] || []).forEach((n) => note(n[0], n[1], n[2], n[3], n[4]));
+    } catch (e) { /* no sound on this phone */ }
+  }
+  /* three right in a row and every right answer after it earns a bonus: 20, 40, 60… up to 100 */
+  const streakBonus = (n) => (n >= 3 ? Math.min(100, 20 * (n - 2)) : 0);
   let tick = null;
   function stopClock() { clearInterval(tick); tick = null; }
   /* A tap made before the screen it lands on was drawn is not meant for it: a second tap on Play or on Next
@@ -635,20 +714,36 @@
     const now = performance.now(), at = e && e.timeStamp > 0 && e.timeStamp <= now ? e.timeStamp : now;
     return at < openAt;
   };
-  function start(topic, e) {
+  /* The team against the computer: everybody around one phone, answering together. The computer answers every
+     question too, and is right more or less often by its level (1 to 5, kept on this phone): it goes up a level
+     each time the team beats it and down one each time it wins. The team has the four jokers too, at the same price. Team rounds
+     do not count for the leaderboard. */
+  const cpuLevel = () => Math.max(0, Math.min(4, +K.store.get('fohQuizCpu', 1) || 0));
+  K.quizCpu = cpuLevel;
+  function cpuAnswers(Q, q) {
+    const c = Q.cpu, right = q.opts.indexOf(q.a), wrong = q.opts.map((o, i) => i).filter((i) => i !== right);
+    const ok = Math.random() < [0.5, 0.6, 0.7, 0.8, 0.9][c.level] - 0.1 * ((q.level || 1) - 1);
+    c.streak = ok ? c.streak + 1 : 0;
+    const pts = ok ? Math.round((100 + 50 * (0.3 + Math.random() * 0.6)) * FACTOR[q.level || 1]) + streakBonus(c.streak) : 0;
+    if (ok) { c.right++; c.score += pts; }
+    Q.cpuPick = ok ? right : one(wrong); Q.cpuPts = pts;
+  }
+  function start(topic, e, team) {
     if (starting || early(e)) return;
     if (!K.canWrite()) { K.toast('View only: ask the floor manager to make you a waiter to play.'); return; }
-    if (K.mode === 'local' && !K.myName()) { ui.sheet = { type: 'name', then: () => start(topic) }; K.render(); return; }
+    if (K.mode === 'local' && !K.myName()) { ui.sheet = { type: 'name', then: () => start(topic, null, team) }; K.render(); return; }
     /* making the round takes a moment on a phone: the button shows at once that it was pressed, the round is made
        in the next frame */
     starting = true;
+    sfx('start');
     const btn = e && e.currentTarget;
     if (btn && btn.classList) { btn.classList.add('busy'); btn.setAttribute('aria-busy', 'true'); }
     let went = false;
     const go = () => {
       if (went) return;
       went = true; starting = false;
-      ui.quiz = { stage: 'play', topic: topic, qs: round(topic), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      ui.quiz = { stage: 'play', topic: topic, qs: round(topic, team ? cpuLevel() : null), i: 0, picked: null, right: 0, score: 0, t0: Date.now(), log: [] };
+      if (team) { ui.quiz.team = true; ui.quiz.cpu = { level: cpuLevel(), score: 0, right: 0, streak: 0 }; }
       /* the round gets a step of its own in the phone's history, so the back button ends the round and shows
          the quiz page, as Stop does, and does not leave the quiz with the round still running */
       try { if (!(history.state && history.state.quiz)) history.pushState({ k: 1, quiz: 1 }, '', location.pathname + location.search + location.hash); } catch (e) { /* file:// */ }
@@ -664,29 +759,180 @@
     tick = setInterval(() => {
       const Q = ui.quiz;
       if (!Q || Q.stage !== 'play' || Q.picked != null) { stopClock(); return; }
-      const secs = secsOf(Q.qs[Q.i]), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+      if (Q.frozen != null) return;
+      const secs = secsNow(Q), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
       const bar = document.getElementById('qz-time'), num = document.getElementById('qz-sec');
       if (bar) bar.style.transform = 'scaleX(' + (left / secs) + ')';
       if (num) num.textContent = String(Math.ceil(left));
       if (left <= 0) answer(-1);
     }, 200);
   }
+  /* a question answered with a joker pays half */
+  const helped = (Q) => Object.keys(Q.used || {}).some((k) => Q.used[k] === Q.i + 1);
   function answer(i, e) {
     const Q = ui.quiz, q = Q.qs[Q.i];
     if (Q.picked != null) return;
     if (i >= 0 && early(e)) return;
     stopClock();
-    const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
-    const pts = ok ? Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) : 0;
+    const secs = secsNow(Q), ok = i >= 0 && q.opts[i] === q.a, left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    Q.streak = ok ? (Q.streak || 0) + 1 : 0;
+    Q.best = Math.max(Q.best || 0, Q.streak);
+    Q.bonus = ok ? streakBonus(Q.streak) : 0;
+    const pts = ok ? Math.round((Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1] * multNow(Q)) + Q.bonus) * (helped(Q) ? 0.5 : 1)) : 0;
+    if (Q.team) cpuAnswers(Q, q);
     Q.picked = i; Q.pts = pts;
-    if (ok) { Q.right++; Q.score += pts; K.vibrate(15); } else K.vibrate([30, 40, 30]);
+    if (ok) { Q.right++; Q.score += pts; K.vibrate(15); sfx(Q.bonus ? 'streak' : 'right'); } else { K.vibrate([30, 40, 30]); sfx('wrong'); }
     Q.log.push({ q: q.q, a: q.a, ok: ok });
     K.render();
+  }
+  /* Jokers, for whoever is new and stuck. Each can be played once in a round, on any question; a question
+     answered with a joker pays half its points.
+     - 50:50 takes away two of the wrong answers.
+     - Stop the clock freezes the time of this question, with the time bonus as it stood.
+     - Ask a friend: a colleague reads out what the book says about the question (the line shown after it), with
+       the answer itself left out. Where that says too little, the friend names an answer and is usually right.
+     - Ask the room: how the room would vote. The room is usually right, never certain. */
+  const JOKERS = [['half', '50:50', 'Two wrong answers go'], ['clock', 'Stop the clock', 'Take your time'], ['friend', 'Ask a friend', 'A colleague’s hint'], ['room', 'Ask the room', 'How the room votes']];
+  const stillIn = (Q, q) => q.opts.map((o, i) => i).filter((i) => !(Q.gone || []).includes(i));
+  function friendSays(Q, q) {
+    const a = String(K.T(q.a)), why = String(K.T(q.why || ''));
+    /* the answer and its own words are taken out of the line */
+    let t = why;
+    [a].concat(a.split(/[^A-Za-zÀ-ÿА-я0-9’']+/).filter((w) => w.length >= 4)).forEach((w) => { if (w) t = t.split(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')).join('…'); });
+    t = t.replace(/(…\s*)+/g, '… ').trim();
+    const said = t.replace(/…/g, '').replace(/[^A-Za-zÀ-ÿА-я]+/g, '');
+    if (said.length >= 28 && said.length >= why.replace(/[^A-Za-zÀ-ÿА-я]+/g, '').length * 0.5) return { hint: t };
+    /* nothing useful written down: the friend names an answer, right about four times in five */
+    const open = stillIn(Q, q), right = q.opts.indexOf(q.a), wrong = open.filter((i) => i !== right);
+    return { pick: Math.random() < 0.8 || !wrong.length ? right : one(wrong) };
+  }
+  function roomSays(Q, q) {
+    const open = stillIn(Q, q), right = q.opts.indexOf(q.a), share = {};
+    /* a harder question splits the room more */
+    let top = Math.round((q.level === 3 ? 42 : q.level === 2 ? 52 : 62) + Math.random() * 18), rest = 100 - top;
+    if (open.length === 2) { top = Math.max(top, 60 + Math.round(Math.random() * 20)); rest = 100 - top; }
+    const others = shuffle(open.filter((i) => i !== right));
+    others.forEach((i, n) => { const v = n === others.length - 1 ? rest : Math.round(rest * (0.35 + Math.random() * 0.3)); share[i] = v; rest -= v; });
+    share[right] = top;
+    /* now and then the room is wrong: its favourite is one of the others (more often on a hard question) */
+    if (others.length && Math.random() < (q.level === 3 ? 0.3 : q.level === 2 ? 0.2 : 0.12)) { const o = others[0], t = share[o]; share[o] = share[right]; share[right] = t; }
+    return share;
+  }
+  /* for looking over what the friend and the room say, and for the tests */
+  K.quizFriend = (q) => friendSays({}, q);
+  K.quizRoom = (q) => roomSays({}, q);
+  function joker(kind, e) {
+    const Q = ui.quiz, q = Q && Q.qs[Q.i];
+    if (!q || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
+    Q.used = Object.assign({}, Q.used, { [kind]: Q.i + 1 });
+    if (kind === 'half') { Q.gone = shuffle(q.opts.map((o, i) => i).filter((i) => q.opts[i] !== q.a)).slice(0, 2); if (Q.room) Q.room = roomSays(Q, q); }
+    if (kind === 'clock') Q.frozen = Math.max(0, secsNow(Q) - (Date.now() - Q.t0) / 1000);
+    if (kind === 'friend') Q.friend = friendSays(Q, q);
+    if (kind === 'room') Q.room = roomSays(Q, q);
+    K.vibrate(10);
+    sfx('joker');
+    K.render();
+  }
+  /* ---------- things that happen on the floor ----------
+     Rarely (about one round in three, once a round at most), between two questions, something happens in the
+     restaurant: a glass breaks, a table tips well, happy hour. It comes with a question that has nothing to do
+     with the menu: hygiene, safety, how things are handled. Answered right, a mishap costs nothing and a stroke
+     of luck is yours; answered wrong, the mishap is paid in points and the luck passes.
+     [key, title, what happened, the effect in words, what it does] */
+  const EVENTS = [
+    ['glass', 'A glass breaks', 'Nobody did it, of course.', '−50 points', { pts: -50 }],
+    ['spill', 'Red wine on the white tablecloth', 'It happens. A fresh cloth is on its way.', '−40 points', { pts: -40 }],
+    ['table', 'The dessert went to the wrong table', 'They ate it. The right table is still waiting.', '−30 points', { pts: -30 }],
+    ['tip', 'A big tip', 'Table 7 loved the service and said so with the bill.', '+80 points', { pts: 80 }],
+    ['meal', 'Staff meal', 'The kitchen sends something warm for the team.', '+60 points', { pts: 60 }],
+    ['happy', 'Happy hour', 'For one question only, the house is generous.', 'The next question pays double', { mult: 2 }],
+    ['regular', 'A regular remembers you', 'They put in a good word with the floor manager.', 'One joker comes back', { joker: 1 }],
+    ['crash', 'The computer freezes', 'It restarts, and forgets some of what it had.', 'The computer loses 100 points', { cpu: -100 }],
+  ];
+  /* the questions of the events: [question, answer, [three wrong answers], why, 'glass' for the ones about glass] */
+  const HYGIENE = [
+    ["A glass breaks over the ice well. What happens to the ice?", "All of it is thrown away and the well is cleaned", ["You pick out the pieces you can see", "It is rinsed with water and used", "The top layer is scooped off"], "Glass cannot be seen in ice. One splinter in a drink is one too many.", "glass"],
+    ["How do you pick up broken glass from the floor?", "With a brush and a dustpan", ["With bare hands, carefully", "With a napkin from a table", "With the polishing cloth"], "Never by hand: a cut in service means blood, a plaster and a colleague short.", "glass"],
+    ["A wine glass has a small crack in the rim. What do you do with it?", "Throw it away", ["Use it for water only", "Turn the crack away from the guest", "Keep it for the staff"], "A cracked glass can break in the hand or at the lips. It leaves service at once.", "glass"],
+    ["How long do you wash your hands with soap?", "At least 20 seconds", ["About 5 seconds", "A quick rinse is enough", "Only until they are wet"], "Twenty seconds with soap, between the fingers and under the nails, then a clean towel.", ""],
+    ["Your hands are visibly dirty. What cleans them?", "Soap and water", ["Sanitiser gel alone", "Wiping them on the apron", "A dry napkin"], "Sanitiser does not work through dirt or grease. Wash first.", ""],
+    ["You touched your hair or your face during service. What next?", "Wash your hands", ["Wipe them on the apron", "Nothing, it was only a moment", "Dry them on the table linen"], "Hair, nose and mouth carry bacteria that end up on glasses and plates.", ""],
+    ["How do you carry a wine glass to the table?", "By the stem", ["By the rim", "With the fingers inside the bowl", "With the palm around the bowl"], "The guest drinks from the rim, and fingerprints on the bowl show against the light.", ""],
+    ["What do you take ice for a drink with?", "An ice scoop or tongs", ["The glass itself", "Your hand", "A coffee cup"], "A glass used as a scoop can chip into the ice, and hands do not belong in it.", ""],
+    ["A fork falls on the floor at a guest’s table. What do you do?", "Bring a clean one and take the fallen one away", ["Wipe it with a napkin and put it back", "Rinse it at the bar and return it", "Leave it: the guest has a spoon"], "The clean one comes first, so the guest is never left waiting without cutlery.", ""],
+    ["By which part do you hold clean cutlery?", "The handle", ["The tines and the blade", "The bowl of the spoon", "Any part: it is clean anyway"], "The part that goes into the mouth is never touched.", ""],
+    ["A plate arrives at the pass with a chipped rim. What do you do?", "Take it out of service", ["Turn the chip away from the guest", "Use it for bread", "Cover the chip with the garnish"], "A chip holds bacteria and can cut a lip. Tell the kitchen so the dish is replated.", ""],
+    ["You cut your finger during service. What goes on the cut?", "A waterproof plaster, and a glove over it", ["Nothing: it dries faster in the air", "A paper napkin", "A piece of the polishing cloth"], "Kitchens use blue plasters because a blue one is seen at once if it falls off.", ""],
+    ["You wake up with vomiting and diarrhoea. What about your shift?", "You tell the manager and stay away from food", ["You come in and work carefully", "You work at the bar only", "You come in and wear gloves"], "A stomach bug passes to guests through hands and plates. Staying away is the rule everywhere.", ""],
+    ["Bacteria in food grow fastest at roughly…", "5 to 60 °C", ["−18 to 0 °C", "75 to 100 °C", "Only above 100 °C"], "This is the danger zone: cold food stays cold, hot food stays hot, nothing waits in between.", ""],
+    ["On which shelf of the fridge is raw meat kept?", "The lowest, below ready-to-eat food", ["The top one", "Next to the desserts", "In the door"], "On the lowest shelf its juices cannot drip onto food that will not be cooked again.", ""],
+    ["A guest says they are allergic to nuts. What is the first thing you do?", "Tell the kitchen before the order goes in", ["Say that most dishes should be fine", "Suggest they pick the nuts off", "Wait to see what they order"], "Never guess with an allergy. The kitchen decides what is safe, and it has to know first.", ""],
+    ["Something is spilled on the floor between the tables. What do you do?", "Stay by it or mark it, and clean it at once", ["Leave it until the end of service", "Cover it with a napkin", "Ask the guests to walk around it"], "A wet floor is how colleagues with full trays and guests in heels fall.", ""],
+    ["What must never be thrown on burning oil?", "Water", ["A fire blanket", "A metal lid", "A dry baking tray"], "Water turns to steam in an instant and throws the burning oil out of the pan.", ""],
+    ["Which number do you call in an emergency in Bulgaria?", "112", ["911", "999", "118"], "112 works in the whole European Union, free of charge and from a locked phone.", ""],
+    ["Which cloth do you polish glasses with?", "A clean, dry cloth kept only for glasses", ["The cloth used for the tables", "Your apron", "A paper napkin"], "A cloth that has wiped a table leaves grease and smell on a glass.", ""],
+  ];
+  K.quizHygiene = HYGIENE;
+  const boostOf = (Q) => (Q.boost && Q.boost.i === Q.i ? Q.boost : null);
+  const secsNow = (Q) => { const b = boostOf(Q); return (b && b.secs) || secsOf(Q.qs[Q.i]); };
+  const multNow = (Q) => { const b = boostOf(Q); return (b && b.mult) || 1; };
+  function happens(Q) {
+    const used = Object.keys(Q.used || {});
+    const can = EVENTS.filter((e) => (e[4].joker ? used.length : true) && (e[4].cpu ? Q.team && Q.cpu.score >= 100 : true) && (e[4].pts < 0 ? Q.score + e[4].pts >= 0 : true));
+    /* (K.quizEventOnly, a list of keys, is for the tests) */
+    const pick = K.quizEventOnly ? can.filter((e) => K.quizEventOnly.includes(e[0])) : can;
+    if (!pick.length) return null;
+    const e = one(pick);
+    /* a broken glass asks about glass; each phone remembers the last few it was asked */
+    const seen = K.store.get('fohQuizHyg', []), about = HYGIENE.filter((x) => (e[0] === 'glass') === (x[4] === 'glass'));
+    const pool = about.filter((x) => !seen.includes(x[0])), x = one(pool.length ? pool : about);
+    K.store.set('fohQuizHyg', (Array.isArray(seen) ? seen : []).concat([x[0]]).slice(-10));
+    Q.had = (Q.had || []).concat([e[0]]);
+    /* a broken glass: the manager can name the colleague who always breaks them (kept with the restaurant's own
+       settings, not in the code); then the question is who did it, and that colleague is always the answer */
+    const who = culprit();
+    if (e[0] === "glass" && who) {
+      const others = shuffle(teamNames().filter((n) => n.toLowerCase() !== who.toLowerCase())).concat(["Nobody", "The guest at table 7", "The wind"]).slice(0, 3);
+      return { key: e[0], title: e[1], text: "And everybody looks the same way.", effect: e[3], good: false, x: e[4], q: "Who broke the glass?", a: who, opts: shuffle([who].concat(others)), why: "As always.", picked: null, ok: null };
+    }
+    return { key: e[0], title: e[1], text: e[2], effect: e[3], good: !(e[4].pts < 0), x: e[4], q: x[0], a: x[1], opts: shuffle([x[1]].concat(x[2])), why: x[3], picked: null, ok: null };
+  }
+  const culprit = () => String(((D.quizSet || {}).glass) || "").trim();
+  K.quizCulprit = culprit;
+  K.quizEvents = EVENTS;
+  function eventAnswer(i, e) {
+    const Q = ui.quiz, ev = Q && Q.event;
+    if (!ev || ev.picked != null || early(e)) return;
+    ev.picked = i; ev.ok = ev.opts[i] === ev.a;
+    const x = ev.x, used = Object.keys(Q.used || {});
+    /* a mishap is paid only on a wrong answer; luck is earned only by a right one */
+    if (x.pts < 0 ? !ev.ok : ev.ok) {
+      if (x.pts) Q.score = Math.max(0, Q.score + x.pts);
+      if (x.cpu) Q.cpu.score = Math.max(0, Q.cpu.score + x.cpu);
+      if (x.mult || x.secs) Q.boost = { i: Q.i + 1, mult: x.mult || 1, secs: x.secs || 0 };
+      if (x.joker && used.length) { const k = one(used), u = Object.assign({}, Q.used); delete u[k]; Q.used = u; }
+    }
+    K.vibrate(ev.ok ? 15 : [30, 40, 30]); sfx(ev.ok ? 'right' : 'wrong');
+    K.render();
+  }
+  function carryOn(e) {
+    const Q = ui.quiz;
+    if (!Q || !Q.event || Q.event.picked == null || early(e)) return;
+    Q.event = null;
+    advance();
   }
   function next() {
     const Q = ui.quiz;
     if (Q.i + 1 >= Q.qs.length) { finish(); return; }
-    Q.i++; Q.picked = null; Q.t0 = Date.now();
+    if (!(Q.had || []).length && Math.random() < (K.quizEventOdds == null ? 0.04 : K.quizEventOdds)) {
+      const ev = happens(Q);
+      if (ev) { Q.event = ev; K.vibrate(10); sfx('joker'); K.render(true); drawn(); return; }
+    }
+    advance();
+  }
+  function advance() {
+    const Q = ui.quiz;
+    Q.i++; Q.picked = null; Q.gone = null; Q.frozen = null; Q.friend = null; Q.room = null; Q.t0 = Date.now();
     K.render(true);
     drawn();
     clock();
@@ -695,10 +941,20 @@
     const Q = ui.quiz;
     Q.stage = 'done';
     stopClock();
+    if (Q.team) {
+      /* a team round: no score for the board; the computer moves a level */
+      Q.won = Q.score > Q.cpu.score ? 1 : Q.score < Q.cpu.score ? -1 : 0;
+      K.store.set('fohQuizCpu', Math.max(0, Math.min(4, Q.cpu.level + Q.won)));
+      if (K.celebrate && Q.won > 0) K.celebrate('');
+      sfx(Q.won > 0 ? 'good' : 'done');
+      K.render(true); drawn(); stepBack();
+      return;
+    }
     const id = K.uid(), doc = { uid: (K.me && K.me.id) || 'this-phone', name: K.myName() || 'Me', score: Q.score, right: Q.right, of: Q.qs.length, topic: Q.topic, at: Date.now() };
     D.scores = D.scores.concat([Object.assign({ id: id }, doc)]);
     K.db.doc('quizscores/' + id).set(doc).catch(K.writeFailed);
     if (K.celebrate && Q.right >= Q.qs.length * 0.8) K.celebrate('');
+    sfx(Q.right >= Q.qs.length * 0.8 ? 'good' : 'done');
     K.render(true);
     drawn();
     stepBack();
@@ -738,6 +994,47 @@
     });
     return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total);
   }
+  /* last week's champion: the best round of the week that ended on Sunday (all topics). Wears the title all this week. */
+  function champion() {
+    const to = since('week'), from = to - 7 * 86400000, m = {};
+    D.scores.forEach((s) => {
+      if (s.at < from || s.at >= to) return;
+      const e = m[s.uid] || (m[s.uid] = { uid: s.uid, name: s.name, best: 0, total: 0 });
+      e.name = s.name || e.name; e.best = Math.max(e.best, s.score); e.total += s.score;
+    });
+    return Object.values(m).sort((a, b) => b.best - a.best || b.total - a.total)[0] || null;
+  }
+  K.quizChampion = champion;
+  /* Trophies: one for every finished week (Monday to Sunday) a person won, with the best round of that week.
+     They are counted from the scores, so nothing extra is stored and they never reset. */
+  function trophies() {
+    const now = since('week'), weeks = {}, won = {};
+    D.scores.forEach((x) => {
+      if (x.at >= now) return;
+      const w = K.mondayOf(new Date(x.at)).getTime(), m = weeks[w] || (weeks[w] = {}), e = m[x.uid] || (m[x.uid] = { uid: x.uid, best: 0, total: 0 });
+      e.best = Math.max(e.best, x.score); e.total += x.score;
+    });
+    Object.keys(weeks).forEach((w) => { const top = Object.values(weeks[w]).sort((a, b) => b.best - a.best || b.total - a.total)[0]; if (top && top.best > 0) won[top.uid] = (won[top.uid] || 0) + 1; });
+    return won;
+  }
+  K.quizTrophies = trophies;
+  const cups = (n) => (n ? h('span', { class: 'lb-cups', title: n === 1 ? '1 week won' : n + ' weeks won' }, h('span', { 'aria-hidden': 'true' }, '\uD83C\uDFC6'), n > 1 ? h('span', { class: 'mono' }, '×' + n) : null) : null);
+  /* The ranks of the week: the best round a person has played this week decides the badge beside their name. Each
+     Monday everybody starts again as an apprentice. [points for the best round, name] */
+  /* (a round of ten right answers with a full streak is about 2,800 points; four right is about 800) */
+  const RANKS = [[0, 'Apprentice'], [800, 'Wine steward'], [1400, 'Sommelier'], [2000, 'Head sommelier'], [2500, 'Master sommelier']];
+  const rankOf = (best) => { let n = 0; RANKS.forEach((r, i) => { if (best >= r[0]) n = i; }); return n; };
+  const badge = (n, cls) => h('img', { class: 'rank-badge ' + (cls || ''), src: 'floor/assets/rank-' + (n + 1) + '.webp', alt: RANKS[n][1], title: RANKS[n][1], width: 96, height: 96, loading: 'lazy' });
+  K.quizRank = rankOf;
+  K.SHEETS.ranks = function () {
+    const mine = board('week', 'all').find((r) => r.uid === ((K.me && K.me.id) || 'this-phone')), me = mine ? rankOf(mine.best) : -1;
+    return K.sheet('The ranks of the week', h('div', { class: 'ranks' },
+      h('p', { class: 'muted' }, 'Your best round this week decides your badge. Everybody starts again on Monday.'),
+      h('p', { class: 'muted' }, 'The higher your badge, the harder your questions.'),
+      h('p', { class: 'muted' }, 'Whoever has the best round of a week wins a trophy, and keeps it for good.'),
+      RANKS.map((r, i) => h('div', { class: 'rank-row' + (i === me ? ' me' : '') }, badge(i, 'big'),
+        h('div', null, h('b', null, r[1]), h('span', { class: 'muted' }, i === 0 ? 'Play a round' : 'A round of ' + r[0] + ' points or more'), i === me ? h('span', { class: 'rank-you' }, 'You, this week') : null))).reverse()));
+  };
   const TOPICS = [['wine', 'Wine & drinks', 'glass', 'Wines, pairings and prices; whiskies and other spirits'], ['food', 'Food', 'plate', 'Translations, allergens and the unusual ingredients'], ['all', 'Everything', 'trophy', 'Both, mixed']];
 
   K.V.quiz = function () {
@@ -746,36 +1043,61 @@
     if (Q && Q.stage === 'play') return playView(Q);
     const body = h('div', { class: 'page' });
     const mine = D.scores.filter((s) => s.uid === ((K.me && K.me.id) || 'this-phone') && s.at >= since('week'));
-    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions. A harder one gives more time and up to double the points; a quick answer scores more.', null, '', 'quiz-head'));
+    body.append(K.pageHead('The quiz', mine.length ? 'Your best this week: ' + Math.max.apply(null, mine.map((s) => s.score)) + ' points' : 'Ten questions, from easy to hard, 90 seconds each. A harder question gives up to double the points; a joker halves them.', null, '', 'quiz-head'));
     const w = h('div', { class: 'wrap' });
     body.append(w);
+    /* the quiz's own badge (an image made for it) */
+    w.append(h('img', { class: 'quiz-logo', src: 'floor/assets/quiz-logo.webp', alt: 'Who wants to be a sommelier?', width: 190, height: 190 }));
+    w.append(h('button', { type: 'button', class: 'quiz-sound', 'aria-pressed': K.quizSound() ? 'true' : 'false', onclick: () => { K.store.set('fohQuizSound', !K.quizSound()); if (K.quizSound()) sfx('joker'); K.render(); } }, K.icon('bell'), K.quizSound() ? 'Sound on' : 'Sound off'));
     if (Q && Q.stage === 'done') w.append(doneCard(Q));
     w.append(h('div', { class: 'quiz-topics' }, TOPICS.map((t) => h('button', { type: 'button', class: 'qt qt-' + t[0], onclick: (e) => start(t[0], e) },
       K.icon(t[2]), h('b', null, t[1]), h('span', null, t[3]), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))))));
-    const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top);
+    w.append(h('button', { type: 'button', class: 'qt qt-team', onclick: (e) => start('all', e, true) },
+      K.icon('chef'), h('b', null, 'Team vs the computer'), h('span', null, 'Everybody around one phone, four jokers. The computer is at level ' + (cpuLevel() + 1) + ' of 5.'), h('span', { class: 'qt-go' }, 'Play', K.icon('next'))));
+    const per = ui.board || 'week', top = ui.boardTopic || 'all', rows = board(per, top), champ = champion(), won = trophies();
     w.append(h('section', { class: 'group lb' },
+      champ ? h('p', { class: 'lb-champ' }, K.icon('sparkle'), h('span', null, 'Last week’s champion: ', h('b', null, champ.name || 'Someone'), ' · ' + champ.best + ' points')) : null,
+      h('button', { type: 'button', class: 'lb-ranks', onclick: () => { ui.sheet = { type: 'ranks' }; K.render(); } }, RANKS.map((r, i) => badge(i)), h('span', null, 'The ranks of the week', K.icon('next'))),
       h('div', { class: 'lb-head' }, h('h2', { class: 'group-title' }, 'Leaderboard'),
         K.seg([['week', 'This week'], ['month', 'Month'], ['all', 'All time']], per, (v) => { ui.board = v; K.render(); }, { class: 'seg small-seg', 'aria-label': 'Period' })),
       K.seg([['all', 'Everything'], ['wine', 'Wine & drinks'], ['food', 'Food']], top, (v) => { ui.boardTopic = v; K.render(); }, { class: 'seg small-seg lb-topic', 'aria-label': 'Topic' }),
       rows.length ? h('ol', { class: 'lb-list' }, rows.map((r, i) => h('li', { class: 'lb-row' + (r.uid === ((K.me && K.me.id) || 'this-phone') ? ' me' : '') },
         h('span', { class: 'lb-pos' + (i < 3 ? ' m' + (i + 1) : '') }, String(i + 1)),
-        h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone'), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
+        badge(rankOf(r.best)),
+        h('span', { class: 'lb-name' }, h('b', null, r.name || 'Someone', cups(won[r.uid]), champ && champ.uid === r.uid ? h('span', { class: 'lb-crown', title: 'Last week’s champion' }, K.icon('sparkle'), 'Champion') : null), h('span', { class: 'muted' }, r.rounds + (r.rounds === 1 ? ' round' : ' rounds') + ' · ' + Math.round(100 * r.right / Math.max(1, r.of)) + '% right')),
         h('span', { class: 'lb-best mono' }, String(r.best))))) : h('p', { class: 'muted lb-none' }, 'Nobody has played ' + (per === 'week' ? 'this week' : per === 'month' ? 'this month' : 'yet') + '. Be the first.')));
     if (K.canEdit()) {
       w.append(h('section', { class: 'group' }, h('h2', { class: 'group-title' }, 'Your own questions', h('span', { class: 'n' }, String(D.quizq.length))),
         h('p', { class: 'hint' }, 'Most questions are made from the wine and food bibles by themselves. Add your own for anything else: house rules, the producers, the team’s favourite facts.'),
         D.quizq.length ? h('div', { class: 'ing-list' }, D.quizq.map((q) => h('button', { type: 'button', class: 'ing-row', onclick: () => { ui.sheet = { type: 'qedit', id: q.id }; K.render(); } },
           h('span', { class: 'ing-name' }, h('b', null, q.q)), h('span', { class: 'ing-what' }, q.a), h('span', { class: 'ing-in' }, q.topic === 'wine' ? 'Wine & drinks' : 'Food')))) : null,
-        h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'qedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a question'))));
+        h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => { ui.sheet = { type: 'qedit', id: null }; K.render(); } }, K.icon('plus'), 'Add a question')),
+        h('form', { class: 'stack glass-who', onsubmit: (e) => { e.preventDefault(); const v = String(e.currentTarget.elements.who.value || '').trim().slice(0, 40); K.saveSetting('quiz', Object.assign({}, D.quizSet, { glass: v })); K.toast('Saved'); } },
+          K.field('Who always breaks the glasses?', h('input', { class: 'input', name: 'who', value: culprit(), maxlength: 40, autocomplete: 'off', placeholder: 'A first name (leave empty for nobody)' })),
+          h('p', { class: 'hint' }, 'When a glass breaks in the quiz, the question is who did it, and this name is always the right answer. Only managers see this box.'),
+          h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'submit' }, 'Save')))));
     }
     return { body: body };
   };
   function doneCard(Q) {
     const rows = board('week', 'all'), pos = rows.findIndex((r) => r.uid === ((K.me && K.me.id) || 'this-phone')) + 1;
     const missed = Q.log.filter((x) => !x.ok);
+    if (Q.team) return h('section', { class: 'quiz-done team ' + (Q.won > 0 ? 'won' : Q.won < 0 ? 'lost' : 'draw') },
+      h('p', { class: 'kicker' }, 'Team vs the computer'),
+      h('h2', { class: 'qd-verdict' }, Q.won > 0 ? 'The team wins' : Q.won < 0 ? 'The computer wins' : 'A draw'),
+      h('div', { class: 'qd-vs' },
+        h('div', null, h('span', { class: 'muted' }, 'Team'), h('b', { class: 'mono' }, String(Q.score)), h('span', { class: 'muted' }, Q.right + ' of ' + Q.qs.length + ' right')),
+        h('div', null, h('span', { class: 'muted' }, 'Computer'), h('b', { class: 'mono' }, String(Q.cpu.score)), h('span', { class: 'muted' }, Q.cpu.right + ' of ' + Q.qs.length + ' right'))),
+      h('p', null, Q.won > 0 ? (Q.cpu.level < 4 ? 'Next time the computer plays at level ' + (Q.cpu.level + 2) + ' of 5.' : 'The computer was at its best. Nothing left to prove.') : Q.won < 0 ? (Q.cpu.level > 0 ? 'Next time the computer plays at level ' + Q.cpu.level + ' of 5.' : 'The computer stays at level 1 of 5.') : 'The computer stays at level ' + (Q.cpu.level + 1) + ' of 5.'),
+      missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
+        h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
+      h('div', { class: 'btns' }, h('button', { class: 'btn primary', type: 'button', onclick: (e) => start('all', e, true) }, 'Play again'),
+        h('button', { class: 'btn', type: 'button', onclick: () => { ui.quiz = null; K.render(); } }, 'Close')));
     return h('section', { class: 'quiz-done' },
       h('p', { class: 'kicker' }, 'Round finished'),
-      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right')),
+      h('div', { class: 'qd-score' }, h('b', { class: 'mono' }, String(Q.score)), h('span', null, 'points · ' + Q.right + ' of ' + Q.qs.length + ' right'), (Q.best || 0) >= 3 ? h('span', { class: 'qd-tips' }, 'best streak: ' + Q.best + ' in a row') : null, Object.keys(Q.used || {}).length ? h('span', { class: 'qd-tips' }, Object.keys(Q.used).length === 1 ? 'with 1 joker' : 'with ' + Object.keys(Q.used).length + ' jokers') : null),
+      pos ? h('div', { class: 'qd-rank' }, badge(rankOf(rows[pos - 1].best), 'big'), h('div', null, h('b', null, RANKS[rankOf(rows[pos - 1].best)][1]), h('span', { class: 'muted' }, 'Your rank this week'),
+        rankOf(rows[pos - 1].best) < RANKS.length - 1 ? h('span', { class: 'muted' }, 'A round of ' + RANKS[rankOf(rows[pos - 1].best) + 1][0] + ' points makes you ' + RANKS[rankOf(rows[pos - 1].best) + 1][1]) : null)) : null,
       pos ? h('p', null, pos === 1 ? 'You are top of the board this week.' : 'Number ' + pos + ' on this week’s board.') : null,
       missed.length ? h('details', { class: 'qd-missed' }, h('summary', null, 'The ones you missed (' + missed.length + ')'),
         h('ul', null, missed.map((x) => h('li', null, x.q, h('b', null, ' ' + x.a))))) : h('p', null, 'A perfect round.'),
@@ -785,27 +1107,59 @@
   function playView(Q) {
     const q = Q.qs[Q.i], done = Q.picked != null;
     if (!q) { ui.quiz = null; return K.V.quiz(); }
-    const secs = secsOf(q), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    if (Q.event) {
+      const ev = Q.event, ans = ev.picked != null, bad = !ev.good;
+      return {
+        top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : 'Quiz'),
+        body: h('div', { class: 'wrap quiz-play' }, h('section', { class: 'qp-event ' + (ev.good ? 'good' : 'bad') + ' ev-' + ev.key },
+          h('p', { class: 'kicker' }, 'Meanwhile, on the floor'),
+          h('h1', null, ev.title),
+          h('p', null, ev.text),
+          h('p', { class: 'qp-effect' }, ev.effect),
+          ans ? null : h('p', { class: 'muted' }, bad ? 'Answer right and you pay nothing.' : 'Answer right and it is yours.')),
+          h('h2', { class: 'qp-q ev-q' }, ev.q),
+          h('div', { class: 'qp-opts' }, ev.opts.map((o, i) => h('button', { type: 'button', class: 'qp-opt' + (!ans ? '' : o === ev.a ? ' right' : i === ev.picked ? ' wrong' : ' dim'), disabled: ans, onclick: (e) => eventAnswer(i, e) },
+            h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o)))),
+          ans ? h('div', { class: 'qp-after ' + (ev.ok ? 'ok' : 'no') },
+            h('b', null, ev.ok ? (bad ? 'Well handled. Nothing to pay.' : 'Right. It is yours.') : (bad ? 'Not quite. You pay.' : 'Not quite. Not this time.')),
+            ev.ok ? null : h('p', null, 'The answer: ', h('b', null, ev.a)),
+            h('p', { class: 'muted' }, ev.why),
+            h('p', { class: 'muted mono' }, Q.team ? 'Team ' + Q.score : Q.score + ' pts'),
+            h('button', { class: 'btn primary wide', type: 'button', onclick: carryOn }, 'Carry on')) : null),
+        tabs: false, solid: true,
+      };
+    }
+    const secs = secsNow(Q), left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    const used = Q.used || {};
     const body = h('div', { class: 'wrap quiz-play' },
       h('div', { class: 'qp-top' },
         h('span', { class: 'mono' }, (Q.i + 1) + ' / ' + Q.qs.length),
-        h('span', { class: 'qp-score mono' }, Q.score + ' pts'),
-        h('span', { class: 'qp-sec mono', id: 'qz-sec' }, done ? '' : String(Math.ceil(left)))),
-      h('div', { class: 'qp-timer' }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
-      h('p', { class: 'kicker qp-kick' }, h('span', null, q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, 'up to ' + worth(q) + ' points'))),
+        h('span', { class: 'qp-score mono' }, Q.team ? [h('span', { class: 'qp-us' }, 'Team ' + Q.score), h('span', { class: 'qp-cpu' }, 'Computer ' + Q.cpu.score)] : Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
+        h('span', { class: 'qp-sec mono' + (Q.frozen != null && !done ? ' frozen' : ''), id: 'qz-sec' }, done ? '' : Q.frozen != null ? [K.icon('pause'), String(Math.ceil(left))] : String(Math.ceil(left)))),
+      h('div', { class: 'qp-timer' + (Q.frozen != null && !done ? ' frozen' : '') }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.fun ? 'Team' : q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) * multNow(Q) / 2) + ' points' : 'up to ' + Math.round(worth(q) * multNow(Q)) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
-        const cls = !done ? '' : o === q.a ? ' right' : i === Q.picked ? ' wrong' : ' dim';
-        return h('button', { type: 'button', class: 'qp-opt' + cls, disabled: done, onclick: (e) => answer(i, e) }, h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o));
+        const out = !!Q.gone && Q.gone.includes(i);
+        const cls = !done ? (out ? ' gone' : '') : o === q.a ? ' right' : i === Q.picked ? ' wrong' : ' dim';
+        const vote = Q.room && !out ? Q.room[i] || 0 : null;
+        return h('button', { type: 'button', class: 'qp-opt' + cls + (vote != null ? ' voted' : ''), disabled: done || out, style: vote != null ? { '--vote': vote + '%' } : null, onclick: (e) => answer(i, e) },
+          h('span', { class: 'qp-l mono' }, 'ABCD'[i]), h('span', null, o), vote != null ? h('span', { class: 'qp-vote mono' }, vote + '%') : null);
       })),
+      done && Q.pts && Q.bonus ? h('p', { class: 'qp-bonus' }, K.icon('flame'), Q.streak + ' in a row: +' + Q.bonus + ' bonus') : null,
+      !done && Q.friend ? h('div', { class: 'qp-friend' }, K.icon('chef'), h('div', null, h('b', null, 'Your friend says'),
+        Q.friend.hint ? h('p', null, '“' + Q.friend.hint + '”') : h('p', null, 'I would go with ' + 'ABCD'[Q.friend.pick] + ', but I am not completely sure.'))) : null,
+      !done ? h('div', { class: 'qp-jokers', role: 'group', 'aria-label': 'Jokers' }, JOKERS.map((j) => h('button', { type: 'button', class: 'qp-joker j-' + j[0] + (used[j[0]] ? ' used' : ''), disabled: !!used[j[0]], onclick: (e) => joker(j[0], e) },
+        h('b', null, j[1]), h('span', null, used[j[0]] ? 'Played' : j[2])))) : null,
       done ? h('div', { class: 'qp-after ' + (Q.pts ? 'ok' : 'no') },
         h('b', null, Q.pts ? 'Right · +' + Q.pts : Q.picked < 0 ? 'Time is up' : 'Not quite'),
         Q.pts ? null : h('p', null, 'The answer: ', h('b', null, q.a)),
         q.why ? h('p', { class: 'muted' }, q.why) : null,
-        h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? 'See your score' : 'Next question')) : null);
+        Q.team ? h('p', { class: 'qp-cpusaid ' + (Q.cpuPts ? 'ok' : 'no') }, K.icon('gear'), Q.cpuPts ? 'The computer said ' + 'ABCD'[Q.cpuPick] + ': right, +' + Q.cpuPts : 'The computer said ' + 'ABCD'[Q.cpuPick] + ': wrong') : null,
+        h('button', { class: 'btn primary wide', type: 'button', onclick: next }, Q.i + 1 >= Q.qs.length ? (Q.team ? 'See who won' : 'See your score') : 'Next question')) : null);
     return {
-      top: K.subbar('Stop', stopRound, [], q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
+      top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : q.topic === 'all' ? 'Quiz' : 'Quiz · ' + (Q.topic === 'wine' ? 'Wine & drinks' : Q.topic === 'food' ? 'Food' : 'Everything')),
       body: body, tabs: false, solid: true,
     };
   }

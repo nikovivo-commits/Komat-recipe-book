@@ -6,12 +6,31 @@
 
   /* ---------- joining (the kitchen's own database) ---------- */
   function go(screen) { ui.auth = screen; ui.authErr = ''; ui.authNote = ''; K.render(true); }
-  function run(fn, after) {
+  const ERR = (e) => K.Fire.authErr(e).replace('kitchen code', 'floor code').replace('the head chef', 'the floor manager');
+  /* `enter`: the step signs this phone in. Once the name and code (or the password) are accepted, the screen waits
+     for the book to open instead of going back to an idle form, which looked as if nothing had happened. A second
+     press while the first is still at work does nothing: it used to be turned away by the database as a change to
+     a member who had just joined, and showed "the code is not right" although the first press had worked. */
+  let waitT = null;
+  function run(fn, after, enter) {
+    if (ui.authBusy) return;
+    const from = ui.auth;
     ui.authBusy = true; ui.authErr = ''; ui.authNote = ''; K.render();
-    fn().then(() => { ui.authBusy = false; if (after) after(); K.render(); },
-      (e) => { ui.authBusy = false; ui.authErr = K.Fire.authErr(e).replace('kitchen code', 'floor code').replace('the head chef', 'the floor manager'); K.render(); });
+    fn().then(() => {
+      ui.authBusy = false;
+      if (after) after();
+      if (enter && ui.auth === from) {
+        ui.auth = 'wait';
+        clearTimeout(waitT);
+        waitT = setTimeout(() => { if (ui.auth === 'wait') { ui.auth = from; ui.authNote = 'This is taking a while. Check the connection and try again.'; K.render(); } }, 15000);
+      }
+      K.render();
+    }, (e) => { ui.authBusy = false; ui.authErr = ERR(e); K.render(); });
   }
-  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; } }, attrs));
+  const input = (key, attrs) => h('input', Object.assign({ class: 'input big', id: 'lg-' + key, value: lg()[key], required: true, oninput: (e) => { lg()[key] = e.target.value; }, onchange: (e) => { lg()[key] = e.target.value; } }, attrs));
+  /* what is in the boxes when the form is sent: a password manager can fill a box without the page hearing of it,
+     and the form would then send an empty or half-typed password and call the right one wrong */
+  const pull = (e) => { e.target.querySelectorAll('input[id^="lg-"]').forEach((el) => { lg()[el.id.slice(3)] = el.value; }); };
   const linkBtn = (label, onclick) => h('button', { type: 'button', class: 'linkish', onclick: onclick }, label);
   const msg = () => [ui.authErr ? h('p', { class: 'banner bad', role: 'alert' }, ui.authErr) : null, ui.authNote ? h('p', { class: 'banner', role: 'status' }, ui.authNote) : null];
   const submit = (label, busy) => h('button', { class: 'btn primary wide', type: 'submit', disabled: !!ui.authBusy }, ui.authBusy ? busy : label);
@@ -19,9 +38,10 @@
     const v = lg(), u = K.Fire.auth.currentUser, signedIn = u && !u.isAnonymous;
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const name = v.name.trim(), code = v.code.trim();
       if (!name || !code) { ui.authErr = 'Write your name and the floor code.'; K.render(); return; }
-      run(() => K.Fire.join(name, code));
+      run(() => K.Fire.join(name, code), null, true);
     } },
       h('h2', { class: 'login-title' }, 'Join the floor'),
       h('p', { class: 'muted' }, signedIn ? 'Signed in as ' + u.email + ', but not part of the team yet. Join with the floor code.' : 'Your name and the floor code from the floor manager. You only do this once on this phone.'),
@@ -36,8 +56,9 @@
     const v = lg();
     return h('form', { class: 'login-card card', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       if (!v.email.trim() || !v.pw) { ui.authErr = 'Write your email and password.'; K.render(); return; }
-      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; });
+      run(() => K.Fire.signIn(v.email.trim(), v.pw), () => { lg().pw = ''; }, true);
     } },
       h('h2', { class: 'login-title' }, 'Sign in'),
       h('p', { class: 'muted' }, 'The same account as in the kitchen book.'),
@@ -77,6 +98,7 @@
     const inp = h('input', { class: 'input big', id: 'nm', value: K.myName(), maxlength: 40, placeholder: 'First name', autocomplete: 'given-name' });
     return K.sheet('What is your name?', h('form', { class: 'stack', onsubmit: (e) => {
       e.preventDefault();
+      pull(e);
       const v = inp.value.trim();
       if (!v) return;
       K.store.set('fohName', v); K.me.name = v;
@@ -139,7 +161,12 @@
         /* a line still exactly as the list first wrote it takes the list's new wording; one changed by hand is kept */
         const hb = docs[p].bg || {}, wb = w.bg || {}, miss = Object.keys(hb).filter((k) => hb[k] && !wb[k]);
         if (miss.length) { patch.bg = Object.assign({}, wb); miss.forEach((k) => { patch.bg[k] = hb[k]; }); }
-        Object.keys(docs[p].was || {}).forEach((k) => { if (docs[p][k] && w[k] === docs[p].was[k] && w[k] !== docs[p][k]) patch[k] = docs[p][k]; });
+        /* (the list may name several earlier wordings; the Bulgarian of a replaced line is replaced with it) */
+        Object.keys(docs[p].was || {}).forEach((k) => {
+          if (!docs[p][k] || w[k] === docs[p][k] || ![].concat(docs[p].was[k]).includes(w[k])) return;
+          patch[k] = docs[p][k];
+          if (hb[k]) { patch.bg = Object.assign({}, patch.bg || wb); patch.bg[k] = hb[k]; }
+        });
         if (Object.keys(patch).length) { K.saveWine(Object.assign({}, w, patch)); noted++; }
       });
       /* the quiz questions that come with the menu (what the house knows about its own dishes): added, and kept up to
@@ -190,7 +217,7 @@
   /* the same record, whatever order its fields come in */
   const sorted = (o) => (Array.isArray(o) ? o.map(sorted) : o && typeof o === 'object' ? Object.keys(o).sort().reduce((a, k) => { if (o[k] !== undefined) a[k] = sorted(o[k]); return a; }, {}) : o);
   const sameRec = (a, b) => JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
-  const HOUSE_V = 2026112603;
+  const HOUSE_V = 2026112702;
   K.houseSync = function (force) {
     if (K.demo || !K.canEdit() || (!force && (K.mode !== 'firebase' || (D.houseV || 0) >= HOUSE_V))) return false;
     loadHouse(true);
@@ -389,7 +416,14 @@
       /* a dish paired on an earlier load keeps its wines when a manager changed them; one still paired exactly as
          the list paired it before takes the list's new choice. The reasons it keeps word for word get their Bulgarian. */
       const was = ((house.pairingsWas || {})[pr.dish] || []).join('|'), now = (d.n.pairs || []).join('|');
-      if (now && now === ok.map((x) => x.id).join('|')) return;
+      if (now && now === ok.map((x) => x.id).join('|')) {
+        /* the same wines: a reason still worded as the list worded it before takes the list's new wording */
+        const have = Object.assign({}, d.n.pairWhy), bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
+        let fixed = 0;
+        ok.forEach((x) => { if (x.why && have[x.id] !== x.why && [].concat(x.whyWas || []).includes(have[x.id])) { have[x.id] = x.why; if (x.whyBg) bgWhy[x.id] = x.whyBg; fixed++; } });
+        if (fixed) { K.saveNote(d.id, { pairWhy: have, bg: Object.assign({}, d.n.bg, { pairWhy: bgWhy }) }); paired++; }
+        return;
+      }
       if (now && !(was && now === was)) {
         const have = d.n.pairWhy || {}, bgWhy = Object.assign({}, (d.n.bg || {}).pairWhy);
         let add = 0;
