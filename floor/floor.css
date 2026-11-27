@@ -1040,3 +1040,13 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .qd-vs b { font-size: 1.8rem; }
 .lb-cups { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; font-size: .95em; white-space: nowrap; }
 .lb-cups .mono { font-size: .8em; color: var(--muted); font-weight: 700; }
+
+/* things that happen on the floor, between two questions */
+.qp-event { display: grid; gap: 12px; margin-top: 8vh; padding: 22px 18px; border-radius: var(--r); border: 2px solid var(--line); background: var(--surface); box-shadow: var(--shadow); text-align: center; animation: ev-in .28s ease-out; }
+.qp-event h1 { margin: 0; font: 700 2rem/1.1 var(--display); }
+.qp-event p { margin: 0; }
+.qp-event .qp-effect { font-weight: 800; font-size: 1.25rem; }
+.qp-event.bad { border-color: var(--urgent); } .qp-event.bad .qp-effect { color: var(--urgent); }
+.qp-event.good { border-color: var(--ready); } .qp-event.good .qp-effect { color: var(--ready); }
+@keyframes ev-in { from { transform: scale(.92) rotate(-1.5deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .qp-event { animation: none; } }

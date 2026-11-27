@@ -754,7 +754,7 @@
       const Q = ui.quiz;
       if (!Q || Q.stage !== 'play' || Q.picked != null) { stopClock(); return; }
       if (Q.frozen != null) return;
-      const secs = secsOf(Q.qs[Q.i]), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+      const secs = secsNow(Q), left = Math.max(0, secs - (Date.now() - Q.t0) / 1000);
       const bar = document.getElementById('qz-time'), num = document.getElementById('qz-sec');
       if (bar) bar.style.transform = 'scaleX(' + (left / secs) + ')';
       if (num) num.textContent = String(Math.ceil(left));
@@ -768,11 +768,11 @@
     if (Q.picked != null) return;
     if (i >= 0 && early(e)) return;
     stopClock();
-    const secs = secsOf(q), ok = i >= 0 && q.opts[i] === q.a, left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    const secs = secsNow(Q), ok = i >= 0 && q.opts[i] === q.a, left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
     Q.streak = ok ? (Q.streak || 0) + 1 : 0;
     Q.best = Math.max(Q.best || 0, Q.streak);
     Q.bonus = ok ? streakBonus(Q.streak) : 0;
-    const pts = ok ? Math.round((Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1]) + Q.bonus) * (helped(Q) ? 0.5 : 1)) : 0;
+    const pts = ok ? Math.round((Math.round((100 + 50 * left / secs) * FACTOR[q.level || 1] * multNow(Q)) + Q.bonus) * (helped(Q) ? 0.5 : 1)) : 0;
     if (Q.team) cpuAnswers(Q, q);
     Q.picked = i; Q.pts = pts;
     if (ok) { Q.right++; Q.score += pts; K.vibrate(15); sfx(Q.bonus ? 'streak' : 'right'); } else { K.vibrate([30, 40, 30]); sfx('wrong'); }
@@ -820,16 +820,64 @@
     if (!q || Q.picked != null || early(e) || (Q.used || {})[kind]) return;
     Q.used = Object.assign({}, Q.used, { [kind]: Q.i + 1 });
     if (kind === 'half') { Q.gone = shuffle(q.opts.map((o, i) => i).filter((i) => q.opts[i] !== q.a)).slice(0, 2); if (Q.room) Q.room = roomSays(Q, q); }
-    if (kind === 'clock') Q.frozen = Math.max(0, secsOf(q) - (Date.now() - Q.t0) / 1000);
+    if (kind === 'clock') Q.frozen = Math.max(0, secsNow(Q) - (Date.now() - Q.t0) / 1000);
     if (kind === 'friend') Q.friend = friendSays(Q, q);
     if (kind === 'room') Q.room = roomSays(Q, q);
     K.vibrate(10);
     sfx('joker');
     K.render();
   }
+  /* ---------- things that happen on the floor ----------
+     Between two questions, now and then (about one time in six, twice a round at most), something happens in the
+     restaurant: a glass breaks and costs points, a table tips well, the next question pays double. Small sums
+     beside a round of two thousand and more, so the board is still won by knowing the answers.
+     [key, title, what happened, the effect in words, what it does] */
+  const EVENTS = [
+    ['glass', 'A glass breaks', 'Nobody did it, of course. The house still takes it out of your points.', '−50 points', { pts: -50 }],
+    ['spill', 'Red wine on the white tablecloth', 'It happens. A fresh cloth, and a few points gone.', '−40 points', { pts: -40 }],
+    ['table', 'The dessert went to the wrong table', 'They ate it. The right table is still waiting.', '−30 points', { pts: -30 }],
+    ['tip', 'A big tip', 'Table 7 loved the service and said so with the bill.', '+80 points', { pts: 80 }],
+    ['meal', 'Staff meal', 'The kitchen sends something warm for the team.', '+60 points', { pts: 60 }],
+    ['happy', 'Happy hour', 'For one question only, the house is generous.', 'The next question pays double', { mult: 2 }],
+    ['rush', 'Full house', 'Every table at once. No time to think.', '30 seconds for the next question, which pays one and a half times', { mult: 1.5, secs: 30 }],
+    ['regular', 'A regular remembers you', 'They put in a good word with the floor manager.', 'One joker comes back', { joker: 1 }],
+    ['crash', 'The computer freezes', 'It restarts, and forgets some of what it had.', 'The computer loses 100 points', { cpu: -100 }],
+  ];
+  const boostOf = (Q) => (Q.boost && Q.boost.i === Q.i ? Q.boost : null);
+  const secsNow = (Q) => { const b = boostOf(Q); return (b && b.secs) || secsOf(Q.qs[Q.i]); };
+  const multNow = (Q) => { const b = boostOf(Q); return (b && b.mult) || 1; };
+  function happens(Q) {
+    const used = Object.keys(Q.used || {});
+    const can = EVENTS.filter((e) => !(Q.had || []).includes(e[0]) && (e[4].joker ? used.length : true) && (e[4].cpu ? Q.team && Q.cpu.score >= 100 : true) && (e[4].pts < 0 ? Q.score + e[4].pts >= 0 : true));
+    /* (K.quizEventOnly, a list of keys, is for the tests) */
+    const pick = K.quizEventOnly ? can.filter((e) => K.quizEventOnly.includes(e[0])) : can;
+    if (!pick.length) return null;
+    const e = one(pick), x = e[4];
+    Q.had = (Q.had || []).concat([e[0]]);
+    if (x.pts) Q.score += x.pts;
+    if (x.cpu) Q.cpu.score += x.cpu;
+    if (x.mult || x.secs) Q.boost = { i: Q.i + 1, mult: x.mult || 1, secs: x.secs || 0 };
+    if (x.joker) { const k = one(used), u = Object.assign({}, Q.used); delete u[k]; Q.used = u; }
+    return { key: e[0], title: e[1], text: e[2], effect: e[3], good: !(x.pts < 0) };
+  }
+  K.quizEvents = EVENTS;
+  function carryOn(e) {
+    const Q = ui.quiz;
+    if (!Q || !Q.event || early(e)) return;
+    Q.event = null;
+    advance();
+  }
   function next() {
     const Q = ui.quiz;
     if (Q.i + 1 >= Q.qs.length) { finish(); return; }
+    if ((Q.had || []).length < 2 && Math.random() < (K.quizEventOdds == null ? 0.17 : K.quizEventOdds)) {
+      const ev = happens(Q);
+      if (ev) { Q.event = ev; K.vibrate(ev.good ? 15 : [30, 40, 30]); sfx(ev.good ? 'streak' : 'wrong'); K.render(true); drawn(); return; }
+    }
+    advance();
+  }
+  function advance() {
+    const Q = ui.quiz;
     Q.i++; Q.picked = null; Q.gone = null; Q.frozen = null; Q.friend = null; Q.room = null; Q.t0 = Date.now();
     K.render(true);
     drawn();
@@ -1001,7 +1049,18 @@
   function playView(Q) {
     const q = Q.qs[Q.i], done = Q.picked != null;
     if (!q) { ui.quiz = null; return K.V.quiz(); }
-    const secs = secsOf(q), left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
+    if (Q.event) return {
+      top: K.subbar('Stop', stopRound, [], Q.team ? 'Team vs the computer' : 'Quiz'),
+      body: h('div', { class: 'wrap quiz-play' }, h('section', { class: 'qp-event ' + (Q.event.good ? 'good' : 'bad') + ' ev-' + Q.event.key },
+        h('p', { class: 'kicker' }, 'Meanwhile, on the floor'),
+        h('h1', null, Q.event.title),
+        h('p', null, Q.event.text),
+        h('p', { class: 'qp-effect' }, Q.event.effect),
+        h('p', { class: 'muted mono' }, Q.team ? 'Team ' + Q.score : Q.score + ' pts'),
+        h('button', { class: 'btn primary wide', type: 'button', onclick: carryOn }, 'Carry on'))),
+      tabs: false, solid: true,
+    };
+    const secs = secsNow(Q), left = Q.frozen != null ? Q.frozen : Math.max(0, secs - (Date.now() - Q.t0) / 1000);
     const used = Q.used || {};
     const body = h('div', { class: 'wrap quiz-play' },
       h('div', { class: 'qp-top' },
@@ -1009,7 +1068,7 @@
         h('span', { class: 'qp-score mono' }, Q.team ? [h('span', { class: 'qp-us' }, 'Team ' + Q.score), h('span', { class: 'qp-cpu' }, 'Computer ' + Q.cpu.score)] : Q.score + ' pts', (Q.streak || 0) >= 2 ? h('span', { class: 'qp-streak' + (Q.streak >= 3 ? ' hot' : ''), title: 'Right answers in a row' }, K.icon('flame'), String(Q.streak)) : null),
         h('span', { class: 'qp-sec mono' + (Q.frozen != null && !done ? ' frozen' : ''), id: 'qz-sec' }, done ? '' : Q.frozen != null ? [K.icon('pause'), String(Math.ceil(left))] : String(Math.ceil(left)))),
       h('div', { class: 'qp-timer' + (Q.frozen != null && !done ? ' frozen' : '') }, h('span', { id: 'qz-time', style: { transform: 'scaleX(' + (done ? 0 : left / secs) + ')' } })),
-      h('p', { class: 'kicker qp-kick' }, h('span', null, q.fun ? 'Team' : q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) / 2) + ' points' : 'up to ' + worth(q) + ' points'))),
+      h('p', { class: 'kicker qp-kick' }, h('span', null, q.fun ? 'Team' : q.drink ? 'Drinks' : q.topic === 'wine' ? 'Wine' : 'Food'), h('span', { class: 'qp-level l' + (q.level || 1) }, h('b', null, LEVELS[q.level || 1]), h('span', null, helped(Q) ? 'joker played: up to ' + Math.round(worth(q) * multNow(Q) / 2) + ' points' : 'up to ' + Math.round(worth(q) * multNow(Q)) + ' points'))),
       q.img ? h('div', { class: 'qp-img' }, h('img', { src: q.img, alt: '' })) : null,
       h('h1', { class: 'qp-q' }, q.q),
       h('div', { class: 'qp-opts' }, q.opts.map((o, i) => {
