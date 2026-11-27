@@ -1038,3 +1038,5 @@ body.scrolled .top { border-bottom-color: var(--line); }
 .qd-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .qd-vs > div { display: grid; gap: 2px; padding: 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); }
 .qd-vs b { font-size: 1.8rem; }
+.lb-cups { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; font-size: .95em; white-space: nowrap; }
+.lb-cups .mono { font-size: .8em; color: var(--muted); font-weight: 700; }
